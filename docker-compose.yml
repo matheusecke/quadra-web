@@ -6,9 +6,12 @@ services:
       dockerfile: Dockerfile.local
     volumes:
       - .:/home/node/app
-      - /home/node/app/node_modules
+      - web_node_modules:/home/node/app/node_modules
     environment:
       VITE_API_URL: http://localhost:3001
     ports:
       - "5173:5173"
     restart: unless-stopped
+
+volumes:
+  web_node_modules:

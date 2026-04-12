@@ -1,8 +1,13 @@
-FROM node:22-alpine
-ENV NODE_ENV=development
-USER node
-RUN mkdir -p /home/node/app
+FROM node:22-alpine AS build
 WORKDIR /home/node/app
-COPY --chown=node:node package*.json ./
-RUN npm install
-COPY --chown=node:node . .
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+FROM nginx:alpine AS runtime
+COPY --from=build /home/node/app/dist /usr/share/nginx/html
