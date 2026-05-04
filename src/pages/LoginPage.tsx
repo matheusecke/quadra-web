@@ -28,7 +28,7 @@ export function LoginPage() {
       const { organizations } = await login(email, password)
 
       if (organizations.length === 0) {
-        navigate('/no-org')
+        navigate('/home')
       } else if (organizations.length === 1) {
         await chooseOrg(organizations[0].organizationId)
         navigate('/home')
