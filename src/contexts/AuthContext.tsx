@@ -1,18 +1,7 @@
-import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import api, { setAccessToken } from '../services/api'
+import { AuthContext, type AuthStatus } from './auth-context'
 import type { ApiResponse, LoginPayload, OrgAffiliation, TokenPayload } from '../types/api'
-
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
-
-type AuthContextValue = {
-  status: AuthStatus
-  organizations: OrgAffiliation[]
-  login: (email: string, password: string) => Promise<{ organizations: OrgAffiliation[] }>
-  chooseOrg: (organizationId: number) => Promise<void>
-  logout: () => Promise<void>
-}
-
-export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
