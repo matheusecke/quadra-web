@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { router } from './router'
 import './index.css'
+import './design-system/theme.css'
 
 const queryClient = new QueryClient()
 
