@@ -1,0 +1,29 @@
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  font-family: var(--font-sans);
+}
+
+.required {
+  color: var(--status-live);
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-sans);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--status-live);
+  font-family: var(--font-sans);
+}

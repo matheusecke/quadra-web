@@ -1,0 +1,125 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease,
+    box-shadow 140ms ease, opacity 140ms ease;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Sizes */
+.button--sm {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.button--md {
+  height: var(--row-h);
+  padding: 0 var(--space-4);
+  font-size: 14px;
+}
+
+.button--lg {
+  height: 48px;
+  padding: 0 var(--space-5);
+  font-size: 15px;
+}
+
+.button--icon {
+  width: var(--row-h);
+  height: var(--row-h);
+  padding: 0;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Variants */
+.button--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+
+.button--secondary {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border-bold);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.button--ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.button--danger {
+  background: var(--status-live);
+  color: #fff;
+}
+
+.button--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+/* States */
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button--full {
+  width: 100%;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: spin 600ms linear infinite;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
