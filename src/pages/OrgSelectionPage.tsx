@@ -93,7 +93,7 @@ export function OrgSelectionPage() {
           <input
             className={s.searchInput}
             type="search"
-            placeholder="Buscar organização..."
+            placeholder="Buscar organização"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Buscar organização"
