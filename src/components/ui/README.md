@@ -65,12 +65,17 @@ Composes `Input` with a label, hint, and error message.
 
 ```tsx
 <Field label="Email" hint="We'll never share your email." inputProps={{ type: 'email', placeholder: 'nome@empresa.com' }} />
-<Field label="Password" error="Too short" required inputProps={{ type: 'password', placeholder: '••••••••' }} />
 
 // Custom input override via children:
 <Field label="Organisation">
   <Select … />
 </Field>
+```
+
+Intentional password exception for screens that benefit from it:
+
+```tsx
+<Field label="Senha" error="Too short" required inputProps={{ type: 'password', placeholder: '••••••••' }} />
 ```
 
 Props: `label`, `hint`, `error`, `required`, `inputProps`, `children`, `id`.
