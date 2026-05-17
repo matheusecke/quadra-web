@@ -60,7 +60,7 @@ export function OrgSelectionPage() {
     setSelectingId(organizationId)
     try {
       await chooseOrg(organizationId)
-      navigate('/home')
+      navigate('/select-org')
     } finally {
       setSelectingId(null)
     }
@@ -98,6 +98,16 @@ export function OrgSelectionPage() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Buscar organização"
           />
+          {query && (
+            <button
+              type="button"
+              className={s.searchClear}
+              onClick={() => setQuery('')}
+              aria-label="Limpar busca"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* List count */}
@@ -113,6 +123,22 @@ export function OrgSelectionPage() {
           aria-label="Lista de organizações"
         >
           <div ref={listRef} className={s.orgList}>
+            {/* Admin entry — only when user is system admin */}
+            {user?.isSystemAdmin && (
+              <button
+                type="button"
+                className={s.adminEntry}
+                onClick={handleAdminEntry}
+                aria-label="Entrar como administrador do sistema"
+              >
+                <div className={s.adminEntryLeft}>
+                  <div className={s.adminDot} aria-hidden="true" />
+                  <span className={s.adminLabel}>Entrar como administrador do sistema</span>
+                </div>
+                <span className={s.adminArrow} aria-hidden="true">→</span>
+              </button>
+            )}
+
             {filtered.length === 0 ? (
               <div className={s.empty}>
                 <p className={s.emptyText}>
@@ -143,22 +169,6 @@ export function OrgSelectionPage() {
                   </div>
                 </button>
               ))
-            )}
-
-            {/* Admin entry — only when user is system admin */}
-            {user?.isSystemAdmin && (
-              <button
-                type="button"
-                className={s.adminEntry}
-                onClick={handleAdminEntry}
-                aria-label="Entrar como administrador do sistema"
-              >
-                <div className={s.adminEntryLeft}>
-                  <div className={s.adminDot} aria-hidden="true" />
-                  <span className={s.adminLabel}>Entrar como administrador do sistema</span>
-                </div>
-                <span className={s.adminArrow} aria-hidden="true">→</span>
-              </button>
             )}
           </div>
         </div>

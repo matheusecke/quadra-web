@@ -57,7 +57,7 @@ function CourtSvg() {
 }
 
 export function LoginPage() {
-  const { status, login, chooseOrg } = useAuth()
+  const { status, login } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -67,7 +67,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      navigate('/home', { replace: true })
+      navigate('/select-org', { replace: true })
     }
   }, [status, navigate])
 
@@ -80,10 +80,7 @@ export function LoginPage() {
       const { organizations } = await login(email, password)
 
       if (organizations.length === 0) {
-        navigate('/home')
-      } else if (organizations.length === 1) {
-        await chooseOrg(organizations[0].organizationId)
-        navigate('/home')
+        navigate('/no-org')
       } else {
         navigate('/select-org')
       }
