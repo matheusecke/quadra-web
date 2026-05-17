@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import api, { setAccessToken } from '../services/api'
 import { AuthContext, type AuthStatus } from './auth-context'
-import type { ApiResponse, LoginPayload, OrgAffiliation, TokenPayload } from '../types/api'
+import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, TokenPayload } from '../types/api'
+
+async function fetchMe(): Promise<MePayload> {
+  const { data } = await api.get<ApiResponse<MePayload>>('/auth/me')
+  return data.data
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
+  const [user, setUser] = useState<MePayload | null>(null)
   const [organizations, setOrganizations] = useState<OrgAffiliation[]>([])
 
-  // On mount: attempt a silent token refresh using the httpOnly cookie.
-  // If the cookie is valid the user stays authenticated without re-logging in.
   useEffect(() => {
     api
       .post<ApiResponse<TokenPayload>>('/auth/refresh')
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         setAccessToken(data.data.accessToken)
+        const me = await fetchMe()
+        setUser(me)
         setStatus('authenticated')
       })
       .catch(() => {
@@ -21,10 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
-  // The 401 interceptor in api.ts dispatches this event when the refresh fails mid-session
   useEffect(() => {
     const handle = () => {
       setStatus('unauthenticated')
+      setUser(null)
       setOrganizations([])
     }
     window.addEventListener('auth:unauthenticated', handle)
@@ -35,7 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/login', { email, password })
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
-    setStatus('authenticated')
+    try {
+      const me = await fetchMe()
+      setUser(me)
+      setStatus('authenticated')
+    } catch (err) {
+      setAccessToken(null)
+      throw err
+    }
     return { organizations: data.data.organizations }
   }, [])
 
@@ -49,13 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout')
     } finally {
       setAccessToken(null)
+      setUser(null)
       setOrganizations([])
       setStatus('unauthenticated')
     }
   }, [])
 
   return (
-    <AuthContext.Provider value={{ status, organizations, login, chooseOrg, logout }}>
+    <AuthContext.Provider value={{ status, user, organizations, login, chooseOrg, logout }}>
       {children}
     </AuthContext.Provider>
   )

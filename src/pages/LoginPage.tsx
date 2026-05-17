@@ -1,7 +1,57 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import type { FormEvent } from 'react'
+import s from './LoginPage.module.css'
+
+function CourtSvg() {
+  const stroke = 'rgba(255,255,255,0.065)'
+  const sw = 2
+
+  return (
+    <svg
+      className={s.courtSvg}
+      viewBox="0 0 480 900"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <g stroke={stroke} strokeWidth={sw} fill="none">
+        {/* Court boundary */}
+        <rect x="30" y="30" width="420" height="840" />
+
+        {/* Half-court line */}
+        <line x1="30" y1="450" x2="450" y2="450" />
+
+        {/* Center circles */}
+        <circle cx="240" cy="450" r="62" />
+        <circle cx="240" cy="450" r="18" />
+
+        {/* ── Top half (basket at y=80) ── */}
+        {/* Lane / paint */}
+        <rect x="156" y="30" width="168" height="195" />
+        {/* Free throw circle */}
+        <circle cx="240" cy="225" r="62" />
+        {/* Basket */}
+        <circle cx="240" cy="80" r="10" />
+        {/* Restricted area arc */}
+        <path d="M 214 30 A 26 26 0 0 0 266 30" />
+        {/* 3pt corner lines */}
+        <line x1="59" y1="30" x2="59" y2="110" />
+        <line x1="421" y1="30" x2="421" y2="110" />
+        {/* 3pt arc */}
+        <path d="M 59 110 A 192 192 0 0 1 421 110" />
+
+        {/* ── Bottom half (basket at y=820) ── */}
+        <rect x="156" y="675" width="168" height="195" />
+        <circle cx="240" cy="675" r="62" />
+        <circle cx="240" cy="820" r="10" />
+        <path d="M 214 870 A 26 26 0 0 1 266 870" />
+        <line x1="59" y1="870" x2="59" y2="790" />
+        <line x1="421" y1="870" x2="421" y2="790" />
+        <path d="M 59 790 A 192 192 0 0 0 421 790" />
+      </g>
+    </svg>
+  )
+}
 
 export function LoginPage() {
   const { status, login, chooseOrg } = useAuth()
@@ -12,7 +62,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // If the user already has a valid session, skip the login screen
   useEffect(() => {
     if (status === 'authenticated') {
       navigate('/home', { replace: true })
@@ -43,45 +92,68 @@ export function LoginPage() {
   }
 
   return (
-    <main className="public-page">
-      <section className="public-panel" aria-labelledby="login-title">
-        <div className="public-panel__body">
-          <div className="brand-mark" aria-hidden="true">
-            B
+    <main className={s.page}>
+      {/* ── Left: court panel ── */}
+      <div className={s.courtPanel} aria-hidden="true">
+        <div className={s.courtInner}>
+          <CourtSvg />
+          <span className={s.brand}>Quadra</span>
+          <div className={s.courtBottom}>
+            <span className={s.tagline}>Gerencie sua competição</span>
+            <div className={s.taglineLine} />
           </div>
-          <h1 className="page-title" id="login-title">
-            Login
-          </h1>
-          <p className="page-description">Acesse sua conta para continuar.</p>
+        </div>
+      </div>
 
-          <form className="form" onSubmit={handleSubmit}>
-            <div className="field">
-              <label htmlFor="email">Email</label>
+      {/* ── Right: form panel ── */}
+      <div className={s.formPanel}>
+        <div className={s.formInner}>
+          <h1 className={s.heading}>Bem-vindo de volta</h1>
+          <p className={s.sub}>Acesse a sua conta</p>
+
+          <form className={s.form} onSubmit={handleSubmit} noValidate>
+            <div className={s.field}>
+              <label htmlFor="email" className={s.label}>
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
+                className={s.input}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
-            <div className="field">
-              <label htmlFor="password">Senha</label>
+
+            <div className={s.field}>
+              <label htmlFor="password" className={s.label}>
+                Senha
+              </label>
               <input
                 id="password"
                 type="password"
+                className={s.input}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
             </div>
-            {error && <p className="alert alert--danger" role="alert">{error}</p>}
-            <button className="button button--primary button--full" type="submit" disabled={loading}>
-              {loading ? 'Entrando...' : 'Login'}
+
+            {error && (
+              <p className={s.error} role="alert">
+                {error}
+              </p>
+            )}
+
+            <button type="submit" className={s.submitBtn} disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar →'}
             </button>
           </form>
         </div>
-      </section>
+      </div>
     </main>
   )
 }
