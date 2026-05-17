@@ -75,7 +75,7 @@ Composes `Input` with a label, hint, and error message.
 Intentional password exception for screens that benefit from it:
 
 ```tsx
-<Field label="Senha" error="Too short" required inputProps={{ type: 'password', placeholder: '••••••••' }} />
+<Field label="Senha" inputProps={{ type: 'password', placeholder: '••••••••' }} />
 ```
 
 Props: `label`, `hint`, `error`, `required`, `inputProps`, `children`, `id`.
