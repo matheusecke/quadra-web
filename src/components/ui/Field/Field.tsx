@@ -20,13 +20,8 @@ export function Field({ label, hint, error, required, inputProps, children, id }
 
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={fieldId}>
+      <label className={styles.label} htmlFor={fieldId} data-required={required ? true : undefined}>
         {label}
-        {required && (
-          <span className={styles.required} aria-hidden="true">
-            {' '}*
-          </span>
-        )}
       </label>
       {children ?? <Input id={fieldId} error={!!error} fullWidth {...inputProps} />}
       {hint && !error && <p className={styles.hint}>{hint}</p>}

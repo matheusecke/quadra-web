@@ -10,7 +10,8 @@
   font-family: var(--font-sans);
 }
 
-.required {
+.label[data-required]::after {
+  content: ' *';
   color: var(--status-live);
 }
 

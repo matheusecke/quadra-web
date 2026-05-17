@@ -1,10 +1,10 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { Field } from '../components/ui'
 import s from './LoginPage.module.css'
 
 function CourtSvg() {
-  const stroke = 'rgba(255,255,255,0.065)'
   const sw = 2
 
   return (
@@ -14,7 +14,7 @@ function CourtSvg() {
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
     >
-      <g stroke={stroke} strokeWidth={sw} fill="none">
+      <g className={s.courtLine} strokeWidth={sw} fill="none">
         {/* Court boundary */}
         <rect x="30" y="30" width="420" height="840" />
 
@@ -34,20 +34,23 @@ function CourtSvg() {
         <circle cx="240" cy="80" r="10" />
         {/* Restricted area arc */}
         <path d="M 214 30 A 26 26 0 0 0 266 30" />
-        {/* 3pt corner lines */}
-        <line x1="59" y1="30" x2="59" y2="110" />
-        <line x1="421" y1="30" x2="421" y2="110" />
-        {/* 3pt arc */}
-        <path d="M 59 110 A 192 192 0 0 1 421 110" />
+        {/* 3pt line */}
+        <g className={s.threePointLine}>
+          <line x1="52" y1="30" x2="52" y2="214" />
+          <line x1="428" y1="30" x2="428" y2="214" />
+          <path d="M 52 214 C 82 390 398 390 428 214" />
+        </g>
 
         {/* ── Bottom half (basket at y=820) ── */}
         <rect x="156" y="675" width="168" height="195" />
         <circle cx="240" cy="675" r="62" />
         <circle cx="240" cy="820" r="10" />
         <path d="M 214 870 A 26 26 0 0 1 266 870" />
-        <line x1="59" y1="870" x2="59" y2="790" />
-        <line x1="421" y1="870" x2="421" y2="790" />
-        <path d="M 59 790 A 192 192 0 0 0 421 790" />
+        <g className={s.threePointLine}>
+          <line x1="52" y1="870" x2="52" y2="686" />
+          <line x1="428" y1="870" x2="428" y2="686" />
+          <path d="M 52 686 C 82 510 398 510 428 686" />
+        </g>
       </g>
     </svg>
   )
@@ -112,35 +115,33 @@ export function LoginPage() {
           <p className={s.sub}>Acesse a sua conta</p>
 
           <form className={s.form} onSubmit={handleSubmit} noValidate>
-            <div className={s.field}>
-              <label htmlFor="email" className={s.label}>
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className={s.input}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-              />
-            </div>
+            <Field
+              label="Email"
+              id="email"
+              required
+              inputProps={{
+                id: 'email',
+                type: 'email',
+                value: email,
+                onChange: (e) => setEmail(e.target.value),
+                autoComplete: 'email',
+                placeholder: 'nome@empresa.com',
+              }}
+            />
 
-            <div className={s.field}>
-              <label htmlFor="password" className={s.label}>
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                className={s.input}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
+            <Field
+              label="Senha"
+              id="password"
+              required
+              inputProps={{
+                id: 'password',
+                type: 'password',
+                value: password,
+                onChange: (e) => setPassword(e.target.value),
+                autoComplete: 'current-password',
+                placeholder: '••••••••',
+              }}
+            />
 
             {error && (
               <p className={s.error} role="alert">
@@ -149,7 +150,8 @@ export function LoginPage() {
             )}
 
             <button type="submit" className={s.submitBtn} disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar →'}
+              <span>{loading ? 'Entrando...' : 'Entrar'}</span>
+              {!loading && <span aria-hidden="true">→</span>}
             </button>
           </form>
         </div>
