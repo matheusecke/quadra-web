@@ -23,6 +23,7 @@ export const light = {
   surface: '#ffffff',
   surface2: '#f5f5f5',
   surface3: '#ededed',
+  surfaceCourt: '#f7f7f7',
   surfaceInv: '#1c1c1c',
 
   border: '#ededed',
@@ -37,21 +38,22 @@ export const light = {
 } as const
 
 export const dark = {
-  bg: '#0f0f0f',
-  surface: '#171717',
-  surface2: '#1f1f1f',
-  surface3: '#2a2a2a',
+  bg: '#18191b',
+  surface: '#202124',
+  surface2: '#282a2e',
+  surface3: '#33363b',
+  surfaceCourt: '#1c1c1c',
   surfaceInv: '#ffffff',
 
-  border: '#262626',
-  borderStrong: '#333333',
-  borderBold: '#525252',
+  border: '#303238',
+  borderStrong: '#41444b',
+  borderBold: '#5d626b',
 
   ink: '#f5f5f5',
   ink2: '#d4d4d4',
-  muted: '#a3a3a3',
-  muted2: '#737373',
-  muted3: '#525252',
+  muted: '#b5b7bd',
+  muted2: '#8c9099',
+  muted3: '#686d77',
 } as const
 
 export const status = {

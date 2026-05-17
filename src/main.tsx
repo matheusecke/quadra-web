@@ -7,6 +7,25 @@ import { router } from './router'
 import './index.css'
 import './design-system/theme.css'
 
+const getStoredThemePreference = () => {
+  try {
+    return localStorage.getItem('quadra.theme')
+  } catch {
+    return null
+  }
+}
+
+const themePreferenceQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+const syncThemeWithSystemPreference = () => {
+  if (getStoredThemePreference()) return
+
+  document.documentElement.dataset.theme = themePreferenceQuery.matches ? 'dark' : 'light'
+}
+
+syncThemeWithSystemPreference()
+themePreferenceQuery.addEventListener('change', syncThemeWithSystemPreference)
+
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(

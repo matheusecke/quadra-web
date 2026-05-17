@@ -48,7 +48,7 @@ Reference variables directly in any CSS file or inline style:
 | Group | Variables |
 |-------|-----------|
 | Accent | `--accent`, `--accent-deep`, `--accent-soft`, `--accent-ink` |
-| Surfaces | `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-inv` |
+| Surfaces | `--bg`, `--surface`, `--surface-2`, `--surface-3`, `--surface-court`, `--surface-inv` |
 | Borders | `--border`, `--border-strong`, `--border-bold` |
 | Text | `--ink`, `--ink-2`, `--muted`, `--muted-2`, `--muted-3` |
 | Status | `--status-live`, `--status-ok`, `--status-warn`, `--status-info` + `*-bg` variants |
@@ -62,16 +62,25 @@ Reference variables directly in any CSS file or inline style:
 
 ## Dark Mode
 
-Set `data-theme="dark"` on the `<html>` element:
+The app uses the browser/system color scheme as the default on startup. A small inline script in `index.html` sets `data-theme` before the React bundle loads, which avoids a light/dark flash.
+
+Manual preferences can be stored under `quadra.theme` and will override the system default:
+
+```ts
+localStorage.setItem('quadra.theme', 'dark')
+document.documentElement.setAttribute('data-theme', 'dark')
+```
+
+Set `data-theme="dark"` on the `<html>` element for a temporary override:
 
 ```ts
 document.documentElement.setAttribute('data-theme', 'dark')
 ```
 
-Remove or set to `"light"` to return to the default:
+Remove the stored value to return to following the system preference:
 
 ```ts
-document.documentElement.removeAttribute('data-theme')
+localStorage.removeItem('quadra.theme')
 ```
 
 All surface, border, text, and shadow variables are automatically overridden. Accent and status foreground colors remain the same; only their background tints shift to semi-transparent dark-safe values.

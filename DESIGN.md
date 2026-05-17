@@ -6,7 +6,7 @@ Quadra is a product interface for administrators and role-based users operating 
 
 Default theme: light, restrained, dense, and professional.
 
-Dark mode exists as a supported system state through `html[data-theme="dark"]`, but it should not become the default aesthetic unless a task explicitly targets dim operational environments.
+Dark mode exists as a supported system state through `html[data-theme="dark"]`, but it should remain charcoal, readable, and operational rather than near-black or theatrical. It should not become the default aesthetic unless a task explicitly targets dim operational environments.
 
 ## Color Palette
 
@@ -21,6 +21,7 @@ Restrained product palette: tinted neutral surfaces, clear borders, and one Pers
 - Background: `--bg`
 - Primary surface: `--surface`
 - Secondary surfaces: `--surface-2`, `--surface-3`
+- Court surface: `--surface-court`
 - Inverse surface: `--surface-inv`
 - Text: `--ink`, `--ink-2`
 - Muted text: `--muted`, `--muted-2`, `--muted-3`

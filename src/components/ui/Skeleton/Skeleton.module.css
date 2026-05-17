@@ -1,8 +1,8 @@
 .root {
   position: relative;
   overflow: hidden;
-  border-radius: 6px;
-  background: #1f1f1f;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 
 .root::after {
@@ -10,12 +10,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.04) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--ink) 6%, transparent) 50%, transparent 100%);
   animation: shimmer 1.6s infinite;
 }
 
