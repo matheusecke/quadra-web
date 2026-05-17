@@ -45,12 +45,17 @@ Props: `variant` (default | elevated | inverse). Sub-components: `Card.Header`, 
 ```tsx
 <Input placeholder="Search…" fullWidth />
 <Input error placeholder="nome@empresa.com" />
-<Input type="password" placeholder="••••••••" />
 ```
 
 Props: `error`, `fullWidth`, + all `<input>` HTML attrs.
 
-Placeholder policy: labels remain mandatory, and placeholders never replace the label. Use placeholders only for format guidance or concrete examples such as search, email format, phone format, document masks, or URLs. Password fields default to no placeholder, but when a screen intentionally benefits from one, the standard placeholder is `••••••••`.
+Placeholder policy: labels remain mandatory, and placeholders never replace the label. Use placeholders only for format guidance or concrete examples such as search, email format, phone format, document masks, or URLs. Password fields default to no placeholder. When a specific screen intentionally benefits from a password example, use the standard placeholder `••••••••`.
+
+Intentional password exception for screens that benefit from it:
+
+```tsx
+<Input type="password" placeholder="••••••••" />
+```
 
 ---
 
@@ -60,7 +65,7 @@ Composes `Input` with a label, hint, and error message.
 
 ```tsx
 <Field label="Email" hint="We'll never share your email." inputProps={{ type: 'email', placeholder: 'nome@empresa.com' }} />
-<Field label="Senha" error="Too short" required inputProps={{ type: 'password', placeholder: '••••••••' }} />
+<Field label="Password" error="Too short" required inputProps={{ type: 'password', placeholder: '••••••••' }} />
 
 // Custom input override via children:
 <Field label="Organisation">
