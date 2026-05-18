@@ -1,10 +1,39 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RouterProvider } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import { router } from './router'
 import './index.css'
-import App from './App.tsx'
+import './design-system/theme.css'
+
+const getStoredThemePreference = () => {
+  try {
+    return localStorage.getItem('quadra.theme')
+  } catch {
+    return null
+  }
+}
+
+const themePreferenceQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+const syncThemeWithSystemPreference = () => {
+  if (getStoredThemePreference()) return
+
+  document.documentElement.dataset.theme = themePreferenceQuery.matches ? 'dark' : 'light'
+}
+
+syncThemeWithSystemPreference()
+themePreferenceQuery.addEventListener('change', syncThemeWithSystemPreference)
+
+const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
 )

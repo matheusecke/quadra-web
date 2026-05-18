@@ -4,7 +4,7 @@ WORKDIR /home/node/app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm ci && chown -R node:node /home/node/app
 
 COPY --chown=node:node . .
 
