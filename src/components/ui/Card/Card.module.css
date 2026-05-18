@@ -1,0 +1,37 @@
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.card--elevated {
+  box-shadow: var(--shadow-2);
+}
+
+.card--inverse {
+  background: var(--surface-inv);
+  border-color: transparent;
+  color: var(--bg);
+}
+
+.header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.card--inverse .header {
+  border-bottom-color: rgba(127, 127, 127, 0.2);
+}
+
+.body {
+  padding: var(--space-5);
+}
+
+.footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.card--inverse .footer {
+  border-top-color: rgba(127, 127, 127, 0.2);
+}

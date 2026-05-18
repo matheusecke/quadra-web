@@ -1,0 +1,71 @@
+.tabs {
+  display: flex;
+  gap: 0;
+}
+
+.tab {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Line variant */
+.tabs--line {
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+}
+
+.tabs--line .tab {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabs--line .tab:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.tabs--line .tab--active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Pill variant */
+.tabs--pill {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+}
+
+.tabs--pill .tab {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xs);
+}
+
+.tabs--pill .tab:hover:not(:disabled):not(.tab--active) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.tabs--pill .tab--active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}

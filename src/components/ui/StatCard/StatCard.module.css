@@ -1,0 +1,52 @@
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: var(--space-4) var(--space-5);
+}
+
+.label {
+  margin: 0 0 var(--space-2);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+
+.arrow {
+  font-style: normal;
+  line-height: 1;
+}
+
+.delta--up {
+  color: var(--status-ok);
+}
+
+.delta--down {
+  color: var(--status-live);
+}
+
+.delta--neutral {
+  color: var(--muted);
+}
