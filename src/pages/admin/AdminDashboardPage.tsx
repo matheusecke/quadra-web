@@ -39,7 +39,7 @@ export function AdminDashboardPage() {
   })
 
   const total = (loading: boolean, data?: { meta: { totalItems: number } }) =>
-    loading ? <Skeleton style={{ width: 48, height: 28, display: 'inline-block' }} /> : (data?.meta.totalItems ?? '—')
+    loading ? <Skeleton width={48} height={28} /> : (data?.meta.totalItems ?? '—')
 
   return (
     <div className={s.page}>
