@@ -20,9 +20,9 @@ function getInitials(name: string): string {
   return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase()
 }
 
-function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+function NavItem({ to, icon, label, end }: { to: string; icon: React.ReactNode; label: string; end?: boolean }) {
   return (
-    <NavLink to={to} className={({ isActive }) => cn(s.navItem, isActive && s.active)}>
+    <NavLink to={to} end={end} className={({ isActive }) => cn(s.navItem, isActive && s.active)}>
       <span className={s.navIcon}>{icon}</span>
       {label}
     </NavLink>
@@ -59,12 +59,8 @@ export function Sidebar() {
       <nav className={s.nav} aria-label="Menu principal">
         {isAdminMode ? (
           <>
-            <div className={s.adminBadge} aria-label="Modo administrador global">
-              <span className={s.adminDot} aria-hidden="true" />
-              Admin global
-            </div>
             <span className={s.sectionLabel}>Administração</span>
-            <NavItem to="/admin" icon={<LayoutDashboard size={15} strokeWidth={1.6} />} label="Visão geral" />
+            <NavItem to="/admin" end icon={<LayoutDashboard size={15} strokeWidth={1.6} />} label="Visão geral" />
             <NavItem to="/admin/users" icon={<Users size={15} strokeWidth={1.6} />} label="Usuários" />
             <NavItem to="/admin/organizations" icon={<Building2 size={15} strokeWidth={1.6} />} label="Organizações" />
             <NavItem to="/admin/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />

@@ -32,21 +32,22 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
   const queryClient = useQueryClient()
   const [role, setRole] = useState<OrgRole>(affiliation.role)
   const [teamId, setTeamId] = useState(affiliation.teamId?.toString() ?? '')
+  const [localStatus, setLocalStatus] = useState<AffiliationStatus>(affiliation.status)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const updateMutation = useMutation({
-    mutationFn: () =>
+  const saveMutation = useMutation({
+    mutationFn: () => Promise.all([
       adminApi.updateUserAffiliation(orgId, affiliation.id, {
         role,
         teamId: teamId ? Number(teamId) : null,
       }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-user-affiliations', orgId] }); onSaved() },
+      ...(localStatus !== affiliation.status ? [adminApi.updateUserAffiliationStatus(orgId, affiliation.id, localStatus)] : []),
+    ]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-affiliations', orgId] })
+      onSaved()
+    },
     onError: () => setSaveError('Não foi possível salvar.'),
-  })
-
-  const statusMutation = useMutation({
-    mutationFn: (status: AffiliationStatus) => adminApi.updateUserAffiliationStatus(orgId, affiliation.id, status),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-user-affiliations', orgId] }),
   })
 
   const resendMutation = useMutation({
@@ -71,11 +72,10 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
         <span className={s.toggleLabel}>Status</span>
         <button
           type="button"
-          className={`${s.toggleBtn} ${affiliation.status === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
-          onClick={() => statusMutation.mutate(affiliation.status === 'ACTIVE' ? 'REJECTED' : 'ACTIVE')}
-          disabled={statusMutation.isPending}
+          className={`${s.toggleBtn} ${localStatus === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
+          onClick={() => setLocalStatus(localStatus === 'ACTIVE' ? 'REJECTED' : 'ACTIVE')}
         >
-          {affiliation.status === 'ACTIVE' ? 'Ativo' : affiliation.status === 'PENDING' ? 'Pendente' : 'Rejeitado'}
+          {localStatus === 'ACTIVE' ? 'Ativo' : localStatus === 'PENDING' ? 'Pendente' : 'Rejeitado'}
         </button>
       </div>
       {affiliation.status === 'PENDING' && (
@@ -84,8 +84,8 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
         </Button>
       )}
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); updateMutation.mutate() }} disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+        <Button variant="primary" onClick={() => { setSaveError(null); saveMutation.mutate() }} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>
@@ -133,7 +133,7 @@ function UserAffiliationInviteForm({ orgId, onSaved }: InviteFormProps) {
       </Field>
       <div className={s.footer}>
         <Button variant="primary" onClick={() => { setSaveError(null); inviteMutation.mutate() }} disabled={inviteMutation.isPending}>
-          {inviteMutation.isPending ? 'Convidando...' : 'Convidar'}
+          {inviteMutation.isPending ? 'Convidando...' : <><em>Convidar</em> →</>}
         </Button>
       </div>
     </>

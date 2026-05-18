@@ -79,7 +79,7 @@ function TeamAffiliationInviteForm({ orgId, onSaved }: { orgId: number; onSaved:
       </Field>
       <div className={s.footer}>
         <Button variant="primary" onClick={() => { setSaveError(null); inviteMutation.mutate() }} disabled={inviteMutation.isPending}>
-          {inviteMutation.isPending ? 'Convidando...' : 'Convidar'}
+          {inviteMutation.isPending ? 'Convidando...' : <><em>Convidar</em> →</>}
         </Button>
       </div>
     </>

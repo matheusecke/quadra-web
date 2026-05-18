@@ -29,17 +29,20 @@ function OrgEditForm({ org, onClose, onSaved }: EditFormProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [name, setName] = useState(org.name)
+  const [localStatus, setLocalStatus] = useState(org.status)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const updateMutation = useMutation({
-    mutationFn: () => adminApi.updateOrg(org.id, { name }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-org', org.id] }); onSaved() },
+  const saveMutation = useMutation({
+    mutationFn: () => Promise.all([
+      adminApi.updateOrg(org.id, { name }),
+      ...(localStatus !== org.status ? [adminApi.updateOrgStatus(org.id, localStatus)] : []),
+    ]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-org', org.id] })
+      queryClient.invalidateQueries({ queryKey: ['admin-orgs'] })
+      onSaved()
+    },
     onError: () => setSaveError('Não foi possível salvar. Tente novamente.'),
-  })
-
-  const statusMutation = useMutation({
-    mutationFn: (status: 'ACTIVE' | 'INACTIVE') => adminApi.updateOrgStatus(org.id, status),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-org', org.id] }); queryClient.invalidateQueries({ queryKey: ['admin-orgs'] }) },
   })
 
   return (
@@ -52,11 +55,10 @@ function OrgEditForm({ org, onClose, onSaved }: EditFormProps) {
         <span className={s.toggleLabel}>Status</span>
         <button
           type="button"
-          className={`${s.toggleBtn} ${org.status === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
-          onClick={() => statusMutation.mutate(org.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
-          disabled={statusMutation.isPending}
+          className={`${s.toggleBtn} ${localStatus === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
+          onClick={() => setLocalStatus(localStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
         >
-          {org.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+          {localStatus === 'ACTIVE' ? 'Ativo' : 'Inativo'}
         </button>
       </div>
       <Button
@@ -66,8 +68,8 @@ function OrgEditForm({ org, onClose, onSaved }: EditFormProps) {
         Gerenciar vínculos →
       </Button>
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); updateMutation.mutate() }} disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+        <Button variant="primary" onClick={() => { setSaveError(null); saveMutation.mutate() }} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>
@@ -92,7 +94,7 @@ function OrgCreateForm({ onSaved }: { onSaved: () => void }) {
       </Field>
       <div className={s.footer}>
         <Button variant="primary" onClick={() => { setSaveError(null); createMutation.mutate() }} disabled={createMutation.isPending}>
-          {createMutation.isPending ? 'Salvando...' : 'Salvar'}
+          {createMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>

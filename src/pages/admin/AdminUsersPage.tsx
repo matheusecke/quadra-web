@@ -63,6 +63,7 @@ export function AdminUsersPage() {
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined,
+    gcTime: 0,
   })
 
   const items = data?.pages.flatMap((p) => p.data) ?? []
@@ -154,8 +155,10 @@ export function AdminUsersPage() {
                           <div className={s.nameCell}>
                             <Avatar initials={getInitials(user.name)} size="sm" />
                             <div className={s.nameMeta}>
-                              <span className={s.nameText}>{user.name}</span>
-                              {user.isSystemAdmin && <span className={s.adminTag}>⚡ System admin</span>}
+                              <span className={s.nameText}>
+                                {user.name}
+                                {user.isSystemAdmin && <span className={s.adminTag}>admin</span>}
+                              </span>
                             </div>
                           </div>
                         </td>

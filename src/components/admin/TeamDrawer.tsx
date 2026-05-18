@@ -21,17 +21,20 @@ type Props = {
 function TeamEditForm({ team, onSaved }: { team: AdminTeam; onSaved: () => void }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(team.name)
+  const [localStatus, setLocalStatus] = useState(team.status)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const updateMutation = useMutation({
-    mutationFn: () => adminApi.updateTeam(team.id, { name }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-team', team.id] }); onSaved() },
+  const saveMutation = useMutation({
+    mutationFn: () => Promise.all([
+      adminApi.updateTeam(team.id, { name }),
+      ...(localStatus !== team.status ? [adminApi.updateTeamStatus(team.id, localStatus)] : []),
+    ]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-team', team.id] })
+      queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
+      onSaved()
+    },
     onError: () => setSaveError('Não foi possível salvar.'),
-  })
-
-  const statusMutation = useMutation({
-    mutationFn: (status: 'ACTIVE' | 'INACTIVE') => adminApi.updateTeamStatus(team.id, status),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-team', team.id] }); queryClient.invalidateQueries({ queryKey: ['admin-teams'] }) },
   })
 
   return (
@@ -44,16 +47,15 @@ function TeamEditForm({ team, onSaved }: { team: AdminTeam; onSaved: () => void 
         <span className={s.toggleLabel}>Status</span>
         <button
           type="button"
-          className={`${s.toggleBtn} ${team.status === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
-          onClick={() => statusMutation.mutate(team.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
-          disabled={statusMutation.isPending}
+          className={`${s.toggleBtn} ${localStatus === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
+          onClick={() => setLocalStatus(localStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
         >
-          {team.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+          {localStatus === 'ACTIVE' ? 'Ativo' : 'Inativo'}
         </button>
       </div>
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); updateMutation.mutate() }} disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+        <Button variant="primary" onClick={() => { setSaveError(null); saveMutation.mutate() }} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>
@@ -78,7 +80,7 @@ function TeamCreateForm({ onSaved }: { onSaved: () => void }) {
       </Field>
       <div className={s.footer}>
         <Button variant="primary" onClick={() => { setSaveError(null); createMutation.mutate() }} disabled={createMutation.isPending}>
-          {createMutation.isPending ? 'Salvando...' : 'Salvar'}
+          {createMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>

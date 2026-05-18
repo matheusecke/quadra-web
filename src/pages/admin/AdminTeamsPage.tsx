@@ -30,6 +30,7 @@ export function AdminTeamsPage() {
         adminApi.listTeams({ page: pageParam as number, limit: 20, q: debouncedQ || undefined, status: (status as EntityStatus) || undefined }),
       initialPageParam: 1,
       getNextPageParam: (last) => last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined,
+      gcTime: 0,
     })
 
   const items = data?.pages.flatMap((p) => p.data) ?? []

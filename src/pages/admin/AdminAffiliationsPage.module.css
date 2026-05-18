@@ -37,10 +37,12 @@
 }
 
 .title {
-  font-size: var(--type-display, 22px);
-  font-weight: 700;
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 300;
   color: var(--ink);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
   margin: 0;
 }
 

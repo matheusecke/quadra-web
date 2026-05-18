@@ -54,6 +54,7 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
         }),
       initialPageParam: 1,
       getNextPageParam: (last) => last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined,
+      gcTime: 0,
     })
 
   const items = data?.pages.flatMap((p) => p.data) ?? []
@@ -157,6 +158,7 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
         }),
       initialPageParam: 1,
       getNextPageParam: (last) => last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined,
+      gcTime: 0,
     })
 
   const items = data?.pages.flatMap((p) => p.data) ?? []

@@ -32,22 +32,22 @@ type CreateFormProps = {
 function UserEditForm({ user, onSaved }: FormProps) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(user.name)
+  const [localStatus, setLocalStatus] = useState(user.status)
+  const [localIsAdmin, setLocalIsAdmin] = useState(user.isSystemAdmin)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const updateMutation = useMutation({
-    mutationFn: () => adminApi.updateUser(user.id, { name }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-user', user.id] }); onSaved() },
+  const saveMutation = useMutation({
+    mutationFn: () => Promise.all([
+      adminApi.updateUser(user.id, { name }),
+      ...(localStatus !== user.status ? [adminApi.updateUserStatus(user.id, localStatus)] : []),
+      ...(localIsAdmin !== user.isSystemAdmin ? [adminApi.updateUserSystemAdmin(user.id, localIsAdmin)] : []),
+    ]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user', user.id] })
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      onSaved()
+    },
     onError: () => setSaveError('Não foi possível salvar. Tente novamente.'),
-  })
-
-  const statusMutation = useMutation({
-    mutationFn: (status: 'ACTIVE' | 'INACTIVE') => adminApi.updateUserStatus(user.id, status),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-user', user.id] }); queryClient.invalidateQueries({ queryKey: ['admin-users'] }) },
-  })
-
-  const adminMutation = useMutation({
-    mutationFn: (val: boolean) => adminApi.updateUserSystemAdmin(user.id, val),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-user', user.id] }); queryClient.invalidateQueries({ queryKey: ['admin-users'] }) },
   })
 
   return (
@@ -63,27 +63,25 @@ function UserEditForm({ user, onSaved }: FormProps) {
         <span className={s.toggleLabel}>Status</span>
         <button
           type="button"
-          className={`${s.toggleBtn} ${user.status === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
-          onClick={() => statusMutation.mutate(user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
-          disabled={statusMutation.isPending}
+          className={`${s.toggleBtn} ${localStatus === 'ACTIVE' ? s.toggleActive : s.toggleInactive}`}
+          onClick={() => setLocalStatus(localStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
         >
-          {user.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+          {localStatus === 'ACTIVE' ? 'Ativo' : 'Inativo'}
         </button>
       </div>
       <div className={s.toggleRow}>
         <span className={s.toggleLabel}>System admin</span>
         <button
           type="button"
-          className={`${s.toggleBtn} ${user.isSystemAdmin ? s.toggleActive : s.toggleInactive}`}
-          onClick={() => adminMutation.mutate(!user.isSystemAdmin)}
-          disabled={adminMutation.isPending}
+          className={`${s.toggleBtn} ${localIsAdmin ? s.toggleActive : s.toggleInactive}`}
+          onClick={() => setLocalIsAdmin(!localIsAdmin)}
         >
-          {user.isSystemAdmin ? 'Sim' : 'Não'}
+          {localIsAdmin ? 'Sim' : 'Não'}
         </button>
       </div>
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); updateMutation.mutate() }} disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+        <Button variant="primary" onClick={() => { setSaveError(null); saveMutation.mutate() }} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>
@@ -116,7 +114,7 @@ function UserCreateForm({ onSaved }: CreateFormProps) {
       </Field>
       <div className={s.footer}>
         <Button variant="primary" onClick={() => { setSaveError(null); createMutation.mutate() }} disabled={createMutation.isPending}>
-          {createMutation.isPending ? 'Salvando...' : 'Salvar'}
+          {createMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
     </>
