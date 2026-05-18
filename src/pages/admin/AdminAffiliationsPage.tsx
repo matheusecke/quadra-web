@@ -95,9 +95,9 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
           <table className={ls.table}>
             <thead className={ls.thead}>
               <tr>
-                <th className={ls.th}>Usuário ID <span className={ls.sortIcon}>⇅</span></th>
+                <th className={ls.th}>Usuário <span className={ls.sortIcon}>⇅</span></th>
                 <th className={ls.th}>Papel <span className={ls.sortIcon}>⇅</span></th>
-                <th className={ls.th}>Equipe ID <span className={ls.sortIcon}>⇅</span></th>
+                <th className={ls.th}>Equipe <span className={ls.sortIcon}>⇅</span></th>
                 <th className={`${ls.th} ${ls.thStatus}`}>Status <span className={ls.sortIcon}>⇅</span></th>
               </tr>
             </thead>
@@ -113,9 +113,12 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
                   ))
                 : items.map((aff) => (
                     <tr key={aff.id} className={ls.tr} tabIndex={0} onClick={() => setSelected(aff)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelected(aff) }}>
-                      <td className={ls.td}>{aff.userId}</td>
+                      <td className={ls.td}>
+                        <span className={s.userName}>{aff.user.name}</span>
+                        <span className={s.userEmail}>{aff.user.email}</span>
+                      </td>
                       <td className={ls.td}><Badge variant="default">{aff.role}</Badge></td>
-                      <td className={ls.td}>{aff.teamId ?? '—'}</td>
+                      <td className={ls.td}>{aff.team?.name ?? '—'}</td>
                       <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{affiliationStatusLabel(aff.status)}</Badge></td>
                     </tr>
                   ))}
@@ -192,7 +195,7 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
           <table className={ls.table}>
             <thead className={ls.thead}>
               <tr>
-                <th className={ls.th}>Equipe ID <span className={ls.sortIcon}>⇅</span></th>
+                <th className={ls.th}>Equipe <span className={ls.sortIcon}>⇅</span></th>
                 <th className={`${ls.th} ${ls.thStatus}`}>Status <span className={ls.sortIcon}>⇅</span></th>
               </tr>
             </thead>
@@ -206,7 +209,7 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
                   ))
                 : items.map((aff) => (
                     <tr key={aff.id} className={ls.tr} tabIndex={0} onClick={() => setSelected(aff)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelected(aff) }}>
-                      <td className={ls.td}>{aff.teamId}</td>
+                      <td className={ls.td}>{aff.team.name}</td>
                       <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{affiliationStatusLabel(aff.status)}</Badge></td>
                     </tr>
                   ))}
@@ -251,7 +254,7 @@ export function AdminAffiliationsPage() {
           <ArrowLeft size={14} strokeWidth={1.6} /> Organizações
         </button>
         <p className={s.kicker}>{org?.name ?? '—'}</p>
-        <h1 className={s.title}>Vínculos</h1>
+        <h1 className={s.title}>Vínculos{org?.name ? <span className={s.titleOrg}> - {org.name}</span> : ''}</h1>
       </div>
       <div className={s.body}>
         <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />

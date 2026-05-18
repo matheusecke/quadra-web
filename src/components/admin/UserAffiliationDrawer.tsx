@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Drawer } from './Drawer'
 import { Button } from '../ui/Button/Button'
 import { Field } from '../ui/Field/Field'
-import { Input } from '../ui/Input/Input'
+import { SearchSelect, type SearchSelectOption } from './SearchSelect'
 import * as adminApi from '../../services/adminApi'
 import type { AdminUserAffiliation, AffiliationStatus, OrgRole } from '../../types/admin'
 import s from './UserDrawer.module.css'
@@ -28,10 +28,22 @@ type InviteFormProps = {
   onSaved: () => void
 }
 
+const searchUsers = (q: string): Promise<SearchSelectOption[]> =>
+  adminApi.listUsers({ page: 1, limit: 10, q }).then((res) =>
+    res.data.map((u) => ({ id: u.id, label: u.name, secondary: u.email })),
+  )
+
+const searchTeams = (q: string): Promise<SearchSelectOption[]> =>
+  adminApi.listTeams({ page: 1, limit: 10, q }).then((res) =>
+    res.data.map((t) => ({ id: t.id, label: t.name })),
+  )
+
 function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps) {
   const queryClient = useQueryClient()
   const [role, setRole] = useState<OrgRole>(affiliation.role)
-  const [teamId, setTeamId] = useState(affiliation.teamId?.toString() ?? '')
+  const [selectedTeam, setSelectedTeam] = useState<SearchSelectOption | null>(
+    affiliation.team ? { id: affiliation.team.id, label: affiliation.team.name } : null,
+  )
   const [localStatus, setLocalStatus] = useState<AffiliationStatus>(affiliation.status)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -39,9 +51,11 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
     mutationFn: () => Promise.all([
       adminApi.updateUserAffiliation(orgId, affiliation.id, {
         role,
-        teamId: teamId ? Number(teamId) : null,
+        teamId: selectedTeam?.id ?? null,
       }),
-      ...(localStatus !== affiliation.status ? [adminApi.updateUserAffiliationStatus(orgId, affiliation.id, localStatus)] : []),
+      ...(localStatus !== affiliation.status
+        ? [adminApi.updateUserAffiliationStatus(orgId, affiliation.id, localStatus)]
+        : []),
     ]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user-affiliations', orgId] })
@@ -65,9 +79,16 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
           <option value="COACHING_STAFF">COACHING_STAFF</option>
         </select>
       </Field>
-      <Field label="ID da equipe (opcional)">
-        <Input type="number" value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="Deixe em branco para nenhuma" />
-      </Field>
+      {role !== 'ORG_ADMIN' && (
+        <Field label="Equipe (opcional)">
+          <SearchSelect
+            value={selectedTeam}
+            onChange={setSelectedTeam}
+            onSearch={searchTeams}
+            placeholder="Buscar equipe por nome..."
+          />
+        </Field>
+      )}
       <div className={s.toggleRow}>
         <span className={s.toggleLabel}>Status</span>
         <button
@@ -84,7 +105,11 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
         </Button>
       )}
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); saveMutation.mutate() }} disabled={saveMutation.isPending}>
+        <Button
+          variant="primary"
+          onClick={() => { setSaveError(null); saveMutation.mutate() }}
+          disabled={saveMutation.isPending}
+        >
           {saveMutation.isPending ? 'Salvando...' : <><em>Salvar</em> →</>}
         </Button>
       </div>
@@ -93,31 +118,33 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
 }
 
 function UserAffiliationInviteForm({ orgId, onSaved }: InviteFormProps) {
-  const [userId, setUserId] = useState('')
+  const [selectedUser, setSelectedUser] = useState<SearchSelectOption | null>(null)
   const [role, setRole] = useState<OrgRole>('ATHLETE')
-  const [teamId, setTeamId] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState<SearchSelectOption | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
 
   const inviteMutation = useMutation({
     mutationFn: () =>
       adminApi.createUserAffiliation(orgId, {
-        userId: Number(userId),
+        userId: selectedUser!.id,
         role,
-        teamId: teamId ? Number(teamId) : undefined,
+        teamId: selectedTeam?.id,
       }),
     onSuccess: () => onSaved(),
     onError: () => setSaveError('Não foi possível criar o vínculo.'),
   })
 
+  const canSubmit = selectedUser !== null && (role === 'ORG_ADMIN' || selectedTeam !== null)
+
   return (
     <>
       {saveError && <p className={s.saveError}>{saveError}</p>}
-      <Field label="ID do usuário">
-        <Input
-          type="number"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="ID numérico do usuário"
+      <Field label="Usuário">
+        <SearchSelect
+          value={selectedUser}
+          onChange={setSelectedUser}
+          onSearch={searchUsers}
+          placeholder="Buscar usuário por nome ou email..."
         />
       </Field>
       <Field label="Papel">
@@ -128,11 +155,22 @@ function UserAffiliationInviteForm({ orgId, onSaved }: InviteFormProps) {
           <option value="COACHING_STAFF">COACHING_STAFF</option>
         </select>
       </Field>
-      <Field label="ID da equipe (opcional)">
-        <Input type="number" value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="Deixe em branco para nenhuma" />
-      </Field>
+      {role !== 'ORG_ADMIN' && (
+        <Field label="Equipe">
+          <SearchSelect
+            value={selectedTeam}
+            onChange={setSelectedTeam}
+            onSearch={searchTeams}
+            placeholder="Buscar equipe por nome..."
+          />
+        </Field>
+      )}
       <div className={s.footer}>
-        <Button variant="primary" onClick={() => { setSaveError(null); inviteMutation.mutate() }} disabled={inviteMutation.isPending}>
+        <Button
+          variant="primary"
+          onClick={() => { setSaveError(null); inviteMutation.mutate() }}
+          disabled={inviteMutation.isPending || !canSubmit}
+        >
           {inviteMutation.isPending ? 'Convidando...' : <><em>Convidar</em> →</>}
         </Button>
       </div>

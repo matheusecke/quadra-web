@@ -45,12 +45,25 @@ export type AdminTeam = {
   updatedAt: string
 }
 
+export type AffiliationUser = {
+  id: number
+  name: string
+  email: string
+}
+
+export type AffiliationTeam = {
+  id: number
+  name: string
+}
+
 export type AdminUserAffiliation = {
   id: number
   userId: number
+  user: AffiliationUser
   organizationId: number
   role: OrgRole
   teamId: number | null
+  team: AffiliationTeam | null
   jerseyNumber: number | null
   status: AffiliationStatus
   createdByUserId: number | null
@@ -62,6 +75,7 @@ export type AdminTeamAffiliation = {
   id: number
   organizationId: number
   teamId: number
+  team: AffiliationTeam
   status: AffiliationStatus
   createdByUserId: number | null
   createdAt: string
