@@ -253,8 +253,8 @@ export function AdminAffiliationsPage() {
         <button type="button" className={s.backBtn} onClick={() => navigate('/admin/organizations')}>
           <ArrowLeft size={14} strokeWidth={1.6} /> Organizações
         </button>
-        <p className={s.kicker}>{org?.name ?? '—'}</p>
-        <h1 className={s.title}>Vínculos{org?.name ? <span className={s.titleOrg}> - {org.name}</span> : ''}</h1>
+        <p className={ls.kicker}>{org?.name ?? '—'}</p>
+        <h1 className={s.title}>Vínculos</h1>
       </div>
       <div className={s.body}>
         <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />

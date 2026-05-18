@@ -27,14 +27,6 @@
 
 .backBtn:hover { color: var(--ink-2); }
 
-.kicker {
-  font-size: var(--type-micro, 10px);
-  font-weight: 600;
-  letter-spacing: var(--type-micro-tracking);
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
 
 .title {
   font-size: 28px;
@@ -44,11 +36,6 @@
   letter-spacing: -0.5px;
   line-height: 1.2;
   margin: 0;
-}
-
-.titleOrg {
-  font-weight: 300;
-  color: var(--muted);
 }
 
 .body {
