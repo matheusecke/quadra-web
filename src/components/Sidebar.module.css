@@ -242,3 +242,34 @@
   background: var(--status-live-bg);
   color: var(--status-live);
 }
+
+/* ── Admin badge ── */
+.adminBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.adminDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── Admin tag inline in user name ── */
+.userAdminTag {
+  color: var(--accent);
+  font-weight: 400;
+}
