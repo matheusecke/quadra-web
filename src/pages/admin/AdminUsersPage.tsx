@@ -92,6 +92,9 @@ export function AdminUsersPage() {
               onChange={(e) => setQ(e.target.value)}
               aria-label="Buscar usuários"
             />
+            {q && (
+              <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
+            )}
           </div>
           <select className={s.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as EntityStatus | '')} aria-label="Filtrar por status">
             <option value="">Status</option>
@@ -115,7 +118,9 @@ export function AdminUsersPage() {
 
       <div className={s.body}>
         {isError ? (
-          <ErrorState title="Não foi possível carregar os usuários." onRetry={refetch} />
+          <div className={s.bodyFill}>
+            <ErrorState title="Não foi possível carregar os usuários." onRetry={refetch} />
+          </div>
         ) : (
           <div className={s.tableWrap}>
             <table className={s.table}>

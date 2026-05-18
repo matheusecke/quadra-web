@@ -62,11 +62,14 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
   const sentinelRef = useInfiniteScroll(loadMore, hasNextPage ?? false)
 
   return (
-    <div>
+    <div className={s.tabBody}>
       <div className={s.tabToolbar}>
         <div className={ls.searchWrap}>
           <span className={ls.searchIcon}>⌕</span>
           <input className={ls.searchInput} type="search" placeholder="Buscar..." value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar vínculo" />
+          {q && (
+            <button type="button" className={ls.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
+          )}
         </div>
         <select className={ls.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as AffiliationStatus | '')} aria-label="Filtrar por status">
           <option value="">Status</option>
@@ -162,11 +165,14 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
   const sentinelRef = useInfiniteScroll(loadMore, hasNextPage ?? false)
 
   return (
-    <div>
+    <div className={s.tabBody}>
       <div className={s.tabToolbar}>
         <div className={ls.searchWrap}>
           <span className={ls.searchIcon}>⌕</span>
           <input className={ls.searchInput} type="search" placeholder="Buscar equipe..." value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar vínculo de equipe" />
+          {q && (
+            <button type="button" className={ls.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
+          )}
         </div>
         <select className={ls.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as AffiliationStatus | '')} aria-label="Filtrar por status">
           <option value="">Status</option>

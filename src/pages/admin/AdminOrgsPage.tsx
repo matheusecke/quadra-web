@@ -51,6 +51,9 @@ export function AdminOrgsPage() {
           <div className={s.searchWrap}>
             <span className={s.searchIcon}>⌕</span>
             <input className={s.searchInput} type="search" placeholder="Buscar organização..." value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar organização" />
+            {q && (
+              <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
+            )}
           </div>
           <select className={s.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as EntityStatus | '')} aria-label="Filtrar por status">
             <option value="">Status</option>
@@ -62,7 +65,9 @@ export function AdminOrgsPage() {
 
       <div className={s.body}>
         {isError ? (
-          <ErrorState title="Não foi possível carregar as organizações." onRetry={refetch} />
+          <div className={s.bodyFill}>
+            <ErrorState title="Não foi possível carregar as organizações." onRetry={refetch} />
+          </div>
         ) : (
           <div className={s.tableWrap}>
             <table className={s.table}>

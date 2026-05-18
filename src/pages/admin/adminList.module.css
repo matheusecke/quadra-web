@@ -60,7 +60,7 @@
 
 .searchInput {
   width: 100%;
-  padding: 7px 10px 7px 32px;
+  padding: 7px 32px 7px 32px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -69,9 +69,37 @@
   transition: border-color 150ms ease;
 }
 
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
 .searchInput:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.searchClear {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--muted-3);
+  font-size: 13px;
+  line-height: 1;
+  transition: color 150ms ease;
+}
+
+.searchClear:hover {
+  color: var(--muted);
 }
 
 .filterSelect {
@@ -89,19 +117,53 @@
   border-color: var(--accent);
 }
 
-/* ── Scrollable body ── */
+/* ── Body: header stays fixed, only list scrolls ── */
 .body {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-5, 20px) var(--space-6, 24px);
+  gap: var(--space-3, 12px);
+}
+
+/* Fills flex space when showing error state instead of table */
+.bodyFill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Table ── */
 .tableWrap {
+  flex: 1;
+  min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.tableWrap::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tableWrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tableWrap::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+}
+
+.tableWrap::-webkit-scrollbar-thumb:hover {
+  background: var(--border-bold);
 }
 
 .table {
