@@ -60,7 +60,7 @@ export function OrgSelectionPage() {
     setSelectingId(organizationId)
     try {
       await chooseOrg(organizationId)
-      navigate('/select-org')
+      navigate('/home')
     } finally {
       setSelectingId(null)
     }

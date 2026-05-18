@@ -55,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const chooseOrg = useCallback(async (organizationId: number) => {
     const { data } = await api.post<ApiResponse<TokenPayload>>('/auth/org', { organizationId })
     setAccessToken(data.data.accessToken)
+    const me = await fetchMe()
+    setUser(me)
   }, [])
 
   const logout = useCallback(async () => {
