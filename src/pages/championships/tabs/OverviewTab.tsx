@@ -15,7 +15,7 @@ interface OverviewTabProps {
 
 /**
  * Overview — the main reading surface. Fixed section order:
- * 1. Regulamento → 2. Líderes → 3. Grupos → 4. Chaveamento → 5. Partidas recentes.
+ * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
 export function OverviewTab({ championship, matches, teams }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
@@ -25,30 +25,7 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
 
   return (
     <>
-      {/* 1. Regulamento */}
-      <section className={s.section}>
-        <div className={s.sectionHead}>
-          <h2 className={s.sectionTitle}>Regulamento</h2>
-        </div>
-        <div className={s.regulation}>{championship.regulation}</div>
-      </section>
-
-      {/* 2. Líderes estatísticos principais */}
-      <section className={s.section}>
-        <div className={s.sectionHead}>
-          <h2 className={s.sectionTitle}>Líderes</h2>
-          <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
-        </div>
-        {hasLeaders ? (
-          <LeadersGrid leaders={championship.leaders} teams={teams} perCard={3} />
-        ) : (
-          <div className={s.tabEmpty}>
-            <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
-          </div>
-        )}
-      </section>
-
-      {/* 3. Grupos e classificação resumida */}
+      {/* 1. Grupos e classificação resumida */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Grupos</h2>
@@ -70,7 +47,7 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
         )}
       </section>
 
-      {/* 4. Chaveamento de playoffs */}
+      {/* 2. Chaveamento de playoffs */}
       {hasBracket && (
         <section className={s.section}>
           <div className={s.sectionHead}>
@@ -85,7 +62,22 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
         </section>
       )}
 
-      {/* 5. Lista de partidas, mais recente para mais antiga */}
+      {/* 3. Líderes estatísticos principais */}
+      <section className={s.section}>
+        <div className={s.sectionHead}>
+          <h2 className={s.sectionTitle}>Líderes</h2>
+          <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
+        </div>
+        {hasLeaders ? (
+          <LeadersGrid leaders={championship.leaders} teams={teams} perCard={3} />
+        ) : (
+          <div className={s.tabEmpty}>
+            <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
+          </div>
+        )}
+      </section>
+
+      {/* 4. Lista de partidas, mais recente para mais antiga */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
@@ -98,6 +90,14 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
             <EmptyState title="Nenhuma partida cadastrada." />
           </div>
         )}
+      </section>
+
+      {/* 5. Regulamento */}
+      <section className={s.section}>
+        <div className={s.sectionHead}>
+          <h2 className={s.sectionTitle}>Regulamento</h2>
+        </div>
+        <div className={s.regulation}>{championship.regulation}</div>
       </section>
     </>
   )
