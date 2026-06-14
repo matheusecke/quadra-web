@@ -100,33 +100,50 @@ export function MatchesTab({ championship, matches, teams }: MatchesTabProps) {
           <table className={s.table}>
             <thead className={s.thead}>
               <tr>
-                <th className={s.th}>Data</th>
-                <th className={s.th}>Fase</th>
-                <th className={s.th}>Mandante</th>
-                <th className={s.th}>Visitante</th>
-                <th className={`${s.th} ${s.thNum}`}>Placar</th>
-                <th className={s.th}>Status</th>
-                <th className={s.th}>Local</th>
+                <th className={`${s.th} ${s.matchesDateCol}`}>Data</th>
+                <th className={`${s.th} ${s.matchesMatchupCol}`}>Partida</th>
+                <th className={`${s.th} ${s.matchesPhaseCol}`}>Fase</th>
+                <th className={`${s.th} ${s.matchesStatusCol}`}>Status</th>
+                <th className={`${s.th} ${s.matchesVenueCol}`}>Local</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((m) => {
                 const home = teams.get(m.homeTeamId)
                 const away = teams.get(m.awayTeamId)
+                const homeName = home?.name ?? 'A definir'
+                const awayName = away?.name ?? 'A definir'
                 const hasScore = m.homeScore !== null && m.awayScore !== null
+                const matchupLabel = hasScore
+                  ? `${homeName} ${m.homeScore} - ${m.awayScore} ${awayName}`
+                  : `${homeName} vs ${awayName}`
                 return (
                   <tr key={m.id} className={s.tr}>
-                    <td className={`${s.td} ${s.mono}`}>{formatDateTime(m.date)}</td>
-                    <td className={s.tdMuted}>{m.phase}</td>
-                    <td className={s.td}>{home?.name ?? 'A definir'}</td>
-                    <td className={s.td}>{away?.name ?? 'A definir'}</td>
-                    <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
-                      {hasScore ? `${m.homeScore} - ${m.awayScore}` : '—'}
+                    <td className={`${s.td} ${s.mono} ${s.matchesDateCol}`}>{formatDateTime(m.date)}</td>
+                    <td className={`${s.td} ${s.matchesMatchupCol}`}>
+                      <span className={s.matchup} aria-label={matchupLabel}>
+                        {hasScore ? (
+                          <>
+                            <span className={s.matchTeamName}>{homeName}</span>
+                            <span className={s.matchScoreInline}>
+                              {m.homeScore} - {m.awayScore}
+                            </span>
+                            <span className={s.matchTeamName}>{awayName}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className={s.matchTeamName}>{homeName}</span>
+                            <span className={s.matchVs}>vs</span>
+                            <span className={s.matchTeamName}>{awayName}</span>
+                          </>
+                        )}
+                      </span>
                     </td>
-                    <td className={s.td}>
+                    <td className={`${s.tdMuted} ${s.matchesPhaseCol}`}>{m.phase}</td>
+                    <td className={`${s.td} ${s.matchesStatusCol}`}>
                       <Badge variant={matchStatusVariant(m.status)}>{MATCH_STATUS_LABELS[m.status]}</Badge>
                     </td>
-                    <td className={s.tdMuted}>
+                    <td className={`${s.tdMuted} ${s.matchesVenueCol}`}>
                       <Link to={`/matches/${m.id}`} className={s.athleteLink}>
                         {m.venue ?? '—'}
                       </Link>
