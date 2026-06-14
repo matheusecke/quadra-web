@@ -11,6 +11,8 @@ import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { AdminOrgsPage } from './pages/admin/AdminOrgsPage'
 import { AdminTeamsPage } from './pages/admin/AdminTeamsPage'
 import { AdminAffiliationsPage } from './pages/admin/AdminAffiliationsPage'
+import { ChampionshipsPage } from './pages/championships/ChampionshipsPage'
+import { ChampionshipDetailPage } from './pages/championships/ChampionshipDetailPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
@@ -27,6 +29,8 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/home', element: <HomePage /> },
+          { path: '/championships', element: <ChampionshipsPage /> },
+          { path: '/championships/:championshipId', element: <ChampionshipDetailPage /> },
           {
             element: <AdminRoute />,
             children: [

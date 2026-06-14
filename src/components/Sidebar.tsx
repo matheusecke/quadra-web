@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   LogOut,
   ChevronDown,
+  Trophy,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -74,6 +75,8 @@ export function Sidebar() {
                 <span className={s.sectionLabel}>Organização</span>
                 <NavItem to="/users" icon={<Users size={15} strokeWidth={1.6} />} label="Usuários" />
                 <NavItem to="/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />
+                <span className={s.sectionLabel}>Esportivo</span>
+                <NavItem to="/championships" icon={<Trophy size={15} strokeWidth={1.6} />} label="Campeonatos" />
               </>
             )}
           </>

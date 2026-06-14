@@ -1,0 +1,1013 @@
+/* =============================================================================
+   Championship screens — shared CSS module (list + detail).
+   Built only on design-system tokens (theme.css). No new visual language.
+   ============================================================================= */
+
+/* ── Page shell (shared) ── */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Page header (list) ── */
+.pageHeader {
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+
+.title {
+  font-size: 28px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0 0;
+  max-width: 60ch;
+}
+
+/* ── Active-org context chip ── */
+.orgContext {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+
+.orgDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.orgContextText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.orgContextLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.orgContextName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+/* ── Toolbar / filters (shared) ── */
+.toolbar {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.searchWrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 160px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--muted-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 7px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  transition: border-color 150ms ease;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.searchClear {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--muted-3);
+  font-size: 13px;
+  line-height: 1;
+  transition: color 150ms ease;
+}
+
+.searchClear:hover {
+  color: var(--muted);
+}
+
+.filterSelect {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Body (list) ── */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-6);
+  gap: var(--space-3);
+}
+
+.bodyFill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Table (shared dense list) ── */
+.tableWrap {
+  flex: 1;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.tableWrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tableWrap::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+}
+
+.tableWrap::-webkit-scrollbar-thumb:hover {
+  background: var(--border-bold);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.th {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.thNum {
+  text-align: right;
+}
+
+.tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.tr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.td {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.tdMuted {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tdNum {
+  text-align: right;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.cName {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.numSub {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--muted-3);
+}
+
+.periodSep {
+  margin: 0 5px;
+  color: var(--muted-3);
+}
+
+.skRow td {
+  padding: 10px 14px;
+}
+
+.counter {
+  text-align: center;
+  margin-top: var(--space-2);
+  font-size: 11px;
+  color: var(--muted-3);
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   DETAIL SCREEN
+   ============================================================================= */
+
+.detailHeader {
+  padding: var(--space-4) var(--space-6) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+.backLink:hover {
+  color: var(--accent);
+}
+
+.detailTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 10px 0 12px;
+}
+
+.detailTitle {
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.detailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.detailMetaSep {
+  color: var(--muted-3);
+}
+
+.detailStatusCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Compact info strip (NOT dashboard cards) ── */
+.infoStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 16px;
+  border-right: 1px solid var(--border);
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.infoItem:last-child {
+  border-right: none;
+}
+
+.infoLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.infoValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.tabsBar {
+  margin-top: 2px;
+}
+
+/* ── Detail body (scrolls) ── */
+.detailBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-6) var(--space-7);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.detailBody::-webkit-scrollbar {
+  width: 7px;
+}
+
+.detailBody::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+}
+
+/* ── Sections ── */
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.sectionHint {
+  font-size: 11px;
+  color: var(--muted-3);
+}
+
+/* ── Regulation ── */
+.regulation {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: var(--space-4) var(--space-5);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.regulationNote {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted-3);
+}
+
+/* ── Leaders grid ── */
+.leadersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+}
+
+.leaderCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.leaderHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.leaderStat {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.leaderStatFull {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.leaderList {
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderRow {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.leaderRow:last-child {
+  border-bottom: none;
+}
+
+.leaderRow:first-child .leaderValue {
+  color: var(--accent-deep);
+}
+
+.leaderRank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted-3);
+  text-align: center;
+}
+
+.leaderAthlete {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.athleteLink {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 140ms ease;
+}
+
+.athleteLink:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.leaderTeam {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.leaderValue {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+/* ── Group standings (compact) ── */
+.groupsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 320px);
+  gap: var(--space-3);
+}
+
+.standCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.standCardHead {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.standScroll {
+  overflow-x: hidden;
+}
+
+.standTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.standTable th {
+  padding: 6px 8px;
+  text-align: right;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.standTable th.standTeamCol,
+.standTable th.standPosCol {
+  text-align: left;
+}
+
+.standTable td {
+  padding: 7px 8px;
+  text-align: right;
+  color: var(--ink-2);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.standTable tr:last-child td {
+  border-bottom: none;
+}
+
+.standTable tr:hover td {
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.standPos {
+  font-family: var(--font-mono);
+  color: var(--muted-3);
+  text-align: center;
+  width: 26px;
+}
+
+.standQualified .standPos {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.standTeam {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.standTeamName {
+  display: inline-block;
+  max-width: 105px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.standTeamTag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted-2);
+  margin-left: 6px;
+}
+
+.numCell {
+  font-family: var(--font-mono);
+}
+
+.posDiff {
+  color: var(--status-ok);
+}
+
+.negDiff {
+  color: var(--status-live);
+}
+
+/* ── Group selector (standings tab) ── */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.segBtn {
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.segBtn:hover:not(.segActive) {
+  color: var(--ink-2);
+}
+
+.segActive {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+
+/* ── Playoff bracket ── */
+.bracket {
+  display: flex;
+  gap: var(--space-5);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.bracketRound {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  min-width: 210px;
+}
+
+.bracketRoundLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+  text-align: left;
+  padding-bottom: 2px;
+}
+
+.bracketMatch {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.bracketMatch:hover {
+  border-color: var(--border-bold);
+  box-shadow: var(--shadow-1);
+}
+
+.bracketTeam {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.bracketTeam + .bracketTeam {
+  border-top: 1px solid var(--border);
+}
+
+.bracketWinner {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.bracketWinner .bracketScore {
+  color: var(--accent-deep);
+}
+
+.bracketTeamName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracketTbd {
+  color: var(--muted-3);
+  font-style: italic;
+}
+
+.bracketScore {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.bracketChampion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  text-align: center;
+  min-width: 150px;
+}
+
+.bracketChampionLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.bracketChampionName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+
+/* ── Match list (overview) ── */
+.matchList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.matchRow {
+  display: grid;
+  grid-template-columns: minmax(136px, auto) minmax(0, 1fr) minmax(112px, 160px) max-content;
+  align-items: center;
+  column-gap: var(--space-4);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  transition: background 100ms ease;
+}
+
+.matchRow:last-child {
+  border-bottom: none;
+}
+
+.matchRow:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.matchDate {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.matchPhase {
+  font-size: 11px;
+  color: var(--muted-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.matchup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.matchTeamName {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.matchVs {
+  color: var(--muted-3);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.matchScoreInline {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.matchStatusCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* ── Inline empty / loading within tabs ── */
+.tabEmpty {
+  padding: var(--space-6) 0;
+}
+
+.skBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Match filters (matches tab) ── */
+.tabToolbar {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .matchRow {
+    grid-template-columns: minmax(128px, auto) minmax(0, 1fr) max-content;
+    row-gap: 4px;
+  }
+
+  .matchup {
+    grid-column: 2 / 3;
+  }
+
+  .matchPhase {
+    grid-column: 2 / 3;
+  }
+
+  .matchStatusCell {
+    grid-column: 3 / 4;
+    grid-row: 1 / 3;
+  }
+
+  .orgContext {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .matchRow {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    row-gap: 5px;
+  }
+
+  .matchDate,
+  .matchPhase,
+  .matchStatusCell {
+    justify-self: start;
+  }
+
+  .matchup,
+  .matchPhase,
+  .matchStatusCell {
+    grid-column: 1 / -1;
+  }
+}
