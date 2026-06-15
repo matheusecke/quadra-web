@@ -77,7 +77,7 @@ export function OrgUsersPage() {
       <div className={s.pageHeader}>
         <div className={s.headerRow}>
           <div>
-            <p className={s.kicker}>Organização · Usuários</p>
+            <p className={s.kicker}>Organização</p>
             <h1 className={s.title}>Usuários</h1>
             <p className={s.subtitle}>Pessoas vinculadas à organização.</p>
           </div>

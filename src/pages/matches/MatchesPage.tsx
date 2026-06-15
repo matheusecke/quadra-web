@@ -76,7 +76,7 @@ export function MatchesPage() {
       <div className={s.pageHeader}>
         <div className={s.headerRow}>
           <div>
-            <p className={s.kicker}>Esportivo · Partidas</p>
+            <p className={s.kicker}>Esportivo</p>
             <h1 className={s.title}>Partidas</h1>
             <p className={s.subtitle}>
               Todas as partidas dos campeonatos da organização.

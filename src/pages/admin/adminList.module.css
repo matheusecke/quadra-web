@@ -15,18 +15,19 @@
 
 .headerRow {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--space-4, 16px);
   margin-bottom: var(--space-4, 16px);
 }
 
 .kicker {
-  font-size: var(--type-micro, 10px);
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: var(--type-micro-tracking);
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin: 0 0 4px;
 }
 
 .title {

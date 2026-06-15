@@ -69,7 +69,7 @@ export function OrgTeamsPage() {
       <div className={s.pageHeader}>
         <div className={s.headerRow}>
           <div>
-            <p className={s.kicker}>Organização · Equipes</p>
+            <p className={s.kicker}>Organização</p>
             <h1 className={s.title}>Equipes</h1>
             <p className={s.subtitle}>Equipes vinculadas à organização.</p>
           </div>

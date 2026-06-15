@@ -60,7 +60,7 @@ export function ChampionshipsPage() {
       <div className={s.pageHeader}>
         <div className={s.headerRow}>
           <div>
-            <p className={s.kicker}>Esportivo · Campeonatos</p>
+            <p className={s.kicker}>Esportivo</p>
             <h1 className={s.title}>Campeonatos</h1>
             <p className={s.subtitle}>
               Competições da organização, com status, fase e progresso das partidas.
