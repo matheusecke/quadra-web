@@ -121,7 +121,7 @@ export function MatchesTab({ championship, matches, teams }: MatchesTabProps) {
                   <tr key={m.id} className={s.tr}>
                     <td className={`${s.td} ${s.mono} ${s.matchesDateCol}`}>{formatDateTime(m.date)}</td>
                     <td className={`${s.td} ${s.matchesMatchupCol}`}>
-                      <span className={s.matchup} aria-label={matchupLabel}>
+                      <Link to={`/matches/${m.id}`} className={`${s.matchup} ${s.matchupLink}`} aria-label={matchupLabel}>
                         {hasScore ? (
                           <>
                             <span className={s.matchTeamName}>{homeName}</span>
@@ -137,7 +137,7 @@ export function MatchesTab({ championship, matches, teams }: MatchesTabProps) {
                             <span className={s.matchTeamName}>{awayName}</span>
                           </>
                         )}
-                      </span>
+                      </Link>
                     </td>
                     <td className={`${s.tdMuted} ${s.matchesPhaseCol}`}>{m.phase}</td>
                     <td className={`${s.td} ${s.matchesStatusCol}`}>

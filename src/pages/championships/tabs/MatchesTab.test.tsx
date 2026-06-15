@@ -96,4 +96,18 @@ describe('MatchesTab', () => {
     expect(screen.queryByText(/stats ok/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/stats parciais/i)).not.toBeInTheDocument()
   })
+
+  it('links each matchup to the match detail page', () => {
+    render(
+      <MemoryRouter>
+        <MatchesTab championship={championship} matches={matches} teams={teams} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Abutres 77 - 74 Águias Douradas' })).toHaveAttribute(
+      'href',
+      '/matches/m1',
+    )
+    expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/m2')
+  })
 })
