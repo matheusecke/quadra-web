@@ -13,10 +13,8 @@ import {
   CHAMPIONSHIP_STATUS_LABELS,
   championshipStatusVariant,
   formatPeriod,
-  formatRelative,
   matchProgress,
   PHASE_LABELS,
-  STATS_STATUS_LABELS,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import { OverviewTab } from './tabs/OverviewTab'
@@ -149,16 +147,8 @@ export function ChampionshipDetailPage() {
             <span className={s.infoValue}>{matchProgress(championship)}</span>
           </div>
           <div className={s.infoItem}>
-            <span className={s.infoLabel}>Estatísticas</span>
-            <span className={s.infoValue}>{STATS_STATUS_LABELS[championship.statsStatus]}</span>
-          </div>
-          <div className={s.infoItem}>
             <span className={s.infoLabel}>Fase atual</span>
             <span className={s.infoValue}>{PHASE_LABELS[championship.currentPhase]}</span>
-          </div>
-          <div className={s.infoItem}>
-            <span className={s.infoLabel}>Atualizado</span>
-            <span className={s.infoValue}>{formatRelative(championship.updatedAt)}</span>
           </div>
         </div>
 
