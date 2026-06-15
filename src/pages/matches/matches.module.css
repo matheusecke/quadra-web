@@ -657,8 +657,7 @@
    ============================================================================= */
 
 .statsShell {
-  width: fit-content;
-  max-width: 100%;
+  width: min(100%, 1040px);
   margin-inline: auto;
 }
 
@@ -826,7 +825,8 @@
 }
 
 .boxTable {
-  width: max-content;
+  width: 100%;
+  min-width: 980px;
   border-collapse: collapse;
   font-size: 12px;
 }
