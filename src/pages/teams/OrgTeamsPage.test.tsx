@@ -95,8 +95,6 @@ describe('OrgTeamsPage', () => {
     const pageHeader = heading.closest('div')?.parentElement?.parentElement
 
     expect(heading).toBeInTheDocument()
-    expect(screen.getByText('Organização ativa')).toBeInTheDocument()
-    expect(screen.getByText('Liga Central')).toBeInTheDocument()
     expect(await screen.findByText('Lobos')).toBeInTheDocument()
     expect(screen.getAllByText('Ativo')[1]).toBeInTheDocument()
     expect(pageHeader).toContainElement(screen.getByLabelText('Buscar equipes da organização'))

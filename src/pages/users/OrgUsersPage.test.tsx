@@ -103,8 +103,6 @@ describe('OrgUsersPage', () => {
     const pageHeader = heading.closest('div')?.parentElement?.parentElement
 
     expect(heading).toBeInTheDocument()
-    expect(screen.getByText('Organização ativa')).toBeInTheDocument()
-    expect(screen.getByText('Liga Central')).toBeInTheDocument()
     expect(await screen.findByText('Ana Costa')).toBeInTheDocument()
     expect(screen.getByText('ana@liga.test')).toBeInTheDocument()
     expect(screen.getAllByText('ATHLETE')[1]).toBeInTheDocument()

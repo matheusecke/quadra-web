@@ -5,7 +5,6 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { useAuth } from '../../hooks/useAuth'
 import { getTeams } from '../../features/sports/mockSportsData'
 import { useMatches, useChampionships } from '../../features/sports/useSportsData'
 import type { MatchStatus } from '../../features/sports/types'
@@ -30,8 +29,6 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 
 export function MatchesPage() {
   const navigate = useNavigate()
-  const { user, organizations } = useAuth()
-  const activeOrg = organizations.find((o) => o.organizationId === user?.organizationId) ?? null
 
   const [q, setQ]                       = useState('')
   const [debouncedQ, setDebouncedQ]     = useState('')
@@ -82,15 +79,8 @@ export function MatchesPage() {
             <p className={s.kicker}>Esportivo · Partidas</p>
             <h1 className={s.title}>Partidas</h1>
             <p className={s.subtitle}>
-              Todas as partidas dos campeonatos da organização ativa.
+              Todas as partidas dos campeonatos da organização.
             </p>
-          </div>
-          <div className={s.orgContext} title="Organização ativa">
-            <span className={s.orgDot} aria-hidden="true" />
-            <div className={s.orgContextText}>
-              <span className={s.orgContextLabel}>Organização ativa</span>
-              <span className={s.orgContextName}>{activeOrg?.organizationName ?? '—'}</span>
-            </div>
           </div>
         </div>
 

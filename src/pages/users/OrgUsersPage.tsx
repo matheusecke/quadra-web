@@ -31,13 +31,11 @@ function affiliationStatusLabel(status: AffiliationStatus) {
 }
 
 export function OrgUsersPage() {
-  const { user, organizations } = useAuth()
+  const { user } = useAuth()
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<AffiliationStatus | ''>('')
   const [role, setRole] = useState<OrgRole | ''>('')
-
-  const activeOrg = organizations.find((organization) => organization.organizationId === user?.organizationId) ?? null
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(q), 400)
@@ -77,18 +75,11 @@ export function OrgUsersPage() {
   return (
     <div className={s.page}>
       <div className={s.pageHeader}>
-        <div className={s.contextHeaderRow}>
+        <div className={s.headerRow}>
           <div>
             <p className={s.kicker}>Organização · Usuários</p>
             <h1 className={s.title}>Usuários</h1>
-            <p className={s.subtitle}>Pessoas vinculadas à organização ativa.</p>
-          </div>
-          <div className={s.orgContext} title="Organização ativa">
-            <span className={s.orgDot} aria-hidden="true" />
-            <div className={s.orgContextText}>
-              <span className={s.orgContextLabel}>Organização ativa</span>
-              <span className={s.orgContextName}>{activeOrg?.organizationName ?? user?.organizationId ?? '—'}</span>
-            </div>
+            <p className={s.subtitle}>Pessoas vinculadas à organização.</p>
           </div>
         </div>
         <div className={s.toolbar}>

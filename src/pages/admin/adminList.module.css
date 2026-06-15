@@ -20,14 +20,6 @@
   margin-bottom: var(--space-4, 16px);
 }
 
-.contextHeaderRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4, 16px);
-  margin-bottom: var(--space-4, 16px);
-}
-
 .kicker {
   font-size: var(--type-micro, 10px);
   font-weight: 600;
@@ -52,45 +44,6 @@
   color: var(--muted);
   margin: 6px 0 0;
   max-width: 60ch;
-}
-
-.orgContext {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  flex-shrink: 0;
-}
-
-.orgDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-}
-
-.orgContextText {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-}
-
-.orgContextLabel {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: var(--type-micro-tracking);
-  text-transform: uppercase;
-  color: var(--muted-2);
-}
-
-.orgContextName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-2);
 }
 
 .toolbar {
