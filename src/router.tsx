@@ -13,6 +13,8 @@ import { AdminTeamsPage } from './pages/admin/AdminTeamsPage'
 import { AdminAffiliationsPage } from './pages/admin/AdminAffiliationsPage'
 import { ChampionshipsPage } from './pages/championships/ChampionshipsPage'
 import { ChampionshipDetailPage } from './pages/championships/ChampionshipDetailPage'
+import { MatchDetailPage } from './pages/matches/MatchDetailPage'
+import { MatchesPage } from './pages/matches/MatchesPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
           { path: '/home', element: <HomePage /> },
           { path: '/championships', element: <ChampionshipsPage /> },
           { path: '/championships/:championshipId', element: <ChampionshipDetailPage /> },
+          { path: '/matches', element: <MatchesPage /> },
+          { path: '/matches/:matchId', element: <MatchDetailPage /> },
           {
             element: <AdminRoute />,
             children: [

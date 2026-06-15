@@ -16,8 +16,12 @@ import type {
   Championship,
   Group,
   Match,
+  MatchDetail,
+  PeriodScore,
+  PlayerMatchStats,
   StatLeaders,
   Team,
+  TeamMatchStats,
 } from './types'
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
@@ -603,8 +607,6 @@ const c7Matches: Match[] = [
   mkMatch('c7','Oitavas de final','2026-06-14T21:00:00','t14','t3',null,null,'SCHEDULED','Arena Nacional','PENDING'),
 ]
 
-const MOCK_MATCHES: Match[] = [...c1Matches, ...c2Matches, ...c3Matches, ...c5Matches, ...c7Matches]
-
 // ── Accessors (mirror a future async API; currently synchronous) ─────────────────
 
 export function getTeams(): Team[] {
@@ -626,4 +628,324 @@ export function getMatchesByChampionship(championshipId: string): Match[] {
 /** Distinct seasons present in the data — feeds the list filter. */
 export function getSeasons(): string[] {
   return [...new Set(MOCK_CHAMPIONSHIPS.map((c) => c.season))].sort().reverse()
+}
+
+/** All matches across all championships. */
+export function getAllMatches(): Match[] {
+  return MOCK_MATCHES
+}
+
+// ── Per-match box score data ─────────────────────────────────────────────────────
+// ⚠️ MOCK only — delete when real API lands. PTS check: PTS = 2*fgm + tpm + ftm
+
+function mkPlayer(
+  athleteId: string, athleteName: string, number: number,
+  min: number, pts: number, reb: number, ast: number, stl: number, blk: number,
+  plusMinus: number, to: number, pf: number,
+  fgm: number, fga: number, tpm: number, tpa: number, ftm: number, fta: number,
+): PlayerMatchStats {
+  return { athleteId, athleteName, number, min, pts, reb, ast, stl, blk, plusMinus, to, pf, fgm, fga, tpm, tpa, ftm, fta }
+}
+
+function mkTeam(teamId: string, players: PlayerMatchStats[]): TeamMatchStats {
+  return { teamId, players }
+}
+
+/** Build a dynamic period score list from [homePoints, awayPoints] pairs.
+ * Periods 1–4 are REGULAR; period 5+ are OVERTIME (OT, 2OT, …).
+ * Pass null for either value when the period has not been played yet. */
+function mkPeriods(
+  ...pairs: Array<[number | null, number | null]>
+): PeriodScore[] {
+  return pairs.map(([home, away], idx) => {
+    const periodNumber = idx + 1
+    const isOT = periodNumber > 4
+    return {
+      periodNumber,
+      type: isOT ? 'OVERTIME' : 'REGULAR',
+      overtimeNumber: isOT ? periodNumber - 4 : null,
+      homePoints: home,
+      awayPoints: away,
+    }
+  })
+}
+
+// ─ m1: t1(88) vs t7(71) ─ COMPLETE ──────────────────────────────────────────────
+const M1_T1 = mkTeam('t1', [
+  mkPlayer('a1', 'Rafael Moura',    3,  34, 28,  4, 5, 2, 0,  18, 2, 2, 10, 19, 2, 5, 6, 8),
+  mkPlayer('a6', 'Túlio Ramires',  33,  32, 16, 11, 1, 1, 2,  14, 1, 3,  6, 11, 0, 1, 4, 5),
+  mkPlayer('a11','Vitor Hugo',       7,  30, 12,  4, 9, 3, 0,  12, 2, 2,  4,  9, 2, 6, 2, 2),
+  mkPlayer('a17','Tiago Freitas',   11,  26, 14,  3, 2, 1, 0,  10, 1, 2,  5, 11, 2, 5, 2, 2),
+  mkPlayer('a18','Marcelo Borges',  21,  22, 10,  5, 1, 0, 1,   6, 2, 3,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a19','Diego Souza',     14,  18,  8,  3, 1, 0, 0,   4, 1, 1,  3,  7, 0, 1, 2, 2),
+  mkPlayer('a20','Leandro Matos',    5,  38,  0,  5, 2, 0, 0,   2, 2, 3,  0,  3, 0, 1, 0, 0),
+])
+const M1_T7 = mkTeam('t7', [
+  mkPlayer('a38','Alex Santos',      4,  36, 18,  6, 3, 1, 1, -18, 3, 3,  6, 13, 1, 3, 5, 7),
+  mkPlayer('a39','Fernando Lemos', 50,  33, 15,  8, 2, 0, 2, -14, 2, 4,  5, 11, 1, 4, 4, 5),
+  mkPlayer('a40','Paulo César',    28,  28, 13,  4, 4, 2, 0,  -8, 2, 2,  5, 10, 0, 2, 3, 4),
+  mkPlayer('a41','Rodrigo Lima',     6,  22, 12,  5, 1, 0, 0,  -6, 1, 3,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a42','Marcos Felipe',  14,  25,  8,  5, 2, 0, 1,  -4, 2, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a48','Sérgio Lima',    17,  28,  5,  3, 1, 0, 0,  -3, 1, 1,  2,  5, 0, 1, 1, 2),
+  mkPlayer('a49','Cláudio Melo',   22,  28,  0,  4, 1, 0, 0,  -2, 1, 1,  0,  4, 0, 1, 0, 0),
+])
+
+// ─ m2: t4(79) vs t5(74) ─ COMPLETE ──────────────────────────────────────────────
+const M2_T4 = mkTeam('t4', [
+  mkPlayer('a3', 'Caio Bittencourt',23, 36, 22,  8, 3, 2, 1,   5, 2, 2,  8, 15, 1, 4, 5, 7),
+  mkPlayer('a12','Eduardo Lima',    1,  32, 16,  4, 6, 2, 0,   4, 2, 2,  6, 12, 2, 5, 2, 2),
+  mkPlayer('a16','Otávio Brandão',34,  30, 14, 10, 1, 1, 2,   2, 1, 3,  5, 10, 0, 1, 4, 5),
+  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,   4, 1, 3,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a29','Enzo Carvalho',  25,  22,  8,  3, 1, 0, 0,   2, 1, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a30','André Lima',     11,  30,  4,  4, 1, 0, 0,   0, 1, 2,  2,  6, 0, 2, 0, 0),
+  mkPlayer('a52','Bruno Motta',    32,  24,  3,  3, 1, 0, 0,   2, 0, 1,  1,  4, 1, 2, 0, 0),
+])
+const M2_T5 = mkTeam('t5', [
+  mkPlayer('a13','Felipe Castro',   5,  36, 20,  5, 6, 2, 0,  -5, 2, 2,  7, 14, 2, 6, 4, 5),
+  mkPlayer('a31','Robson Freire',  24,  32, 16,  6, 2, 1, 0,  -4, 2, 3,  5, 11, 1, 4, 5, 6),
+  mkPlayer('a32','Nelson Cruz',    42,  28, 14,  8, 1, 0, 1,  -2, 2, 4,  5, 10, 1, 3, 3, 4),
+  mkPlayer('a33','Paulo Henrique',  3,  26, 12,  4, 2, 0, 0,  -2, 1, 2,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a34','Sandro Lima',    16,  22,  8,  5, 1, 0, 0,  -2, 1, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a55','Lucas Gomes',     9,  30,  4,  4, 1, 0, 0,   2, 1, 1,  2,  5, 0, 1, 0, 0),
+  mkPlayer('a56','Bruno Santos',   27,  26,  0,  4, 1, 0, 0,   0, 1, 1,  0,  3, 0, 1, 0, 0),
+])
+
+// ─ m3: t2(95) vs t8(68) ─ COMPLETE ──────────────────────────────────────────────
+const M3_T2 = mkTeam('t2', [
+  mkPlayer('a2', 'Diego Valente',   8,  36, 26,  3, 3, 2, 1,  22, 2, 2,  9, 17, 2, 6, 6, 8),
+  mkPlayer('a8', 'Marcos Vinícius',35,  33, 22,  9, 2, 1, 1,  18, 1, 3,  8, 15, 1, 4, 5, 6),
+  mkPlayer('a10','Gabriel Pires',   4,  32, 18,  4, 8, 2, 0,  16, 3, 1,  7, 13, 0, 2, 4, 5),
+  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,  10, 1, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a22','Fábio Costa',    22,  22,  8,  6, 1, 0, 1,   8, 1, 3,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a23','Giovani Leal',   15,  18,  5,  3, 1, 0, 0,   4, 1, 1,  2,  5, 0, 1, 1, 2),
+  mkPlayer('a24','Samuel Torres',   9,  33,  2,  4, 2, 0, 0,   2, 0, 2,  1,  4, 0, 1, 0, 0),
+])
+const M3_T8 = mkTeam('t8', [
+  mkPlayer('a43','Wesley Silva',   11,  34, 18,  4, 3, 1, 0, -22, 3, 3,  6, 13, 2, 5, 4, 5),
+  mkPlayer('a44','Ivan Pinto',     22,  32, 14,  8, 1, 0, 1, -18, 2, 4,  5, 11, 1, 4, 3, 4),
+  mkPlayer('a45','Rafael Nunes',    7,  28, 12,  5, 2, 2, 0, -14, 2, 2,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a46','Claudio Barbosa',33,  25,  8,  4, 1, 0, 1,  -8, 2, 3,  3,  8, 0, 2, 2, 3),
+  mkPlayer('a47','Gustavo Lima',   44,  22,  8,  5, 1, 0, 0,  -6, 1, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a50','Éder Moura',     14,  30,  6,  4, 1, 0, 0,  -4, 1, 1,  2,  6, 1, 3, 1, 2),
+  mkPlayer('a51','Filipe Neto',    20,  29,  2,  3, 1, 0, 0,  -3, 0, 1,  1,  4, 0, 1, 0, 1),
+])
+
+// ─ m4: t3(81) vs t6(77) ─ PARTIAL (apenas t3) ──────────────────────────────
+const M4_T3 = mkTeam('t3', [
+  mkPlayer('a4', 'Lucas Andrade',  10,  35, 24,  4, 6, 2, 0,   4, 2, 1,  8, 16, 2, 6, 6, 7),
+  mkPlayer('a7', 'Bruno Capela',   44,  33, 18, 11, 1, 0, 2,   2, 1, 4,  6, 11, 0, 1, 6, 7),
+  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 5, 2, 0,   2, 2, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a25','Thiago Mello',    6,  25, 12,  4, 1, 1, 0,   2, 1, 2,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a26','César Neves',    19,  22,  9,  5, 1, 0, 0,   0, 1, 3,  3,  7, 0, 2, 3, 4),
+  mkPlayer('a27','Matheus Rocha',  30,  20,  4,  3, 1, 0, 0,   0, 1, 1,  2,  5, 0, 1, 0, 0),
+  mkPlayer('a53','Fábio Dias',     15,  35,  0,  4, 1, 0, 0,   0, 1, 2,  0,  3, 0, 1, 0, 0),
+])
+
+// ─ m5: t1(84) vs t4(80) ─ COMPLETE ──────────────────────────────────────────────
+const M5_T1 = mkTeam('t1', [
+  mkPlayer('a1', 'Rafael Moura',    3,  35, 24,  4, 4, 2, 0,   4, 2, 2,  8, 16, 2, 5, 6, 8),
+  mkPlayer('a6', 'Túlio Ramires',  33,  33, 14, 10, 1, 1, 2,   2, 1, 3,  5, 10, 0, 1, 4, 5),
+  mkPlayer('a11','Vitor Hugo',       7,  30, 16,  4, 7, 3, 0,   6, 3, 2,  6, 12, 2, 6, 2, 2),
+  mkPlayer('a17','Tiago Freitas',   11,  26, 14,  3, 1, 0, 0,   2, 1, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a18','Marcelo Borges',  21,  22,  8,  5, 1, 0, 1,   2, 2, 3,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a19','Diego Souza',     14,  18,  6,  3, 1, 0, 0,  -2, 1, 1,  2,  6, 1, 3, 1, 2),
+  mkPlayer('a20','Leandro Matos',    5,  36,  2,  5, 2, 0, 0,   0, 2, 3,  1,  4, 0, 1, 0, 0),
+])
+const M5_T4 = mkTeam('t4', [
+  mkPlayer('a3', 'Caio Bittencourt',23, 36, 22,  8, 3, 2, 1,  -4, 2, 2,  8, 15, 1, 4, 5, 7),
+  mkPlayer('a12','Eduardo Lima',    1,  32, 16,  4, 5, 2, 0,  -2, 2, 2,  6, 12, 2, 5, 2, 2),
+  mkPlayer('a16','Otávio Brandão',34,  30, 14, 10, 1, 1, 2,  -2, 1, 3,  5, 10, 0, 1, 4, 5),
+  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,  -2, 1, 3,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a29','Enzo Carvalho',  25,  22, 10,  3, 1, 0, 0,   0, 1, 2,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a30','André Lima',     11,  30,  4,  4, 1, 0, 0,   2, 1, 2,  2,  6, 0, 2, 0, 0),
+  mkPlayer('a52','Bruno Motta',    32,  24,  2,  3, 0, 0, 0,  -2, 0, 1,  1,  4, 0, 1, 0, 0),
+])
+
+// ─ m6: t2(90) vs t3(85) ─ COMPLETE ──────────────────────────────────────────────
+const M6_T2 = mkTeam('t2', [
+  mkPlayer('a2', 'Diego Valente',   8,  36, 24,  4, 3, 2, 1,   6, 2, 2,  8, 16, 2, 5, 6, 8),
+  mkPlayer('a8', 'Marcos Vinícius',35,  33, 18,  9, 2, 1, 1,   4, 1, 3,  6, 12, 1, 4, 5, 6),
+  mkPlayer('a10','Gabriel Pires',   4,  32, 20,  4, 9, 2, 0,   8, 3, 1,  7, 14, 3, 7, 3, 3),
+  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,   4, 1, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a22','Fábio Costa',    22,  22,  8,  5, 1, 0, 1,   2, 2, 3,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a23','Giovani Leal',   15,  18,  4,  3, 1, 0, 0,   2, 0, 1,  2,  5, 0, 1, 0, 0),
+  mkPlayer('a24','Samuel Torres',   9,  33,  2,  4, 2, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
+])
+const M6_T3 = mkTeam('t3', [
+  mkPlayer('a4', 'Lucas Andrade',  10,  36, 24,  4, 7, 2, 0,  -6, 2, 1,  8, 15, 2, 6, 6, 7),
+  mkPlayer('a7', 'Bruno Capela',   44,  33, 16, 11, 1, 0, 2,  -4, 1, 4,  6, 11, 0, 1, 4, 5),
+  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 6, 2, 0,  -4, 2, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a25','Thiago Mello',    6,  26, 14,  4, 1, 1, 0,  -4, 1, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a26','César Neves',    19,  22, 10,  5, 1, 0, 0,  -2, 1, 3,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a27','Matheus Rocha',  30,  18,  5,  4, 1, 0, 0,  -2, 1, 1,  2,  5, 0, 1, 1, 2),
+  mkPlayer('a53','Fábio Dias',     15,  35,  2,  4, 1, 0, 0,   0, 0, 2,  1,  4, 0, 1, 0, 0),
+])
+
+// ─ m7: t1(92) vs t6(78) ─ COMPLETE ──────────────────────────────────────────────
+const M7_T1 = mkTeam('t1', [
+  mkPlayer('a1', 'Rafael Moura',    3,  36, 26,  4, 5, 2, 0,  14, 2, 2,  9, 18, 2, 6, 6, 8),
+  mkPlayer('a6', 'Túlio Ramires',  33,  32, 18, 10, 1, 1, 2,  12, 1, 3,  6, 11, 0, 1, 6, 7),
+  mkPlayer('a11','Vitor Hugo',       7,  32, 16,  4, 8, 3, 0,  14, 2, 2,  5, 10, 2, 6, 4, 4),
+  mkPlayer('a17','Tiago Freitas',   11,  26, 16,  3, 2, 0, 0,   8, 1, 2,  6, 11, 2, 6, 2, 2),
+  mkPlayer('a18','Marcelo Borges',  21,  22, 10,  5, 1, 0, 1,   4, 2, 3,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a19','Diego Souza',     14,  18,  6,  3, 1, 0, 0,   2, 1, 1,  2,  6, 1, 3, 1, 2),
+  mkPlayer('a20','Leandro Matos',    5,  34,  0,  5, 2, 0, 0,   0, 2, 3,  0,  3, 0, 1, 0, 0),
+])
+const M7_T6 = mkTeam('t6', [
+  mkPlayer('a5', 'Henrique Sales',  20,  36, 22,  4, 4, 2, 0, -14, 2, 2,  8, 15, 2, 5, 4, 5),
+  mkPlayer('a9', 'Pedro Tavares',   31,  33, 16,  9, 2, 0, 1, -12, 1, 3,  5, 10, 1, 3, 5, 6),
+  mkPlayer('a14','André Nunes',     13,  30, 14,  4, 5, 3, 0, -10, 2, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a35','Victor Alves',     7,  26, 12,  5, 1, 1, 0,  -8, 1, 3,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a36','Daniel Moreira',  18,  22,  8,  5, 1, 0, 0,  -4, 2, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a37','João Paulo',      27,  18,  4,  3, 1, 0, 0,  -2, 1, 1,  2,  5, 0, 1, 0, 0),
+  mkPlayer('a54','Marco Braga',     32,  35,  2,  4, 1, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
+])
+
+// ─ m8: t2(87) vs t5(73) ─ COMPLETE ──────────────────────────────────────────────
+const M8_T2 = mkTeam('t2', [
+  mkPlayer('a2', 'Diego Valente',   8,  35, 22,  3, 3, 2, 1,  12, 2, 2,  7, 15, 2, 5, 6, 7),
+  mkPlayer('a8', 'Marcos Vinícius',35,  32, 20,  9, 2, 1, 1,  10, 1, 3,  7, 13, 1, 4, 5, 6),
+  mkPlayer('a10','Gabriel Pires',   4,  32, 18,  4, 8, 2, 0,  12, 3, 1,  6, 12, 3, 7, 3, 3),
+  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,   6, 1, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a22','Fábio Costa',    22,  22,  8,  5, 1, 0, 1,   4, 1, 3,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a23','Giovani Leal',   15,  18,  3,  3, 1, 0, 0,   2, 0, 1,  1,  4, 1, 2, 0, 0),
+  mkPlayer('a24','Samuel Torres',   9,  35,  2,  4, 1, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
+])
+const M8_T5 = mkTeam('t5', [
+  mkPlayer('a13','Felipe Castro',   5,  36, 20,  5, 6, 2, 0, -12, 2, 2,  7, 14, 2, 6, 4, 5),
+  mkPlayer('a31','Robson Freire',  24,  32, 16,  6, 2, 1, 0,  -8, 2, 3,  5, 11, 1, 4, 5, 6),
+  mkPlayer('a32','Nelson Cruz',    42,  28, 14,  8, 1, 0, 1,  -6, 2, 4,  5, 10, 1, 3, 3, 4),
+  mkPlayer('a33','Paulo Henrique',  3,  26, 12,  4, 2, 0, 0,  -4, 1, 2,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a34','Sandro Lima',    16,  22,  8,  5, 1, 0, 0,  -2, 1, 2,  3,  7, 0, 2, 2, 3),
+  mkPlayer('a55','Lucas Gomes',     9,  30,  3,  4, 1, 0, 0,  -2, 1, 1,  1,  4, 1, 2, 0, 0),
+  mkPlayer('a56','Bruno Santos',   27,  26,  0,  4, 1, 0, 0,   0, 1, 1,  0,  3, 0, 1, 0, 0),
+])
+
+// ─ m9: t4(76) vs t3(82) ─ COMPLETE ──────────────────────────────────────────────
+const M9_T4 = mkTeam('t4', [
+  mkPlayer('a3', 'Caio Bittencourt',23, 34, 20,  7, 3, 1, 1,  -6, 2, 2,  7, 15, 1, 4, 5, 7),
+  mkPlayer('a12','Eduardo Lima',    1,  32, 14,  4, 5, 2, 0,  -4, 2, 2,  5, 11, 2, 5, 2, 2),
+  mkPlayer('a16','Otávio Brandão',34,  30, 12,  9, 1, 1, 2,  -4, 1, 3,  4, 10, 0, 1, 4, 5),
+  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,  -4, 1, 3,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a29','Enzo Carvalho',  25,  22, 10,  3, 1, 0, 0,  -2, 1, 2,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a30','André Lima',     11,  30,  6,  4, 1, 0, 0,   0, 1, 2,  3,  6, 0, 1, 0, 0),
+  mkPlayer('a52','Bruno Motta',    32,  26,  2,  3, 0, 0, 0,   0, 0, 1,  1,  4, 0, 1, 0, 0),
+])
+const M9_T3 = mkTeam('t3', [
+  mkPlayer('a4', 'Lucas Andrade',  10,  36, 22,  4, 7, 2, 0,   6, 2, 1,  7, 14, 2, 5, 6, 7),
+  mkPlayer('a7', 'Bruno Capela',   44,  32, 18, 11, 1, 0, 2,   4, 1, 4,  6, 11, 0, 1, 6, 7),
+  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 6, 2, 0,   4, 2, 2,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a25','Thiago Mello',    6,  26, 12,  4, 1, 1, 0,   4, 1, 2,  4,  9, 2, 5, 2, 2),
+  mkPlayer('a26','César Neves',    19,  22, 10,  5, 1, 0, 0,   4, 1, 3,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a27','Matheus Rocha',  30,  18,  4,  3, 1, 0, 0,   2, 1, 1,  2,  5, 0, 1, 0, 0),
+  mkPlayer('a53','Fábio Dias',     15,  36,  2,  4, 1, 0, 0,   2, 0, 2,  1,  4, 0, 1, 0, 0),
+])
+
+// ─ m10: t7(70) vs t6(88) ─ PARTIAL (apenas t6) ─────────────────────────────
+const M10_T6 = mkTeam('t6', [
+  mkPlayer('a5', 'Henrique Sales',  20,  36, 22,  4, 4, 2, 0,  18, 2, 2,  7, 14, 2, 5, 6, 7),
+  mkPlayer('a9', 'Pedro Tavares',   31,  33, 18,  9, 2, 0, 1,  16, 1, 3,  6, 11, 1, 3, 5, 6),
+  mkPlayer('a14','André Nunes',     13,  30, 16,  4, 5, 3, 0,  14, 2, 2,  5, 10, 2, 5, 4, 4),
+  mkPlayer('a35','Victor Alves',     7,  26, 14,  5, 1, 1, 0,  10, 1, 3,  5, 10, 2, 5, 2, 2),
+  mkPlayer('a36','Daniel Moreira',  18,  22, 10,  5, 1, 0, 0,   8, 2, 2,  4,  8, 0, 2, 2, 3),
+  mkPlayer('a37','João Paulo',      27,  18,  6,  3, 1, 0, 0,   4, 1, 1,  3,  6, 0, 1, 0, 0),
+  mkPlayer('a54','Marco Braga',     32,  35,  2,  4, 1, 0, 0,   2, 1, 2,  1,  4, 0, 1, 0, 0),
+])
+
+// ─ m11: t1(54) vs t3(49) ─ LIVE (intervalo) ───────────────────────────────
+const M11_T1 = mkTeam('t1', [
+  mkPlayer('a1', 'Rafael Moura',    3,  20, 18,  2, 3, 1, 0,   4, 1, 2,  6, 11, 2, 4, 4, 5),
+  mkPlayer('a6', 'Túlio Ramires',  33,  20, 10,  5, 0, 0, 1,   4, 0, 2,  4,  7, 0, 0, 2, 3),
+  mkPlayer('a11','Vitor Hugo',       7,  20, 10,  2, 4, 1, 0,   2, 1, 1,  4,  8, 1, 3, 1, 1),
+  mkPlayer('a17','Tiago Freitas',   11,  20,  8,  2, 1, 1, 0,   2, 1, 1,  3,  7, 1, 3, 1, 1),
+  mkPlayer('a18','Marcelo Borges',  21,  20,  8,  3, 0, 0, 1,   2, 1, 2,  3,  6, 0, 1, 2, 2),
+])
+const M11_T3 = mkTeam('t3', [
+  mkPlayer('a4', 'Lucas Andrade',  10,  20, 14,  2, 3, 1, 0,  -4, 1, 1,  5,  9, 1, 4, 3, 4),
+  mkPlayer('a7', 'Bruno Capela',   44,  20,  8,  5, 1, 0, 1,  -4, 0, 2,  3,  6, 0, 0, 2, 3),
+  mkPlayer('a15','Rodrigo Paz',     2,  20,  8,  2, 3, 0, 0,  -2, 1, 1,  3,  7, 1, 3, 1, 1),
+  mkPlayer('a25','Thiago Mello',    6,  20,  8,  2, 1, 1, 0,  -4, 1, 2,  3,  7, 1, 3, 1, 1),
+  mkPlayer('a26','César Neves',    19,  20, 11,  3, 1, 0, 0,  -2, 0, 2,  4,  8, 1, 3, 2, 2),
+])
+
+// ─ mot1: t3(94) vs t2(91) ─ FINISHED com 1 overtime ─ COMPLETE ────────────────────
+// Q1:24-22 Q2:20-26 Q3:22-18 Q4:20-20 (tie 86-86) OT:8-5 → 94-91
+const MOT1_T3 = mkTeam('t3', [
+  mkPlayer('a4', 'Lucas Andrade',  10, 38, 28,  5, 7, 2, 0,   6, 3, 2, 10, 20, 2,  7, 6, 8),
+  mkPlayer('a7', 'Bruno Capela',   44, 38, 18, 12, 1, 0, 2,   4, 2, 3,  7, 12, 0,  0, 4, 6),
+  mkPlayer('a15','Rodrigo Paz',     2, 36, 16,  4, 6, 2, 0,   4, 2, 1,  5, 11, 2,  6, 4, 5),
+  mkPlayer('a25','Thiago Mello',    6, 32, 14,  4, 1, 1, 0,   3, 1, 2,  5, 10, 2,  5, 2, 2),
+  mkPlayer('a26','César Neves',    19, 30, 12,  5, 1, 0, 0,   2, 1, 3,  4,  9, 2,  5, 2, 3),
+  mkPlayer('a27','Matheus Rocha',  30, 22,  4,  3, 1, 0, 0,   1, 1, 1,  2,  5, 0,  1, 0, 0),
+  mkPlayer('a53','Fábio Dias',     15, 18,  2,  4, 1, 0, 0,   0, 1, 2,  1,  3, 0,  1, 0, 0),
+])
+const MOT1_T2 = mkTeam('t2', [
+  mkPlayer('a2', 'Diego Valente',   8, 38, 26,  4, 3, 2, 1,  -4, 3, 2,  9, 18, 2,  6, 6, 8),
+  mkPlayer('a8', 'Marcos Vinícius',35, 36, 22,  9, 2, 1, 1,  -2, 2, 3,  8, 15, 1,  3, 5, 7),
+  mkPlayer('a10','Gabriel Pires',   4, 36, 16,  4, 8, 2, 0,  -3, 3, 1,  5, 12, 2,  7, 4, 5),
+  mkPlayer('a21','Renato Campos',  12, 30, 14,  5, 1, 1, 0,  -3, 1, 2,  5, 10, 2,  5, 2, 3),
+  mkPlayer('a22','Fábio Costa',    22, 28,  8,  5, 1, 0, 0,  -2, 2, 3,  3,  7, 0,  2, 2, 3),
+  mkPlayer('a23','Giovani Leal',   15, 20,  3,  3, 1, 0, 0,  -1, 1, 2,  1,  4, 1,  3, 0, 0),
+  mkPlayer('a24','Samuel Torres',   9, 16,  2,  4, 2, 0, 0,   0, 1, 1,  1,  3, 0,  1, 0, 0),
+])
+
+/** Partida showcase: Lobos do Norte 94 × 91 Falcões da Serra — C1 Quartas de final, com 1 OT. */
+const MOT1: Match = {
+  id: 'mot1',
+  championshipId: C1,
+  phase: 'Quartas de final',
+  date: '2026-05-22T19:00:00',
+  homeTeamId: 't3',
+  awayTeamId: 't2',
+  homeScore: 94,
+  awayScore: 91,
+  status: 'FINISHED',
+  venue: 'Ginásio Olímpico',
+  statsStatus: 'COMPLETE',
+}
+
+const MOCK_MATCHES: Match[] = [...c1Matches, ...c2Matches, ...c3Matches, ...c5Matches, ...c7Matches, MOT1]
+
+// ─ Master map (matchId → period scores + team stats) ─────────────────────────────
+const MATCH_EXTRA: Record<string, {
+  periodScores: PeriodScore[] | null
+  homeStats: TeamMatchStats
+  awayStats: TeamMatchStats
+}> = {
+  // m1: t1(88) vs t7(71)  — 23+22+25+18=88, 18+20+18+15=71
+  m1:  { periodScores: mkPeriods([23,18],[22,20],[25,18],[18,15]), homeStats: M1_T1, awayStats: M1_T7 },
+  // m2: t4(79) vs t5(74)  — 20+20+21+18=79, 16+20+18+20=74
+  m2:  { periodScores: mkPeriods([20,16],[20,20],[21,18],[18,20]), homeStats: M2_T4, awayStats: M2_T5 },
+  // m3: t2(95) vs t8(68)  — 24+26+22+23=95, 18+18+16+16=68
+  m3:  { periodScores: mkPeriods([24,18],[26,18],[22,16],[23,16]), homeStats: M3_T2, awayStats: M3_T8 },
+  // m4: t3(81) vs t6(77)  — 20+22+19+20=81, 18+20+20+19=77
+  m4:  { periodScores: mkPeriods([20,18],[22,20],[19,20],[20,19]), homeStats: M4_T3, awayStats: mkTeam('t6',[]) },
+  // m5: t1(84) vs t4(80)  — OT ⚠️  22+16+22+16+8=84, 18+20+20+18+4=80
+  m5:  { periodScores: mkPeriods([22,18],[16,20],[22,20],[16,18],[8,4]), homeStats: M5_T1, awayStats: M5_T4 },
+  // m6: t2(90) vs t3(85)  — 22+24+21+23=90, 20+22+22+21=85
+  m6:  { periodScores: mkPeriods([22,20],[24,22],[21,22],[23,21]), homeStats: M6_T2, awayStats: M6_T3 },
+  // m7: t1(92) vs t6(78)  — 24+22+24+22=92, 20+20+18+20=78
+  m7:  { periodScores: mkPeriods([24,20],[22,20],[24,18],[22,20]), homeStats: M7_T1, awayStats: M7_T6 },
+  // m8: t2(87) vs t5(73)  — 22+24+20+21=87, 18+20+18+17=73
+  m8:  { periodScores: mkPeriods([22,18],[24,20],[20,18],[21,17]), homeStats: M8_T2, awayStats: M8_T5 },
+  // m9: t4(76) vs t3(82)  — 20+18+20+18=76, 22+20+18+22=82
+  m9:  { periodScores: mkPeriods([20,22],[18,20],[20,18],[18,22]), homeStats: M9_T4, awayStats: M9_T3 },
+  // m10: t7(70) vs t6(88) — 18+17+18+17=70, 24+22+20+22=88
+  m10: { periodScores: mkPeriods([18,24],[17,22],[18,20],[17,22]), homeStats: mkTeam('t7',[]), awayStats: M10_T6 },
+  // m11: t1(54) vs t3(49) — LIVE, Q3 e Q4 ainda em andamento
+  m11: { periodScores: mkPeriods([28,24],[26,25],[null,null],[null,null]), homeStats: M11_T1, awayStats: M11_T3 },
+  // mot1: t3(94) vs t2(91) — Q1-Q4 empatado 86-86 + OT: 24+20+22+20+8=94, 22+26+18+20+5=91
+  mot1: { periodScores: mkPeriods([24,22],[20,26],[22,18],[20,20],[8,5]), homeStats: MOT1_T3, awayStats: MOT1_T2 },
+}
+
+export function getMatchDetailById(id: string): MatchDetail | undefined {
+  const match = MOCK_MATCHES.find((m) => m.id === id)
+  if (!match) return undefined
+  const extra = MATCH_EXTRA[id]
+  return {
+    ...match,
+    periodScores: extra?.periodScores ?? null,
+    homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] },
+    awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] },
+  }
 }

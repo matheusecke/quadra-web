@@ -1,0 +1,239 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarDays } from 'lucide-react'
+import { Badge } from '../../components/ui/Badge/Badge'
+import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
+import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
+import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
+import { useAuth } from '../../hooks/useAuth'
+import { getTeams } from '../../features/sports/mockSportsData'
+import { useMatches, useChampionships } from '../../features/sports/useSportsData'
+import type { MatchStatus } from '../../features/sports/types'
+import {
+  formatDateTime,
+  matchDisplayStatus,
+  matchDisplayStatusVariant,
+  sortMatchesByDateDesc,
+  teamMap,
+} from '../../features/sports/sportsUtils'
+import s from './matches.module.css'
+
+type StatusFilter = MatchStatus | 'WAITING_STATS' | ''
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'SCHEDULED',     label: 'Agendada' },
+  { value: 'LIVE',          label: 'Ao vivo' },
+  { value: 'FINISHED',      label: 'Finalizada' },
+  { value: 'WAITING_STATS', label: 'Aguardando estatísticas' },
+  { value: 'POSTPONED',     label: 'Adiada' },
+]
+
+export function MatchesPage() {
+  const navigate = useNavigate()
+  const { user, organizations } = useAuth()
+  const activeOrg = organizations.find((o) => o.organizationId === user?.organizationId) ?? null
+
+  const [q, setQ]                       = useState('')
+  const [debouncedQ, setDebouncedQ]     = useState('')
+  const [championshipId, setChampionshipId] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 280)
+    return () => clearTimeout(t)
+  }, [q])
+
+  const { data: matches,       isLoading, isError, refetch } = useMatches()
+  const { data: championships }                               = useChampionships()
+
+  const champMap = useMemo(
+    () => new Map((championships ?? []).map((c) => [c.id, c])),
+    [championships],
+  )
+  const teams = useMemo(() => teamMap(getTeams()), [])
+
+  const items = useMemo(() => {
+    const all = sortMatchesByDateDesc(matches ?? [])
+    return all.filter((m) => {
+      if (championshipId && m.championshipId !== championshipId) return false
+      if (statusFilter === 'WAITING_STATS') {
+        if (!(m.status === 'FINISHED' && m.statsStatus === 'PENDING')) return false
+      } else if (statusFilter && m.status !== statusFilter) {
+        return false
+      }
+      if (debouncedQ) {
+        const home   = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
+        const away   = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
+        const needle = debouncedQ.toLowerCase()
+        if (!home.includes(needle) && !away.includes(needle)) return false
+      }
+      return true
+    })
+  }, [matches, championshipId, statusFilter, debouncedQ, teams])
+
+  const total      = matches?.length ?? 0
+  const hasFilters = Boolean(debouncedQ || championshipId || statusFilter)
+
+  return (
+    <div className={s.page}>
+      <div className={s.pageHeader}>
+        <div className={s.headerRow}>
+          <div>
+            <p className={s.kicker}>Esportivo · Partidas</p>
+            <h1 className={s.title}>Partidas</h1>
+            <p className={s.subtitle}>
+              Todas as partidas dos campeonatos da organização ativa.
+            </p>
+          </div>
+          <div className={s.orgContext} title="Organização ativa">
+            <span className={s.orgDot} aria-hidden="true" />
+            <div className={s.orgContextText}>
+              <span className={s.orgContextLabel}>Organização ativa</span>
+              <span className={s.orgContextName}>{activeOrg?.organizationName ?? '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={s.toolbar}>
+          <div className={s.searchWrap}>
+            <span className={s.searchIcon}>⌕</span>
+            <input
+              className={s.searchInput}
+              type="search"
+              placeholder="Buscar por equipe..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Buscar partida por equipe"
+            />
+            {q && (
+              <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">
+                ✕
+              </button>
+            )}
+          </div>
+
+          <select
+            className={s.filterSelect}
+            value={championshipId}
+            onChange={(e) => setChampionshipId(e.target.value)}
+            aria-label="Filtrar por campeonato"
+          >
+            <option value="">Campeonato</option>
+            {(championships ?? []).map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            className={s.filterSelect}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            aria-label="Filtrar por status"
+          >
+            <option value="">Status</option>
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className={s.body}>
+        {isError ? (
+          <div className={s.bodyFill}>
+            <ErrorState title="Não foi possível carregar as partidas." onRetry={refetch} />
+          </div>
+        ) : (
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead className={s.thead}>
+                <tr>
+                  <th className={s.th}>Data</th>
+                  <th className={s.th}>Campeonato</th>
+                  <th className={s.th}>Mandante</th>
+                  <th className={s.th}>Visitante</th>
+                  <th className={`${s.th} ${s.thNum}`}>Placar</th>
+                  <th className={s.th}>Fase</th>
+                  <th className={s.th}>Status</th>
+                  <th className={s.th}>Local</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading
+                  ? Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} className={s.skRow}>
+                        <td><Skeleton width={110} height={13} /></td>
+                        <td><Skeleton width={130} height={13} /></td>
+                        <td><Skeleton width={120} height={13} /></td>
+                        <td><Skeleton width={120} height={13} /></td>
+                        <td><Skeleton width={56}  height={13} /></td>
+                        <td><Skeleton width={100} height={13} /></td>
+                        <td><Skeleton width={90}  height={20} /></td>
+                        <td><Skeleton width={110} height={13} /></td>
+                      </tr>
+                    ))
+                  : items.map((m) => {
+                      const home     = teams.get(m.homeTeamId)
+                      const away     = teams.get(m.awayTeamId)
+                      const champ    = champMap.get(m.championshipId)
+                      const hasScore = m.homeScore !== null && m.awayScore !== null
+                      return (
+                        <tr
+                          key={m.id}
+                          className={s.tr}
+                          tabIndex={0}
+                          onClick={() => navigate(`/matches/${m.id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              navigate(`/matches/${m.id}`)
+                            }
+                          }}
+                        >
+                          <td className={`${s.td} ${s.mono}`}>{formatDateTime(m.date)}</td>
+                          <td className={s.tdMuted}>{champ?.name ?? '—'}</td>
+                          <td className={s.td}>{home?.name ?? 'A definir'}</td>
+                          <td className={s.td}>{away?.name ?? 'A definir'}</td>
+                          <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
+                            {hasScore
+                              ? <strong>{m.homeScore} – {m.awayScore}</strong>
+                              : <span className={s.scorePending}>—</span>
+                            }
+                          </td>
+                          <td className={s.tdMuted}>{m.phase}</td>
+                          <td className={s.td}>
+                            <Badge variant={matchDisplayStatusVariant(m.status, m.statsStatus)}>
+                              {matchDisplayStatus(m.status, m.statsStatus)}
+                            </Badge>
+                          </td>
+                          <td className={s.tdMuted}>{m.venue ?? '—'}</td>
+                        </tr>
+                      )
+                    })}
+              </tbody>
+            </table>
+
+            {!isLoading && items.length === 0 && (
+              <EmptyState
+                title={hasFilters ? 'Nenhuma partida encontrada.' : 'Nenhuma partida cadastrada.'}
+                description={
+                  hasFilters
+                    ? 'Ajuste a busca ou os filtros para ver outras partidas.'
+                    : 'As partidas dos campeonatos aparecerão aqui.'
+                }
+                icon={<CalendarDays size={20} strokeWidth={1.6} />}
+              />
+            )}
+          </div>
+        )}
+
+        {!isLoading && !isError && items.length > 0 && (
+          <p className={s.counter}>
+            {items.length}
+            {items.length !== total ? ` de ${total}` : ''} partida{items.length === 1 ? '' : 's'}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}

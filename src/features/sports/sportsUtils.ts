@@ -11,6 +11,8 @@ import type {
   LeaderStat,
   Match,
   MatchStatus,
+  PlayerMatchStats,
+  PeriodScore,
   StandingRow,
   StatsStatus,
   Team,
@@ -211,4 +213,78 @@ export function matchProgress(championship: Championship): string {
 
 export function formatPeriod(championship: Championship): string {
   return `${formatDate(championship.startDate)} - ${formatDate(championship.endDate)}`
+}
+
+const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+export function formatTime(iso: string): string {
+  return timeFmt.format(new Date(iso))
+}
+
+/** Derives the column label for a period: 1Q-4Q for regular, OT / 2OT / 3OT for overtime. */
+export function getPeriodLabel(period: PeriodScore): string {
+  if (period.label) return period.label
+  if (period.type === 'REGULAR') return `${period.periodNumber}Q`
+  const overtimeNumber = period.overtimeNumber ?? 1
+  return overtimeNumber === 1 ? 'OT' : `${overtimeNumber}OT`
+}
+
+/** Safely totals one side from the dynamic period score list, ignoring null periods. */
+export function calculatePeriodTotal(periods: PeriodScore[] | null, side: 'home' | 'away'): number | null {
+  if (!periods?.length) return null
+  const key = side === 'home' ? 'homePoints' : 'awayPoints'
+  return periods.reduce<number>((sum, period) => sum + (period[key] ?? 0), 0)
+}
+
+// ── Per-match stat helpers ─────────────────────────────────────────────────────
+
+/** Percentage with 1 decimal. Returns '—' when denominator is 0. */
+export function formatStatPct(made: number, attempted: number): string {
+  if (attempted === 0) return '—'
+  return ((made / attempted) * 100).toFixed(1)
+}
+
+/** True-Shooting % string. */
+export function formatTsPct(pts: number, fga: number, fta: number): string {
+  const denom = 2 * (fga + 0.44 * fta)
+  if (denom === 0) return '—'
+  return ((pts / denom) * 100).toFixed(1)
+}
+
+/** EFF / EFI rating. */
+export function calcEff(p: PlayerMatchStats): number {
+  return (
+    p.pts + p.reb + p.ast + p.stl + p.blk
+    - (p.fga - p.fgm)
+    - (p.fta - p.ftm)
+    - p.to
+  )
+}
+
+export interface TeamStatTotals {
+  min: number; pts: number; reb: number; ast: number; stl: number; blk: number
+  to: number; pf: number; fgm: number; fga: number; tpm: number; tpa: number
+  ftm: number; fta: number
+}
+
+export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
+  const z: TeamStatTotals = { min:0,pts:0,reb:0,ast:0,stl:0,blk:0,to:0,pf:0,fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0 }
+  return players.reduce((acc, p) => ({
+    min: acc.min + p.min, pts: acc.pts + p.pts, reb: acc.reb + p.reb,
+    ast: acc.ast + p.ast, stl: acc.stl + p.stl, blk: acc.blk + p.blk,
+    to:  acc.to  + p.to,  pf:  acc.pf  + p.pf,  fgm: acc.fgm + p.fgm,
+    fga: acc.fga + p.fga, tpm: acc.tpm + p.tpm, tpa: acc.tpa + p.tpa,
+    ftm: acc.ftm + p.ftm, fta: acc.fta + p.fta,
+  }), z)
+}
+
+/** Derived display status — surfaces 'Aguardando estatísticas' case. */
+export function matchDisplayStatus(status: MatchStatus, statsStatus: StatsStatus): string {
+  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'Aguardando estatísticas'
+  return MATCH_STATUS_LABELS[status]
+}
+
+export function matchDisplayStatusVariant(status: MatchStatus, statsStatus: StatsStatus): BadgeVariant {
+  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'warning'
+  return matchStatusVariant(status)
 }

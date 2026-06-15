@@ -142,3 +142,70 @@ export interface Championship {
   /** Champion team id once the championship is finished. */
   championTeamId?: string | null
 }
+
+// ── Match detail (with per-game box score) ────────────────────────────────────
+
+/** Individual player box-score line for a single match. */
+export interface PlayerMatchStats {
+  athleteId: string
+  athleteName: string
+  number: number
+  min: number
+  pts: number
+  reb: number
+  ast: number
+  stl: number
+  blk: number
+  plusMinus: number
+  to: number
+  pf: number
+  fgm: number
+  fga: number
+  tpm: number  // 3-pointers made
+  tpa: number  // 3-pointers attempted
+  ftm: number
+  fta: number
+}
+
+export type PlayerBoxScore = PlayerMatchStats
+
+/** Aggregated stats for one team in a match. */
+export interface TeamMatchStats {
+  teamId: string
+  players: PlayerMatchStats[]
+}
+
+export type TeamStats = TeamMatchStats
+
+/** Score for a single period (regular quarter or overtime).
+ *  This is the source of truth for the period breakdown table — do not
+ *  use has_ot / number_of_ots as the primary rendering signal. */
+export interface PeriodScore {
+  /** Sequential period number: 1–4 for regular quarters; 5+ for overtimes. */
+  periodNumber: number
+  type: 'REGULAR' | 'OVERTIME'
+  /** 1 for first OT, 2 for second OT, …  Null for regular periods. */
+  overtimeNumber: number | null
+  /** Optional API-provided display label. When absent, UI derives 1Q/OT labels. */
+  label?: string
+  homePoints: number | null
+  awayPoints: number | null
+}
+
+export interface MatchLeader {
+  metric: 'PTS' | 'REB' | 'AST' | 'STL' | 'BLK'
+  label: string
+  value: number
+  athleteId: string
+  athleteName: string
+  teamId: string
+}
+
+/** Match with full box score data. */
+export interface MatchDetail extends Match {
+  /** Dynamic per-period scores. Drives the "Placar por período" table.
+   *  Null when no period data has been recorded yet. */
+  periodScores: PeriodScore[] | null
+  homeStats: TeamMatchStats
+  awayStats: TeamMatchStats
+}

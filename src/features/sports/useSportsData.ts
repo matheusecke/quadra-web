@@ -12,9 +12,11 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   getChampionshipById,
   getChampionships,
+  getAllMatches,
+  getMatchDetailById,
   getMatchesByChampionship,
 } from './mockSportsData'
-import type { Championship, Match } from './types'
+import type { Championship, Match, MatchDetail } from './types'
 
 const MOCK_DELAY = 350
 
@@ -67,4 +69,12 @@ export function useChampionship(id: string | undefined): QueryState<Championship
 
 export function useChampionshipMatches(id: string | undefined): QueryState<Match[]> {
   return useMockQuery(() => (id ? getMatchesByChampionship(id) : []), [id])
+}
+
+export function useMatches(): QueryState<Match[]> {
+  return useMockQuery(() => getAllMatches(), [])
+}
+
+export function useMatch(id: string | undefined): QueryState<MatchDetail | undefined> {
+  return useMockQuery(() => (id ? getMatchDetailById(id) : undefined), [id])
 }

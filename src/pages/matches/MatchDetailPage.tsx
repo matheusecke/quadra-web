@@ -1,0 +1,190 @@
+import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { Badge } from '../../components/ui/Badge/Badge'
+import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
+import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
+import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
+import { Tabs } from '../../components/ui/Tabs/Tabs'
+import type { TabItem } from '../../components/ui/Tabs/Tabs'
+import { getTeams } from '../../features/sports/mockSportsData'
+import { useMatch, useChampionships } from '../../features/sports/useSportsData'
+import {
+  formatDate,
+  formatTime,
+  matchDisplayStatus,
+  matchDisplayStatusVariant,
+  teamMap,
+} from '../../features/sports/sportsUtils'
+import { SummaryTab } from './tabs/SummaryTab'
+import { StatsTab } from './tabs/StatsTab'
+import s from './matches.module.css'
+
+const TABS: TabItem[] = [
+  { id: 'summary', label: 'Resumo' },
+  { id: 'stats',   label: 'Estatísticas' },
+]
+
+export function MatchDetailPage() {
+  const { matchId } = useParams<{ matchId: string }>()
+  const { data: match, isLoading, isError, refetch } = useMatch(matchId)
+  const { data: championships } = useChampionships()
+  const [activeTab, setActiveTab] = useState('summary')
+
+  const teams        = teamMap(getTeams())
+  const championship = championships?.find((c) => c.id === match?.championshipId)
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <div className={s.detailNav}>
+            <Link to="/matches" className={s.backLink}>
+              <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
+            </Link>
+          </div>
+          <div className={s.skBlock} style={{ paddingBottom: 20 }}>
+            <Skeleton width={300} height={14} />
+            <Skeleton width="100%" height={100} />
+            <Skeleton width="100%" height={44} />
+            <Skeleton width="100%" height={36} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Error ────────────────────────────────────────────────────────────────────
+  if (isError) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <div className={s.detailNav}>
+            <Link to="/matches" className={s.backLink}>
+              <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
+            </Link>
+          </div>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="Não foi possível carregar a partida." onRetry={refetch} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Not found ────────────────────────────────────────────────────────────────
+  if (!match) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <div className={s.detailNav}>
+            <Link to="/matches" className={s.backLink}>
+              <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
+            </Link>
+          </div>
+        </div>
+        <div className={s.bodyFill}>
+          <EmptyState
+            title="Partida não encontrada."
+            description="O link pode estar incorreto ou a partida foi removida."
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const homeTeam = teams.get(match.homeTeamId)
+  const awayTeam = teams.get(match.awayTeamId)
+  const hasScore = match.homeScore !== null && match.awayScore !== null
+
+  return (
+    <div className={s.page}>
+      <div className={s.detailHeader}>
+        {/* ── Nav ── */}
+        <div className={s.detailNav}>
+          <Link to="/matches" className={s.backLink}>
+            <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
+          </Link>
+          {championship && (
+            <Link to={`/championships/${championship.id}`} className={s.champLink}>
+              {championship.name}
+              <ExternalLink size={11} strokeWidth={1.6} />
+            </Link>
+          )}
+        </div>
+
+        {/* ── Context ── */}
+        <div className={s.detailContext}>
+          {championship && <span>{championship.name}</span>}
+          {championship && <span className={s.detailContextSep}>·</span>}
+          <span>{match.phase}</span>
+          <span className={s.detailContextSep}>·</span>
+          <Badge variant={matchDisplayStatusVariant(match.status, match.statsStatus)}>
+            {matchDisplayStatus(match.status, match.statsStatus)}
+          </Badge>
+        </div>
+
+        {/* ── Score hero ── */}
+        <div className={s.scoreHero}>
+          <div className={s.scoreTeamLeft}>
+            <span className={s.scoreTeamName}>{homeTeam?.name ?? 'A definir'}</span>
+            <span className={s.scoreTeamRole}>Mandante</span>
+          </div>
+
+          <div className={s.scoreCenter}>
+            <div className={s.scoreNums}>
+              {hasScore ? (
+                <>
+                  <span className={s.scoreNum}>{match.homeScore}</span>
+                  <span className={s.scoreSep}>–</span>
+                  <span className={s.scoreNum}>{match.awayScore}</span>
+                </>
+              ) : (
+                <span className={s.scoreNumPending}>× × ×</span>
+              )}
+            </div>
+          </div>
+
+          <div className={s.scoreTeamRight}>
+            <span className={s.scoreTeamName}>{awayTeam?.name ?? 'A definir'}</span>
+            <span className={s.scoreTeamRole}>Visitante</span>
+          </div>
+        </div>
+
+        {/* ── Info strip ── */}
+        <div className={s.infoStrip}>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Data</span>
+            <span className={s.infoValue}>{formatDate(match.date)}</span>
+          </div>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Horário</span>
+            <span className={s.infoValue}>{formatTime(match.date)}</span>
+          </div>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Local</span>
+            <span className={s.infoValue}>{match.venue ?? '—'}</span>
+          </div>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Fase</span>
+            <span className={s.infoValue}>{match.phase}</span>
+          </div>
+        </div>
+
+        <div className={s.tabsBar}>
+          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="line" />
+        </div>
+      </div>
+
+      <div className={s.detailBody}>
+        {activeTab === 'summary' && (
+          <SummaryTab match={match} teams={teams} />
+        )}
+        {activeTab === 'stats' && (
+          <StatsTab match={match} teams={teams} />
+        )}
+      </div>
+    </div>
+  )
+}

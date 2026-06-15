@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   LogOut,
   ChevronDown,
+  CalendarDays,
   Trophy,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -77,6 +78,7 @@ export function Sidebar() {
                 <NavItem to="/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />
                 <span className={s.sectionLabel}>Esportivo</span>
                 <NavItem to="/championships" icon={<Trophy size={15} strokeWidth={1.6} />} label="Campeonatos" />
+                <NavItem to="/matches" icon={<CalendarDays size={15} strokeWidth={1.6} />} label="Partidas" />
               </>
             )}
           </>
