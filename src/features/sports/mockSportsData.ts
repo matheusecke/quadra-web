@@ -12,6 +12,11 @@
  */
 
 import type {
+  Athlete,
+  AthleteChampionshipStatsRow,
+  AthleteMatchStatsRow,
+  AthletePosition,
+  AthleteStatTotals,
   BracketRound,
   Championship,
   Group,
@@ -23,6 +28,7 @@ import type {
   Team,
   TeamMatchStats,
 } from './types'
+import { aggregateAthleteStats } from './sportsUtils'
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
 
@@ -948,4 +954,136 @@ export function getMatchDetailById(id: string): MatchDetail | undefined {
     homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] },
     awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] },
   }
+}
+
+const ATHLETE_POSITION_OVERRIDES: Record<string, AthletePosition> = {
+  a1: 'SG',
+  a2: 'SG',
+  a3: 'SF',
+  a4: 'PG',
+  a5: 'SF',
+  a6: 'C',
+  a7: 'C',
+  a8: 'PF',
+  a9: 'C',
+  a10: 'PG',
+  a11: 'PG',
+  a12: 'PG',
+  a13: 'PG',
+  a14: 'PG',
+  a15: 'PG',
+  a16: 'PF',
+}
+
+const POSITION_FALLBACKS: AthletePosition[] = ['PG', 'SG', 'SF', 'PF', 'C']
+
+interface AthleteAppearance {
+  player: PlayerMatchStats
+  teamId: string
+  match: Match
+}
+
+function getAthleteAppearances(athleteId?: string): AthleteAppearance[] {
+  return Object.entries(MATCH_EXTRA).flatMap(([matchId, extra]) => {
+    const match = MOCK_MATCHES.find((item) => item.id === matchId)
+    if (!match) return []
+
+    const home = extra.homeStats.players
+      .filter((player) => !athleteId || player.athleteId === athleteId)
+      .map((player) => ({ player, teamId: extra.homeStats.teamId, match }))
+
+    const away = extra.awayStats.players
+      .filter((player) => !athleteId || player.athleteId === athleteId)
+      .map((player) => ({ player, teamId: extra.awayStats.teamId, match }))
+
+    return [...home, ...away]
+  })
+}
+
+function buildAthleteRegistry(): Athlete[] {
+  const byId = new Map<string, AthleteAppearance[]>()
+
+  getAthleteAppearances().forEach((appearance) => {
+    const current = byId.get(appearance.player.athleteId) ?? []
+    current.push(appearance)
+    byId.set(appearance.player.athleteId, current)
+  })
+
+  return [...byId.entries()]
+    .map(([id, appearances]) => {
+      const latest = [...appearances].sort(
+        (a, b) => +new Date(b.match.date) - +new Date(a.match.date),
+      )[0]
+      const numberBasedPosition = POSITION_FALLBACKS[latest.player.number % POSITION_FALLBACKS.length]
+
+      return {
+        id,
+        name: latest.player.athleteName,
+        number: latest.player.number,
+        position: ATHLETE_POSITION_OVERRIDES[id] ?? numberBasedPosition,
+        currentTeamId: latest.teamId,
+        status: 'ACTIVE' as const,
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+}
+
+export const MOCK_ATHLETES: Athlete[] = buildAthleteRegistry()
+
+export function getAthletes(): Athlete[] {
+  return MOCK_ATHLETES
+}
+
+export function getAthleteById(athleteId: string): Athlete | undefined {
+  return MOCK_ATHLETES.find((athlete) => athlete.id === athleteId)
+}
+
+export function getAthleteMatches(athleteId: string): AthleteMatchStatsRow[] {
+  return getAthleteAppearances(athleteId)
+    .map(({ player, teamId, match }) => {
+      const championship = getChampionshipById(match.championshipId)
+      const homeTeam = MOCK_TEAMS.find((team) => team.id === match.homeTeamId)
+      const awayTeam = MOCK_TEAMS.find((team) => team.id === match.awayTeamId)
+      const athleteIsHome = teamId === match.homeTeamId
+      const athleteScore = athleteIsHome ? match.homeScore : match.awayScore
+      const opponentScore = athleteIsHome ? match.awayScore : match.homeScore
+      const scoreText =
+        athleteScore === null || opponentScore === null
+          ? '—'
+          : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`
+
+      if (!championship) return null
+
+      return {
+        match,
+        championship,
+        teamId,
+        matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`,
+        result: scoreText,
+        stats: player,
+      }
+    })
+    .filter((row): row is AthleteMatchStatsRow => Boolean(row))
+    .sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date))
+}
+
+export function getAthleteSummaryById(athleteId: string): AthleteStatTotals {
+  return aggregateAthleteStats(getAthleteMatches(athleteId).map((row) => row.stats))
+}
+
+export function getAthleteChampionshipStats(athleteId: string): AthleteChampionshipStatsRow[] {
+  const grouped = new Map<string, AthleteMatchStatsRow[]>()
+
+  getAthleteMatches(athleteId).forEach((row) => {
+    const key = `${row.championship.id}:${row.teamId}`
+    grouped.set(key, [...(grouped.get(key) ?? []), row])
+  })
+
+  return [...grouped.values()]
+    .map((rows) => ({
+      championship: rows[0].championship,
+      teamId: rows[0].teamId,
+      totals: aggregateAthleteStats(rows.map((row) => row.stats)),
+    }))
+    .sort((a, b) => +new Date(b.championship.startDate) - +new Date(a.championship.startDate))
 }

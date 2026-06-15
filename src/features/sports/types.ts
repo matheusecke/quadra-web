@@ -53,6 +53,19 @@ export interface Team {
   city?: string
 }
 
+export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
+
+export type AthleteStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface Athlete {
+  id: string
+  name: string
+  number: number
+  position: AthletePosition
+  currentTeamId: string
+  status: AthleteStatus
+}
+
 export interface StandingRow {
   teamId: string
   position: number
@@ -176,6 +189,39 @@ export interface TeamMatchStats {
 }
 
 export type TeamStats = TeamMatchStats
+
+export interface AthleteStatTotals {
+  games: number
+  min: number
+  pts: number
+  reb: number
+  ast: number
+  stl: number
+  blk: number
+  to: number
+  pf: number
+  fgm: number
+  fga: number
+  tpm: number
+  tpa: number
+  ftm: number
+  fta: number
+}
+
+export interface AthleteMatchStatsRow {
+  match: Match
+  championship: Championship
+  teamId: string
+  matchup: string
+  result: string
+  stats: PlayerMatchStats
+}
+
+export interface AthleteChampionshipStatsRow {
+  championship: Championship
+  teamId: string
+  totals: AthleteStatTotals
+}
 
 /** Score for a single period (regular quarter or overtime).
  *  This is the source of truth for the period breakdown table — do not

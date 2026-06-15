@@ -10,13 +10,25 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+  getAthleteById,
+  getAthleteChampionshipStats,
+  getAthleteMatches,
+  getAthleteSummaryById,
   getChampionshipById,
   getChampionships,
   getAllMatches,
   getMatchDetailById,
   getMatchesByChampionship,
 } from './mockSportsData'
-import type { Championship, Match, MatchDetail } from './types'
+import type {
+  Athlete,
+  AthleteChampionshipStatsRow,
+  AthleteMatchStatsRow,
+  AthleteStatTotals,
+  Championship,
+  Match,
+  MatchDetail,
+} from './types'
 
 const MOCK_DELAY = 350
 
@@ -77,4 +89,20 @@ export function useMatches(): QueryState<Match[]> {
 
 export function useMatch(id: string | undefined): QueryState<MatchDetail | undefined> {
   return useMockQuery(() => (id ? getMatchDetailById(id) : undefined), [id])
+}
+
+export function useAthlete(id: string | undefined): QueryState<Athlete | undefined> {
+  return useMockQuery(() => (id ? getAthleteById(id) : undefined), [id])
+}
+
+export function useAthleteSummary(id: string | undefined): QueryState<AthleteStatTotals | undefined> {
+  return useMockQuery(() => (id ? getAthleteSummaryById(id) : undefined), [id])
+}
+
+export function useAthleteMatches(id: string | undefined): QueryState<AthleteMatchStatsRow[]> {
+  return useMockQuery(() => (id ? getAthleteMatches(id) : []), [id])
+}
+
+export function useAthleteChampionshipStats(id: string | undefined): QueryState<AthleteChampionshipStatsRow[]> {
+  return useMockQuery(() => (id ? getAthleteChampionshipStats(id) : []), [id])
 }

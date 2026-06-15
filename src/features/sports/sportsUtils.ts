@@ -5,6 +5,8 @@
  */
 
 import type {
+  AthleteStatTotals,
+  AthleteStatus,
   Championship,
   ChampionshipPhase,
   ChampionshipStatus,
@@ -111,6 +113,11 @@ export const STATS_STATUS_LABELS: Record<StatsStatus, string> = {
   COMPLETE: 'Estatísticas completas',
   PARTIAL: 'Estatísticas incompletas',
   PENDING: 'Sem estatísticas',
+}
+
+export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
+  ACTIVE: 'Ativo',
+  INACTIVE: 'Inativo',
 }
 
 export const LEADER_STAT_META: Record<LeaderStat, { label: string; full: string }> = {
@@ -259,6 +266,59 @@ export function calcEff(p: PlayerMatchStats): number {
     - (p.fta - p.ftm)
     - p.to
   )
+}
+
+export function calcEffFromTotals(totals: AthleteStatTotals): number {
+  return (
+    totals.pts + totals.reb + totals.ast + totals.stl + totals.blk
+    - (totals.fga - totals.fgm)
+    - (totals.fta - totals.ftm)
+    - totals.to
+  )
+}
+
+export function emptyAthleteTotals(): AthleteStatTotals {
+  return {
+    games: 0,
+    min: 0,
+    pts: 0,
+    reb: 0,
+    ast: 0,
+    stl: 0,
+    blk: 0,
+    to: 0,
+    pf: 0,
+    fgm: 0,
+    fga: 0,
+    tpm: 0,
+    tpa: 0,
+    ftm: 0,
+    fta: 0,
+  }
+}
+
+export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatTotals {
+  return players.reduce((acc, p) => ({
+    games: acc.games + 1,
+    min: acc.min + p.min,
+    pts: acc.pts + p.pts,
+    reb: acc.reb + p.reb,
+    ast: acc.ast + p.ast,
+    stl: acc.stl + p.stl,
+    blk: acc.blk + p.blk,
+    to: acc.to + p.to,
+    pf: acc.pf + p.pf,
+    fgm: acc.fgm + p.fgm,
+    fga: acc.fga + p.fga,
+    tpm: acc.tpm + p.tpm,
+    tpa: acc.tpa + p.tpa,
+    ftm: acc.ftm + p.ftm,
+    fta: acc.fta + p.fta,
+  }), emptyAthleteTotals())
+}
+
+export function perGame(value: number, games: number): number {
+  return games === 0 ? 0 : value / games
 }
 
 export interface TeamStatTotals {

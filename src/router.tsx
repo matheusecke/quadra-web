@@ -15,6 +15,7 @@ import { ChampionshipsPage } from './pages/championships/ChampionshipsPage'
 import { ChampionshipDetailPage } from './pages/championships/ChampionshipDetailPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
+import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
           { path: '/championships/:championshipId', element: <ChampionshipDetailPage /> },
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
+          { path: '/athletes/:athleteId', element: <AthleteDetailPage /> },
           {
             element: <AdminRoute />,
             children: [
