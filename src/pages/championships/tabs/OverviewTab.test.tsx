@@ -6,11 +6,11 @@ import { OverviewTab } from './OverviewTab'
 
 describe('OverviewTab', () => {
   it('renders overview sections in the required order', () => {
-    const championship = getChampionshipById('c7')
+    const championship = getChampionshipById('puc-geral-2026')
     expect(championship).toBeDefined()
 
     const teams = new Map(getTeams().map((team) => [team.id, team]))
-    const matches = getMatchesByChampionship('c7')
+    const matches = getMatchesByChampionship('puc-geral-2026')
 
     render(
       <MemoryRouter>

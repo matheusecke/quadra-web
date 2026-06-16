@@ -4,7 +4,9 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
 
-function renderAthletePage(athleteId = 'a1') {
+const RAFAEL_ID = 'rafael.moura@quadra.com.br'
+
+function renderAthletePage(athleteId = RAFAEL_ID) {
   return render(
     <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
       <Routes>
@@ -25,12 +27,12 @@ describe('AthleteDetailPage', () => {
     await waitForAthletePage()
 
     const header = screen.getByTestId('athlete-header')
-    expect(within(header).getByText('#3')).toBeInTheDocument()
+    expect(within(header).getByText('#4')).toBeInTheDocument()
     expect(within(header).getByRole('heading', { name: /rafael moura/i })).toBeInTheDocument()
-    expect(within(header).getByText(/SG · Tigres do Vale/i)).toBeInTheDocument()
+    expect(within(header).getByText(/PG · Time 1/i)).toBeInTheDocument()
     expect(within(header).getByText('Ativo')).toBeInTheDocument()
     expect(within(header).queryByText(/organização/i)).not.toBeInTheDocument()
-    expect(within(header).queryByText(/2025\/26/i)).not.toBeInTheDocument()
+    expect(within(header).queryByText(/2026/i)).not.toBeInTheDocument()
   })
 
   it('shows only Resumo, Partidas and Campeonatos tabs and no eFG metric', async () => {
@@ -58,8 +60,10 @@ describe('AthleteDetailPage', () => {
 
     expect(screen.queryByRole('columnheader', { name: /adversário/i })).not.toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: /partida/i })).toBeInTheDocument()
-    expect(screen.getByText('Tigres do Vale × Bisões')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /tigres do vale × bisões/i })).toHaveAttribute('href', '/matches/m1')
+    const finalLink = screen.getAllByRole('link', { name: /time 1 × time 2/i }).find(
+      (link) => link.getAttribute('href') === '/matches/puc-geral-m31',
+    )
+    expect(finalLink).toBeDefined()
   })
 
   it('shows team context in Campeonatos and links rows to championship details', async () => {
@@ -70,7 +74,10 @@ describe('AthleteDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
 
     expect(screen.getByRole('columnheader', { name: /equipe/i })).toBeInTheDocument()
-    expect(screen.getByText('Tigres do Vale')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /liga metropolitana/i })).toHaveAttribute('href', '/championships/c1')
+    expect(screen.getByText('Time 1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /campeonato geral da puc 2026/i })).toHaveAttribute(
+      'href',
+      '/championships/puc-geral-2026',
+    )
   })
 })

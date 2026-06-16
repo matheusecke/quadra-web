@@ -1,1089 +1,316 @@
 /**
- * Sports domain — MOCK DATA.
- *
- * ⚠️⚠️ TEMPORARY / MOCK ⚠️⚠️
- * None of this is real. There is no sports backend yet. Every record below is
- * hand-authored so the championship screens can be built and reviewed. When the
- * API exists, delete this file and replace the `get*` accessors with fetch calls
- * that return the same types from `./types`.
- *
- * Accessors (`getChampionships`, `getChampionshipById`, `getMatchesByChampionship`)
- * intentionally mirror a future async API surface — keep their signatures stable.
+ * Sports domain — MOCK DATA (PUC Campinas Basquete demo).
+ * Team slugs and athlete emails MUST match tcc-api/prisma/seeds/puc-dev-seed.sql
  */
-
-import type {
-  Athlete,
-  AthleteChampionshipStatsRow,
-  AthleteMatchStatsRow,
-  AthletePosition,
-  AthleteStatTotals,
-  BracketRound,
-  Championship,
-  Group,
-  Match,
-  MatchDetail,
-  PeriodScore,
-  PlayerMatchStats,
-  StatLeaders,
-  Team,
-  TeamMatchStats,
-} from './types'
+import type { Athlete, AthleteChampionshipStatsRow, AthleteMatchStatsRow, AthleteStatTotals, BracketRound, Championship, Group, Match, MatchDetail, PeriodScore, PlayerMatchStats, StatLeaders, Team, TeamMatchStats } from './types'
 import { aggregateAthleteStats } from './sportsUtils'
-
-// ── Teams ─────────────────────────────────────────────────────────────────────
-
 export const MOCK_TEAMS: Team[] = [
-  { id: 't1', name: 'Tigres do Vale', shortName: 'TIG', city: 'Vale Verde' },
-  { id: 't2', name: 'Falcões da Serra', shortName: 'FAL', city: 'Serra Alta' },
-  { id: 't3', name: 'Lobos do Norte', shortName: 'LOB', city: 'Porto Norte' },
-  { id: 't4', name: 'Águias Douradas', shortName: 'AGU', city: 'Campo Dourado' },
-  { id: 't5', name: 'Furacão Azul', shortName: 'FUR', city: 'Baía Azul' },
-  { id: 't6', name: 'Sentinelas', shortName: 'SEN', city: 'Fortaleza' },
-  { id: 't7', name: 'Bisões', shortName: 'BIS', city: 'Planalto' },
-  { id: 't8', name: 'Cometas', shortName: 'COM', city: 'Estrela' },
-  // t9-t16 adicionados para Supercopa Nacional (16 times) — ⚠️ MOCK
-  { id: 't9',  name: 'Panteras Negras', shortName: 'PAN', city: 'Pedra Preta' },
-  { id: 't10', name: 'Trovões',         shortName: 'TRO', city: 'Alto Claro' },
-  { id: 't11', name: 'Invasores',       shortName: 'INV', city: 'Vila Nova' },
-  { id: 't12', name: 'Corsários',       shortName: 'COR', city: 'Porto Livre' },
-  { id: 't13', name: 'Abutres',         shortName: 'ABU', city: 'Serra Branca' },
-  { id: 't14', name: 'Linces',          shortName: 'LIN', city: 'Rio Fundo' },
-  { id: 't15', name: 'Mamutes',         shortName: 'MAM', city: 'Foz do Rio' },
-  { id: 't16', name: 'Dragões',         shortName: 'DRA', city: 'Barra Leste' },
+  { id: 'puc-time-1', name: 'Time 1', shortName: 'T01', city: 'Campinas' },
+  { id: 'puc-time-2', name: 'Time 2', shortName: 'T02', city: 'Campinas' },
+  { id: 'puc-time-3', name: 'Time 3', shortName: 'T03', city: 'Campinas' },
+  { id: 'puc-time-4', name: 'Time 4', shortName: 'T04', city: 'Campinas' },
+  { id: 'puc-time-5', name: 'Time 5', shortName: 'T05', city: 'Campinas' },
+  { id: 'puc-time-6', name: 'Time 6', shortName: 'T06', city: 'Campinas' },
+  { id: 'puc-time-7', name: 'Time 7', shortName: 'T07', city: 'Campinas' },
+  { id: 'puc-time-8', name: 'Time 8', shortName: 'T08', city: 'Campinas' },
+  { id: 'puc-time-9', name: 'Time 9', shortName: 'T09', city: 'Campinas' },
+  { id: 'puc-time-10', name: 'Time 10', shortName: 'T10', city: 'Campinas' },
+  { id: 'puc-time-11', name: 'Time 11', shortName: 'T11', city: 'Campinas' },
+  { id: 'puc-time-12', name: 'Time 12', shortName: 'T12', city: 'Campinas' },
+  { id: 'puc-time-13', name: 'Time 13', shortName: 'T13', city: 'Campinas' },
+  { id: 'puc-time-14', name: 'Time 14', shortName: 'T14', city: 'Campinas' },
+  { id: 'puc-time-15', name: 'Time 15', shortName: 'T15', city: 'Campinas' },
+  { id: 'puc-time-16', name: 'Time 16', shortName: 'T16', city: 'Campinas' },
+]
+const PUC_ATHLETES: Athlete[] = [
+  { id: 'rafael.moura@quadra.com.br', name: 'Rafael Moura', number: 4, position: 'PG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'diego.santos@quadra.com.br', name: 'Diego Santos', number: 5, position: 'SG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'felipe.oliveira@quadra.com.br', name: 'Felipe Oliveira', number: 6, position: 'SF', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'gabriel.costa@quadra.com.br', name: 'Gabriel Costa', number: 7, position: 'PF', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'henrique.lima@quadra.com.br', name: 'Henrique Lima', number: 8, position: 'C', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'igor.martins@quadra.com.br', name: 'Igor Martins', number: 9, position: 'PG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'joao.pereira@quadra.com.br', name: 'João Pereira', number: 10, position: 'SG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'lucas.rodrigues@quadra.com.br', name: 'Lucas Rodrigues', number: 11, position: 'SF', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'nicolas.barbosa@quadra.com.br', name: 'Nicolas Barbosa', number: 4, position: 'PG', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'otavio.ribeiro@quadra.com.br', name: 'Otávio Ribeiro', number: 5, position: 'SG', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'paulo.carvalho@quadra.com.br', name: 'Paulo Carvalho', number: 6, position: 'SF', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'pedro.gomes@quadra.com.br', name: 'Pedro Gomes', number: 7, position: 'PF', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'ricardo.araujo@quadra.com.br', name: 'Ricardo Araujo', number: 8, position: 'C', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'roberto.nunes@quadra.com.br', name: 'Roberto Nunes', number: 9, position: 'PG', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'rodrigo.melo@quadra.com.br', name: 'Rodrigo Melo', number: 10, position: 'SG', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'samuel.castro@quadra.com.br', name: 'Samuel Castro', number: 11, position: 'SF', currentTeamId: 'puc-time-2', status: 'ACTIVE' },
+  { id: 'vitor.campos@quadra.com.br', name: 'Vitor Campos', number: 4, position: 'PG', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'wesley.cardoso@quadra.com.br', name: 'Wesley Cardoso', number: 5, position: 'SG', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'andre.teixeira@quadra.com.br', name: 'André Teixeira', number: 6, position: 'SF', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'antonio.monteiro@quadra.com.br', name: 'Antonio Monteiro', number: 7, position: 'PF', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'bernardo.pinto@quadra.com.br', name: 'Bernardo Pinto', number: 8, position: 'C', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'caio.moreira@quadra.com.br', name: 'Caio Moreira', number: 9, position: 'PG', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'cesar.correia@quadra.com.br', name: 'César Correia', number: 10, position: 'SG', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'daniel.azevedo@quadra.com.br', name: 'Daniel Azevedo', number: 11, position: 'SF', currentTeamId: 'puc-time-3', status: 'ACTIVE' },
+  { id: 'fabio.ramos@quadra.com.br', name: 'Fábio Ramos', number: 4, position: 'PG', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'fernando.lopes@quadra.com.br', name: 'Fernando Lopes', number: 5, position: 'SG', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'francisco.mendes@quadra.com.br', name: 'Francisco Mendes', number: 6, position: 'SF', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'giovani.fernandes@quadra.com.br', name: 'Giovani Fernandes', number: 7, position: 'PF', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'guilherme.batista@quadra.com.br', name: 'Guilherme Batista', number: 8, position: 'C', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'gustavo.cavalcanti@quadra.com.br', name: 'Gustavo Cavalcanti', number: 9, position: 'PG', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'heitor.miranda@quadra.com.br', name: 'Heitor Miranda', number: 10, position: 'SG', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'hugo.xavier@quadra.com.br', name: 'Hugo Xavier', number: 11, position: 'SF', currentTeamId: 'puc-time-4', status: 'ACTIVE' },
+  { id: 'leandro.rezende@quadra.com.br', name: 'Leandro Rezende', number: 4, position: 'PG', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'leonardo.barros@quadra.com.br', name: 'Leonardo Barros', number: 5, position: 'SG', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'luan.farias@quadra.com.br', name: 'Luan Farias', number: 6, position: 'SF', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'luiz.andrade@quadra.com.br', name: 'Luiz Andrade', number: 7, position: 'PF', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'marcelo.borges@quadra.com.br', name: 'Marcelo Borges', number: 8, position: 'C', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'mauricio.tavares@quadra.com.br', name: 'Mauricio Tavares', number: 9, position: 'PG', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'murilo.pacheco@quadra.com.br', name: 'Murilo Pacheco', number: 10, position: 'SG', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'nelson.cruz@quadra.com.br', name: 'Nelson Cruz', number: 11, position: 'SF', currentTeamId: 'puc-time-5', status: 'ACTIVE' },
+  { id: 'rafael.coelho@quadra.com.br', name: 'Rafael Coelho', number: 4, position: 'PG', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'renato.macedo@quadra.com.br', name: 'Renato Macedo', number: 5, position: 'SG', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'renan.paiva@quadra.com.br', name: 'Renan Paiva', number: 6, position: 'SF', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'renato.campos@quadra.com.br', name: 'Renato Campos', number: 7, position: 'PF', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'ricardo.fonseca@quadra.com.br', name: 'Ricardo Fonseca', number: 8, position: 'C', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'robson.freire@quadra.com.br', name: 'Robson Freire', number: 9, position: 'PG', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'rogerio.santana@quadra.com.br', name: 'Rogerio Santana', number: 10, position: 'SG', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'ronaldo.matos@quadra.com.br', name: 'Ronaldo Matos', number: 11, position: 'SF', currentTeamId: 'puc-time-6', status: 'ACTIVE' },
+  { id: 'sergio.moura@quadra.com.br', name: 'Sergio Moura', number: 4, position: 'PG', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'silvio.brandao@quadra.com.br', name: 'Silvio Brandao', number: 5, position: 'SG', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'tadeu.prado@quadra.com.br', name: 'Tadeu Prado', number: 6, position: 'SF', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'tales.guimaraes@quadra.com.br', name: 'Tales Guimaraes', number: 7, position: 'PF', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'tulio.ramires@quadra.com.br', name: 'Túlio Ramires', number: 8, position: 'C', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'valter.sales@quadra.com.br', name: 'Valter Sales', number: 9, position: 'PG', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'victor.alves@quadra.com.br', name: 'Victor Alves', number: 10, position: 'SG', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'vinicius.torres@quadra.com.br', name: 'Vinicius Torres', number: 11, position: 'SF', currentTeamId: 'puc-time-7', status: 'ACTIVE' },
+  { id: 'william.dantas@quadra.com.br', name: 'William Dantas', number: 4, position: 'PG', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'yuri.leal@quadra.com.br', name: 'Yuri Leal', number: 5, position: 'SG', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'alex.santos@quadra.com.br', name: 'Alex Santos', number: 6, position: 'SF', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'alexandre.lemos@quadra.com.br', name: 'Alexandre Lemos', number: 7, position: 'PF', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'alisson.neto@quadra.com.br', name: 'Alisson Neto', number: 8, position: 'C', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'arthur.mota@quadra.com.br', name: 'Arthur Mota', number: 9, position: 'PG', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'augusto.cesar@quadra.com.br', name: 'Augusto César', number: 10, position: 'SG', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'benicio.rocha@quadra.com.br', name: 'Benicio Rocha', number: 11, position: 'SF', currentTeamId: 'puc-time-8', status: 'ACTIVE' },
+  { id: 'claudio.barbosa@quadra.com.br', name: 'Claudio Barbosa', number: 4, position: 'PG', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'cleber.amaral@quadra.com.br', name: 'Cleber Amaral', number: 5, position: 'SG', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'cristiano.bittencourt@quadra.com.br', name: 'Cristiano Bittencourt', number: 6, position: 'SF', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'davi.cordeiro@quadra.com.br', name: 'Davi Cordeiro', number: 7, position: 'PF', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'denis.figueiredo@quadra.com.br', name: 'Denis Figueiredo', number: 8, position: 'C', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'douglas.henrique@quadra.com.br', name: 'Douglas Henrique', number: 9, position: 'PG', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'edson.junqueira@quadra.com.br', name: 'Edson Junqueira', number: 10, position: 'SG', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'elias.marques@quadra.com.br', name: 'Elias Marques', number: 11, position: 'SF', currentTeamId: 'puc-time-9', status: 'ACTIVE' },
+  { id: 'everton.trindade@quadra.com.br', name: 'Everton Trindade', number: 4, position: 'PG', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'fabiano.uchoa@quadra.com.br', name: 'Fabiano Uchoa', number: 5, position: 'SG', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'felipe.valente@quadra.com.br', name: 'Felipe Valente', number: 6, position: 'SF', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'filipe.ximenes@quadra.com.br', name: 'Filipe Ximenes', number: 7, position: 'PF', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'flavio.zanetti@quadra.com.br', name: 'Flavio Zanetti', number: 8, position: 'C', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'frederico.abreu@quadra.com.br', name: 'Frederico Abreu', number: 9, position: 'PG', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'geovane.aguiar@quadra.com.br', name: 'Geovane Aguiar', number: 10, position: 'SG', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'gilberto.assis@quadra.com.br', name: 'Gilberto Assis', number: 11, position: 'SF', currentTeamId: 'puc-time-10', status: 'ACTIVE' },
+  { id: 'helio.domingues@quadra.com.br', name: 'Helio Domingues', number: 4, position: 'PG', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'humberto.esteves@quadra.com.br', name: 'Humberto Esteves', number: 5, position: 'SG', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'isaac.franco@quadra.com.br', name: 'Isaac Franco', number: 6, position: 'SF', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'italo.garcia@quadra.com.br', name: 'Italo Garcia', number: 7, position: 'PF', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'jaime.henrique@quadra.com.br', name: 'Jaime Henrique', number: 8, position: 'C', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'jefferson.ibrahim@quadra.com.br', name: 'Jefferson Ibrahim', number: 9, position: 'PG', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'jeferson.jacinto@quadra.com.br', name: 'Jeferson Jacinto', number: 10, position: 'SG', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'jonas.klein@quadra.com.br', name: 'Jonas Klein', number: 11, position: 'SF', currentTeamId: 'puc-time-11', status: 'ACTIVE' },
+  { id: 'juliano.nobrega@quadra.com.br', name: 'Juliano Nobrega', number: 4, position: 'PG', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'junior.ortega@quadra.com.br', name: 'Junior Ortega', number: 5, position: 'SG', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'kauan.padilha@quadra.com.br', name: 'Kauan Padilha', number: 6, position: 'SF', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'kelvin.quintana@quadra.com.br', name: 'Kelvin Quintana', number: 7, position: 'PF', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'kevin.rangel@quadra.com.br', name: 'Kevin Rangel', number: 8, position: 'C', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'kleber.siqueira@quadra.com.br', name: 'Kleber Siqueira', number: 9, position: 'PG', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'laercio.toledo@quadra.com.br', name: 'Laercio Toledo', number: 10, position: 'SG', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'lauro.umbelino@quadra.com.br', name: 'Lauro Umbelino', number: 11, position: 'SF', currentTeamId: 'puc-time-12', status: 'ACTIVE' },
+  { id: 'lincoln.xavier@quadra.com.br', name: 'Lincoln Xavier', number: 4, position: 'PG', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'lorenzo.yamada@quadra.com.br', name: 'Lorenzo Yamada', number: 5, position: 'SG', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'luciano.zambelli@quadra.com.br', name: 'Luciano Zambelli', number: 6, position: 'SF', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'luiz.abrahao@quadra.com.br', name: 'Luiz Abrahao', number: 7, position: 'PF', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'manoel.bastos@quadra.com.br', name: 'Manoel Bastos', number: 8, position: 'C', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'marcio.coutinho@quadra.com.br', name: 'Marcio Coutinho', number: 9, position: 'PG', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'mario.dourado@quadra.com.br', name: 'Mario Dourado', number: 10, position: 'SG', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'matheus.espindola@quadra.com.br', name: 'Matheus Espindola', number: 11, position: 'SF', currentTeamId: 'puc-time-13', status: 'ACTIVE' },
+  { id: 'milton.holanda@quadra.com.br', name: 'Milton Holanda', number: 4, position: 'PG', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'moises.ito@quadra.com.br', name: 'Moises Ito', number: 5, position: 'SG', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'natan.jardim@quadra.com.br', name: 'Natan Jardim', number: 6, position: 'SF', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'nilton.kruger@quadra.com.br', name: 'Nilton Kruger', number: 7, position: 'PF', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'norberto.lobato@quadra.com.br', name: 'Norberto Lobato', number: 8, position: 'C', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'odair.macedo@quadra.com.br', name: 'Odair Macedo', number: 9, position: 'PG', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'osmar.nogueira@quadra.com.br', name: 'Osmar Nogueira', number: 10, position: 'SG', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'osvaldo.oliveira@quadra.com.br', name: 'Osvaldo Oliveira', number: 11, position: 'SF', currentTeamId: 'puc-time-14', status: 'ACTIVE' },
+  { id: 'plinio.ribeiro@quadra.com.br', name: 'Plinio Ribeiro', number: 4, position: 'PG', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'quirino.saldanha@quadra.com.br', name: 'Quirino Saldanha', number: 5, position: 'SG', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'quintino.teles@quadra.com.br', name: 'Quintino Teles', number: 6, position: 'SF', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'raimundo.ulhoa@quadra.com.br', name: 'Raimundo Ulhoa', number: 7, position: 'PF', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'ramiro.valadares@quadra.com.br', name: 'Ramiro Valadares', number: 8, position: 'C', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'randolfo.wagner@quadra.com.br', name: 'Randolfo Wagner', number: 9, position: 'PG', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'reginaldo.xavier@quadra.com.br', name: 'Reginaldo Xavier', number: 10, position: 'SG', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'reinaldo.yoshida@quadra.com.br', name: 'Reinaldo Yoshida', number: 11, position: 'SF', currentTeamId: 'puc-time-15', status: 'ACTIVE' },
+  { id: 'salvador.barreto@quadra.com.br', name: 'Salvador Barreto', number: 4, position: 'PG', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'sebastiao.camargo@quadra.com.br', name: 'Sebastião Camargo', number: 5, position: 'SG', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'sidnei.delfino@quadra.com.br', name: 'Sidnei Delfino', number: 6, position: 'SF', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'silas.espinoza@quadra.com.br', name: 'Silas Espinoza', number: 7, position: 'PF', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'simao.fagundes@quadra.com.br', name: 'Simão Fagundes', number: 8, position: 'C', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'socrates.goulart@quadra.com.br', name: 'Socrates Goulart', number: 9, position: 'PG', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'tarcisio.haddad@quadra.com.br', name: 'Tarcisio Haddad', number: 10, position: 'SG', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
+  { id: 'teodoro.inacio@quadra.com.br', name: 'Teodoro Inacio', number: 11, position: 'SF', currentTeamId: 'puc-time-16', status: 'ACTIVE' },
 ]
 
-// ── Helpers to keep the authored data terse ─────────────────────────────────────
+const ATHLETES_BY_TEAM: Record<string, Athlete[]> = Object.fromEntries(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
+let matchSeq=0
+function mkMatch(championshipId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{return{id:id??`m${++matchSeq}`,championshipId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus}}
+function group(id:string,name:string,rows:Array<[string,number,number,number,number,number]>):Group{return{id,name,standings:rows.map(([teamId,played,wins,losses,pf,pa],i)=>({teamId,position:i+1,played,wins,losses,pointsFor:pf,pointsAgainst:pa}))}}
+function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,plusMinus:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,plusMinus,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
+function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
+function mkTeam(teamId:string,players:PlayerMatchStats[]):TeamMatchStats{return{teamId,players}}
+function buildBoxScore(homeScore:number,awayScore:number,homeTeamId:string,awayTeamId:string){function distribute(score:number,roster:Athlete[],teamId:string){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const tpm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-tpm);stats.push(mkPlayer(players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,pts>10?4:-2,1+(i%2),2+(i%3),fgm,fgm+3,tpm,tpm+2,ftm,ftm+1))}const sum=stats.reduce((s,p)=>s+p.pts,0);if(sum!==score&&stats.length)stats[stats.length-1].pts+=score-sum;return mkTeam(teamId,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM[homeTeamId]??[],homeTeamId),awayStats:distribute(awayScore,ATHLETES_BY_TEAM[awayTeamId]??[],awayTeamId)}}
+const REGULATION='Fase classificatória em grupos. As melhores equipes avançam para playoffs em mata-mata. Desempate: vitórias, saldo de pontos, confronto direto.'
+const GERAL='puc-geral-2026'; const INVERNO='puc-inverno-2026'
 
-let matchSeq = 0
-function mkMatch(
-  championshipId: string,
-  phase: string,
-  date: string,
-  homeTeamId: string,
-  awayTeamId: string,
-  home: number | null,
-  away: number | null,
-  status: Match['status'],
-  venue: string,
-  statsStatus: Match['statsStatus'],
-): Match {
-  return {
-    id: `m${++matchSeq}`,
-    championshipId,
-    phase,
-    date,
-    homeTeamId,
-    awayTeamId,
-    homeScore: home,
-    awayScore: away,
-    status,
-    venue,
-    statsStatus,
-  }
-}
-
-function group(id: string, name: string, rows: Array<[string, number, number, number, number, number]>): Group {
-  // tuple: [teamId, played, wins, losses, pointsFor, pointsAgainst]
-  return {
-    id,
-    name,
-    standings: rows.map(([teamId, played, wins, losses, pf, pa], i) => ({
-      teamId,
-      position: i + 1,
-      played,
-      wins,
-      losses,
-      pointsFor: pf,
-      pointsAgainst: pa,
-    })),
-  }
-}
-
-// ── Championship 1 — Liga Metropolitana (PLAYOFFS, rich showcase) ────────────────
-
-const C1 = 'c1'
-
-const c1Groups: Group[] = [
-  group('c1-ga', 'Grupo A', [
-    ['t1', 6, 5, 1, 512, 448],
-    ['t4', 6, 4, 2, 489, 462],
-    ['t5', 6, 2, 4, 451, 470],
-    ['t7', 6, 1, 5, 430, 502],
+const geralGroups: Group[] = [
+  group('geral-ga', 'Grupo A', [
+    ['puc-time-1', 6, 5, 1, 512, 448],
+    ['puc-time-2', 6, 4, 2, 489, 462],
+    ['puc-time-3', 6, 2, 4, 451, 470],
+    ['puc-time-4', 6, 1, 5, 430, 502],
   ]),
-  group('c1-gb', 'Grupo B', [
-    ['t2', 6, 5, 1, 528, 441],
-    ['t3', 6, 4, 2, 497, 466],
-    ['t6', 6, 3, 3, 472, 469],
-    ['t8', 6, 0, 6, 418, 521],
+  group('geral-gb', 'Grupo B', [
+    ['puc-time-6', 6, 5, 1, 528, 441],
+    ['puc-time-5', 6, 4, 2, 497, 466],
+    ['puc-time-7', 6, 3, 3, 472, 469],
+    ['puc-time-8', 6, 0, 6, 418, 521],
   ]),
-]
-
-const c1Leaders: StatLeaders = {
-  ppg: [
-    { athleteId: 'a1', athleteName: 'Rafael Moura', teamId: 't1', value: 24.6, gamesPlayed: 6 },
-    { athleteId: 'a2', athleteName: 'Diego Valente', teamId: 't2', value: 22.1, gamesPlayed: 6 },
-    { athleteId: 'a3', athleteName: 'Caio Bittencourt', teamId: 't4', value: 21.4, gamesPlayed: 6 },
-    { athleteId: 'a4', athleteName: 'Lucas Andrade', teamId: 't3', value: 20.8, gamesPlayed: 6 },
-    { athleteId: 'a5', athleteName: 'Henrique Sales', teamId: 't6', value: 19.9, gamesPlayed: 6 },
-  ],
-  rpg: [
-    { athleteId: 'a6', athleteName: 'Túlio Ramires', teamId: 't1', value: 11.8, gamesPlayed: 6 },
-    { athleteId: 'a7', athleteName: 'Bruno Capela', teamId: 't3', value: 10.9, gamesPlayed: 6 },
-    { athleteId: 'a3', athleteName: 'Caio Bittencourt', teamId: 't4', value: 10.2, gamesPlayed: 6 },
-    { athleteId: 'a8', athleteName: 'Marcos Vinícius', teamId: 't2', value: 9.7, gamesPlayed: 6 },
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 9.1, gamesPlayed: 6 },
-  ],
-  apg: [
-    { athleteId: 'a10', athleteName: 'Gabriel Pires', teamId: 't2', value: 8.4, gamesPlayed: 6 },
-    { athleteId: 'a11', athleteName: 'Vitor Hugo', teamId: 't1', value: 7.6, gamesPlayed: 6 },
-    { athleteId: 'a12', athleteName: 'Eduardo Lima', teamId: 't4', value: 6.9, gamesPlayed: 6 },
-    { athleteId: 'a4', athleteName: 'Lucas Andrade', teamId: 't3', value: 6.5, gamesPlayed: 6 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 6.0, gamesPlayed: 6 },
-  ],
-  stg: [
-    { athleteId: 'a11', athleteName: 'Vitor Hugo', teamId: 't1', value: 2.7, gamesPlayed: 6 },
-    { athleteId: 'a14', athleteName: 'André Nunes', teamId: 't6', value: 2.4, gamesPlayed: 6 },
-    { athleteId: 'a10', athleteName: 'Gabriel Pires', teamId: 't2', value: 2.2, gamesPlayed: 6 },
-    { athleteId: 'a15', athleteName: 'Rodrigo Paz', teamId: 't3', value: 2.0, gamesPlayed: 6 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 1.8, gamesPlayed: 6 },
-  ],
-  bpg: [
-    { athleteId: 'a6', athleteName: 'Túlio Ramires', teamId: 't1', value: 2.1, gamesPlayed: 6 },
-    { athleteId: 'a7', athleteName: 'Bruno Capela', teamId: 't3', value: 1.9, gamesPlayed: 6 },
-    { athleteId: 'a16', athleteName: 'Otávio Brandão', teamId: 't4', value: 1.6, gamesPlayed: 6 },
-    { athleteId: 'a8', athleteName: 'Marcos Vinícius', teamId: 't2', value: 1.4, gamesPlayed: 6 },
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 1.2, gamesPlayed: 6 },
-  ],
-}
-
-const c1Matches: Match[] = [
-  // Group stage (finished)
-  mkMatch(C1, 'Fase de grupos', '2026-05-04T19:00:00', 't1', 't7', 88, 71, 'FINISHED', 'Ginásio Central', 'COMPLETE'),
-  mkMatch(C1, 'Fase de grupos', '2026-05-04T21:00:00', 't4', 't5', 79, 74, 'FINISHED', 'Ginásio Central', 'COMPLETE'),
-  mkMatch(C1, 'Fase de grupos', '2026-05-06T19:00:00', 't2', 't8', 95, 68, 'FINISHED', 'Arena Serra', 'COMPLETE'),
-  mkMatch(C1, 'Fase de grupos', '2026-05-06T21:00:00', 't3', 't6', 81, 77, 'FINISHED', 'Arena Serra', 'PARTIAL'),
-  mkMatch(C1, 'Fase de grupos', '2026-05-11T19:00:00', 't1', 't4', 84, 80, 'FINISHED', 'Ginásio Central', 'COMPLETE'),
-  mkMatch(C1, 'Fase de grupos', '2026-05-13T19:00:00', 't2', 't3', 90, 85, 'FINISHED', 'Arena Serra', 'COMPLETE'),
-  // Quarterfinals (finished)
-  mkMatch(C1, 'Quartas de final', '2026-05-20T19:00:00', 't1', 't6', 92, 78, 'FINISHED', 'Ginásio Olímpico', 'COMPLETE'),
-  mkMatch(C1, 'Quartas de final', '2026-05-20T21:00:00', 't2', 't5', 87, 73, 'FINISHED', 'Ginásio Olímpico', 'COMPLETE'),
-  mkMatch(C1, 'Quartas de final', '2026-05-21T19:00:00', 't4', 't3', 76, 82, 'FINISHED', 'Ginásio Olímpico', 'COMPLETE'),
-  mkMatch(C1, 'Quartas de final', '2026-05-21T21:00:00', 't7', 't6', 70, 88, 'FINISHED', 'Ginásio Olímpico', 'PARTIAL'),
-  // Semifinals (one live, one scheduled)
-  mkMatch(C1, 'Semifinais', '2026-06-12T20:00:00', 't1', 't3', 54, 49, 'LIVE', 'Arena Metropolitana', 'PENDING'),
-  mkMatch(C1, 'Semifinais', '2026-06-13T20:00:00', 't2', 't6', null, null, 'SCHEDULED', 'Arena Metropolitana', 'PENDING'),
-  // Final (scheduled, undefined teams)
-  mkMatch(C1, 'Final', '2026-06-20T20:00:00', 't1', 't2', null, null, 'SCHEDULED', 'Arena Metropolitana', 'PENDING'),
-]
-
-const c1Bracket: BracketRound[] = [
-  {
-    id: 'c1-qf',
-    name: 'Quartas de final',
-    matches: [
-      { id: 'c1-qf1', matchId: 'm7', homeTeamId: 't1', awayTeamId: 't6', homeScore: 92, awayScore: 78, winnerId: 't1' },
-      { id: 'c1-qf2', matchId: 'm8', homeTeamId: 't2', awayTeamId: 't5', homeScore: 87, awayScore: 73, winnerId: 't2' },
-      { id: 'c1-qf3', matchId: 'm9', homeTeamId: 't4', awayTeamId: 't3', homeScore: 76, awayScore: 82, winnerId: 't3' },
-      { id: 'c1-qf4', matchId: 'm10', homeTeamId: 't7', awayTeamId: 't6', homeScore: 70, awayScore: 88, winnerId: 't6' },
-    ],
-  },
-  {
-    id: 'c1-sf',
-    name: 'Semifinais',
-    matches: [
-      { id: 'c1-sf1', matchId: 'm11', homeTeamId: 't1', awayTeamId: 't3', homeScore: 54, awayScore: 49, winnerId: null },
-      { id: 'c1-sf2', matchId: 'm12', homeTeamId: 't2', awayTeamId: 't6', homeScore: null, awayScore: null, winnerId: null },
-    ],
-  },
-  {
-    id: 'c1-f',
-    name: 'Final',
-    matches: [
-      { id: 'c1-f1', matchId: 'm13', homeTeamId: null, awayTeamId: null, homeScore: null, awayScore: null, winnerId: null },
-    ],
-  },
-]
-
-// ── Championship 2 — Copa de Inverno (IN_PROGRESS, group stage) ──────────────────
-
-const C2 = 'c2'
-
-const c2Groups: Group[] = [
-  group('c2-ga', 'Grupo Único', [
-    ['t3', 4, 3, 1, 322, 298],
-    ['t1', 4, 3, 1, 318, 301],
-    ['t6', 4, 2, 2, 305, 309],
-    ['t5', 4, 1, 3, 290, 312],
-    ['t8', 3, 0, 3, 201, 246],
+  group('geral-gc', 'Grupo C', [
+    ['puc-time-9', 6, 5, 1, 510, 455],
+    ['puc-time-10', 6, 4, 2, 485, 470],
+    ['puc-time-11', 6, 2, 4, 460, 478],
+    ['puc-time-12', 6, 1, 5, 435, 505],
   ]),
-]
-
-const c2Leaders: StatLeaders = {
-  ppg: [
-    { athleteId: 'a4', athleteName: 'Lucas Andrade', teamId: 't3', value: 23.2, gamesPlayed: 4 },
-    { athleteId: 'a1', athleteName: 'Rafael Moura', teamId: 't1', value: 21.0, gamesPlayed: 4 },
-    { athleteId: 'a5', athleteName: 'Henrique Sales', teamId: 't6', value: 18.7, gamesPlayed: 4 },
-  ],
-  rpg: [
-    { athleteId: 'a7', athleteName: 'Bruno Capela', teamId: 't3', value: 12.0, gamesPlayed: 4 },
-    { athleteId: 'a6', athleteName: 'Túlio Ramires', teamId: 't1', value: 10.5, gamesPlayed: 4 },
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 8.8, gamesPlayed: 4 },
-  ],
-  apg: [
-    { athleteId: 'a11', athleteName: 'Vitor Hugo', teamId: 't1', value: 7.9, gamesPlayed: 4 },
-    { athleteId: 'a15', athleteName: 'Rodrigo Paz', teamId: 't3', value: 6.8, gamesPlayed: 4 },
-    { athleteId: 'a14', athleteName: 'André Nunes', teamId: 't6', value: 5.7, gamesPlayed: 4 },
-  ],
-  stg: [
-    { athleteId: 'a11', athleteName: 'Vitor Hugo', teamId: 't1', value: 2.5, gamesPlayed: 4 },
-    { athleteId: 'a15', athleteName: 'Rodrigo Paz', teamId: 't3', value: 2.1, gamesPlayed: 4 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 1.7, gamesPlayed: 4 },
-  ],
-  bpg: [
-    { athleteId: 'a7', athleteName: 'Bruno Capela', teamId: 't3', value: 1.8, gamesPlayed: 4 },
-    { athleteId: 'a6', athleteName: 'Túlio Ramires', teamId: 't1', value: 1.5, gamesPlayed: 4 },
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 1.1, gamesPlayed: 4 },
-  ],
-}
-
-const c2Matches: Match[] = [
-  mkMatch(C2, 'Fase de grupos', '2026-06-01T19:30:00', 't3', 't8', 82, 64, 'FINISHED', 'Ginásio Norte', 'COMPLETE'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-02T19:30:00', 't1', 't5', 79, 72, 'FINISHED', 'Ginásio Norte', 'COMPLETE'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-04T19:30:00', 't6', 't8', 77, 69, 'FINISHED', 'Ginásio Norte', 'PARTIAL'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-06T19:30:00', 't3', 't1', 85, 80, 'FINISHED', 'Ginásio Norte', 'COMPLETE'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-08T19:30:00', 't5', 't6', 74, 78, 'FINISHED', 'Ginásio Norte', 'COMPLETE'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-15T19:30:00', 't1', 't6', null, null, 'SCHEDULED', 'Ginásio Norte', 'PENDING'),
-  mkMatch(C2, 'Fase de grupos', '2026-06-17T19:30:00', 't3', 't5', null, null, 'SCHEDULED', 'Ginásio Norte', 'PENDING'),
-]
-
-// ── Championship 3 — Torneio Sub-19 (FINISHED, with champion) ────────────────────
-
-const C3 = 'c3'
-
-const c3Groups: Group[] = [
-  group('c3-ga', 'Grupo Único', [
-    ['t4', 5, 5, 0, 402, 351],
-    ['t2', 5, 3, 2, 388, 372],
-    ['t7', 5, 2, 3, 360, 369],
-    ['t8', 5, 0, 5, 332, 390],
+  group('geral-gd', 'Grupo D', [
+    ['puc-time-13', 6, 5, 1, 520, 445],
+    ['puc-time-14', 6, 4, 2, 492, 468],
+    ['puc-time-15', 6, 3, 3, 465, 472],
+    ['puc-time-16', 6, 0, 6, 425, 515],
   ]),
 ]
-
-const c3Leaders: StatLeaders = {
-  ppg: [
-    { athleteId: 'a3', athleteName: 'Caio Bittencourt', teamId: 't4', value: 25.4, gamesPlayed: 5 },
-    { athleteId: 'a2', athleteName: 'Diego Valente', teamId: 't2', value: 22.8, gamesPlayed: 5 },
-  ],
-  rpg: [
-    { athleteId: 'a16', athleteName: 'Otávio Brandão', teamId: 't4', value: 11.2, gamesPlayed: 5 },
-    { athleteId: 'a8', athleteName: 'Marcos Vinícius', teamId: 't2', value: 9.4, gamesPlayed: 5 },
-  ],
-  apg: [
-    { athleteId: 'a12', athleteName: 'Eduardo Lima', teamId: 't4', value: 7.1, gamesPlayed: 5 },
-    { athleteId: 'a10', athleteName: 'Gabriel Pires', teamId: 't2', value: 6.6, gamesPlayed: 5 },
-  ],
-  stg: [
-    { athleteId: 'a12', athleteName: 'Eduardo Lima', teamId: 't4', value: 2.3, gamesPlayed: 5 },
-    { athleteId: 'a10', athleteName: 'Gabriel Pires', teamId: 't2', value: 1.9, gamesPlayed: 5 },
-  ],
-  bpg: [
-    { athleteId: 'a16', athleteName: 'Otávio Brandão', teamId: 't4', value: 2.0, gamesPlayed: 5 },
-    { athleteId: 'a8', athleteName: 'Marcos Vinícius', teamId: 't2', value: 1.3, gamesPlayed: 5 },
-  ],
-}
-
-const c3Matches: Match[] = [
-  mkMatch(C3, 'Fase de grupos', '2026-03-10T18:00:00', 't4', 't8', 86, 70, 'FINISHED', 'Ginásio Escola', 'COMPLETE'),
-  mkMatch(C3, 'Fase de grupos', '2026-03-12T18:00:00', 't2', 't7', 78, 74, 'FINISHED', 'Ginásio Escola', 'COMPLETE'),
-  mkMatch(C3, 'Semifinais', '2026-03-22T18:00:00', 't4', 't7', 81, 66, 'FINISHED', 'Ginásio Escola', 'COMPLETE'),
-  mkMatch(C3, 'Semifinais', '2026-03-22T20:00:00', 't2', 't8', 90, 72, 'FINISHED', 'Ginásio Escola', 'COMPLETE'),
-  mkMatch(C3, 'Final', '2026-03-29T19:00:00', 't4', 't2', 84, 77, 'FINISHED', 'Ginásio Escola', 'COMPLETE'),
+const geralLeaders: StatLeaders = { ppg: [{ athleteId: 'rafael.moura@quadra.com.br', athleteName: 'Rafael Moura', teamId: 'puc-time-1', value: 22.4, gamesPlayed: 6 }, { athleteId: 'nicolas.barbosa@quadra.com.br', athleteName: 'Nicolas Barbosa', teamId: 'puc-time-2', value: 21.1, gamesPlayed: 6 }, { athleteId: 'diego.santos@quadra.com.br', athleteName: 'Diego Santos', teamId: 'puc-time-1', value: 18.6, gamesPlayed: 6 }], rpg: [{ athleteId: 'felipe.oliveira@quadra.com.br', athleteName: 'Felipe Oliveira', teamId: 'puc-time-1', value: 10.2, gamesPlayed: 6 }, { athleteId: 'paulo.carvalho@quadra.com.br', athleteName: 'Paulo Carvalho', teamId: 'puc-time-2', value: 9.8, gamesPlayed: 6 }], apg: [{ athleteId: 'gabriel.costa@quadra.com.br', athleteName: 'Gabriel Costa', teamId: 'puc-time-1', value: 7.5, gamesPlayed: 6 }, { athleteId: 'pedro.gomes@quadra.com.br', athleteName: 'Pedro Gomes', teamId: 'puc-time-2', value: 6.9, gamesPlayed: 6 }], stg: [{ athleteId: 'rafael.moura@quadra.com.br', athleteName: 'Rafael Moura', teamId: 'puc-time-1', value: 2.1, gamesPlayed: 6 }, { athleteId: 'nicolas.barbosa@quadra.com.br', athleteName: 'Nicolas Barbosa', teamId: 'puc-time-2', value: 1.9, gamesPlayed: 6 }], bpg: [{ athleteId: 'henrique.lima@quadra.com.br', athleteName: 'Henrique Lima', teamId: 'puc-time-1', value: 1.4, gamesPlayed: 6 }, { athleteId: 'ricardo.araujo@quadra.com.br', athleteName: 'Ricardo Araujo', teamId: 'puc-time-2', value: 1.2, gamesPlayed: 6 }] }
+const geralMatches: Match[] = [
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-07T19:00:00', 'puc-time-1', 'puc-time-2', 80, 89, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m01'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-14T19:00:00', 'puc-time-1', 'puc-time-3', 87, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m02'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-21T19:00:00', 'puc-time-1', 'puc-time-4', 94, 77, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m03'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-28T19:00:00', 'puc-time-2', 'puc-time-3', 79, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m04'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-04T19:00:00', 'puc-time-2', 'puc-time-4', 86, 77, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m05'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-11T19:00:00', 'puc-time-3', 'puc-time-4', 91, 88, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m06'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-07T19:00:00', 'puc-time-6', 'puc-time-5', 87, 91, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m07'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-14T19:00:00', 'puc-time-6', 'puc-time-7', 94, 81, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m08'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-21T19:00:00', 'puc-time-6', 'puc-time-8', 76, 75, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m09'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-28T19:00:00', 'puc-time-5', 'puc-time-7', 80, 81, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m10'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-04T19:00:00', 'puc-time-5', 'puc-time-8', 87, 75, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m11'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-11T19:00:00', 'puc-time-7', 'puc-time-8', 90, 86, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m12'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-07T19:00:00', 'puc-time-9', 'puc-time-10', 88, 90, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m13'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-14T19:00:00', 'puc-time-9', 'puc-time-11', 70, 79, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m14'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-21T19:00:00', 'puc-time-9', 'puc-time-12', 77, 73, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m15'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-28T19:00:00', 'puc-time-10', 'puc-time-11', 87, 88, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m16'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-04T19:00:00', 'puc-time-10', 'puc-time-12', 94, 73, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m17'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-11T19:00:00', 'puc-time-11', 'puc-time-12', 89, 84, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m18'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-07T19:00:00', 'puc-time-13', 'puc-time-14', 92, 96, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m19'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-14T19:00:00', 'puc-time-13', 'puc-time-15', 74, 77, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m20'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-21T19:00:00', 'puc-time-13', 'puc-time-16', 81, 71, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m21'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-03-28T19:00:00', 'puc-time-14', 'puc-time-15', 91, 94, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m22'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-04T19:00:00', 'puc-time-14', 'puc-time-16', 73, 71, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m23'),
+  mkMatch(GERAL, 'Fase de grupos', '2026-04-11T19:00:00', 'puc-time-15', 'puc-time-16', 83, 82, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m24'),
+  mkMatch(GERAL, 'Quartas de final', '2026-05-10T19:00:00', 'puc-time-1', 'puc-time-5', 86, 82, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m25'),
+  mkMatch(GERAL, 'Quartas de final', '2026-05-10T21:00:00', 'puc-time-6', 'puc-time-2', 70, 78, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m26'),
+  mkMatch(GERAL, 'Quartas de final', '2026-05-11T19:00:00', 'puc-time-9', 'puc-time-14', 86, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m27'),
+  mkMatch(GERAL, 'Quartas de final', '2026-05-11T21:00:00', 'puc-time-13', 'puc-time-10', 84, 81, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m28'),
+  mkMatch(GERAL, 'Semifinais', '2026-05-24T19:00:00', 'puc-time-1', 'puc-time-13', 82, 78, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m29'),
+  mkMatch(GERAL, 'Semifinais', '2026-05-24T21:00:00', 'puc-time-2', 'puc-time-9', 86, 69, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m30'),
+  mkMatch(GERAL, 'Final', '2026-05-31T20:00:00', 'puc-time-1', 'puc-time-2', 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m31'),
 ]
-
-const c3Bracket: BracketRound[] = [
-  {
-    id: 'c3-sf',
-    name: 'Semifinais',
-    matches: [
-      { id: 'c3-sf1', matchId: 'm23', homeTeamId: 't4', awayTeamId: 't7', homeScore: 81, awayScore: 66, winnerId: 't4' },
-      { id: 'c3-sf2', matchId: 'm24', homeTeamId: 't2', awayTeamId: 't8', homeScore: 90, awayScore: 72, winnerId: 't2' },
-    ],
-  },
-  {
-    id: 'c3-f',
-    name: 'Final',
-    matches: [
-      { id: 'c3-f1', matchId: 'm25', homeTeamId: 't4', awayTeamId: 't2', homeScore: 84, awayScore: 77, winnerId: 't4' },
-    ],
-  },
+const geralBracket: BracketRound[] = [{ id:'geral-qf',name:'Quartas de final',matches:[{id:'geral-qf1',matchId:'puc-geral-m25',homeTeamId:'puc-time-1',awayTeamId:'puc-time-5',homeScore:86,awayScore:82,winnerId:'puc-time-1'},{id:'geral-qf2',matchId:'puc-geral-m26',homeTeamId:'puc-time-6',awayTeamId:'puc-time-2',homeScore:70,awayScore:78,winnerId:'puc-time-2'},{id:'geral-qf3',matchId:'puc-geral-m27',homeTeamId:'puc-time-9',awayTeamId:'puc-time-14',homeScore:86,awayScore:83,winnerId:'puc-time-9'},{id:'geral-qf4',matchId:'puc-geral-m28',homeTeamId:'puc-time-13',awayTeamId:'puc-time-10',homeScore:84,awayScore:81,winnerId:'puc-time-13'}]},{id:'geral-sf',name:'Semifinais',matches:[{id:'geral-sf1',matchId:'puc-geral-m29',homeTeamId:'puc-time-1',awayTeamId:'puc-time-13',homeScore:82,awayScore:78,winnerId:'puc-time-1'},{id:'geral-sf2',matchId:'puc-geral-m30',homeTeamId:'puc-time-2',awayTeamId:'puc-time-9',homeScore:86,awayScore:69,winnerId:'puc-time-2'}]},{id:'geral-f',name:'Final',matches:[{id:'geral-f1',matchId:'puc-geral-m31',homeTeamId:'puc-time-1',awayTeamId:'puc-time-2',homeScore:84,awayScore:80,winnerId:'puc-time-1'}]}]
+const geralChampionship: Championship={id:GERAL,name:'Campeonato Geral da PUC 2026',season:'2026',category:'Adulto Masculino',status:'FINISHED',currentPhase:'FINISHED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',statsStatus:'COMPLETE',regulation:REGULATION,groups:geralGroups,leaders:geralLeaders,bracket:geralBracket,championTeamId:'puc-time-1'}
+const invernoGroups: Group[] = [group('inverno-ga','Grupo A',[['puc-time-1',0,0,0,0,0],['puc-time-2',0,0,0,0,0],['puc-time-3',0,0,0,0,0],['puc-time-4',0,0,0,0,0]]),group('inverno-gb','Grupo B',[['puc-time-5',0,0,0,0,0],['puc-time-6',0,0,0,0,0],['puc-time-7',0,0,0,0,0],['puc-time-8',0,0,0,0,0]])]
+const invernoMatches: Match[] = [
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-03T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m01'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-05T19:00:00', 'puc-time-1', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m02'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-07T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m03'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-09T19:00:00', 'puc-time-2', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m04'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-11T19:00:00', 'puc-time-2', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m05'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-13T19:00:00', 'puc-time-3', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m06'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-15T19:00:00', 'puc-time-5', 'puc-time-6', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m07'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-17T19:00:00', 'puc-time-5', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m08'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-19T19:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m09'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-21T19:00:00', 'puc-time-6', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m10'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-23T19:00:00', 'puc-time-6', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m11'),
+  mkMatch(INVERNO, 'Fase de grupos', '2026-07-25T19:00:00', 'puc-time-7', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m12'),
+  mkMatch(INVERNO, 'Semifinais', '2026-07-25T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m13'),
+  mkMatch(INVERNO, 'Semifinais', '2026-07-25T21:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m14'),
+  mkMatch(INVERNO, 'Final', '2026-07-31T20:00:00', 'puc-time-1', 'puc-time-5', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m15'),
 ]
-
-// ── Championship 5 — Copa Regional (IN_PROGRESS, quarters) ───────────────────────
-
-const C5 = 'c5'
-
-const c5Groups: Group[] = [
-  group('c5-ga', 'Grupo A', [
-    ['t5', 3, 2, 1, 238, 224],
-    ['t7', 3, 2, 1, 231, 220],
-    ['t8', 3, 1, 2, 210, 229],
-  ]),
-  group('c5-gb', 'Grupo B', [
-    ['t6', 3, 3, 0, 252, 210],
-    ['t4', 3, 1, 2, 219, 231],
-    ['t1', 3, 1, 2, 215, 228],
-  ]),
-]
-
-const c5Leaders: StatLeaders = {
-  ppg: [
-    { athleteId: 'a5', athleteName: 'Henrique Sales', teamId: 't6', value: 20.3, gamesPlayed: 3 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 18.9, gamesPlayed: 3 },
-  ],
-  rpg: [
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 9.7, gamesPlayed: 3 },
-    { athleteId: 'a16', athleteName: 'Otávio Brandão', teamId: 't4', value: 8.9, gamesPlayed: 3 },
-  ],
-  apg: [
-    { athleteId: 'a14', athleteName: 'André Nunes', teamId: 't6', value: 6.3, gamesPlayed: 3 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 5.4, gamesPlayed: 3 },
-  ],
-  stg: [
-    { athleteId: 'a14', athleteName: 'André Nunes', teamId: 't6', value: 2.0, gamesPlayed: 3 },
-    { athleteId: 'a13', athleteName: 'Felipe Castro', teamId: 't5', value: 1.6, gamesPlayed: 3 },
-  ],
-  bpg: [
-    { athleteId: 'a16', athleteName: 'Otávio Brandão', teamId: 't4', value: 1.7, gamesPlayed: 3 },
-    { athleteId: 'a9', athleteName: 'Pedro Tavares', teamId: 't6', value: 1.0, gamesPlayed: 3 },
-  ],
+const invernoChampionship: Championship = { id: INVERNO, name: 'Copa de Inverno PUC', season: '2026', category: 'Adulto Masculino', status: 'SCHEDULED', currentPhase: 'GROUPS', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 15, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
+const MOCK_CHAMPIONSHIPS: Championship[] = [geralChampionship, invernoChampionship]
+const MOCK_MATCHES: Match[] = [...geralMatches, ...invernoMatches]
+const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }> = {
+  'puc-geral-m01': (() => { const b = buildBoxScore(80, 89, 'puc-time-1', 'puc-time-2'); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m02': (() => { const b = buildBoxScore(87, 83, 'puc-time-1', 'puc-time-3'); return { periodScores: mkPeriods([21,20], [25,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m03': (() => { const b = buildBoxScore(94, 77, 'puc-time-1', 'puc-time-4'); return { periodScores: mkPeriods([23,19], [26,20], [23,21], [22,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m04': (() => { const b = buildBoxScore(79, 83, 'puc-time-2', 'puc-time-3'); return { periodScores: mkPeriods([19,20], [23,22], [19,22], [18,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m05': (() => { const b = buildBoxScore(86, 77, 'puc-time-2', 'puc-time-4'); return { periodScores: mkPeriods([21,19], [24,20], [21,21], [20,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m06': (() => { const b = buildBoxScore(91, 88, 'puc-time-3', 'puc-time-4'); return { periodScores: mkPeriods([22,22], [26,23], [22,23], [21,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m07': (() => { const b = buildBoxScore(87, 91, 'puc-time-6', 'puc-time-5'); return { periodScores: mkPeriods([21,22], [25,24], [21,24], [20,21]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m08': (() => { const b = buildBoxScore(94, 81, 'puc-time-6', 'puc-time-7'); return { periodScores: mkPeriods([23,20], [26,21], [23,22], [22,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m09': (() => { const b = buildBoxScore(76, 75, 'puc-time-6', 'puc-time-8'); return { periodScores: mkPeriods([19,18], [22,20], [18,20], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m10': (() => { const b = buildBoxScore(80, 81, 'puc-time-5', 'puc-time-7'); return { periodScores: mkPeriods([20,20], [23,21], [19,22], [18,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m11': (() => { const b = buildBoxScore(87, 75, 'puc-time-5', 'puc-time-8'); return { periodScores: mkPeriods([21,18], [25,20], [21,20], [20,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m12': (() => { const b = buildBoxScore(90, 86, 'puc-time-7', 'puc-time-8'); return { periodScores: mkPeriods([22,21], [25,22], [22,23], [21,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m13': (() => { const b = buildBoxScore(88, 90, 'puc-time-9', 'puc-time-10'); return { periodScores: mkPeriods([22,22], [25,23], [21,24], [20,21]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m14': (() => { const b = buildBoxScore(70, 79, 'puc-time-9', 'puc-time-11'); return { periodScores: mkPeriods([17,19], [20,21], [17,21], [16,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m15': (() => { const b = buildBoxScore(77, 73, 'puc-time-9', 'puc-time-12'); return { periodScores: mkPeriods([19,18], [22,19], [19,20], [17,16]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m16': (() => { const b = buildBoxScore(87, 88, 'puc-time-10', 'puc-time-11'); return { periodScores: mkPeriods([21,22], [25,23], [21,23], [20,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m17': (() => { const b = buildBoxScore(94, 73, 'puc-time-10', 'puc-time-12'); return { periodScores: mkPeriods([23,18], [26,19], [23,20], [22,16]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m18': (() => { const b = buildBoxScore(89, 84, 'puc-time-11', 'puc-time-12'); return { periodScores: mkPeriods([22,21], [25,22], [22,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m19': (() => { const b = buildBoxScore(92, 96, 'puc-time-13', 'puc-time-14'); return { periodScores: mkPeriods([23,24], [26,25], [22,25], [21,22]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m20': (() => { const b = buildBoxScore(74, 77, 'puc-time-13', 'puc-time-15'); return { periodScores: mkPeriods([18,19], [21,20], [18,21], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m21': (() => { const b = buildBoxScore(81, 71, 'puc-time-13', 'puc-time-16'); return { periodScores: mkPeriods([20,17], [23,19], [20,19], [18,16]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m22': (() => { const b = buildBoxScore(91, 94, 'puc-time-14', 'puc-time-15'); return { periodScores: mkPeriods([22,23], [26,24], [22,25], [21,22]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m23': (() => { const b = buildBoxScore(73, 71, 'puc-time-14', 'puc-time-16'); return { periodScores: mkPeriods([18,17], [21,19], [18,19], [16,16]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m24': (() => { const b = buildBoxScore(83, 82, 'puc-time-15', 'puc-time-16'); return { periodScores: mkPeriods([20,20], [24,21], [20,22], [19,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m25': (() => { const b = buildBoxScore(86, 82, 'puc-time-1', 'puc-time-5'); return { periodScores: mkPeriods([21,20], [24,21], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m26': (() => { const b = buildBoxScore(70, 78, 'puc-time-6', 'puc-time-2'); return { periodScores: mkPeriods([17,19], [20,20], [17,21], [16,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m27': (() => { const b = buildBoxScore(86, 83, 'puc-time-9', 'puc-time-14'); return { periodScores: mkPeriods([21,20], [24,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m28': (() => { const b = buildBoxScore(84, 81, 'puc-time-13', 'puc-time-10'); return { periodScores: mkPeriods([21,20], [24,21], [20,22], [19,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m29': (() => { const b = buildBoxScore(82, 78, 'puc-time-1', 'puc-time-13'); return { periodScores: mkPeriods([20,19], [23,20], [20,21], [19,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m30': (() => { const b = buildBoxScore(86, 69, 'puc-time-2', 'puc-time-9'); return { periodScores: mkPeriods([21,17], [24,18], [21,19], [20,15]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
 }
-
-const c5Matches: Match[] = [
-  mkMatch(C5, 'Fase de grupos', '2026-05-25T19:00:00', 't6', 't1', 88, 74, 'FINISHED', 'Arena Regional', 'COMPLETE'),
-  mkMatch(C5, 'Fase de grupos', '2026-05-27T19:00:00', 't5', 't8', 80, 76, 'FINISHED', 'Arena Regional', 'PARTIAL'),
-  mkMatch(C5, 'Fase de grupos', '2026-05-29T19:00:00', 't7', 't8', 79, 71, 'FINISHED', 'Arena Regional', 'COMPLETE'),
-  mkMatch(C5, 'Quartas de final', '2026-06-14T19:00:00', 't6', 't8', null, null, 'SCHEDULED', 'Arena Regional', 'PENDING'),
-  mkMatch(C5, 'Quartas de final', '2026-06-14T21:00:00', 't5', 't4', null, null, 'SCHEDULED', 'Arena Regional', 'PENDING'),
-]
-
-const c5Bracket: BracketRound[] = [
-  {
-    id: 'c5-qf',
-    name: 'Quartas de final',
-    matches: [
-      { id: 'c5-qf1', matchId: 'm29', homeTeamId: 't6', awayTeamId: 't8', homeScore: null, awayScore: null, winnerId: null },
-      { id: 'c5-qf2', matchId: 'm30', homeTeamId: 't5', awayTeamId: 't4', homeScore: null, awayScore: null, winnerId: null },
-    ],
-  },
-  {
-    id: 'c5-sf',
-    name: 'Semifinais',
-    matches: [
-      { id: 'c5-sf1', matchId: null, homeTeamId: null, awayTeamId: null, homeScore: null, awayScore: null, winnerId: null },
-    ],
-  },
-]
-
-// ── Championships registry ──────────────────────────────────────────────────────
-
-const REGULATION_DEFAULT =
-  'Fase classificatória em grupos. As melhores equipes de cada grupo avançam para os ' +
-  'playoffs em formato mata-mata. Critérios de desempate, nesta ordem: número de vitórias, ' +
-  'saldo de pontos e pontos pró. Em caso de empate na fase final, decide o confronto direto.'
-
-const MOCK_CHAMPIONSHIPS: Championship[] = [
-  {
-    id: C1,
-    name: 'Liga Metropolitana',
-    season: '2025/26',
-    category: 'Adulto Masculino',
-    status: 'PLAYOFFS',
-    currentPhase: 'SEMIS',
-    teamIds: ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8'],
-    matchCount: 13,
-    finishedMatchCount: 10,
-    startDate: '2026-05-04',
-    endDate: '2026-06-20',
-    updatedAt: '2026-06-12T20:42:00',
-    statsStatus: 'PARTIAL',
-    regulation: REGULATION_DEFAULT,
-    groups: c1Groups,
-    leaders: c1Leaders,
-    bracket: c1Bracket,
-    championTeamId: null,
-  },
-  {
-    id: C2,
-    name: 'Copa de Inverno',
-    season: '2025',
-    category: 'Adulto Masculino',
-    status: 'IN_PROGRESS',
-    currentPhase: 'GROUPS',
-    teamIds: ['t1', 't3', 't5', 't6', 't8'],
-    matchCount: 7,
-    finishedMatchCount: 5,
-    startDate: '2026-06-01',
-    endDate: '2026-07-05',
-    updatedAt: '2026-06-08T21:10:00',
-    statsStatus: 'PARTIAL',
-    regulation: REGULATION_DEFAULT,
-    groups: c2Groups,
-    leaders: c2Leaders,
-    bracket: [],
-    championTeamId: null,
-  },
-  {
-    id: C5,
-    name: 'Copa Regional',
-    season: '2025',
-    category: 'Adulto Masculino',
-    status: 'IN_PROGRESS',
-    currentPhase: 'QUARTERS',
-    teamIds: ['t1', 't4', 't5', 't6', 't7', 't8'],
-    matchCount: 5,
-    finishedMatchCount: 3,
-    startDate: '2026-05-25',
-    endDate: '2026-06-28',
-    updatedAt: '2026-05-29T20:55:00',
-    statsStatus: 'PARTIAL',
-    regulation: REGULATION_DEFAULT,
-    groups: c5Groups,
-    leaders: c5Leaders,
-    bracket: c5Bracket,
-    championTeamId: null,
-  },
-  {
-    id: 'c4',
-    name: 'Liga Feminina',
-    season: '2025/26',
-    category: 'Adulto Feminino',
-    status: 'SCHEDULED',
-    currentPhase: 'GROUPS',
-    teamIds: ['t2', 't3', 't4', 't6'],
-    matchCount: 0,
-    finishedMatchCount: 0,
-    startDate: '2026-07-12',
-    endDate: '2026-08-30',
-    updatedAt: '2026-06-05T14:00:00',
-    statsStatus: 'PENDING',
-    regulation: REGULATION_DEFAULT,
-    groups: [],
-    leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
-    bracket: [],
-    championTeamId: null,
-  },
-  {
-    id: C3,
-    name: 'Torneio Sub-19',
-    season: '2025',
-    category: 'Sub-19 Masculino',
-    status: 'FINISHED',
-    currentPhase: 'FINISHED',
-    teamIds: ['t2', 't4', 't7', 't8'],
-    matchCount: 5,
-    finishedMatchCount: 5,
-    startDate: '2026-03-10',
-    endDate: '2026-03-29',
-    updatedAt: '2026-03-29T21:30:00',
-    statsStatus: 'COMPLETE',
-    regulation: REGULATION_DEFAULT,
-    groups: c3Groups,
-    leaders: c3Leaders,
-    bracket: c3Bracket,
-    championTeamId: 't4',
-  },
-  {
-    id: 'c6',
-    name: 'Taça Outono',
-    season: '2025',
-    category: 'Adulto Masculino',
-    status: 'CANCELED',
-    currentPhase: 'GROUPS',
-    teamIds: ['t1', 't5', 't7'],
-    matchCount: 0,
-    finishedMatchCount: 0,
-    startDate: '2026-04-05',
-    endDate: '2026-05-10',
-    updatedAt: '2026-04-01T09:20:00',
-    statsStatus: 'PENDING',
-    regulation: REGULATION_DEFAULT,
-    groups: [],
-    leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
-    bracket: [],
-    championTeamId: null,
-  },
-  // ── C7 — Supercopa Nacional (PLAYOFFS · Oitavas de final · 16 times · 4 grupos) — ⚠️ MOCK
-  {
-    id: 'c7',
-    name: 'Supercopa Nacional',
-    season: '2025/26',
-    category: 'Adulto Masculino',
-    status: 'PLAYOFFS',
-    currentPhase: 'ROUNDS_OF_16',
-    teamIds: ['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','t13','t14','t15','t16'],
-    matchCount: 39,
-    finishedMatchCount: 28,
-    startDate: '2026-04-15',
-    endDate: '2026-07-20',
-    updatedAt: '2026-06-07T22:05:00',
-    statsStatus: 'PARTIAL',
-    regulation: REGULATION_DEFAULT,
-    groups: [
-      group('c7-ga', 'Grupo A', [['t1',3,3,0,234,187],['t2',3,2,1,221,198],['t3',3,1,2,208,218],['t4',3,0,3,194,254]]),
-      group('c7-gb', 'Grupo B', [['t5',3,3,0,241,195],['t6',3,2,1,224,207],['t7',3,1,2,203,221],['t8',3,0,3,188,233]]),
-      group('c7-gc', 'Grupo C', [['t9',3,3,0,252,199],['t10',3,2,1,228,218],['t11',3,1,2,209,224],['t12',3,0,3,192,240]]),
-      group('c7-gd', 'Grupo D', [['t13',3,3,0,245,201],['t14',3,2,1,218,209],['t15',3,1,2,205,221],['t16',3,0,3,187,224]]),
-    ],
-    leaders: {
-      ppg: [
-        { athleteId:'a1', athleteName:'Rafael Moura', teamId:'t1', value:22.1, gamesPlayed:3 },
-        { athleteId:'a5', athleteName:'Henrique Sales', teamId:'t6', value:21.4, gamesPlayed:3 },
-        { athleteId:'a3', athleteName:'Caio Bittencourt', teamId:'t4', value:20.8, gamesPlayed:3 },
-      ],
-      rpg: [
-        { athleteId:'a6', athleteName:'Túlio Ramires', teamId:'t1', value:10.5, gamesPlayed:3 },
-        { athleteId:'a7', athleteName:'Bruno Capela', teamId:'t3', value:9.8, gamesPlayed:3 },
-        { athleteId:'a9', athleteName:'Pedro Tavares', teamId:'t6', value:8.9, gamesPlayed:3 },
-      ],
-      apg: [
-        { athleteId:'a10', athleteName:'Gabriel Pires', teamId:'t2', value:7.2, gamesPlayed:3 },
-        { athleteId:'a11', athleteName:'Vitor Hugo', teamId:'t1', value:6.9, gamesPlayed:3 },
-        { athleteId:'a14', athleteName:'André Nunes', teamId:'t6', value:5.8, gamesPlayed:3 },
-      ],
-      stg: [
-        { athleteId:'a11', athleteName:'Vitor Hugo', teamId:'t1', value:2.3, gamesPlayed:3 },
-        { athleteId:'a10', athleteName:'Gabriel Pires', teamId:'t2', value:1.9, gamesPlayed:3 },
-        { athleteId:'a13', athleteName:'Felipe Castro', teamId:'t5', value:1.7, gamesPlayed:3 },
-      ],
-      bpg: [
-        { athleteId:'a6', athleteName:'Túlio Ramires', teamId:'t1', value:1.8, gamesPlayed:3 },
-        { athleteId:'a16', athleteName:'Otávio Brandão', teamId:'t4', value:1.4, gamesPlayed:3 },
-        { athleteId:'a9', athleteName:'Pedro Tavares', teamId:'t6', value:1.1, gamesPlayed:3 },
-      ],
-    },
-    bracket: [
-      {
-        id: 'c7-o', name: 'Oitavas de final',
-        matches: [
-          { id:'c7-o1', matchId:'m31', homeTeamId:'t1', awayTeamId:'t16', homeScore:88, awayScore:62, winnerId:'t1' },
-          { id:'c7-o2', matchId:'m32', homeTeamId:'t9', awayTeamId:'t8',  homeScore:91, awayScore:83, winnerId:'t9' },
-          { id:'c7-o3', matchId:'m33', homeTeamId:'t5', awayTeamId:'t12', homeScore:84, awayScore:79, winnerId:'t5' },
-          { id:'c7-o4', matchId:'m34', homeTeamId:'t13',awayTeamId:'t4',  homeScore:77, awayScore:74, winnerId:'t13' },
-          { id:'c7-o5', matchId:'m35', homeTeamId:'t2', awayTeamId:'t15', homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-o6', matchId:'m36', homeTeamId:'t10',awayTeamId:'t7',  homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-o7', matchId:'m37', homeTeamId:'t6', awayTeamId:'t11', homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-o8', matchId:'m38', homeTeamId:'t14',awayTeamId:'t3',  homeScore:null, awayScore:null, winnerId:null },
-        ],
-      },
-      {
-        id: 'c7-q', name: 'Quartas de final',
-        matches: [
-          { id:'c7-q1', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-q2', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-q3', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-q4', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-        ],
-      },
-      {
-        id: 'c7-s', name: 'Semifinais',
-        matches: [
-          { id:'c7-s1', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-          { id:'c7-s2', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-        ],
-      },
-      {
-        id: 'c7-f', name: 'Final',
-        matches: [
-          { id:'c7-f1', matchId:null, homeTeamId:null, awayTeamId:null, homeScore:null, awayScore:null, winnerId:null },
-        ],
-      },
-    ],
-    championTeamId: null,
-  },
-]
-
-const c7Matches: Match[] = [
-  mkMatch('c7','Oitavas de final','2026-06-07T15:00:00','t1','t16',88,62,'FINISHED','Arena Nacional','COMPLETE'),
-  mkMatch('c7','Oitavas de final','2026-06-07T17:00:00','t9','t8',91,83,'FINISHED','Arena Nacional','COMPLETE'),
-  mkMatch('c7','Oitavas de final','2026-06-07T19:00:00','t5','t12',84,79,'FINISHED','Arena Nacional','COMPLETE'),
-  mkMatch('c7','Oitavas de final','2026-06-07T21:00:00','t13','t4',77,74,'FINISHED','Arena Nacional','COMPLETE'),
-  mkMatch('c7','Oitavas de final','2026-06-14T15:00:00','t2','t15',null,null,'SCHEDULED','Arena Nacional','PENDING'),
-  mkMatch('c7','Oitavas de final','2026-06-14T17:00:00','t10','t7',null,null,'SCHEDULED','Arena Nacional','PENDING'),
-  mkMatch('c7','Oitavas de final','2026-06-14T19:00:00','t6','t11',null,null,'SCHEDULED','Arena Nacional','PENDING'),
-  mkMatch('c7','Oitavas de final','2026-06-14T21:00:00','t14','t3',null,null,'SCHEDULED','Arena Nacional','PENDING'),
-]
-
-// ── Accessors (mirror a future async API; currently synchronous) ─────────────────
-
-export function getTeams(): Team[] {
-  return MOCK_TEAMS
-}
-
-export function getChampionships(): Championship[] {
-  return MOCK_CHAMPIONSHIPS
-}
-
-export function getChampionshipById(id: string): Championship | undefined {
-  return MOCK_CHAMPIONSHIPS.find((c) => c.id === id)
-}
-
-export function getMatchesByChampionship(championshipId: string): Match[] {
-  return MOCK_MATCHES.filter((m) => m.championshipId === championshipId)
-}
-
-/** Distinct seasons present in the data — feeds the list filter. */
-export function getSeasons(): string[] {
-  return [...new Set(MOCK_CHAMPIONSHIPS.map((c) => c.season))].sort().reverse()
-}
-
-/** All matches across all championships. */
-export function getAllMatches(): Match[] {
-  return MOCK_MATCHES
-}
-
-// ── Per-match box score data ─────────────────────────────────────────────────────
-// ⚠️ MOCK only — delete when real API lands. PTS check: PTS = 2*fgm + tpm + ftm
-
-function mkPlayer(
-  athleteId: string, athleteName: string, number: number,
-  min: number, pts: number, reb: number, ast: number, stl: number, blk: number,
-  plusMinus: number, to: number, pf: number,
-  fgm: number, fga: number, tpm: number, tpa: number, ftm: number, fta: number,
-): PlayerMatchStats {
-  return { athleteId, athleteName, number, min, pts, reb, ast, stl, blk, plusMinus, to, pf, fgm, fga, tpm, tpa, ftm, fta }
-}
-
-function mkTeam(teamId: string, players: PlayerMatchStats[]): TeamMatchStats {
-  return { teamId, players }
-}
-
-/** Build a dynamic period score list from [homePoints, awayPoints] pairs.
- * Periods 1–4 are REGULAR; period 5+ are OVERTIME (OT, 2OT, …).
- * Pass null for either value when the period has not been played yet. */
-function mkPeriods(
-  ...pairs: Array<[number | null, number | null]>
-): PeriodScore[] {
-  return pairs.map(([home, away], idx) => {
-    const periodNumber = idx + 1
-    const isOT = periodNumber > 4
-    return {
-      periodNumber,
-      type: isOT ? 'OVERTIME' : 'REGULAR',
-      overtimeNumber: isOT ? periodNumber - 4 : null,
-      homePoints: home,
-      awayPoints: away,
-    }
-  })
-}
-
-// ─ m1: t1(88) vs t7(71) ─ COMPLETE ──────────────────────────────────────────────
-const M1_T1 = mkTeam('t1', [
-  mkPlayer('a1', 'Rafael Moura',    3,  34, 28,  4, 5, 2, 0,  18, 2, 2, 10, 19, 2, 5, 6, 8),
-  mkPlayer('a6', 'Túlio Ramires',  33,  32, 16, 11, 1, 1, 2,  14, 1, 3,  6, 11, 0, 1, 4, 5),
-  mkPlayer('a11','Vitor Hugo',       7,  30, 12,  4, 9, 3, 0,  12, 2, 2,  4,  9, 2, 6, 2, 2),
-  mkPlayer('a17','Tiago Freitas',   11,  26, 14,  3, 2, 1, 0,  10, 1, 2,  5, 11, 2, 5, 2, 2),
-  mkPlayer('a18','Marcelo Borges',  21,  22, 10,  5, 1, 0, 1,   6, 2, 3,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a19','Diego Souza',     14,  18,  8,  3, 1, 0, 0,   4, 1, 1,  3,  7, 0, 1, 2, 2),
-  mkPlayer('a20','Leandro Matos',    5,  38,  0,  5, 2, 0, 0,   2, 2, 3,  0,  3, 0, 1, 0, 0),
+const FINAL_HOME = mkTeam('puc-time-1', [
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rafael.moura@quadra.com.br')!, 38, 24, 5, 6, 2, 0, 8, 2, 2, 9, 17, 2, 5, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'diego.santos@quadra.com.br')!, 36, 18, 4, 3, 1, 1, 6, 1, 3, 7, 14, 1, 4, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'felipe.oliveira@quadra.com.br')!, 34, 14, 8, 2, 0, 2, 4, 2, 3, 5, 10, 0, 1, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'gabriel.costa@quadra.com.br')!, 32, 12, 3, 5, 2, 0, 4, 1, 2, 4, 9, 2, 5, 2, 2),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'henrique.lima@quadra.com.br')!, 28, 10, 6, 1, 1, 0, 2, 1, 2, 4, 8, 0, 2, 2, 3),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'igor.martins@quadra.com.br')!, 22,  4, 4, 2, 0, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'joao.pereira@quadra.com.br')!, 20,  2, 3, 1, 0, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
-const M1_T7 = mkTeam('t7', [
-  mkPlayer('a38','Alex Santos',      4,  36, 18,  6, 3, 1, 1, -18, 3, 3,  6, 13, 1, 3, 5, 7),
-  mkPlayer('a39','Fernando Lemos', 50,  33, 15,  8, 2, 0, 2, -14, 2, 4,  5, 11, 1, 4, 4, 5),
-  mkPlayer('a40','Paulo César',    28,  28, 13,  4, 4, 2, 0,  -8, 2, 2,  5, 10, 0, 2, 3, 4),
-  mkPlayer('a41','Rodrigo Lima',     6,  22, 12,  5, 1, 0, 0,  -6, 1, 3,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a42','Marcos Felipe',  14,  25,  8,  5, 2, 0, 1,  -4, 2, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a48','Sérgio Lima',    17,  28,  5,  3, 1, 0, 0,  -3, 1, 1,  2,  5, 0, 1, 1, 2),
-  mkPlayer('a49','Cláudio Melo',   22,  28,  0,  4, 1, 0, 0,  -2, 1, 1,  0,  4, 0, 1, 0, 0),
+const FINAL_AWAY = mkTeam('puc-time-2', [
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'nicolas.barbosa@quadra.com.br')!, 38, 22, 4, 4, 2, 0, -6, 3, 2, 8, 16, 2, 6, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'otavio.ribeiro@quadra.com.br')!, 36, 16, 5, 3, 1, 1, -4, 2, 3, 6, 12, 1, 4, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'paulo.carvalho@quadra.com.br')!, 34, 14, 7, 2, 0, 1, -2, 1, 2, 5, 10, 1, 3, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'pedro.gomes@quadra.com.br')!, 32, 12, 3, 5, 2, 0, -2, 2, 2, 4, 9, 2, 5, 2, 2),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'ricardo.araujo@quadra.com.br')!, 28, 10, 5, 1, 0, 0, -2, 1, 3, 4, 8, 0, 2, 2, 3),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'roberto.nunes@quadra.com.br')!, 24,  4, 4, 1, 0, 0,  0, 1, 1, 2, 5, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rodrigo.melo@quadra.com.br')!, 18,  2, 2, 1, 0, 0,  0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
+MATCH_EXTRA['puc-geral-m31'] = { periodScores: mkPeriods([22,20],[18,22],[20,18],[16,16],[8,4]), homeStats: FINAL_HOME, awayStats: FINAL_AWAY }
 
-// ─ m2: t4(79) vs t5(74) ─ COMPLETE ──────────────────────────────────────────────
-const M2_T4 = mkTeam('t4', [
-  mkPlayer('a3', 'Caio Bittencourt',23, 36, 22,  8, 3, 2, 1,   5, 2, 2,  8, 15, 1, 4, 5, 7),
-  mkPlayer('a12','Eduardo Lima',    1,  32, 16,  4, 6, 2, 0,   4, 2, 2,  6, 12, 2, 5, 2, 2),
-  mkPlayer('a16','Otávio Brandão',34,  30, 14, 10, 1, 1, 2,   2, 1, 3,  5, 10, 0, 1, 4, 5),
-  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,   4, 1, 3,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a29','Enzo Carvalho',  25,  22,  8,  3, 1, 0, 0,   2, 1, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a30','André Lima',     11,  30,  4,  4, 1, 0, 0,   0, 1, 2,  2,  6, 0, 2, 0, 0),
-  mkPlayer('a52','Bruno Motta',    32,  24,  3,  3, 1, 0, 0,   2, 0, 1,  1,  4, 1, 2, 0, 0),
-])
-const M2_T5 = mkTeam('t5', [
-  mkPlayer('a13','Felipe Castro',   5,  36, 20,  5, 6, 2, 0,  -5, 2, 2,  7, 14, 2, 6, 4, 5),
-  mkPlayer('a31','Robson Freire',  24,  32, 16,  6, 2, 1, 0,  -4, 2, 3,  5, 11, 1, 4, 5, 6),
-  mkPlayer('a32','Nelson Cruz',    42,  28, 14,  8, 1, 0, 1,  -2, 2, 4,  5, 10, 1, 3, 3, 4),
-  mkPlayer('a33','Paulo Henrique',  3,  26, 12,  4, 2, 0, 0,  -2, 1, 2,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a34','Sandro Lima',    16,  22,  8,  5, 1, 0, 0,  -2, 1, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a55','Lucas Gomes',     9,  30,  4,  4, 1, 0, 0,   2, 1, 1,  2,  5, 0, 1, 0, 0),
-  mkPlayer('a56','Bruno Santos',   27,  26,  0,  4, 1, 0, 0,   0, 1, 1,  0,  3, 0, 1, 0, 0),
-])
+export function getTeams(): Team[] { return MOCK_TEAMS }
+export function getChampionships(): Championship[] { return MOCK_CHAMPIONSHIPS }
+export function getChampionshipById(id: string): Championship | undefined { return MOCK_CHAMPIONSHIPS.find((c) => c.id === id) }
+export function getMatchesByChampionship(championshipId: string): Match[] { return MOCK_MATCHES.filter((m) => m.championshipId === championshipId) }
+export function getSeasons(): string[] { return [...new Set(MOCK_CHAMPIONSHIPS.map((c) => c.season))].sort().reverse() }
+export function getAllMatches(): Match[] { return MOCK_MATCHES }
+export function getMatchDetailById(id: string): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA[id]; return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] }, awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] } } }
+export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
+export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
+export function getAthleteById(athleteId: string): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }
+function getAthleteAppearances(athleteId?: string) { return Object.entries(MATCH_EXTRA).flatMap(([matchId, extra]) => { const match = MOCK_MATCHES.find((item) => item.id === matchId); if (!match) return []; const home = extra.homeStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.homeStats.teamId, match })); const away = extra.awayStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.awayStats.teamId, match })); return [...home, ...away] }) }
+export function getAthleteMatches(athleteId: string): AthleteMatchStatsRow[] { return getAthleteAppearances(athleteId).map(({ player, teamId, match }) => { const championship = getChampionshipById(match.championshipId); const homeTeam = MOCK_TEAMS.find((t) => t.id === match.homeTeamId); const awayTeam = MOCK_TEAMS.find((t) => t.id === match.awayTeamId); const athleteIsHome = teamId === match.homeTeamId; const athleteScore = athleteIsHome ? match.homeScore : match.awayScore; const opponentScore = athleteIsHome ? match.awayScore : match.homeScore; const scoreText = athleteScore === null || opponentScore === null ? '—' : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`; if (!championship) return null; return { match, championship, teamId, matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`, result: scoreText, stats: player } }).filter((row): row is AthleteMatchStatsRow => Boolean(row)).sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date)) }
+export function getAthleteSummaryById(athleteId: string): AthleteStatTotals { return aggregateAthleteStats(getAthleteMatches(athleteId).map((row) => row.stats)) }
+export function getAthleteChampionshipStats(athleteId: string): AthleteChampionshipStatsRow[] { const grouped = new Map<string, AthleteMatchStatsRow[]>(); getAthleteMatches(athleteId).forEach((row) => { const key = `${row.championship.id}:${row.teamId}`; grouped.set(key, [...(grouped.get(key) ?? []), row]) }); return [...grouped.values()].map((rows) => ({ championship: rows[0].championship, teamId: rows[0].teamId, totals: aggregateAthleteStats(rows.map((row) => row.stats)) })).sort((a, b) => +new Date(b.championship.startDate) - +new Date(a.championship.startDate)) }
 
-// ─ m3: t2(95) vs t8(68) ─ COMPLETE ──────────────────────────────────────────────
-const M3_T2 = mkTeam('t2', [
-  mkPlayer('a2', 'Diego Valente',   8,  36, 26,  3, 3, 2, 1,  22, 2, 2,  9, 17, 2, 6, 6, 8),
-  mkPlayer('a8', 'Marcos Vinícius',35,  33, 22,  9, 2, 1, 1,  18, 1, 3,  8, 15, 1, 4, 5, 6),
-  mkPlayer('a10','Gabriel Pires',   4,  32, 18,  4, 8, 2, 0,  16, 3, 1,  7, 13, 0, 2, 4, 5),
-  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,  10, 1, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a22','Fábio Costa',    22,  22,  8,  6, 1, 0, 1,   8, 1, 3,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a23','Giovani Leal',   15,  18,  5,  3, 1, 0, 0,   4, 1, 1,  2,  5, 0, 1, 1, 2),
-  mkPlayer('a24','Samuel Torres',   9,  33,  2,  4, 2, 0, 0,   2, 0, 2,  1,  4, 0, 1, 0, 0),
-])
-const M3_T8 = mkTeam('t8', [
-  mkPlayer('a43','Wesley Silva',   11,  34, 18,  4, 3, 1, 0, -22, 3, 3,  6, 13, 2, 5, 4, 5),
-  mkPlayer('a44','Ivan Pinto',     22,  32, 14,  8, 1, 0, 1, -18, 2, 4,  5, 11, 1, 4, 3, 4),
-  mkPlayer('a45','Rafael Nunes',    7,  28, 12,  5, 2, 2, 0, -14, 2, 2,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a46','Claudio Barbosa',33,  25,  8,  4, 1, 0, 1,  -8, 2, 3,  3,  8, 0, 2, 2, 3),
-  mkPlayer('a47','Gustavo Lima',   44,  22,  8,  5, 1, 0, 0,  -6, 1, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a50','Éder Moura',     14,  30,  6,  4, 1, 0, 0,  -4, 1, 1,  2,  6, 1, 3, 1, 2),
-  mkPlayer('a51','Filipe Neto',    20,  29,  2,  3, 1, 0, 0,  -3, 0, 1,  1,  4, 0, 1, 0, 1),
-])
-
-// ─ m4: t3(81) vs t6(77) ─ PARTIAL (apenas t3) ──────────────────────────────
-const M4_T3 = mkTeam('t3', [
-  mkPlayer('a4', 'Lucas Andrade',  10,  35, 24,  4, 6, 2, 0,   4, 2, 1,  8, 16, 2, 6, 6, 7),
-  mkPlayer('a7', 'Bruno Capela',   44,  33, 18, 11, 1, 0, 2,   2, 1, 4,  6, 11, 0, 1, 6, 7),
-  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 5, 2, 0,   2, 2, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a25','Thiago Mello',    6,  25, 12,  4, 1, 1, 0,   2, 1, 2,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a26','César Neves',    19,  22,  9,  5, 1, 0, 0,   0, 1, 3,  3,  7, 0, 2, 3, 4),
-  mkPlayer('a27','Matheus Rocha',  30,  20,  4,  3, 1, 0, 0,   0, 1, 1,  2,  5, 0, 1, 0, 0),
-  mkPlayer('a53','Fábio Dias',     15,  35,  0,  4, 1, 0, 0,   0, 1, 2,  0,  3, 0, 1, 0, 0),
-])
-
-// ─ m5: t1(84) vs t4(80) ─ COMPLETE ──────────────────────────────────────────────
-const M5_T1 = mkTeam('t1', [
-  mkPlayer('a1', 'Rafael Moura',    3,  35, 24,  4, 4, 2, 0,   4, 2, 2,  8, 16, 2, 5, 6, 8),
-  mkPlayer('a6', 'Túlio Ramires',  33,  33, 14, 10, 1, 1, 2,   2, 1, 3,  5, 10, 0, 1, 4, 5),
-  mkPlayer('a11','Vitor Hugo',       7,  30, 16,  4, 7, 3, 0,   6, 3, 2,  6, 12, 2, 6, 2, 2),
-  mkPlayer('a17','Tiago Freitas',   11,  26, 14,  3, 1, 0, 0,   2, 1, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a18','Marcelo Borges',  21,  22,  8,  5, 1, 0, 1,   2, 2, 3,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a19','Diego Souza',     14,  18,  6,  3, 1, 0, 0,  -2, 1, 1,  2,  6, 1, 3, 1, 2),
-  mkPlayer('a20','Leandro Matos',    5,  36,  2,  5, 2, 0, 0,   0, 2, 3,  1,  4, 0, 1, 0, 0),
-])
-const M5_T4 = mkTeam('t4', [
-  mkPlayer('a3', 'Caio Bittencourt',23, 36, 22,  8, 3, 2, 1,  -4, 2, 2,  8, 15, 1, 4, 5, 7),
-  mkPlayer('a12','Eduardo Lima',    1,  32, 16,  4, 5, 2, 0,  -2, 2, 2,  6, 12, 2, 5, 2, 2),
-  mkPlayer('a16','Otávio Brandão',34,  30, 14, 10, 1, 1, 2,  -2, 1, 3,  5, 10, 0, 1, 4, 5),
-  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,  -2, 1, 3,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a29','Enzo Carvalho',  25,  22, 10,  3, 1, 0, 0,   0, 1, 2,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a30','André Lima',     11,  30,  4,  4, 1, 0, 0,   2, 1, 2,  2,  6, 0, 2, 0, 0),
-  mkPlayer('a52','Bruno Motta',    32,  24,  2,  3, 0, 0, 0,  -2, 0, 1,  1,  4, 0, 1, 0, 0),
-])
-
-// ─ m6: t2(90) vs t3(85) ─ COMPLETE ──────────────────────────────────────────────
-const M6_T2 = mkTeam('t2', [
-  mkPlayer('a2', 'Diego Valente',   8,  36, 24,  4, 3, 2, 1,   6, 2, 2,  8, 16, 2, 5, 6, 8),
-  mkPlayer('a8', 'Marcos Vinícius',35,  33, 18,  9, 2, 1, 1,   4, 1, 3,  6, 12, 1, 4, 5, 6),
-  mkPlayer('a10','Gabriel Pires',   4,  32, 20,  4, 9, 2, 0,   8, 3, 1,  7, 14, 3, 7, 3, 3),
-  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,   4, 1, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a22','Fábio Costa',    22,  22,  8,  5, 1, 0, 1,   2, 2, 3,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a23','Giovani Leal',   15,  18,  4,  3, 1, 0, 0,   2, 0, 1,  2,  5, 0, 1, 0, 0),
-  mkPlayer('a24','Samuel Torres',   9,  33,  2,  4, 2, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
-])
-const M6_T3 = mkTeam('t3', [
-  mkPlayer('a4', 'Lucas Andrade',  10,  36, 24,  4, 7, 2, 0,  -6, 2, 1,  8, 15, 2, 6, 6, 7),
-  mkPlayer('a7', 'Bruno Capela',   44,  33, 16, 11, 1, 0, 2,  -4, 1, 4,  6, 11, 0, 1, 4, 5),
-  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 6, 2, 0,  -4, 2, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a25','Thiago Mello',    6,  26, 14,  4, 1, 1, 0,  -4, 1, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a26','César Neves',    19,  22, 10,  5, 1, 0, 0,  -2, 1, 3,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a27','Matheus Rocha',  30,  18,  5,  4, 1, 0, 0,  -2, 1, 1,  2,  5, 0, 1, 1, 2),
-  mkPlayer('a53','Fábio Dias',     15,  35,  2,  4, 1, 0, 0,   0, 0, 2,  1,  4, 0, 1, 0, 0),
-])
-
-// ─ m7: t1(92) vs t6(78) ─ COMPLETE ──────────────────────────────────────────────
-const M7_T1 = mkTeam('t1', [
-  mkPlayer('a1', 'Rafael Moura',    3,  36, 26,  4, 5, 2, 0,  14, 2, 2,  9, 18, 2, 6, 6, 8),
-  mkPlayer('a6', 'Túlio Ramires',  33,  32, 18, 10, 1, 1, 2,  12, 1, 3,  6, 11, 0, 1, 6, 7),
-  mkPlayer('a11','Vitor Hugo',       7,  32, 16,  4, 8, 3, 0,  14, 2, 2,  5, 10, 2, 6, 4, 4),
-  mkPlayer('a17','Tiago Freitas',   11,  26, 16,  3, 2, 0, 0,   8, 1, 2,  6, 11, 2, 6, 2, 2),
-  mkPlayer('a18','Marcelo Borges',  21,  22, 10,  5, 1, 0, 1,   4, 2, 3,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a19','Diego Souza',     14,  18,  6,  3, 1, 0, 0,   2, 1, 1,  2,  6, 1, 3, 1, 2),
-  mkPlayer('a20','Leandro Matos',    5,  34,  0,  5, 2, 0, 0,   0, 2, 3,  0,  3, 0, 1, 0, 0),
-])
-const M7_T6 = mkTeam('t6', [
-  mkPlayer('a5', 'Henrique Sales',  20,  36, 22,  4, 4, 2, 0, -14, 2, 2,  8, 15, 2, 5, 4, 5),
-  mkPlayer('a9', 'Pedro Tavares',   31,  33, 16,  9, 2, 0, 1, -12, 1, 3,  5, 10, 1, 3, 5, 6),
-  mkPlayer('a14','André Nunes',     13,  30, 14,  4, 5, 3, 0, -10, 2, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a35','Victor Alves',     7,  26, 12,  5, 1, 1, 0,  -8, 1, 3,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a36','Daniel Moreira',  18,  22,  8,  5, 1, 0, 0,  -4, 2, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a37','João Paulo',      27,  18,  4,  3, 1, 0, 0,  -2, 1, 1,  2,  5, 0, 1, 0, 0),
-  mkPlayer('a54','Marco Braga',     32,  35,  2,  4, 1, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
-])
-
-// ─ m8: t2(87) vs t5(73) ─ COMPLETE ──────────────────────────────────────────────
-const M8_T2 = mkTeam('t2', [
-  mkPlayer('a2', 'Diego Valente',   8,  35, 22,  3, 3, 2, 1,  12, 2, 2,  7, 15, 2, 5, 6, 7),
-  mkPlayer('a8', 'Marcos Vinícius',35,  32, 20,  9, 2, 1, 1,  10, 1, 3,  7, 13, 1, 4, 5, 6),
-  mkPlayer('a10','Gabriel Pires',   4,  32, 18,  4, 8, 2, 0,  12, 3, 1,  6, 12, 3, 7, 3, 3),
-  mkPlayer('a21','Renato Campos',  12,  26, 14,  5, 1, 1, 0,   6, 1, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a22','Fábio Costa',    22,  22,  8,  5, 1, 0, 1,   4, 1, 3,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a23','Giovani Leal',   15,  18,  3,  3, 1, 0, 0,   2, 0, 1,  1,  4, 1, 2, 0, 0),
-  mkPlayer('a24','Samuel Torres',   9,  35,  2,  4, 1, 0, 0,   0, 1, 2,  1,  4, 0, 1, 0, 0),
-])
-const M8_T5 = mkTeam('t5', [
-  mkPlayer('a13','Felipe Castro',   5,  36, 20,  5, 6, 2, 0, -12, 2, 2,  7, 14, 2, 6, 4, 5),
-  mkPlayer('a31','Robson Freire',  24,  32, 16,  6, 2, 1, 0,  -8, 2, 3,  5, 11, 1, 4, 5, 6),
-  mkPlayer('a32','Nelson Cruz',    42,  28, 14,  8, 1, 0, 1,  -6, 2, 4,  5, 10, 1, 3, 3, 4),
-  mkPlayer('a33','Paulo Henrique',  3,  26, 12,  4, 2, 0, 0,  -4, 1, 2,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a34','Sandro Lima',    16,  22,  8,  5, 1, 0, 0,  -2, 1, 2,  3,  7, 0, 2, 2, 3),
-  mkPlayer('a55','Lucas Gomes',     9,  30,  3,  4, 1, 0, 0,  -2, 1, 1,  1,  4, 1, 2, 0, 0),
-  mkPlayer('a56','Bruno Santos',   27,  26,  0,  4, 1, 0, 0,   0, 1, 1,  0,  3, 0, 1, 0, 0),
-])
-
-// ─ m9: t4(76) vs t3(82) ─ COMPLETE ──────────────────────────────────────────────
-const M9_T4 = mkTeam('t4', [
-  mkPlayer('a3', 'Caio Bittencourt',23, 34, 20,  7, 3, 1, 1,  -6, 2, 2,  7, 15, 1, 4, 5, 7),
-  mkPlayer('a12','Eduardo Lima',    1,  32, 14,  4, 5, 2, 0,  -4, 2, 2,  5, 11, 2, 5, 2, 2),
-  mkPlayer('a16','Otávio Brandão',34,  30, 12,  9, 1, 1, 2,  -4, 1, 3,  4, 10, 0, 1, 4, 5),
-  mkPlayer('a28','Jonas Silva',    17,  26, 12,  4, 1, 0, 0,  -4, 1, 3,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a29','Enzo Carvalho',  25,  22, 10,  3, 1, 0, 0,  -2, 1, 2,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a30','André Lima',     11,  30,  6,  4, 1, 0, 0,   0, 1, 2,  3,  6, 0, 1, 0, 0),
-  mkPlayer('a52','Bruno Motta',    32,  26,  2,  3, 0, 0, 0,   0, 0, 1,  1,  4, 0, 1, 0, 0),
-])
-const M9_T3 = mkTeam('t3', [
-  mkPlayer('a4', 'Lucas Andrade',  10,  36, 22,  4, 7, 2, 0,   6, 2, 1,  7, 14, 2, 5, 6, 7),
-  mkPlayer('a7', 'Bruno Capela',   44,  32, 18, 11, 1, 0, 2,   4, 1, 4,  6, 11, 0, 1, 6, 7),
-  mkPlayer('a15','Rodrigo Paz',     2,  30, 14,  4, 6, 2, 0,   4, 2, 2,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a25','Thiago Mello',    6,  26, 12,  4, 1, 1, 0,   4, 1, 2,  4,  9, 2, 5, 2, 2),
-  mkPlayer('a26','César Neves',    19,  22, 10,  5, 1, 0, 0,   4, 1, 3,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a27','Matheus Rocha',  30,  18,  4,  3, 1, 0, 0,   2, 1, 1,  2,  5, 0, 1, 0, 0),
-  mkPlayer('a53','Fábio Dias',     15,  36,  2,  4, 1, 0, 0,   2, 0, 2,  1,  4, 0, 1, 0, 0),
-])
-
-// ─ m10: t7(70) vs t6(88) ─ PARTIAL (apenas t6) ─────────────────────────────
-const M10_T6 = mkTeam('t6', [
-  mkPlayer('a5', 'Henrique Sales',  20,  36, 22,  4, 4, 2, 0,  18, 2, 2,  7, 14, 2, 5, 6, 7),
-  mkPlayer('a9', 'Pedro Tavares',   31,  33, 18,  9, 2, 0, 1,  16, 1, 3,  6, 11, 1, 3, 5, 6),
-  mkPlayer('a14','André Nunes',     13,  30, 16,  4, 5, 3, 0,  14, 2, 2,  5, 10, 2, 5, 4, 4),
-  mkPlayer('a35','Victor Alves',     7,  26, 14,  5, 1, 1, 0,  10, 1, 3,  5, 10, 2, 5, 2, 2),
-  mkPlayer('a36','Daniel Moreira',  18,  22, 10,  5, 1, 0, 0,   8, 2, 2,  4,  8, 0, 2, 2, 3),
-  mkPlayer('a37','João Paulo',      27,  18,  6,  3, 1, 0, 0,   4, 1, 1,  3,  6, 0, 1, 0, 0),
-  mkPlayer('a54','Marco Braga',     32,  35,  2,  4, 1, 0, 0,   2, 1, 2,  1,  4, 0, 1, 0, 0),
-])
-
-// ─ m11: t1(54) vs t3(49) ─ LIVE (intervalo) ───────────────────────────────
-const M11_T1 = mkTeam('t1', [
-  mkPlayer('a1', 'Rafael Moura',    3,  20, 18,  2, 3, 1, 0,   4, 1, 2,  6, 11, 2, 4, 4, 5),
-  mkPlayer('a6', 'Túlio Ramires',  33,  20, 10,  5, 0, 0, 1,   4, 0, 2,  4,  7, 0, 0, 2, 3),
-  mkPlayer('a11','Vitor Hugo',       7,  20, 10,  2, 4, 1, 0,   2, 1, 1,  4,  8, 1, 3, 1, 1),
-  mkPlayer('a17','Tiago Freitas',   11,  20,  8,  2, 1, 1, 0,   2, 1, 1,  3,  7, 1, 3, 1, 1),
-  mkPlayer('a18','Marcelo Borges',  21,  20,  8,  3, 0, 0, 1,   2, 1, 2,  3,  6, 0, 1, 2, 2),
-])
-const M11_T3 = mkTeam('t3', [
-  mkPlayer('a4', 'Lucas Andrade',  10,  20, 14,  2, 3, 1, 0,  -4, 1, 1,  5,  9, 1, 4, 3, 4),
-  mkPlayer('a7', 'Bruno Capela',   44,  20,  8,  5, 1, 0, 1,  -4, 0, 2,  3,  6, 0, 0, 2, 3),
-  mkPlayer('a15','Rodrigo Paz',     2,  20,  8,  2, 3, 0, 0,  -2, 1, 1,  3,  7, 1, 3, 1, 1),
-  mkPlayer('a25','Thiago Mello',    6,  20,  8,  2, 1, 1, 0,  -4, 1, 2,  3,  7, 1, 3, 1, 1),
-  mkPlayer('a26','César Neves',    19,  20, 11,  3, 1, 0, 0,  -2, 0, 2,  4,  8, 1, 3, 2, 2),
-])
-
-// ─ mot1: t3(94) vs t2(91) ─ FINISHED com 1 overtime ─ COMPLETE ────────────────────
-// Q1:24-22 Q2:20-26 Q3:22-18 Q4:20-20 (tie 86-86) OT:8-5 → 94-91
-const MOT1_T3 = mkTeam('t3', [
-  mkPlayer('a4', 'Lucas Andrade',  10, 38, 28,  5, 7, 2, 0,   6, 3, 2, 10, 20, 2,  7, 6, 8),
-  mkPlayer('a7', 'Bruno Capela',   44, 38, 18, 12, 1, 0, 2,   4, 2, 3,  7, 12, 0,  0, 4, 6),
-  mkPlayer('a15','Rodrigo Paz',     2, 36, 16,  4, 6, 2, 0,   4, 2, 1,  5, 11, 2,  6, 4, 5),
-  mkPlayer('a25','Thiago Mello',    6, 32, 14,  4, 1, 1, 0,   3, 1, 2,  5, 10, 2,  5, 2, 2),
-  mkPlayer('a26','César Neves',    19, 30, 12,  5, 1, 0, 0,   2, 1, 3,  4,  9, 2,  5, 2, 3),
-  mkPlayer('a27','Matheus Rocha',  30, 22,  4,  3, 1, 0, 0,   1, 1, 1,  2,  5, 0,  1, 0, 0),
-  mkPlayer('a53','Fábio Dias',     15, 18,  2,  4, 1, 0, 0,   0, 1, 2,  1,  3, 0,  1, 0, 0),
-])
-const MOT1_T2 = mkTeam('t2', [
-  mkPlayer('a2', 'Diego Valente',   8, 38, 26,  4, 3, 2, 1,  -4, 3, 2,  9, 18, 2,  6, 6, 8),
-  mkPlayer('a8', 'Marcos Vinícius',35, 36, 22,  9, 2, 1, 1,  -2, 2, 3,  8, 15, 1,  3, 5, 7),
-  mkPlayer('a10','Gabriel Pires',   4, 36, 16,  4, 8, 2, 0,  -3, 3, 1,  5, 12, 2,  7, 4, 5),
-  mkPlayer('a21','Renato Campos',  12, 30, 14,  5, 1, 1, 0,  -3, 1, 2,  5, 10, 2,  5, 2, 3),
-  mkPlayer('a22','Fábio Costa',    22, 28,  8,  5, 1, 0, 0,  -2, 2, 3,  3,  7, 0,  2, 2, 3),
-  mkPlayer('a23','Giovani Leal',   15, 20,  3,  3, 1, 0, 0,  -1, 1, 2,  1,  4, 1,  3, 0, 0),
-  mkPlayer('a24','Samuel Torres',   9, 16,  2,  4, 2, 0, 0,   0, 1, 1,  1,  3, 0,  1, 0, 0),
-])
-
-/** Partida showcase: Lobos do Norte 94 × 91 Falcões da Serra — C1 Quartas de final, com 1 OT. */
-const MOT1: Match = {
-  id: 'mot1',
-  championshipId: C1,
-  phase: 'Quartas de final',
-  date: '2026-05-22T19:00:00',
-  homeTeamId: 't3',
-  awayTeamId: 't2',
-  homeScore: 94,
-  awayScore: 91,
-  status: 'FINISHED',
-  venue: 'Ginásio Olímpico',
-  statsStatus: 'COMPLETE',
-}
-
-const MOCK_MATCHES: Match[] = [...c1Matches, ...c2Matches, ...c3Matches, ...c5Matches, ...c7Matches, MOT1]
-
-// ─ Master map (matchId → period scores + team stats) ─────────────────────────────
-const MATCH_EXTRA: Record<string, {
-  periodScores: PeriodScore[] | null
-  homeStats: TeamMatchStats
-  awayStats: TeamMatchStats
-}> = {
-  // m1: t1(88) vs t7(71)  — 23+22+25+18=88, 18+20+18+15=71
-  m1:  { periodScores: mkPeriods([23,18],[22,20],[25,18],[18,15]), homeStats: M1_T1, awayStats: M1_T7 },
-  // m2: t4(79) vs t5(74)  — 20+20+21+18=79, 16+20+18+20=74
-  m2:  { periodScores: mkPeriods([20,16],[20,20],[21,18],[18,20]), homeStats: M2_T4, awayStats: M2_T5 },
-  // m3: t2(95) vs t8(68)  — 24+26+22+23=95, 18+18+16+16=68
-  m3:  { periodScores: mkPeriods([24,18],[26,18],[22,16],[23,16]), homeStats: M3_T2, awayStats: M3_T8 },
-  // m4: t3(81) vs t6(77)  — 20+22+19+20=81, 18+20+20+19=77
-  m4:  { periodScores: mkPeriods([20,18],[22,20],[19,20],[20,19]), homeStats: M4_T3, awayStats: mkTeam('t6',[]) },
-  // m5: t1(84) vs t4(80)  — OT ⚠️  22+16+22+16+8=84, 18+20+20+18+4=80
-  m5:  { periodScores: mkPeriods([22,18],[16,20],[22,20],[16,18],[8,4]), homeStats: M5_T1, awayStats: M5_T4 },
-  // m6: t2(90) vs t3(85)  — 22+24+21+23=90, 20+22+22+21=85
-  m6:  { periodScores: mkPeriods([22,20],[24,22],[21,22],[23,21]), homeStats: M6_T2, awayStats: M6_T3 },
-  // m7: t1(92) vs t6(78)  — 24+22+24+22=92, 20+20+18+20=78
-  m7:  { periodScores: mkPeriods([24,20],[22,20],[24,18],[22,20]), homeStats: M7_T1, awayStats: M7_T6 },
-  // m8: t2(87) vs t5(73)  — 22+24+20+21=87, 18+20+18+17=73
-  m8:  { periodScores: mkPeriods([22,18],[24,20],[20,18],[21,17]), homeStats: M8_T2, awayStats: M8_T5 },
-  // m9: t4(76) vs t3(82)  — 20+18+20+18=76, 22+20+18+22=82
-  m9:  { periodScores: mkPeriods([20,22],[18,20],[20,18],[18,22]), homeStats: M9_T4, awayStats: M9_T3 },
-  // m10: t7(70) vs t6(88) — 18+17+18+17=70, 24+22+20+22=88
-  m10: { periodScores: mkPeriods([18,24],[17,22],[18,20],[17,22]), homeStats: mkTeam('t7',[]), awayStats: M10_T6 },
-  // m11: t1(54) vs t3(49) — LIVE, Q3 e Q4 ainda em andamento
-  m11: { periodScores: mkPeriods([28,24],[26,25],[null,null],[null,null]), homeStats: M11_T1, awayStats: M11_T3 },
-  // mot1: t3(94) vs t2(91) — Q1-Q4 empatado 86-86 + OT: 24+20+22+20+8=94, 22+26+18+20+5=91
-  mot1: { periodScores: mkPeriods([24,22],[20,26],[22,18],[20,20],[8,5]), homeStats: MOT1_T3, awayStats: MOT1_T2 },
-}
-
-export function getMatchDetailById(id: string): MatchDetail | undefined {
-  const match = MOCK_MATCHES.find((m) => m.id === id)
-  if (!match) return undefined
-  const extra = MATCH_EXTRA[id]
-  return {
-    ...match,
-    periodScores: extra?.periodScores ?? null,
-    homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] },
-    awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] },
-  }
-}
-
-const ATHLETE_POSITION_OVERRIDES: Record<string, AthletePosition> = {
-  a1: 'SG',
-  a2: 'SG',
-  a3: 'SF',
-  a4: 'PG',
-  a5: 'SF',
-  a6: 'C',
-  a7: 'C',
-  a8: 'PF',
-  a9: 'C',
-  a10: 'PG',
-  a11: 'PG',
-  a12: 'PG',
-  a13: 'PG',
-  a14: 'PG',
-  a15: 'PG',
-  a16: 'PF',
-}
-
-const POSITION_FALLBACKS: AthletePosition[] = ['PG', 'SG', 'SF', 'PF', 'C']
-
-interface AthleteAppearance {
-  player: PlayerMatchStats
-  teamId: string
-  match: Match
-}
-
-function getAthleteAppearances(athleteId?: string): AthleteAppearance[] {
-  return Object.entries(MATCH_EXTRA).flatMap(([matchId, extra]) => {
-    const match = MOCK_MATCHES.find((item) => item.id === matchId)
-    if (!match) return []
-
-    const home = extra.homeStats.players
-      .filter((player) => !athleteId || player.athleteId === athleteId)
-      .map((player) => ({ player, teamId: extra.homeStats.teamId, match }))
-
-    const away = extra.awayStats.players
-      .filter((player) => !athleteId || player.athleteId === athleteId)
-      .map((player) => ({ player, teamId: extra.awayStats.teamId, match }))
-
-    return [...home, ...away]
-  })
-}
-
-function buildAthleteRegistry(): Athlete[] {
-  const byId = new Map<string, AthleteAppearance[]>()
-
-  getAthleteAppearances().forEach((appearance) => {
-    const current = byId.get(appearance.player.athleteId) ?? []
-    current.push(appearance)
-    byId.set(appearance.player.athleteId, current)
-  })
-
-  return [...byId.entries()]
-    .map(([id, appearances]) => {
-      const latest = [...appearances].sort(
-        (a, b) => +new Date(b.match.date) - +new Date(a.match.date),
-      )[0]
-      const numberBasedPosition = POSITION_FALLBACKS[latest.player.number % POSITION_FALLBACKS.length]
-
-      return {
-        id,
-        name: latest.player.athleteName,
-        number: latest.player.number,
-        position: ATHLETE_POSITION_OVERRIDES[id] ?? numberBasedPosition,
-        currentTeamId: latest.teamId,
-        status: 'ACTIVE' as const,
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-}
-
-export const MOCK_ATHLETES: Athlete[] = buildAthleteRegistry()
-
-export function getAthletes(): Athlete[] {
-  return MOCK_ATHLETES
-}
-
-export function getAthleteById(athleteId: string): Athlete | undefined {
-  return MOCK_ATHLETES.find((athlete) => athlete.id === athleteId)
-}
-
-export function getAthleteMatches(athleteId: string): AthleteMatchStatsRow[] {
-  return getAthleteAppearances(athleteId)
-    .map(({ player, teamId, match }) => {
-      const championship = getChampionshipById(match.championshipId)
-      const homeTeam = MOCK_TEAMS.find((team) => team.id === match.homeTeamId)
-      const awayTeam = MOCK_TEAMS.find((team) => team.id === match.awayTeamId)
-      const athleteIsHome = teamId === match.homeTeamId
-      const athleteScore = athleteIsHome ? match.homeScore : match.awayScore
-      const opponentScore = athleteIsHome ? match.awayScore : match.homeScore
-      const scoreText =
-        athleteScore === null || opponentScore === null
-          ? '—'
-          : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`
-
-      if (!championship) return null
-
-      return {
-        match,
-        championship,
-        teamId,
-        matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`,
-        result: scoreText,
-        stats: player,
-      }
-    })
-    .filter((row): row is AthleteMatchStatsRow => Boolean(row))
-    .sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date))
-}
-
-export function getAthleteSummaryById(athleteId: string): AthleteStatTotals {
-  return aggregateAthleteStats(getAthleteMatches(athleteId).map((row) => row.stats))
-}
-
-export function getAthleteChampionshipStats(athleteId: string): AthleteChampionshipStatsRow[] {
-  const grouped = new Map<string, AthleteMatchStatsRow[]>()
-
-  getAthleteMatches(athleteId).forEach((row) => {
-    const key = `${row.championship.id}:${row.teamId}`
-    grouped.set(key, [...(grouped.get(key) ?? []), row])
-  })
-
-  return [...grouped.values()]
-    .map((rows) => ({
-      championship: rows[0].championship,
-      teamId: rows[0].teamId,
-      totals: aggregateAthleteStats(rows.map((row) => row.stats)),
-    }))
-    .sort((a, b) => +new Date(b.championship.startDate) - +new Date(a.championship.startDate))
-}

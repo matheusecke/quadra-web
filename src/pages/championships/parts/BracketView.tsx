@@ -76,9 +76,19 @@ export function BracketView({ rounds, teams, championTeamId }: BracketViewProps)
       {champion && (
         <div className={s.bracketRound}>
           <span className={s.bracketRoundLabel}>Campeão</span>
-          <div className={s.bracketChampion}>
-            <span className={s.bracketChampionLabel}>Campeão</span>
-            <span className={s.bracketChampionName}>{champion.name}</span>
+          <div className={cn(s.bracketMatch, s.bracketChampion)}>
+            <div className={s.bracketTeam} aria-hidden="true">
+              <span className={s.bracketTeamName}>{'\u00a0'}</span>
+              <span className={s.bracketScore}>{'\u00a0'}</span>
+            </div>
+            <div className={s.bracketTeam} aria-hidden="true">
+              <span className={s.bracketTeamName}>{'\u00a0'}</span>
+              <span className={s.bracketScore}>{'\u00a0'}</span>
+            </div>
+            <div className={s.bracketChampionInner}>
+              <span className={s.bracketChampionLabel}>Campeão</span>
+              <span className={s.bracketChampionName}>{champion.name}</span>
+            </div>
           </div>
         </div>
       )}

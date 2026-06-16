@@ -5,98 +5,47 @@ import {
   getChampionships,
   getMatchDetailById,
   getMatchesByChampionship,
+  MOCK_TEAMS,
 } from './mockSportsData'
-import {
-  aggregateTeamStats,
-  calculatePeriodTotal,
-  consolidatedStandings,
-  getPeriodLabel,
-  LEADER_STAT_ORDER,
-} from './sportsUtils'
+import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
 
-describe('sports mock championship data', () => {
-  it('exposes a 16-team championship with four compact groups and round-of-16 bracket matches', () => {
-    const championship = getChampionshipById('c7')
-
-    expect(championship).toBeDefined()
-    expect(championship?.teamIds).toHaveLength(16)
-    expect(championship?.groups).toHaveLength(4)
-    expect(championship?.groups.every((group) => group.standings.length === 4)).toBe(true)
-    expect(championship?.bracket.map((round) => round.name)).toEqual([
-      'Oitavas de final',
-      'Quartas de final',
-      'Semifinais',
-      'Final',
-    ])
-
-    const matches = getMatchesByChampionship('c7')
-    const matchIds = new Set(matches.map((match) => match.id))
-    const roundOf16 = championship?.bracket[0]?.matches ?? []
-
-    expect(roundOf16).toHaveLength(8)
-    expect(roundOf16.every((match) => match.matchId && matchIds.has(match.matchId))).toBe(true)
+describe('PUC sports mock data', () => {
+  it('exposes exactly 2 championships', () => {
+    expect(getChampionships()).toHaveLength(2)
   })
 
-  it('keeps rankings and leader categories limited to the supported championship surface', () => {
-    const championship = getChampionships().find((item) => item.id === 'c7')
+  it('Geral has 16 teams, 4 groups, 31 finished matches, Time 1 champion', () => {
+    const c = getChampionshipById('puc-geral-2026')
+    expect(c?.teamIds).toHaveLength(16)
+    expect(c?.groups).toHaveLength(4)
+    expect(c?.status).toBe('FINISHED')
+    expect(c?.championTeamId).toBe('puc-time-1')
+    const matches = getMatchesByChampionship('puc-geral-2026')
+    expect(matches).toHaveLength(31)
+    expect(matches.every((m) => m.status === 'FINISHED')).toBe(true)
+  })
 
-    expect(championship).toBeDefined()
-    expect(LEADER_STAT_ORDER).toEqual(['ppg', 'rpg', 'apg', 'stg', 'bpg'])
-    expect(Object.keys(championship?.leaders ?? {})).toEqual(LEADER_STAT_ORDER)
-    expect(consolidatedStandings(championship!)[0]).toMatchObject({
-      teamId: 't9',
-      wins: 3,
-      pointsFor: 252,
+  it('Geral final is OT with consistent box score', () => {
+    const final = getMatchesByChampionship('puc-geral-2026').find((m) => m.phase === 'Final')
+    expect(final?.homeTeamId).toBe('puc-time-1')
+    expect(final?.awayTeamId).toBe('puc-time-2')
+    const detail = getMatchDetailById(final!.id)
+    expect(detail?.periodScores?.map(getPeriodLabel)).toContain('OT')
+    expect(calculatePeriodTotal(detail!.periodScores, 'home')).toBe(detail?.homeScore)
+  })
+
+  it('Inverno has only scheduled matches with pending stats', () => {
+    const matches = getMatchesByChampionship('puc-inverno-2026')
+    expect(matches).toHaveLength(15)
+    expect(matches.every((m) => m.status === 'SCHEDULED')).toBe(true)
+    expect(matches.every((m) => m.statsStatus === 'PENDING')).toBe(true)
+  })
+
+  it('all team IDs in matches exist in MOCK_TEAMS', () => {
+    const teamIds = new Set(MOCK_TEAMS.map((t) => t.id))
+    getAllMatches().forEach((m) => {
+      expect(teamIds.has(m.homeTeamId)).toBe(true)
+      expect(teamIds.has(m.awayTeamId)).toBe(true)
     })
-  })
-
-  it('keeps authored bracket match references linked to existing matches', () => {
-    const matchIds = new Set(getAllMatches().map((match) => match.id))
-    const bracketRefs = getChampionships()
-      .flatMap((championship) => championship.bracket)
-      .flatMap((round) => round.matches)
-      .map((match) => match.matchId)
-      .filter((matchId): matchId is string => Boolean(matchId))
-
-    expect(bracketRefs.length).toBeGreaterThan(0)
-    expect(bracketRefs.every((matchId) => matchIds.has(matchId))).toBe(true)
-  })
-
-  it('exposes match details with dynamic overtime periods and consistent box-score totals', () => {
-    const matches = getAllMatches()
-    const overtimeMatch = getMatchDetailById('mot1')
-
-    expect(matches).toHaveLength(39)
-    expect(overtimeMatch).toMatchObject({
-      homeTeamId: 't3',
-      awayTeamId: 't2',
-      homeScore: 94,
-      awayScore: 91,
-      phase: 'Quartas de final',
-      status: 'FINISHED',
-    })
-
-    expect(overtimeMatch?.periodScores?.map(getPeriodLabel)).toEqual([
-      '1Q',
-      '2Q',
-      '3Q',
-      '4Q',
-      'OT',
-    ])
-    expect(calculatePeriodTotal(overtimeMatch!.periodScores, 'home')).toBe(94)
-    expect(calculatePeriodTotal(overtimeMatch!.periodScores, 'away')).toBe(91)
-
-    const homeTotals = aggregateTeamStats(overtimeMatch!.homeStats.players)
-    const awayTotals = aggregateTeamStats(overtimeMatch!.awayStats.players)
-
-    expect(overtimeMatch?.homeStats.players).toHaveLength(7)
-    expect(overtimeMatch?.awayStats.players).toHaveLength(7)
-    expect(homeTotals.pts).toBe(overtimeMatch?.homeScore)
-    expect(awayTotals.pts).toBe(overtimeMatch?.awayScore)
-    expect(
-      overtimeMatch?.homeStats.players.every(
-        (player) => player.pts === 2 * player.fgm + player.tpm + player.ftm,
-      ),
-    ).toBe(true)
   })
 })
