@@ -59,6 +59,21 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Senha')).toHaveAttribute('placeholder', '••••••••')
   })
 
+  it('shows error message when login fails', async () => {
+    const loginMock = vi.fn().mockRejectedValue(new Error('unauthorized'))
+    useAuthMock.mockReturnValue({
+      status: 'unauthenticated',
+      login: loginMock,
+    })
+    renderPage()
+
+    await userEvent.type(screen.getByLabelText('Email'), 'user@example.com')
+    await userEvent.type(screen.getByLabelText('Senha'), 'wrongpass')
+    await userEvent.click(screen.getByRole('button', { name: /entrar/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email ou senha inválidos.')
+  })
+
   it('toggles password visibility', async () => {
     renderPage()
     const passwordInput = screen.getByLabelText('Senha')

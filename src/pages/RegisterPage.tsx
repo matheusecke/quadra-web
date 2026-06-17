@@ -8,7 +8,6 @@ type RegisterErrors = {
   email?: string
   name?: string
   password?: string
-  passwordReqs?: string[]
   birthDate?: string
 }
 
@@ -52,11 +51,13 @@ function validateRegisterForm(values: {
   if (!values.password) {
     errors.password = 'Informe sua senha.'
   } else {
-    const reqs: string[] = []
-    if (values.password.length < 8) reqs.push('A senha deve ter pelo menos 8 caracteres.')
-    if (!numberPattern.test(values.password)) reqs.push('A senha deve ter pelo menos 1 número.')
-    if (!specialPattern.test(values.password)) reqs.push('A senha deve ter pelo menos 1 caractere especial.')
-    if (reqs.length > 0) errors.passwordReqs = reqs
+    const missingReqs =
+      values.password.length < 8 ||
+      !numberPattern.test(values.password) ||
+      !specialPattern.test(values.password)
+    if (missingReqs) {
+      errors.password = 'A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial.'
+    }
   }
 
   if (!values.birthDate) {
@@ -242,7 +243,7 @@ export function RegisterPage() {
               id="password"
               required
               error={errors.password}
-              hint={!errors.password && !errors.passwordReqs ? 'Mínimo 8 caracteres, 1 número e 1 caractere especial.' : undefined}
+              hint={!errors.password ? 'Mínimo 8 caracteres, 1 número e 1 caractere especial.' : undefined}
             >
               <PasswordInput
                 id="password"
@@ -253,11 +254,6 @@ export function RegisterPage() {
                 error={!!errors.password}
               />
             </Field>
-            {errors.passwordReqs?.map((req) => (
-              <p key={req} className={s.error} role="alert">
-                {req}
-              </p>
-            ))}
 
             <div className={s.fieldRow}>
               <Field

@@ -54,7 +54,7 @@ describe('RegisterPage', () => {
     expect(registerMock).not.toHaveBeenCalled()
   })
 
-  it('validates password requirements before submit', async () => {
+  it('shows a single consolidated error when password requirements are not met', async () => {
     renderPage()
     await userEvent.type(screen.getByLabelText('Email'), 'user@example.com')
     await userEvent.type(screen.getByLabelText('Nome'), 'User Name')
@@ -62,8 +62,11 @@ describe('RegisterPage', () => {
     await userEvent.type(screen.getByLabelText('Data de nascimento'), '23/04/1998')
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
-    expect(await screen.findByText('A senha deve ter pelo menos 1 número.')).toBeInTheDocument()
-    expect(screen.getByText('A senha deve ter pelo menos 1 caractere especial.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('A senha deve ter pelo menos 1 número.')).not.toBeInTheDocument()
+    expect(screen.queryByText('A senha deve ter pelo menos 1 caractere especial.')).not.toBeInTheDocument()
     expect(registerMock).not.toHaveBeenCalled()
   })
 

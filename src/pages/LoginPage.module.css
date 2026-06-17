@@ -117,10 +117,6 @@
   font-size: 13px;
   color: var(--status-live);
   margin: 0;
-  padding: 10px 12px;
-  background: var(--status-live-bg);
-  border: 1px solid var(--status-live);
-  border-radius: var(--radius-sm);
 }
 
 .submitBtn {
