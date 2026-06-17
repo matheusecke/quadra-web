@@ -22,6 +22,10 @@ vi.mock('./pages/LoginPage', () => ({
   LoginPage: () => <div>login-page</div>,
 }))
 
+vi.mock('./pages/RegisterPage', () => ({
+  RegisterPage: () => <div>register-page</div>,
+}))
+
 vi.mock('./pages/NoOrgPage', () => ({
   NoOrgPage: () => <div>no-org-page</div>,
 }))
@@ -99,6 +103,11 @@ describe('router', () => {
   it('registers the normal teams route', async () => {
     await renderRoute('/teams')
     expect(await screen.findByText('org-teams-page')).toBeInTheDocument()
+  })
+
+  it('registers the public register route', async () => {
+    await renderRoute('/register')
+    expect(await screen.findByText('register-page')).toBeInTheDocument()
   })
 
   it('preserves the admin users route', async () => {

@@ -4,6 +4,7 @@ import { AdminRoute } from './components/AdminRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { NoOrgPage } from './pages/NoOrgPage'
 import { OrgSelectionPage } from './pages/OrgSelectionPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
 
   { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
 
   {
     element: <ProtectedRoute />,
