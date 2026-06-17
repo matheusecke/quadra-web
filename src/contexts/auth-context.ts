@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { MePayload, OrgAffiliation } from '../types/api'
+import type { MePayload, OrgAffiliation, RegisterInput } from '../types/api'
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
 
@@ -8,6 +8,7 @@ export type AuthContextValue = {
   user: MePayload | null
   organizations: OrgAffiliation[]
   login: (email: string, password: string) => Promise<{ organizations: OrgAffiliation[] }>
+  register: (input: RegisterInput) => Promise<{ organizations: OrgAffiliation[] }>
   chooseOrg: (organizationId: number) => Promise<void>
   logout: () => Promise<void>
 }
