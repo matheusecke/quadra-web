@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Field, Input } from '../components/ui'
+import { Field, Input, PasswordInput } from '../components/ui'
 import s from './RegisterPage.module.css'
 
 type RegisterErrors = {
@@ -243,15 +243,16 @@ export function RegisterPage() {
               required
               error={errors.password}
               hint={!errors.password && !errors.passwordReqs ? 'Mínimo 8 caracteres, 1 número e 1 caractere especial.' : undefined}
-              inputProps={{
-                id: 'password',
-                type: 'password',
-                value: password,
-                onChange: (e) => setPassword(e.target.value),
-                autoComplete: 'new-password',
-                placeholder: '••••••••',
-              }}
-            />
+            >
+              <PasswordInput
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                error={!!errors.password}
+              />
+            </Field>
             {errors.passwordReqs?.map((req) => (
               <p key={req} className={s.error} role="alert">
                 {req}

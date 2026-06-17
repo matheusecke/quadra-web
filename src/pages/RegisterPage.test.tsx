@@ -204,4 +204,16 @@ describe('RegisterPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /aumentar altura/i }))
     expect(heightInput).toHaveValue('9,99m')
   })
+
+  it('toggles password visibility', async () => {
+    renderPage()
+    const passwordInput = screen.getByLabelText('Senha')
+    expect(passwordInput).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: /mostrar senha/i }))
+    expect(passwordInput).toHaveAttribute('type', 'text')
+
+    await userEvent.click(screen.getByRole('button', { name: /ocultar senha/i }))
+    expect(passwordInput).toHaveAttribute('type', 'password')
+  })
 })

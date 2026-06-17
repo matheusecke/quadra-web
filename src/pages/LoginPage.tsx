@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Field } from '../components/ui'
+import { Field, PasswordInput } from '../components/ui'
 import s from './LoginPage.module.css'
 
 function CourtSvg() {
@@ -126,19 +126,15 @@ export function LoginPage() {
               }}
             />
 
-            <Field
-              label="Senha"
-              id="password"
-              required
-              inputProps={{
-                id: 'password',
-                type: 'password',
-                value: password,
-                onChange: (e) => setPassword(e.target.value),
-                autoComplete: 'current-password',
-                placeholder: '••••••••',
-              }}
-            />
+            <Field label="Senha" id="password" required>
+              <PasswordInput
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+            </Field>
 
             {error && (
               <p className={s.error} role="alert">

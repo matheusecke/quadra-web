@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LoginPage } from './LoginPage'
@@ -18,6 +19,14 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => useAuthMock(),
 }))
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <LoginPage />
+    </MemoryRouter>,
+  )
+}
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -48,5 +57,17 @@ describe('LoginPage', () => {
 
     expect(screen.getByLabelText('Email')).toHaveAttribute('placeholder', 'nome@empresa.com')
     expect(screen.getByLabelText('Senha')).toHaveAttribute('placeholder', '••••••••')
+  })
+
+  it('toggles password visibility', async () => {
+    renderPage()
+    const passwordInput = screen.getByLabelText('Senha')
+    expect(passwordInput).toHaveAttribute('type', 'password')
+
+    await userEvent.click(screen.getByRole('button', { name: /mostrar senha/i }))
+    expect(passwordInput).toHaveAttribute('type', 'text')
+
+    await userEvent.click(screen.getByRole('button', { name: /ocultar senha/i }))
+    expect(passwordInput).toHaveAttribute('type', 'password')
   })
 })
