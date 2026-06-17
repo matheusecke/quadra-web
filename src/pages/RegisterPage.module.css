@@ -1,88 +1,19 @@
 .page {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 100dvh;
-  background: var(--bg);
-}
-
-/* ── Court panel (left) ──────────────────────────────────── */
-.courtPanel {
-  position: relative;
-  background: var(--surface-court);
-  overflow: hidden;
-}
-
-.courtInner {
-  position: relative;
-  height: 100%;
-  padding: 56px 88px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  z-index: 1;
-}
-
-.courtSvg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--border-bold);
-  z-index: 0;
-}
-
-.courtLine {
-  stroke: currentColor;
-  opacity: 0.24;
-}
-
-.brand,
-.courtBottom {
-  position: relative;
-  z-index: 1;
-}
-
-.brand {
-  font-size: 52px;
-  font-style: italic;
-  font-weight: 300;
-  color: var(--ink);
-  letter-spacing: -1.5px;
-  line-height: 1;
-}
-
-.courtBottom {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.tagline {
-  display: block;
-  font-size: 24px;
-  font-style: italic;
-  font-weight: 300;
-  color: var(--muted);
-  letter-spacing: -0.3px;
-  line-height: 1.3;
-}
-
-.taglineLine {
-  width: 32px;
-  height: 3px;
-  background: var(--accent);
-  border-radius: var(--radius-xs);
-}
-
-/* ── Form panel (right) ──────────────────────────────────── */
-.formPanel {
-  background: var(--bg);
-  border-left: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;
-  padding: 56px 72px;
+  min-height: 100dvh;
+  background: var(--bg);
+  padding: 40px 24px;
+}
+
+/* ── Form panel ──────────────────────────────────────── */
+.formPanel {
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .formInner {
@@ -181,27 +112,51 @@
   border-radius: var(--radius-xs);
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .page {
-    grid-template-columns: 1fr;
-    height: auto;
-    overflow: auto;
-  }
+/* ── Side-by-side fields ──────────────────────────────── */
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
 
-  .courtPanel {
-    height: 220px;
-    flex-shrink: 0;
-  }
+/* ── Height input ─────────────────────────────────────── */
+.heightWrapper {
+  position: relative;
+  display: block;
+}
 
-  .formPanel {
-    border-left: none;
-    border-top: 1px solid var(--border);
-    padding: 40px 24px;
-  }
+.heightInput {
+  padding-right: 36px;
+}
 
-  .formInner {
-    padding: 0;
-    max-width: 100%;
-  }
+.heightArrows {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.heightArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  min-height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.heightArrow:hover {
+  color: var(--ink);
+}
+
+.heightArrow:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: var(--radius-xs);
 }

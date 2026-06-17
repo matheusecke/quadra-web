@@ -62,7 +62,7 @@ describe('RegisterPage', () => {
     await userEvent.type(screen.getByLabelText('Data de nascimento'), '23/04/1998')
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
-    expect(await screen.findByText('A senha deve ter pelo menos 1 numero.')).toBeInTheDocument()
+    expect(await screen.findByText('A senha deve ter pelo menos 1 número.')).toBeInTheDocument()
     expect(screen.getByText('A senha deve ter pelo menos 1 caractere especial.')).toBeInTheDocument()
     expect(registerMock).not.toHaveBeenCalled()
   })
@@ -105,7 +105,11 @@ describe('RegisterPage', () => {
     await userEvent.type(screen.getByLabelText('Nome'), 'User Name')
     await userEvent.type(screen.getByLabelText('Senha'), 'secret123!')
     await userEvent.type(screen.getByLabelText('Data de nascimento'), '23/04/1998')
-    await userEvent.type(screen.getByLabelText('Altura (opcional)'), '182')
+
+    const heightInput = screen.getByLabelText('Altura (opcional)')
+    await userEvent.click(heightInput)
+    await userEvent.keyboard('182')
+
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
     await waitFor(() => {
@@ -124,20 +128,6 @@ describe('RegisterPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
     expect(await screen.findByText('Use uma data valida no formato dd/mm/aaaa.')).toBeInTheDocument()
-    expect(registerMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects non-integer height', async () => {
-    renderPage()
-
-    await userEvent.type(screen.getByLabelText('Email'), 'user@example.com')
-    await userEvent.type(screen.getByLabelText('Nome'), 'User Name')
-    await userEvent.type(screen.getByLabelText('Senha'), 'secret123!')
-    await userEvent.type(screen.getByLabelText('Data de nascimento'), '23/04/1998')
-    await userEvent.type(screen.getByLabelText('Altura (opcional)'), '182.5')
-    await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
-
-    expect(await screen.findByText('Informe a altura como um numero inteiro em centimetros.')).toBeInTheDocument()
     expect(registerMock).not.toHaveBeenCalled()
   })
 
@@ -168,5 +158,50 @@ describe('RegisterPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
     expect(screen.getByRole('button', { name: /criando conta/i })).toBeDisabled()
+  })
+
+  it('formats height digits as meters while typing', async () => {
+    renderPage()
+    const heightInput = screen.getByLabelText('Altura (opcional)')
+    await userEvent.click(heightInput)
+    await userEvent.keyboard('182')
+    expect(heightInput).toHaveValue('1,82m')
+  })
+
+  it('removes last digit on Backspace in height field', async () => {
+    renderPage()
+    const heightInput = screen.getByLabelText('Altura (opcional)')
+    await userEvent.click(heightInput)
+    await userEvent.keyboard('1{Backspace}')
+    expect(heightInput).toHaveValue('')
+  })
+
+  it('ignores non-digit keys in height field', async () => {
+    renderPage()
+    const heightInput = screen.getByLabelText('Altura (opcional)')
+    await userEvent.click(heightInput)
+    await userEvent.keyboard('abc1')
+    expect(heightInput).toHaveValue('0,01m')
+  })
+
+  it('increments height by 1 cm when up arrow is clicked', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /aumentar altura/i }))
+    expect(screen.getByLabelText('Altura (opcional)')).toHaveValue('0,01m')
+  })
+
+  it('decrement on empty height field stays empty', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /diminuir altura/i }))
+    expect(screen.getByLabelText('Altura (opcional)')).toHaveValue('')
+  })
+
+  it('caps height at 999 cm when incrementing at maximum', async () => {
+    renderPage()
+    const heightInput = screen.getByLabelText('Altura (opcional)')
+    await userEvent.click(heightInput)
+    await userEvent.keyboard('999')
+    await userEvent.click(screen.getByRole('button', { name: /aumentar altura/i }))
+    expect(heightInput).toHaveValue('9,99m')
   })
 })

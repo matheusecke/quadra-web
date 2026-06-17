@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Field } from '../components/ui'
+import { Field, Input } from '../components/ui'
 import s from './RegisterPage.module.css'
 
 type RegisterErrors = {
@@ -10,7 +10,6 @@ type RegisterErrors = {
   password?: string
   passwordReqs?: string[]
   birthDate?: string
-  height?: string
 }
 
 const brDatePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/
@@ -45,7 +44,6 @@ function validateRegisterForm(values: {
   name: string
   password: string
   birthDate: string
-  height: string
 }): RegisterErrors {
   const errors: RegisterErrors = {}
 
@@ -56,7 +54,7 @@ function validateRegisterForm(values: {
   } else {
     const reqs: string[] = []
     if (values.password.length < 8) reqs.push('A senha deve ter pelo menos 8 caracteres.')
-    if (!numberPattern.test(values.password)) reqs.push('A senha deve ter pelo menos 1 numero.')
+    if (!numberPattern.test(values.password)) reqs.push('A senha deve ter pelo menos 1 número.')
     if (!specialPattern.test(values.password)) reqs.push('A senha deve ter pelo menos 1 caractere especial.')
     if (reqs.length > 0) errors.passwordReqs = reqs
   }
@@ -67,51 +65,84 @@ function validateRegisterForm(values: {
     errors.birthDate = 'Use uma data valida no formato dd/mm/aaaa.'
   }
 
-  if (values.height) {
-    const height = Number(values.height)
-    if (!Number.isInteger(height) || height <= 0) {
-      errors.height = 'Informe a altura como um numero inteiro em centimetros.'
-    }
-  }
-
   return errors
 }
 
-function CourtSvg() {
-  const sw = 2
+function formatHeightDisplay(digits: string): string {
+  if (!digits) return ''
+  const padded = digits.padStart(3, '0')
+  return `${padded[0]},${padded.slice(1)}m`
+}
+
+interface HeightInputProps {
+  id: string
+  digits: string
+  onDigitsChange: (digits: string) => void
+  error?: boolean
+}
+
+function HeightInput({ id, digits, onDigitsChange, error }: HeightInputProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault()
+      if (digits.length < 3) onDigitsChange(digits + e.key)
+    } else if (e.key === 'Backspace') {
+      onDigitsChange(digits.slice(0, -1))
+    } else if (!['Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault()
+    }
+  }
+
+  const handleIncrement = () => {
+    if (!digits) { onDigitsChange('1'); return }
+    const val = parseInt(digits, 10)
+    if (val < 999) onDigitsChange(String(val + 1))
+  }
+
+  const handleDecrement = () => {
+    if (!digits || digits === '1') { onDigitsChange(''); return }
+    onDigitsChange(String(parseInt(digits, 10) - 1))
+  }
 
   return (
-    <svg
-      className={s.courtSvg}
-      viewBox="0 0 480 900"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-    >
-      <g className={s.courtLine} strokeWidth={sw} fill="none">
-        <rect x="30" y="30" width="420" height="840" />
-        <line x1="30" y1="450" x2="450" y2="450" />
-        <circle cx="240" cy="450" r="62" />
-        <circle cx="240" cy="450" r="18" />
-        <rect x="156" y="30" width="168" height="195" />
-        <circle cx="240" cy="225" r="62" />
-        <circle cx="240" cy="80" r="10" />
-        <path d="M 214 30 A 26 26 0 0 0 266 30" />
-        <g className={s.threePointLine}>
-          <line x1="52" y1="30" x2="52" y2="214" />
-          <line x1="428" y1="30" x2="428" y2="214" />
-          <path d="M 52 214 C 82 390 398 390 428 214" />
-        </g>
-        <rect x="156" y="675" width="168" height="195" />
-        <circle cx="240" cy="675" r="62" />
-        <circle cx="240" cy="820" r="10" />
-        <path d="M 214 870 A 26 26 0 0 1 266 870" />
-        <g className={s.threePointLine}>
-          <line x1="52" y1="870" x2="52" y2="686" />
-          <line x1="428" y1="870" x2="428" y2="686" />
-          <path d="M 52 686 C 82 510 398 510 428 686" />
-        </g>
-      </g>
-    </svg>
+    <div className={s.heightWrapper}>
+      <Input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        value={formatHeightDisplay(digits)}
+        onChange={() => {}}
+        onKeyDown={handleKeyDown}
+        placeholder="0,00m"
+        error={error}
+        fullWidth
+        className={s.heightInput}
+      />
+      <div className={s.heightArrows}>
+        <button
+          type="button"
+          className={s.heightArrow}
+          onClick={handleIncrement}
+          aria-label="Aumentar altura"
+          tabIndex={-1}
+        >
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+            <path d="M1 5L5 1L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className={s.heightArrow}
+          onClick={handleDecrement}
+          aria-label="Diminuir altura"
+          tabIndex={-1}
+        >
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -123,7 +154,7 @@ export function RegisterPage() {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [height, setHeight] = useState('')
+  const [heightDigits, setHeightDigits] = useState('')
   const [errors, setErrors] = useState<RegisterErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -138,13 +169,13 @@ export function RegisterPage() {
     e.preventDefault()
     setFormError(null)
 
-    const nextErrors = validateRegisterForm({ email, name, password, birthDate, height })
+    const nextErrors = validateRegisterForm({ email, name, password, birthDate })
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
 
     setLoading(true)
     try {
-      const parsedHeight = height ? Number(height) : undefined
+      const parsedHeight = heightDigits ? parseInt(heightDigits, 10) : undefined
       const backendBirthDate = toBackendBirthDate(birthDate)
       if (!backendBirthDate) return
 
@@ -170,17 +201,6 @@ export function RegisterPage() {
 
   return (
     <main className={s.page}>
-      <div className={s.courtPanel} aria-hidden="true">
-        <div className={s.courtInner}>
-          <CourtSvg />
-          <span className={s.brand}>Quadra</span>
-          <div className={s.courtBottom}>
-            <span className={s.tagline}>Gerencie sua competição</span>
-            <div className={s.taglineLine} />
-          </div>
-        </div>
-      </div>
-
       <div className={s.formPanel}>
         <div className={s.formInner}>
           <h1 className={s.heading}>Criar conta</h1>
@@ -222,7 +242,7 @@ export function RegisterPage() {
               id="password"
               required
               error={errors.password}
-              hint={!errors.password && !errors.passwordReqs ? 'Minimo 8 caracteres, 1 numero e 1 caractere especial.' : undefined}
+              hint={!errors.password && !errors.passwordReqs ? 'Mínimo 8 caracteres, 1 número e 1 caractere especial.' : undefined}
               inputProps={{
                 id: 'password',
                 type: 'password',
@@ -238,39 +258,31 @@ export function RegisterPage() {
               </p>
             ))}
 
-            <Field
-              label="Data de nascimento"
-              id="birthDate"
-              required
-              error={errors.birthDate}
-              hint="Use o formato dd/mm/aaaa."
-              inputProps={{
-                id: 'birthDate',
-                type: 'text',
-                inputMode: 'numeric',
-                value: birthDate,
-                onChange: (e) => setBirthDate(formatBirthDateInput(e.target.value)),
-                placeholder: '23/04/1998',
-                maxLength: 10,
-              }}
-            />
+            <div className={s.fieldRow}>
+              <Field
+                label="Data de nascimento"
+                id="birthDate"
+                required
+                error={errors.birthDate}
+                inputProps={{
+                  id: 'birthDate',
+                  type: 'text',
+                  inputMode: 'numeric',
+                  value: birthDate,
+                  onChange: (e) => setBirthDate(formatBirthDateInput(e.target.value)),
+                  placeholder: '23/04/1998',
+                  maxLength: 10,
+                }}
+              />
 
-            <Field
-              label="Altura (opcional)"
-              id="height"
-              error={errors.height}
-              hint="Em centimetros. Exemplo: 182."
-              inputProps={{
-                id: 'height',
-                type: 'number',
-                inputMode: 'numeric',
-                min: 1,
-                step: 1,
-                value: height,
-                onChange: (e) => setHeight(e.target.value),
-                placeholder: '182',
-              }}
-            />
+              <Field label="Altura (opcional)" id="height">
+                <HeightInput
+                  id="height"
+                  digits={heightDigits}
+                  onDigitsChange={setHeightDigits}
+                />
+              </Field>
+            </div>
 
             {formError && (
               <p className={s.error} role="alert">
