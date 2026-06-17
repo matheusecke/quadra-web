@@ -29,6 +29,16 @@ describe('LoginPage', () => {
     })
   })
 
+  it('shows a visible path to create an account', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: /criar conta/i })).toHaveAttribute('href', '/register')
+  })
+
   it('shows the expected placeholders for email and password', () => {
     render(
       <MemoryRouter>

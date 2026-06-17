@@ -158,6 +158,29 @@
   cursor: not-allowed;
 }
 
+.authSwitch {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.authSwitch a {
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.authSwitch a:hover {
+  color: var(--accent);
+}
+
+.authSwitch a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 860px) {
   .page {

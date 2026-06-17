@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Field } from '../components/ui'
 import s from './LoginPage.module.css'
@@ -150,6 +150,10 @@ export function LoginPage() {
               <span>{loading ? 'Entrando...' : 'Entrar'}</span>
               {!loading && <span aria-hidden="true">→</span>}
             </button>
+
+            <p className={s.authSwitch}>
+              Nao tem conta? <Link to="/register">Criar conta</Link>
+            </p>
           </form>
         </div>
       </div>
