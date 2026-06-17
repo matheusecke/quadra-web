@@ -101,7 +101,7 @@
 }
 
 .sub {
-  margin: 0 0 36px;
+  margin: 0 0 24px;
   font-size: 15px;
   color: var(--muted);
   font-weight: 400;
@@ -110,7 +110,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .error {
@@ -141,7 +141,7 @@
   text-align: left;
   cursor: pointer;
   transition: background 160ms ease, opacity 160ms ease;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .submitBtn:hover:not(:disabled) {
