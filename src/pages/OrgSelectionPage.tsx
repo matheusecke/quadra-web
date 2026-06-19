@@ -29,6 +29,7 @@ export function OrgSelectionPage() {
   const [query, setQuery] = useState('')
   const [selectingId, setSelectingId] = useState<number | null>(null)
   const [mainTab, setMainTab] = useState<OrgSelectionTab>('organizations')
+  const [refreshError, setRefreshError] = useState<string | null>(null)
   const {
     scrollRef: organizationsScrollRef,
     state: organizationsScrollState,
@@ -56,11 +57,20 @@ export function OrgSelectionPage() {
     }
   }
 
+  const handleRefreshOrganizations = async () => {
+    setRefreshError(null)
+    try {
+      await refreshOrganizations()
+    } catch {
+      setRefreshError('Não foi possível atualizar a lista de organizações.')
+    }
+  }
+
   const handleResolveInvite = async (inviteId: number, decision: InviteDecision) => {
     try {
       const result = await resolveInvite(inviteId, decision)
       if (result === 'accepted') {
-        await refreshOrganizations()
+        await handleRefreshOrganizations()
       }
     } catch {
       // useOrgInvites owns the recoverable action error shown in InviteList.
@@ -223,6 +233,15 @@ export function OrgSelectionPage() {
               onResolveInvite={handleResolveInvite}
             />
           </section>
+        )}
+
+        {refreshError && (
+          <p className={s.refreshError} role="alert">
+            {refreshError}
+            <button type="button" className={s.refreshErrorRetry} onClick={handleRefreshOrganizations}>
+              Tentar atualizar
+            </button>
+          </p>
         )}
 
         <div className={s.footer}>

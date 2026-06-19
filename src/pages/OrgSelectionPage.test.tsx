@@ -237,6 +237,24 @@ describe('OrgSelectionPage', () => {
     })
   })
 
+  it('shows error banner when refreshOrganizations fails after accept', async () => {
+    const user = userEvent.setup()
+    refreshOrganizationsMock.mockRejectedValueOnce(new Error('network error'))
+
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+    await user.click(screen.getAllByRole('button', { name: 'Aceitar' })[0])
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent('Não foi possível atualizar a lista de organizações.')
+    expect(screen.getByRole('button', { name: 'Tentar atualizar' })).toBeInTheDocument()
+  })
+
   it('keeps invite visible when response fails', async () => {
     const user = userEvent.setup()
     vi.mocked(respondToMyInvite).mockRejectedValueOnce(new Error('failed'))

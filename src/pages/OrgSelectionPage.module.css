@@ -408,6 +408,35 @@
   transition: opacity 220ms ease;
 }
 
+/* ── Refresh error banner ────────────────────────────────── */
+.refreshError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: 10px 14px;
+  margin-top: var(--space-3);
+  background: var(--status-warn-bg);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--status-warn);
+}
+
+.refreshErrorRetry {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--status-warn);
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  text-decoration: underline;
+  flex-shrink: 0;
+}
+
 /* ── Footer ──────────────────────────────────────────────── */
 .footer {
   flex-shrink: 0;
