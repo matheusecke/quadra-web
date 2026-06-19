@@ -229,13 +229,73 @@ describe('OrgSelectionPage', () => {
     })
     await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
 
+    // Primeiro clique abre confirmação — não chama API
     await user.click(screen.getAllByRole('button', { name: 'Recusar' })[0])
+    expect(respondToMyInvite).not.toHaveBeenCalled()
+
+    // Segundo clique (Confirmar) executa a rejeição
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
     expect(respondToMyInvite).toHaveBeenCalledWith(1, 'REJECT')
     await waitFor(() => {
       expect(screen.queryByText('Liga Metropolitana')).not.toBeInTheDocument()
     })
     expect(refreshOrganizationsMock).not.toHaveBeenCalled()
+  })
+
+  it('shows inline confirmation when clicking Recusar, without calling the API', async () => {
+    const user = userEvent.setup()
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+
+    await user.click(screen.getAllByRole('button', { name: 'Recusar' })[0])
+
+    expect(respondToMyInvite).not.toHaveBeenCalled()
+    expect(screen.getByText('Recusar este convite?')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toBeInTheDocument()
+  })
+
+  it('dismisses confirmation when clicking Cancelar, without calling the API', async () => {
+    const user = userEvent.setup()
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+
+    await user.click(screen.getAllByRole('button', { name: 'Recusar' })[0])
+    expect(screen.getByText('Recusar este convite?')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(respondToMyInvite).not.toHaveBeenCalled()
+    expect(screen.queryByText('Recusar este convite?')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Recusar' })).toHaveLength(2)
+  })
+
+  it('replaces first card confirmation when clicking Recusar on a second card', async () => {
+    const user = userEvent.setup()
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+
+    const [firstReject, secondReject] = screen.getAllByRole('button', { name: 'Recusar' })
+    await user.click(firstReject)
+    expect(screen.getByText('Recusar este convite?')).toBeInTheDocument()
+
+    // Clicar no segundo Recusar substitui a confirmação do primeiro
+    await user.click(secondReject)
+    expect(screen.queryAllByText('Recusar este convite?')).toHaveLength(1)
+    expect(respondToMyInvite).not.toHaveBeenCalled()
   })
 
   it('shows error banner when refreshOrganizations fails after accept', async () => {
