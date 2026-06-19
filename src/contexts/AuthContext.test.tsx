@@ -34,6 +34,19 @@ function RegisterHarness() {
   )
 }
 
+function RefreshOrganizationsHarness() {
+  const { organizations, refreshOrganizations } = useAuth()
+
+  return (
+    <div>
+      <button type="button" onClick={() => refreshOrganizations()}>
+        refresh organizations
+      </button>
+      <span>{organizations.map((org) => org.organizationName).join(', ')}</span>
+    </div>
+  )
+}
+
 describe('AuthContext register', () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset()
@@ -97,5 +110,50 @@ describe('AuthContext register', () => {
       expect(setAccessToken).toHaveBeenCalledWith('access-token')
     })
     expect(api.get).toHaveBeenCalledWith('/auth/me')
+    expect(api.get).toHaveBeenCalledTimes(1)
+    expect(api.get).not.toHaveBeenCalledWith('/auth/org')
+  })
+})
+
+describe('AuthContext refreshOrganizations', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(setAccessToken).mockReset()
+  })
+
+  it('refreshes organizations from /auth/org', async () => {
+    vi.mocked(api.post).mockImplementation((url: string) => {
+      if (url === '/auth/refresh') return Promise.reject(new Error('no refresh cookie'))
+      return Promise.reject(new Error(`unexpected POST ${url}`))
+    })
+
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: [
+          {
+            organizationId: 303,
+            organizationName: 'Liga Atualizada',
+            organizationSlug: 'liga-atualizada',
+            role: 'ATHLETE',
+            teamId: null,
+          },
+        ],
+        statusCode: 200,
+      },
+    })
+
+    render(
+      <AuthProvider>
+        <RefreshOrganizationsHarness />
+      </AuthProvider>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'refresh organizations' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Liga Atualizada')).toBeInTheDocument()
+    })
+    expect(api.get).toHaveBeenCalledWith('/auth/org')
   })
 })

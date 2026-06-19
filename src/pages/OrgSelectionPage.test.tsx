@@ -21,6 +21,7 @@ vi.mock('react-router-dom', async () => {
 
 const chooseOrgMock = vi.fn<() => Promise<void>>()
 const logoutMock = vi.fn<() => Promise<void>>()
+const refreshOrganizationsMock = vi.fn<() => Promise<void>>()
 
 function mockAuth(overrides: Partial<AuthContextValue> = {}) {
   const value: AuthContextValue = {
@@ -52,6 +53,7 @@ function mockAuth(overrides: Partial<AuthContextValue> = {}) {
     login: vi.fn(),
     register: vi.fn(),
     chooseOrg: chooseOrgMock,
+    refreshOrganizations: refreshOrganizationsMock,
     logout: logoutMock,
     ...overrides,
   }
@@ -64,6 +66,7 @@ describe('OrgSelectionPage', () => {
     vi.clearAllMocks()
     chooseOrgMock.mockResolvedValue()
     logoutMock.mockResolvedValue()
+    refreshOrganizationsMock.mockResolvedValue()
     mockAuth()
   })
 
