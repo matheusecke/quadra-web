@@ -128,7 +128,7 @@ export function InviteList({
                       </span>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="secondary"
                         disabled={isResolving}
                         onClick={() => setConfirmingInviteId(null)}
                       >
