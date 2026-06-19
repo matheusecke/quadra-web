@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Badge } from '../components/ui/Badge/Badge'
 import { Tabs } from '../components/ui/Tabs/Tabs'
 import { useAuth } from '../hooks/useAuth'
 import { InviteList } from './org-selection/InviteList'
@@ -220,7 +219,6 @@ export function OrgSelectionPage() {
                 <p className={s.kicker}>Convites</p>
                 <h2 className={s.inviteTitle}>Afiliações pendentes</h2>
               </div>
-              <Badge variant="warning">{pendingCount} pendentes</Badge>
             </div>
             <InviteList
               invites={pendingInvites}
