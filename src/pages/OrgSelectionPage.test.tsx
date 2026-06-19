@@ -235,6 +235,7 @@ describe('OrgSelectionPage', () => {
     await waitFor(() => {
       expect(screen.queryByText('Liga Metropolitana')).not.toBeInTheDocument()
     })
+    expect(refreshOrganizationsMock).not.toHaveBeenCalled()
   })
 
   it('shows error banner when refreshOrganizations fails after accept', async () => {
