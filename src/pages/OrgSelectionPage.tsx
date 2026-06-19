@@ -7,7 +7,8 @@ import { InviteList } from './org-selection/InviteList'
 import { getInitials } from './org-selection/orgSelectionUtils'
 import { useScrollChrome } from './org-selection/useScrollChrome'
 import { useOrgInvites } from './org-selection/useOrgInvites'
-import type { InviteDecision, OrgSelectionTab } from './org-selection/types'
+import type { InviteDecision } from '../types/api'
+import type { OrgSelectionTab } from './org-selection/types'
 import s from './OrgSelectionPage.module.css'
 
 export function OrgSelectionPage() {

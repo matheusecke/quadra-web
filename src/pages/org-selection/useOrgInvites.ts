@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listMyInvites, respondToMyInvite } from '../../services/inviteApi'
-import type { InviteDecision, MyInvite, OrgSelectionInvite } from './types'
+import type { InviteDecision, MyInvite } from '../../types/api'
+import type { OrgSelectionInvite } from './types'
 
 export type ResolveInviteResult = 'accepted' | 'rejected'
 

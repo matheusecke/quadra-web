@@ -1,6 +1,5 @@
 import api from './api'
-import type { ApiResponse } from '../types/api'
-import type { InviteDecision, MyInvite } from '../pages/org-selection/types'
+import type { ApiResponse, InviteDecision, MyInvite } from '../types/api'
 
 export async function listMyInvites(): Promise<MyInvite[]> {
   const response = await api.get<ApiResponse<MyInvite[]>>('/auth/invites')
@@ -10,9 +9,6 @@ export async function listMyInvites(): Promise<MyInvite[]> {
 export async function respondToMyInvite(
   inviteId: number,
   decision: InviteDecision,
-): Promise<MyInvite> {
-  const response = await api.post<ApiResponse<MyInvite>>(`/auth/invites/${inviteId}/respond`, {
-    decision,
-  })
-  return response.data.data
+): Promise<void> {
+  await api.post(`/auth/invites/${inviteId}/respond`, { decision })
 }

@@ -103,10 +103,7 @@ describe('OrgSelectionPage', () => {
     logoutMock.mockResolvedValue()
     refreshOrganizationsMock.mockResolvedValue()
     vi.mocked(listMyInvites).mockResolvedValue([...apiInvites])
-    vi.mocked(respondToMyInvite).mockImplementation((inviteId) => {
-      const invite = apiInvites.find((i) => i.id === inviteId) ?? apiInvites[0]
-      return Promise.resolve({ ...invite })
-    })
+    vi.mocked(respondToMyInvite).mockImplementation(() => Promise.resolve())
     mockAuth()
   })
 
