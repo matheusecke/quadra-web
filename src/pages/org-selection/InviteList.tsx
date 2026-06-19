@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
@@ -7,7 +7,8 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getInitials } from './orgSelectionUtils'
 import { roleLabel } from './inviteLabels'
 import { useScrollChrome } from './useScrollChrome'
-import type { InviteDecision, OrgSelectionInvite } from './types'
+import type { InviteDecision } from '../../types/api'
+import type { OrgSelectionInvite } from './types'
 import s from './InviteList.module.css'
 
 type InviteListProps = {
@@ -32,6 +33,7 @@ export function InviteList({
   onResolveInvite,
 }: InviteListProps) {
   const { scrollRef, state: scrollState, refresh } = useScrollChrome()
+  const [confirmingInviteId, setConfirmingInviteId] = useState<number | null>(null)
 
   useEffect(() => {
     refresh(false)
@@ -88,6 +90,7 @@ export function InviteList({
         <div ref={scrollRef} className={s.list}>
           {invites.map((invite) => {
             const isResolving = actionInviteId === invite.id
+            const isConfirming = confirmingInviteId === invite.id
 
             return (
               <article key={invite.id} className={s.item}>
@@ -118,24 +121,53 @@ export function InviteList({
                 </div>
 
                 <div className={s.actions}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    loading={isResolving}
-                    disabled={isResolving}
-                    onClick={() => onResolveInvite(invite.id, 'REJECT')}
-                  >
-                    Recusar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    loading={isResolving}
-                    disabled={isResolving || invite.isExpired}
-                    onClick={() => onResolveInvite(invite.id, 'ACCEPT')}
-                  >
-                    Aceitar
-                  </Button>
+                  {isConfirming ? (
+                    <>
+                      <span className={s.confirmLabel} aria-live="polite">
+                        Recusar este convite?
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={isResolving}
+                        onClick={() => setConfirmingInviteId(null)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        loading={isResolving}
+                        disabled={isResolving}
+                        onClick={async () => {
+                          await onResolveInvite(invite.id, 'REJECT')
+                          setConfirmingInviteId(null)
+                        }}
+                      >
+                        Confirmar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={actionInviteId !== null}
+                        onClick={() => setConfirmingInviteId(invite.id)}
+                      >
+                        Recusar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        loading={isResolving}
+                        disabled={isResolving || invite.isExpired}
+                        onClick={() => onResolveInvite(invite.id, 'ACCEPT')}
+                      >
+                        Aceitar
+                      </Button>
+                    </>
+                  )}
                 </div>
               </article>
             )
