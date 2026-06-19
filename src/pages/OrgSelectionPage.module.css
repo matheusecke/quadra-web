@@ -46,11 +46,20 @@
   margin: 0;
 }
 
+.kicker {
+  margin: 0;
+  color: var(--muted-2);
+  font: var(--type-micro);
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+}
+
 /* ── Search ──────────────────────────────────────────────── */
 .searchWrap {
   flex-shrink: 0;
   position: relative;
   margin-bottom: 16px;
+  margin-top: var(--space-4);
 }
 
 .searchIcon {
@@ -128,7 +137,7 @@
   flex: 1;
   min-height: 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .listWrap::before,
@@ -174,31 +183,12 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 10px;
   padding-bottom: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: none;
 }
 
 .orgList::-webkit-scrollbar {
-  width: 3px;
-}
-
-.orgList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.orgList::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-
-.orgList::-webkit-scrollbar-thumb:hover {
-  background: var(--border-bold);
-}
-
-.orgList::-webkit-scrollbar-button {
-  display: none;
+  width: 0;
   height: 0;
 }
 
@@ -372,6 +362,52 @@
   margin: 0;
 }
 
+/* ── Invites ─────────────────────────────────────────────── */
+.inviteTab {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-4);
+}
+
+.inviteHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.inviteTitle {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.scrollbar {
+  position: absolute;
+  top: 0;
+  right: calc(var(--space-3) * -1);
+  width: 3px;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.scrollbarVisible {
+  opacity: 1;
+}
+
+.scrollbarThumb {
+  width: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--border-bold);
+  transition: opacity 220ms ease;
+}
+
 /* ── Footer ──────────────────────────────────────────────── */
 .footer {
   flex-shrink: 0;
@@ -391,4 +427,16 @@
 
 .logoutBtn:hover {
   color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .page {
+    align-items: stretch;
+    padding: 24px 16px;
+  }
+
+  .shell {
+    max-width: none;
+    height: calc(100dvh - 48px);
+  }
 }
