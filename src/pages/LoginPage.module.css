@@ -101,7 +101,7 @@
 }
 
 .sub {
-  margin: 0 0 36px;
+  margin: 0 0 24px;
   font-size: 15px;
   color: var(--muted);
   font-weight: 400;
@@ -110,17 +110,13 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .error {
   font-size: 13px;
   color: var(--status-live);
   margin: 0;
-  padding: 10px 12px;
-  background: var(--status-live-bg);
-  border: 1px solid var(--status-live);
-  border-radius: var(--radius-sm);
 }
 
 .submitBtn {
@@ -141,7 +137,7 @@
   text-align: left;
   cursor: pointer;
   transition: background 160ms ease, opacity 160ms ease;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .submitBtn:hover:not(:disabled) {
@@ -156,6 +152,29 @@
 .submitBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.authSwitch {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.authSwitch a {
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.authSwitch a:hover {
+  color: var(--accent);
+}
+
+.authSwitch a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── Responsive ──────────────────────────────────────────── */

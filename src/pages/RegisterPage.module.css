@@ -1,0 +1,159 @@
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--bg);
+  padding: 40px 24px;
+}
+
+/* ── Form panel ──────────────────────────────────────── */
+.formPanel {
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 440px;
+}
+
+.heading {
+  margin: 0 0 6px;
+  font-size: 30px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--ink-2);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.sub {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--status-live);
+  margin: 0;
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 20px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, opacity 160ms ease;
+  margin-top: 8px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+
+.submitBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.authSwitch {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.authSwitch a {
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.authSwitch a:hover {
+  color: var(--accent);
+}
+
+.authSwitch a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+
+/* ── Side-by-side fields ──────────────────────────────── */
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* ── Height input ─────────────────────────────────────── */
+.heightWrapper {
+  position: relative;
+  display: block;
+}
+
+.heightInput {
+  padding-right: 36px;
+}
+
+.heightArrows {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.heightArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  min-height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.heightArrow:hover {
+  color: var(--ink);
+}
+
+.heightArrow:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: var(--radius-xs);
+}

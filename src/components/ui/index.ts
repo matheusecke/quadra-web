@@ -34,3 +34,6 @@ export type { LoadingStateProps } from './LoadingState'
 export { ErrorState } from './ErrorState'
 export type { ErrorStateProps } from './ErrorState'
 export { Skeleton } from './Skeleton'
+
+export { PasswordInput } from './PasswordInput'
+export type { PasswordInputProps } from './PasswordInput'
