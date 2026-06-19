@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthContextValue } from '../contexts/auth-context'
 import { useAuth } from '../hooks/useAuth'
+import { listMyInvites, respondToMyInvite } from '../services/inviteApi'
 import { OrgSelectionPage } from './OrgSelectionPage'
 
 const navigateMock = vi.fn()
@@ -19,9 +20,43 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
+vi.mock('../services/inviteApi', () => ({
+  listMyInvites: vi.fn(),
+  respondToMyInvite: vi.fn(),
+}))
+
 const chooseOrgMock = vi.fn<() => Promise<void>>()
 const logoutMock = vi.fn<() => Promise<void>>()
 const refreshOrganizationsMock = vi.fn<() => Promise<void>>()
+
+const apiInvites = [
+  {
+    id: 1,
+    organizationId: 101,
+    organizationName: 'Liga Metropolitana',
+    role: 'ATHLETE' as const,
+    teamId: 77,
+    teamName: 'Campinas Hawks',
+    jerseyNumber: 12,
+    status: 'PENDING' as const,
+    sentAt: '2026-06-17T12:00:00.000Z',
+    expiresAt: '2026-06-24T12:00:00.000Z',
+    isExpired: false,
+  },
+  {
+    id: 2,
+    organizationId: 202,
+    organizationName: 'Circuito Interior',
+    role: 'COACHING_STAFF' as const,
+    teamId: null,
+    teamName: null,
+    jerseyNumber: null,
+    status: 'PENDING' as const,
+    sentAt: '2026-06-16T12:00:00.000Z',
+    expiresAt: '2026-06-18T12:00:00.000Z',
+    isExpired: true,
+  },
+]
 
 function mockAuth(overrides: Partial<AuthContextValue> = {}) {
   const value: AuthContextValue = {
@@ -67,17 +102,26 @@ describe('OrgSelectionPage', () => {
     chooseOrgMock.mockResolvedValue()
     logoutMock.mockResolvedValue()
     refreshOrganizationsMock.mockResolvedValue()
+    vi.mocked(listMyInvites).mockResolvedValue([...apiInvites])
+    vi.mocked(respondToMyInvite).mockImplementation((inviteId) => {
+      const invite = apiInvites.find((i) => i.id === inviteId) ?? apiInvites[0]
+      return Promise.resolve({ ...invite })
+    })
     mockAuth()
   })
 
-  it('renders organizations as the default tab without prototype controls', () => {
+  it('renders organizations as the default tab without prototype controls', async () => {
     render(<OrgSelectionPage />)
 
     expect(screen.getByRole('heading', { name: 'Selecione a organização' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Organizações' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('tab', { name: /Convites \(\d+\)/ })).toHaveAttribute('aria-selected', 'false')
+    expect(screen.getByRole('tab', { name: 'Convites (0)' })).toHaveAttribute('aria-selected', 'false')
     expect(screen.getByRole('button', { name: 'Entrar em Liga Metropolitana' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Entrar como administrador do sistema' })).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
 
     expect(screen.queryByText(/Wireframe/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/Protótipo/i)).not.toBeInTheDocument()
@@ -116,45 +160,117 @@ describe('OrgSelectionPage', () => {
     })
   })
 
-  it('lists pending invites with details and updates local state after responses', async () => {
+  it('shows invite loading state while invites are pending', async () => {
+    vi.mocked(listMyInvites).mockImplementation(() => new Promise(() => undefined))
+
     const user = userEvent.setup()
     render(<OrgSelectionPage />)
 
-    await user.click(screen.getByRole('tab', { name: 'Convites (10)' }))
+    await user.click(screen.getByRole('tab', { name: 'Convites (0)' }))
 
-    expect(screen.getByRole('tab', { name: 'Convites (10)' })).toHaveAttribute('aria-selected', 'true')
-    const inviteRegion = screen.getByRole('region', { name: 'Convites pendentes' })
-    expect(within(inviteRegion).getByText('Liga Metropolitana')).toBeInTheDocument()
-    expect(within(inviteRegion).getAllByText('Atleta').length).toBeGreaterThan(0)
-    expect(within(inviteRegion).getByText(/Campinas Hawks/)).toBeInTheDocument()
-    expect(within(inviteRegion).getByText(/Camisa 12/)).toBeInTheDocument()
-    expect(within(inviteRegion).getAllByText('Pendente')).toHaveLength(10)
-    expect(within(inviteRegion).getByText('Enviado há 2 dias')).toBeInTheDocument()
-    expect(within(inviteRegion).getByText('Expira em 5 dias')).toBeInTheDocument()
-
-    await user.click(within(inviteRegion).getAllByRole('button', { name: 'Aceitar' })[0])
-
-    expect(screen.getByRole('tab', { name: 'Convites (9)' })).toBeInTheDocument()
-    expect(within(inviteRegion).queryByText('Liga Metropolitana')).not.toBeInTheDocument()
-    expect(navigateMock).not.toHaveBeenCalledWith('/home')
-
-    await user.click(within(inviteRegion).getAllByRole('button', { name: 'Recusar' })[0])
-
-    expect(screen.getByRole('tab', { name: 'Convites (8)' })).toBeInTheDocument()
+    expect(screen.getByText('Carregando convites')).toBeInTheDocument()
   })
 
-  it('shows an operational empty state when all pending invites are resolved', async () => {
+  it('shows invite error state and retries listing', async () => {
+    const user = userEvent.setup()
+    vi.mocked(listMyInvites)
+      .mockRejectedValueOnce(new Error('failed'))
+      .mockResolvedValueOnce([...apiInvites])
+
+    render(<OrgSelectionPage />)
+
+    await user.click(screen.getByRole('tab', { name: 'Convites (0)' }))
+    expect(await screen.findByText('Não foi possível carregar os convites')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    await waitFor(() => {
+      expect(listMyInvites).toHaveBeenCalledTimes(2)
+    })
+    expect(await screen.findByText('Liga Metropolitana')).toBeInTheDocument()
+  })
+
+  it('shows invite empty state when api returns no invites', async () => {
+    const user = userEvent.setup()
+    vi.mocked(listMyInvites).mockResolvedValue([])
+
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (0)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (0)' }))
+
+    expect(screen.getByText('Nenhum convite pendente')).toBeInTheDocument()
+  })
+
+  it('accepts an invite, refreshes organizations, and stays on select-org', async () => {
     const user = userEvent.setup()
     render(<OrgSelectionPage />)
 
-    await user.click(screen.getByRole('tab', { name: 'Convites (10)' }))
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
 
-    while (screen.queryAllByRole('button', { name: 'Aceitar' }).length > 0) {
-      await user.click(screen.getAllByRole('button', { name: 'Aceitar' })[0])
-    }
+    await user.click(screen.getAllByRole('button', { name: 'Aceitar' })[0])
 
-    expect(screen.getByRole('tab', { name: 'Convites (0)' })).toBeInTheDocument()
-    expect(screen.getByText('Nenhum convite pendente')).toBeInTheDocument()
-    expect(screen.getByText(/Novos convites aparecerão nesta aba/)).toBeInTheDocument()
+    expect(respondToMyInvite).toHaveBeenCalledWith(1, 'ACCEPT')
+    await waitFor(() => {
+      expect(refreshOrganizationsMock).toHaveBeenCalled()
+    })
+    expect(screen.queryByText('Liga Metropolitana')).not.toBeInTheDocument()
+    expect(navigateMock).not.toHaveBeenCalledWith('/home')
+  })
+
+  it('rejects an invite and removes it after api success', async () => {
+    const user = userEvent.setup()
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+
+    await user.click(screen.getAllByRole('button', { name: 'Recusar' })[0])
+
+    expect(respondToMyInvite).toHaveBeenCalledWith(1, 'REJECT')
+    await waitFor(() => {
+      expect(screen.queryByText('Liga Metropolitana')).not.toBeInTheDocument()
+    })
+  })
+
+  it('keeps invite visible when response fails', async () => {
+    const user = userEvent.setup()
+    vi.mocked(respondToMyInvite).mockRejectedValueOnce(new Error('failed'))
+
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+    await user.click(screen.getAllByRole('button', { name: 'Aceitar' })[0])
+
+    expect(
+      await screen.findByText('Não foi possível responder ao convite. Tente novamente.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Liga Metropolitana')).toBeInTheDocument()
+  })
+
+  it('disables accept and keeps reject available for expired invites', async () => {
+    const user = userEvent.setup()
+    render(<OrgSelectionPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('tab', { name: 'Convites (2)' }))
+
+    const expiredCard = screen.getByText('Circuito Interior').closest('article')
+    expect(expiredCard).not.toBeNull()
+    expect(within(expiredCard!).getByText('Expirado')).toBeInTheDocument()
+    expect(within(expiredCard!).getByRole('button', { name: 'Aceitar' })).toBeDisabled()
+    expect(within(expiredCard!).getByRole('button', { name: 'Recusar' })).not.toBeDisabled()
   })
 })

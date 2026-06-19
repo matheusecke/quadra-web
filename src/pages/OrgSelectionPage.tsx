@@ -6,14 +6,24 @@ import { useAuth } from '../hooks/useAuth'
 import { InviteList } from './org-selection/InviteList'
 import { getInitials } from './org-selection/orgSelectionUtils'
 import { useScrollChrome } from './org-selection/useScrollChrome'
-import { useMockOrgInvites } from './org-selection/useMockOrgInvites'
-import type { OrgSelectionTab } from './org-selection/types'
+import { useOrgInvites } from './org-selection/useOrgInvites'
+import type { InviteDecision, OrgSelectionTab } from './org-selection/types'
 import s from './OrgSelectionPage.module.css'
 
 export function OrgSelectionPage() {
-  const { organizations, user, chooseOrg, logout } = useAuth()
+  const { organizations, user, chooseOrg, refreshOrganizations, logout } = useAuth()
   const navigate = useNavigate()
-  const { pendingInvites, pendingCount, resolveInvite } = useMockOrgInvites()
+  const {
+    pendingInvites,
+    pendingCount,
+    isLoading: invitesLoading,
+    isError: invitesError,
+    errorMessage: invitesErrorMessage,
+    actionInviteId,
+    actionError,
+    refetch: refetchInvites,
+    resolveInvite,
+  } = useOrgInvites()
 
   const [query, setQuery] = useState('')
   const [selectingId, setSelectingId] = useState<number | null>(null)
@@ -42,6 +52,17 @@ export function OrgSelectionPage() {
       navigate('/home')
     } finally {
       setSelectingId(null)
+    }
+  }
+
+  const handleResolveInvite = async (inviteId: number, decision: InviteDecision) => {
+    try {
+      const result = await resolveInvite(inviteId, decision)
+      if (result === 'accepted') {
+        await refreshOrganizations()
+      }
+    } catch {
+      // useOrgInvites owns the recoverable action error shown in InviteList.
     }
   }
 
@@ -190,7 +211,16 @@ export function OrgSelectionPage() {
               </div>
               <Badge variant="warning">{pendingCount} pendentes</Badge>
             </div>
-            <InviteList invites={pendingInvites} onResolveInvite={resolveInvite} />
+            <InviteList
+              invites={pendingInvites}
+              isLoading={invitesLoading}
+              isError={invitesError}
+              errorMessage={invitesErrorMessage}
+              actionInviteId={actionInviteId}
+              actionError={actionError}
+              onRetry={refetchInvites}
+              onResolveInvite={handleResolveInvite}
+            />
           </section>
         )}
 

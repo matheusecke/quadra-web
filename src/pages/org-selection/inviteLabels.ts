@@ -1,4 +1,4 @@
-import type { AffiliationStatus, OrgRole } from '../../types/admin'
+import type { OrgRole } from '../../types/admin'
 
 export function roleLabel(role: OrgRole): string {
   const labels: Record<OrgRole, string> = {
@@ -11,14 +11,6 @@ export function roleLabel(role: OrgRole): string {
   return labels[role]
 }
 
-export function inviteStatusLabel(status: AffiliationStatus): string {
-  if (status === 'ACTIVE') return 'Aceito'
-  if (status === 'REJECTED') return 'Recusado'
-  return 'Pendente'
-}
-
-export function inviteStatusVariant(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'success' as const
-  if (status === 'REJECTED') return 'danger' as const
-  return 'warning' as const
+export function inviteExpiredLabel(isExpired: boolean): string | null {
+  return isExpired ? 'Expirado' : null
 }

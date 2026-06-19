@@ -162,6 +162,40 @@
   gap: var(--space-2);
 }
 
+.actionError {
+  padding: var(--space-3);
+  border: 1px solid var(--status-live);
+  border-radius: var(--radius);
+  background: var(--status-live-bg);
+  color: var(--ink-2);
+  font-size: 12px;
+  margin-bottom: var(--space-2);
+  flex-shrink: 0;
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.skeletonItem {
+  border-radius: var(--radius-lg);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 @media (max-width: 520px) {
   .topline {
     flex-direction: column;
