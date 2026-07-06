@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
@@ -42,6 +44,7 @@ export function MatchesPage() {
 
   const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
   const { data: tournaments } = useTournamentsQuery()
+  const isOrgAdmin = useIsOrgAdmin()
 
   const champMap = useMemo(
     () => new Map((tournaments ?? []).map((c) => [c.id, c])),
@@ -82,6 +85,11 @@ export function MatchesPage() {
               Todas as partidas dos campeonatos da organização.
             </p>
           </div>
+          {isOrgAdmin && (
+            <Button variant="primary" size="sm" onClick={() => navigate('/matches/new')}>
+              Nova partida
+            </Button>
+          )}
         </div>
 
         <div className={s.toolbar}>
