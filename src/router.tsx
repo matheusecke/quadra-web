@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { AdminRoute } from './components/AdminRoute'
+import { OrgAdminRoute } from './components/OrgAdminRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -16,6 +17,7 @@ import { OrgUsersPage } from './pages/users/OrgUsersPage'
 import { OrgTeamsPage } from './pages/teams/OrgTeamsPage'
 import { TournamentsPage } from './pages/tournaments/TournamentsPage'
 import { TournamentDetailPage } from './pages/tournaments/TournamentDetailPage'
+import { SeasonsPage } from './pages/tournaments/seasons/SeasonsPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
@@ -39,6 +41,12 @@ export const router = createBrowserRouter([
           { path: '/users', element: <OrgUsersPage /> },
           { path: '/teams', element: <OrgTeamsPage /> },
           { path: '/tournaments', element: <TournamentsPage /> },
+          {
+            element: <OrgAdminRoute />,
+            children: [
+              { path: '/tournaments/seasons', element: <SeasonsPage /> },
+            ],
+          },
           { path: '/tournaments/:tournamentId', element: <TournamentDetailPage /> },
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
