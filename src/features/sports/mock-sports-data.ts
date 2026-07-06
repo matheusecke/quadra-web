@@ -2,8 +2,17 @@
  * Sports domain — MOCK DATA (PUC Campinas Basquete demo).
  * Team slugs and athlete emails MUST match tcc-api/prisma/seeds/puc-dev-seed.sql
  */
-import type { Athlete, AthleteChampionshipStatsRow, AthleteMatchStatsRow, AthleteStatTotals, BracketRound, Championship, Group, Match, MatchDetail, PeriodScore, PlayerMatchStats, StatLeaders, Team, TeamMatchStats } from './types'
+import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, BracketRound, Group, Match, MatchDetail, PeriodScore, PlayerMatchStats, Season, StatLeaders, Team, TeamMatchStats, Tournament, TournamentCategory } from './types'
 import { aggregateAthleteStats } from './sportsUtils'
+
+export const seedSeasons: Season[] = [
+  { id: 'season-2025-26', label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+]
+
+export const seedCategories: TournamentCategory[] = [
+  { id: 'cat-sub19', name: 'Sub-19', sortOrder: 1 },
+  { id: 'cat-adulto-masc', name: 'Adulto Masculino', sortOrder: 2 },
+]
 export const MOCK_TEAMS: Team[] = [
   { id: 'puc-time-1', name: 'Time 1', shortName: 'T01', city: 'Campinas' },
   { id: 'puc-time-2', name: 'Time 2', shortName: 'T02', city: 'Campinas' },
@@ -155,7 +164,7 @@ const PUC_ATHLETES: Athlete[] = [
 
 const ATHLETES_BY_TEAM: Record<string, Athlete[]> = Object.fromEntries(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
 let matchSeq=0
-function mkMatch(championshipId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{return{id:id??`m${++matchSeq}`,championshipId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus}}
+function mkMatch(tournamentId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{return{id:id??`m${++matchSeq}`,tournamentId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus}}
 function group(id:string,name:string,rows:Array<[string,number,number,number,number,number]>):Group{return{id,name,standings:rows.map(([teamId,played,wins,losses,pf,pa],i)=>({teamId,position:i+1,played,wins,losses,pointsFor:pf,pointsAgainst:pa}))}}
 function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,plusMinus:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,plusMinus,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
@@ -225,7 +234,7 @@ const geralMatches: Match[] = [
   mkMatch(GERAL, 'Final', '2026-05-31T20:00:00', 'puc-time-1', 'puc-time-2', 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m31'),
 ]
 const geralBracket: BracketRound[] = [{ id:'geral-qf',name:'Quartas de final',matches:[{id:'geral-qf1',matchId:'puc-geral-m25',homeTeamId:'puc-time-1',awayTeamId:'puc-time-5',homeScore:86,awayScore:82,winnerId:'puc-time-1'},{id:'geral-qf2',matchId:'puc-geral-m26',homeTeamId:'puc-time-6',awayTeamId:'puc-time-2',homeScore:70,awayScore:78,winnerId:'puc-time-2'},{id:'geral-qf3',matchId:'puc-geral-m27',homeTeamId:'puc-time-9',awayTeamId:'puc-time-14',homeScore:86,awayScore:83,winnerId:'puc-time-9'},{id:'geral-qf4',matchId:'puc-geral-m28',homeTeamId:'puc-time-13',awayTeamId:'puc-time-10',homeScore:84,awayScore:81,winnerId:'puc-time-13'}]},{id:'geral-sf',name:'Semifinais',matches:[{id:'geral-sf1',matchId:'puc-geral-m29',homeTeamId:'puc-time-1',awayTeamId:'puc-time-13',homeScore:82,awayScore:78,winnerId:'puc-time-1'},{id:'geral-sf2',matchId:'puc-geral-m30',homeTeamId:'puc-time-2',awayTeamId:'puc-time-9',homeScore:86,awayScore:69,winnerId:'puc-time-2'}]},{id:'geral-f',name:'Final',matches:[{id:'geral-f1',matchId:'puc-geral-m31',homeTeamId:'puc-time-1',awayTeamId:'puc-time-2',homeScore:84,awayScore:80,winnerId:'puc-time-1'}]}]
-const geralChampionship: Championship={id:GERAL,name:'Campeonato Geral da PUC 2026',season:'2026',category:'Adulto Masculino',status:'FINISHED',currentPhase:'FINISHED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',statsStatus:'COMPLETE',regulation:REGULATION,groups:geralGroups,leaders:geralLeaders,bracket:geralBracket,championTeamId:'puc-time-1'}
+const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:'season-2025-26',categoryId:'cat-adulto-masc',format:'GROUP_STAGE_KNOCKOUT',status:'FINISHED',currentPhase:'FINISHED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',statsStatus:'COMPLETE',regulation:REGULATION,groups:geralGroups,leaders:geralLeaders,bracket:geralBracket,championTeamId:'puc-time-1'}
 const invernoGroups: Group[] = [group('inverno-ga','Grupo A',[['puc-time-1',0,0,0,0,0],['puc-time-2',0,0,0,0,0],['puc-time-3',0,0,0,0,0],['puc-time-4',0,0,0,0,0]]),group('inverno-gb','Grupo B',[['puc-time-5',0,0,0,0,0],['puc-time-6',0,0,0,0,0],['puc-time-7',0,0,0,0,0],['puc-time-8',0,0,0,0,0]])]
 const invernoMatches: Match[] = [
   mkMatch(INVERNO, 'Fase de grupos', '2026-07-03T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m01'),
@@ -244,9 +253,11 @@ const invernoMatches: Match[] = [
   mkMatch(INVERNO, 'Semifinais', '2026-07-25T21:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m14'),
   mkMatch(INVERNO, 'Final', '2026-07-31T20:00:00', 'puc-time-1', 'puc-time-5', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m15'),
 ]
-const invernoChampionship: Championship = { id: INVERNO, name: 'Copa de Inverno PUC', season: '2026', category: 'Adulto Masculino', status: 'SCHEDULED', currentPhase: 'GROUPS', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 15, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
-const MOCK_CHAMPIONSHIPS: Championship[] = [geralChampionship, invernoChampionship]
-const MOCK_MATCHES: Match[] = [...geralMatches, ...invernoMatches]
+const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'SCHEDULED', currentPhase: 'GROUPS', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 15, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
+export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
+export const seedMatches: Match[] = [...geralMatches, ...invernoMatches]
+const MOCK_TOURNAMENTS = seedTournaments
+const MOCK_MATCHES = seedMatches
 const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }> = {
   'puc-geral-m01': (() => { const b = buildBoxScore(80, 89, 'puc-time-1', 'puc-time-2'); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
   'puc-geral-m02': (() => { const b = buildBoxScore(87, 83, 'puc-time-1', 'puc-time-3'); return { periodScores: mkPeriods([21,20], [25,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
@@ -300,17 +311,18 @@ const FINAL_AWAY = mkTeam('puc-time-2', [
 MATCH_EXTRA['puc-geral-m31'] = { periodScores: mkPeriods([22,20],[18,22],[20,18],[16,16],[8,4]), homeStats: FINAL_HOME, awayStats: FINAL_AWAY }
 
 export function getTeams(): Team[] { return MOCK_TEAMS }
-export function getChampionships(): Championship[] { return MOCK_CHAMPIONSHIPS }
-export function getChampionshipById(id: string): Championship | undefined { return MOCK_CHAMPIONSHIPS.find((c) => c.id === id) }
-export function getMatchesByChampionship(championshipId: string): Match[] { return MOCK_MATCHES.filter((m) => m.championshipId === championshipId) }
-export function getSeasons(): string[] { return [...new Set(MOCK_CHAMPIONSHIPS.map((c) => c.season))].sort().reverse() }
+export function getTournaments(): Tournament[] { return MOCK_TOURNAMENTS }
+export function getTournamentById(id: string): Tournament | undefined { return MOCK_TOURNAMENTS.find((c) => c.id === id) }
+export function getMatchesByTournament(tournamentId: string): Match[] { return MOCK_MATCHES.filter((m) => m.tournamentId === tournamentId) }
+export function getSeasons(): Season[] { return seedSeasons }
+export function getCategories(): TournamentCategory[] { return seedCategories }
 export function getAllMatches(): Match[] { return MOCK_MATCHES }
 export function getMatchDetailById(id: string): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA[id]; return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] }, awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] } } }
 export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
 export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
 export function getAthleteById(athleteId: string): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }
 function getAthleteAppearances(athleteId?: string) { return Object.entries(MATCH_EXTRA).flatMap(([matchId, extra]) => { const match = MOCK_MATCHES.find((item) => item.id === matchId); if (!match) return []; const home = extra.homeStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.homeStats.teamId, match })); const away = extra.awayStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.awayStats.teamId, match })); return [...home, ...away] }) }
-export function getAthleteMatches(athleteId: string): AthleteMatchStatsRow[] { return getAthleteAppearances(athleteId).map(({ player, teamId, match }) => { const championship = getChampionshipById(match.championshipId); const homeTeam = MOCK_TEAMS.find((t) => t.id === match.homeTeamId); const awayTeam = MOCK_TEAMS.find((t) => t.id === match.awayTeamId); const athleteIsHome = teamId === match.homeTeamId; const athleteScore = athleteIsHome ? match.homeScore : match.awayScore; const opponentScore = athleteIsHome ? match.awayScore : match.homeScore; const scoreText = athleteScore === null || opponentScore === null ? '—' : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`; if (!championship) return null; return { match, championship, teamId, matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`, result: scoreText, stats: player } }).filter((row): row is AthleteMatchStatsRow => Boolean(row)).sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date)) }
+export function getAthleteMatches(athleteId: string): AthleteMatchStatsRow[] { return getAthleteAppearances(athleteId).map(({ player, teamId, match }) => { const tournament = getTournamentById(match.tournamentId); const homeTeam = MOCK_TEAMS.find((t) => t.id === match.homeTeamId); const awayTeam = MOCK_TEAMS.find((t) => t.id === match.awayTeamId); const athleteIsHome = teamId === match.homeTeamId; const athleteScore = athleteIsHome ? match.homeScore : match.awayScore; const opponentScore = athleteIsHome ? match.awayScore : match.homeScore; const scoreText = athleteScore === null || opponentScore === null ? '—' : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`; if (!tournament) return null; return { match, tournament, teamId, matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`, result: scoreText, stats: player } }).filter((row): row is AthleteMatchStatsRow => Boolean(row)).sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date)) }
 export function getAthleteSummaryById(athleteId: string): AthleteStatTotals { return aggregateAthleteStats(getAthleteMatches(athleteId).map((row) => row.stats)) }
-export function getAthleteChampionshipStats(athleteId: string): AthleteChampionshipStatsRow[] { const grouped = new Map<string, AthleteMatchStatsRow[]>(); getAthleteMatches(athleteId).forEach((row) => { const key = `${row.championship.id}:${row.teamId}`; grouped.set(key, [...(grouped.get(key) ?? []), row]) }); return [...grouped.values()].map((rows) => ({ championship: rows[0].championship, teamId: rows[0].teamId, totals: aggregateAthleteStats(rows.map((row) => row.stats)) })).sort((a, b) => +new Date(b.championship.startDate) - +new Date(a.championship.startDate)) }
+export function getAthleteTournamentStats(athleteId: string): AthleteTournamentStatsRow[] { const grouped = new Map<string, AthleteMatchStatsRow[]>(); getAthleteMatches(athleteId).forEach((row) => { const key = `${row.tournament.id}:${row.teamId}`; grouped.set(key, [...(grouped.get(key) ?? []), row]) }); return [...grouped.values()].map((rows) => ({ tournament: rows[0].tournament, teamId: rows[0].teamId, totals: aggregateAthleteStats(rows.map((row) => row.stats)) })).sort((a, b) => +new Date(b.tournament.startDate) - +new Date(a.tournament.startDate)) }
 
