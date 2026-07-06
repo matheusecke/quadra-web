@@ -21,6 +21,7 @@ import { SeasonsPage } from './pages/tournaments/seasons/SeasonsPage'
 import { CategoriesPage } from './pages/tournaments/categories/CategoriesPage'
 import { TournamentFormPage } from './pages/tournaments/TournamentFormPage'
 import { MatchFormPage } from './pages/matches/MatchFormPage'
+import { MatchSumulaPage } from './pages/matches/MatchSumulaPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
               { path: '/tournaments/:tournamentId/edit', element: <TournamentFormPage /> },
               { path: '/tournaments/:tournamentId/matches/new', element: <MatchFormPage /> },
               { path: '/matches/new', element: <MatchFormPage /> },
+              { path: '/matches/:matchId/sumula', element: <MatchSumulaPage /> },
             ],
           },
           { path: '/tournaments/:tournamentId', element: <TournamentDetailPage /> },

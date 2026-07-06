@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -9,6 +10,7 @@ import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchDetailQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
   formatTime,
@@ -27,6 +29,8 @@ const TABS: TabItem[] = [
 
 export function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>()
+  const navigate = useNavigate()
+  const isOrgAdmin = useIsOrgAdmin()
   const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId)
   const { data: tournaments } = useTournamentsQuery()
   const [activeTab, setActiveTab] = useState('summary')
@@ -111,6 +115,11 @@ export function MatchDetailPage() {
               {tournament.name}
               <ExternalLink size={11} strokeWidth={1.6} />
             </Link>
+          )}
+          {isOrgAdmin && (
+            <Button variant="primary" size="sm" onClick={() => navigate(`/matches/${match.id}/sumula`)}>
+              {match.status === 'FINISHED' ? 'Editar súmula' : 'Lançar resultado'}
+            </Button>
           )}
         </div>
 

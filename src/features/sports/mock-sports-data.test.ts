@@ -36,7 +36,7 @@ describe('PUC sports mock data', () => {
 
   it('Inverno has only scheduled matches with pending stats', () => {
     const matches = getMatchesByTournament('puc-inverno-2026')
-    expect(matches).toHaveLength(15)
+    expect(matches).toHaveLength(16)
     expect(matches.every((m) => m.status === 'SCHEDULED')).toBe(true)
     expect(matches.every((m) => m.statsStatus === 'PENDING')).toBe(true)
   })

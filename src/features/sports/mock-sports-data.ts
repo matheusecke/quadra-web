@@ -253,9 +253,11 @@ const invernoMatches: Match[] = [
   mkMatch(INVERNO, 'Semifinais', '2026-07-25T21:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m14'),
   mkMatch(INVERNO, 'Final', '2026-07-31T20:00:00', 'puc-time-1', 'puc-time-5', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m15'),
 ]
-const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'SCHEDULED', currentPhase: 'GROUPS', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 15, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
+const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'SCHEDULED', currentPhase: 'GROUPS', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
 export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
-export const seedMatches: Match[] = [...geralMatches, ...invernoMatches]
+// Stable scheduled match used to demo/record a súmula (two teams with rostered athletes).
+const sumulaSeedMatch = mkMatch(INVERNO, 'Fase de grupos', '2026-07-04T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'match-1')
+export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaSeedMatch]
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
 const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }> = {
