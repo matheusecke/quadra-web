@@ -8,7 +8,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
-import { useTournament, useTournamentMatches } from '../../features/sports/useSportsData'
+import { useMatchesQuery, useTournamentQuery } from '../../features/sports/queries'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
@@ -34,8 +34,8 @@ const TABS: TabItem[] = [
 
 export function TournamentDetailPage() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
-  const { data: tournament, isLoading, isError, refetch } = useTournament(tournamentId)
-  const { data: matches } = useTournamentMatches(tournamentId)
+  const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId)
+  const { data: matches } = useMatchesQuery({ tournamentId })
   const [activeTab, setActiveTab] = useState('overview')
   const teams = teamMap(getTeams())
 

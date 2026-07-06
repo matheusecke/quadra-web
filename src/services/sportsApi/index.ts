@@ -1,0 +1,63 @@
+// SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
+import {
+  getMatchDetailById,
+  seedCategories,
+  seedMatches,
+  seedSeasons,
+  seedTournaments,
+} from '../../features/sports/mock-sports-data'
+import type { MatchDetail } from '../../features/sports/types'
+import { createSportsStore } from './store'
+import type {
+  CreateCategoryInput,
+  CreateSeasonInput,
+  CreateTournamentInput,
+  EnrollTeamInput,
+  RosterEntryInput,
+  ScheduleMatchInput,
+  SubmitMatchResultInput,
+  UpdateSeasonInput,
+  UpdateTournamentInput,
+} from './types'
+
+const seedMatchDetails = seedMatches
+  .map((match) => getMatchDetailById(match.id))
+  .filter((detail): detail is MatchDetail => Boolean(detail))
+
+const store = createSportsStore({
+  seasons: seedSeasons,
+  categories: seedCategories,
+  tournaments: seedTournaments,
+  matches: seedMatches,
+  matchDetails: seedMatchDetails,
+})
+
+// ── Seasons ──────────────────────────────────────────────────────────────────
+export const getSeasons = () => Promise.resolve(store.listSeasons())
+export const createSeason = (input: CreateSeasonInput) => Promise.resolve(store.createSeason(input))
+export const updateSeason = (id: string, input: UpdateSeasonInput) => Promise.resolve(store.updateSeason(id, input))
+
+// ── Categories ─────────────────────────────────────────────────────────────────
+export const getCategories = () => Promise.resolve(store.listCategories())
+export const createCategory = (input: CreateCategoryInput) => Promise.resolve(store.createCategory(input))
+
+// ── Tournaments ──────────────────────────────────────────────────────────────────
+export const getTournaments = () => Promise.resolve(store.listTournaments())
+export const getTournament = (id: string) => Promise.resolve(store.getTournament(id))
+export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
+export const updateTournament = (id: string, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
+
+// ── Tournament teams ─────────────────────────────────────────────────────────────
+export const getTournamentTeams = (tournamentId: string) => Promise.resolve(store.listTournamentTeams(tournamentId))
+export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
+export const removeTournamentTeam = (id: string) => Promise.resolve(store.removeTournamentTeam(id))
+
+// ── Roster ───────────────────────────────────────────────────────────────────────
+export const getRoster = (tournamentId: string, teamId: string) => Promise.resolve(store.listRoster(tournamentId, teamId))
+export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
+
+// ── Matches ────────────────────────────────────────────────────────────────────────
+export const getMatches = (filter?: { tournamentId?: string }) => Promise.resolve(store.listMatches(filter))
+export const getMatchDetail = (id: string) => Promise.resolve(store.getMatchDetail(id))
+export const scheduleMatch = (input: ScheduleMatchInput) => Promise.resolve(store.scheduleMatch(input))
+export const submitMatchResult = (input: SubmitMatchResultInput) => Promise.resolve(store.submitMatchResult(input))

@@ -1,33 +1,24 @@
 /**
- * Sports domain — thin React hooks that simulate the async shape of a future API.
+ * Sports domain — athlete read hooks that simulate the async shape of a future API.
  *
- * ⚠️ MOCK: today these resolve local data from `mock-sports-data.ts` behind a tiny
+ * ⚠️ MOCK: these resolve local athlete data from `mock-sports-data.ts` behind a tiny
  * artificial delay so the screens exercise their loading / error / empty states.
- * Replace the bodies with real `fetch` / react-query calls when the API exists —
- * the returned shape (`{ data, isLoading, isError, refetch }`) is intentionally
- * close to what a query hook would expose.
+ * Tournament/match/season data has moved to the `sportsApi` seam + React Query hooks
+ * (`queries.ts`); athlete aggregates still read reference mock data here.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 import {
   getAthleteById,
-  getAthleteTournamentStats,
   getAthleteMatches,
   getAthleteSummaryById,
-  getTournamentById,
-  getTournaments,
-  getAllMatches,
-  getMatchDetailById,
-  getMatchesByTournament,
+  getAthleteTournamentStats,
 } from './mock-sports-data'
 import type {
   Athlete,
-  AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
   AthleteStatTotals,
-  Tournament,
-  Match,
-  MatchDetail,
+  AthleteTournamentStatsRow,
 } from './types'
 
 const MOCK_DELAY = 350
@@ -69,26 +60,6 @@ function useMockQuery<T>(resolver: () => T, deps: unknown[]): QueryState<T> {
   }, [...deps, nonce])
 
   return { data, isLoading, isError, refetch }
-}
-
-export function useTournaments(): QueryState<Tournament[]> {
-  return useMockQuery(() => getTournaments(), [])
-}
-
-export function useTournament(id: string | undefined): QueryState<Tournament | undefined> {
-  return useMockQuery(() => (id ? getTournamentById(id) : undefined), [id])
-}
-
-export function useTournamentMatches(id: string | undefined): QueryState<Match[]> {
-  return useMockQuery(() => (id ? getMatchesByTournament(id) : []), [id])
-}
-
-export function useMatches(): QueryState<Match[]> {
-  return useMockQuery(() => getAllMatches(), [])
-}
-
-export function useMatch(id: string | undefined): QueryState<MatchDetail | undefined> {
-  return useMockQuery(() => (id ? getMatchDetailById(id) : undefined), [id])
 }
 
 export function useAthlete(id: string | undefined): QueryState<Athlete | undefined> {

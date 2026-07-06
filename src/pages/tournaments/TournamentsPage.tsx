@@ -6,7 +6,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
-import { useTournaments } from '../../features/sports/useSportsData'
+import { useTournamentsQuery } from '../../features/sports/queries'
 import type { TournamentStatus } from '../../features/sports/types'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -34,7 +34,7 @@ export function TournamentsPage() {
   const [status, setStatus] = useState<TournamentStatus | ''>('')
   const [season, setSeason] = useState('')
 
-  const { data, isLoading, isError, refetch } = useTournaments()
+  const { data, isPending: isLoading, isError, refetch } = useTournamentsQuery()
   const seasons = useMemo(() => getSeasons(), [])
 
   useEffect(() => {

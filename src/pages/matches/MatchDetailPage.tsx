@@ -8,7 +8,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getTeams } from '../../features/sports/mock-sports-data'
-import { useMatch, useTournaments } from '../../features/sports/useSportsData'
+import { useMatchDetailQuery, useTournamentsQuery } from '../../features/sports/queries'
 import {
   formatDate,
   formatTime,
@@ -27,8 +27,8 @@ const TABS: TabItem[] = [
 
 export function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>()
-  const { data: match, isLoading, isError, refetch } = useMatch(matchId)
-  const { data: tournaments } = useTournaments()
+  const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId)
+  const { data: tournaments } = useTournamentsQuery()
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams        = teamMap(getTeams())

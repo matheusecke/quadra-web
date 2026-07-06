@@ -114,7 +114,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   return {
     // ── Seasons ──────────────────────────────────────────────────────────────
     listSeasons(): Season[] {
-      return seasons.filter(isActive)
+      return [...seasons]
     },
     createSeason(input: CreateSeasonInput): Season {
       const season: Season = { id: nextId('season'), label: input.label, startDate: input.startDate, endDate: input.endDate, status: 'ACTIVE' }

@@ -6,7 +6,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getTeams } from '../../features/sports/mock-sports-data'
-import { useMatches, useTournaments } from '../../features/sports/useSportsData'
+import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
@@ -40,8 +40,8 @@ export function MatchesPage() {
     return () => clearTimeout(t)
   }, [q])
 
-  const { data: matches,       isLoading, isError, refetch } = useMatches()
-  const { data: tournaments }                               = useTournaments()
+  const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
+  const { data: tournaments } = useTournamentsQuery()
 
   const champMap = useMemo(
     () => new Map((tournaments ?? []).map((c) => [c.id, c])),
