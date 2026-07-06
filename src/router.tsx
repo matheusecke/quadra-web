@@ -18,6 +18,7 @@ import { OrgTeamsPage } from './pages/teams/OrgTeamsPage'
 import { TournamentsPage } from './pages/tournaments/TournamentsPage'
 import { TournamentDetailPage } from './pages/tournaments/TournamentDetailPage'
 import { SeasonsPage } from './pages/tournaments/seasons/SeasonsPage'
+import { CategoriesPage } from './pages/tournaments/categories/CategoriesPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
             element: <OrgAdminRoute />,
             children: [
               { path: '/tournaments/seasons', element: <SeasonsPage /> },
+              { path: '/tournaments/categories', element: <CategoriesPage /> },
             ],
           },
           { path: '/tournaments/:tournamentId', element: <TournamentDetailPage /> },
