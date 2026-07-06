@@ -11,7 +11,7 @@ const teams = new Map<string, Team>([
 
 const finishedMatch: Match = {
   id: 'm1',
-  championshipId: 'c1',
+  tournamentId: 'c1',
   phase: 'Oitavas de final',
   date: '2026-06-07T21:00:00.000Z',
   homeTeamId: 'abutres',

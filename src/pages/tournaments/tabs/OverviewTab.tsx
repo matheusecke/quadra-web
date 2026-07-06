@@ -1,14 +1,14 @@
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import type { Championship, Match, Team } from '../../../features/sports/types'
+import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
 import { BracketView } from '../parts/BracketView'
 import { MatchList } from '../parts/MatchList'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface OverviewTabProps {
-  championship: Championship
+  tournament: Tournament
   matches: Match[]
   teams: Map<string, Team>
 }
@@ -17,11 +17,11 @@ interface OverviewTabProps {
  * Overview — the main reading surface. Fixed section order:
  * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
-export function OverviewTab({ championship, matches, teams }: OverviewTabProps) {
+export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
-  const hasLeaders = championship.leaders.ppg.length > 0
-  const hasGroups = championship.groups.length > 0
-  const hasBracket = championship.bracket.length > 0
+  const hasLeaders = tournament.leaders.ppg.length > 0
+  const hasGroups = tournament.groups.length > 0
+  const hasBracket = tournament.bracket.length > 0
 
   return (
     <>
@@ -33,7 +33,7 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
         </div>
         {hasGroups ? (
           <div className={s.groupsGrid}>
-            {championship.groups.map((g) => (
+            {tournament.groups.map((g) => (
               <div key={g.id} className={s.standCard}>
                 <div className={s.standCardHead}>{g.name}</div>
                 <StandingsTable rows={g.standings} teams={teams} variant="compact" qualified={2} />
@@ -55,9 +55,9 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
             <span className={s.sectionHint}>Clique em um confronto para abrir a partida</span>
           </div>
           <BracketView
-            rounds={championship.bracket}
+            rounds={tournament.bracket}
             teams={teams}
-            championTeamId={championship.championTeamId}
+            championTeamId={tournament.championTeamId}
           />
         </section>
       )}
@@ -69,7 +69,7 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
           <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
         </div>
         {hasLeaders ? (
-          <LeadersGrid leaders={championship.leaders} teams={teams} perCard={3} />
+          <LeadersGrid leaders={tournament.leaders} teams={teams} perCard={3} />
         ) : (
           <div className={s.tabEmpty}>
             <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
@@ -97,7 +97,7 @@ export function OverviewTab({ championship, matches, teams }: OverviewTabProps) 
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Regulamento</h2>
         </div>
-        <div className={s.regulation}>{championship.regulation}</div>
+        <div className={s.regulation}>{tournament.regulation}</div>
       </section>
     </>
   )

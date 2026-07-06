@@ -1,10 +1,10 @@
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import type { Championship, Team } from '../../../features/sports/types'
+import type { Tournament, Team } from '../../../features/sports/types'
 import { LeadersGrid } from '../parts/LeadersGrid'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface StatsTabProps {
-  championship: Championship
+  tournament: Tournament
   teams: Map<string, Team>
 }
 
@@ -12,8 +12,8 @@ interface StatsTabProps {
  * Statistics tab — basic per-game rankings ONLY (PPG, RPG, APG, STG, BPG).
  * Efficiency / shooting-percentage metrics are intentionally out of scope.
  */
-export function StatsTab({ championship, teams }: StatsTabProps) {
-  const hasLeaders = championship.leaders.ppg.length > 0
+export function StatsTab({ tournament, teams }: StatsTabProps) {
+  const hasLeaders = tournament.leaders.ppg.length > 0
 
   if (!hasLeaders) {
     return (
@@ -32,7 +32,7 @@ export function StatsTab({ championship, teams }: StatsTabProps) {
         <h2 className={s.sectionTitle}>Rankings por categoria</h2>
         <span className={s.sectionHint}>Médias por jogo · top 5 · clique no atleta</span>
       </div>
-      <LeadersGrid leaders={championship.leaders} teams={teams} perCard={5} />
+      <LeadersGrid leaders={tournament.leaders} teams={teams} perCard={5} />
     </section>
   )
 }

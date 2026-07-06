@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { StatLeaders, Team } from '../../../features/sports/types'
 import { LEADER_STAT_META, LEADER_STAT_ORDER } from '../../../features/sports/sportsUtils'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface LeadersGridProps {
   leaders: StatLeaders

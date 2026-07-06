@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { cn } from '../../../components/ui/cn'
 import type { BracketMatch, BracketRound, Team } from '../../../features/sports/types'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface BracketViewProps {
   rounds: BracketRound[]

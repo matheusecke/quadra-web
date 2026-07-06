@@ -1,7 +1,7 @@
 /**
  * Sports domain — thin React hooks that simulate the async shape of a future API.
  *
- * ⚠️ MOCK: today these resolve local data from `mockSportsData.ts` behind a tiny
+ * ⚠️ MOCK: today these resolve local data from `mock-sports-data.ts` behind a tiny
  * artificial delay so the screens exercise their loading / error / empty states.
  * Replace the bodies with real `fetch` / react-query calls when the API exists —
  * the returned shape (`{ data, isLoading, isError, refetch }`) is intentionally
@@ -11,21 +11,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   getAthleteById,
-  getAthleteChampionshipStats,
+  getAthleteTournamentStats,
   getAthleteMatches,
   getAthleteSummaryById,
-  getChampionshipById,
-  getChampionships,
+  getTournamentById,
+  getTournaments,
   getAllMatches,
   getMatchDetailById,
-  getMatchesByChampionship,
-} from './mockSportsData'
+  getMatchesByTournament,
+} from './mock-sports-data'
 import type {
   Athlete,
-  AthleteChampionshipStatsRow,
+  AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
   AthleteStatTotals,
-  Championship,
+  Tournament,
   Match,
   MatchDetail,
 } from './types'
@@ -71,16 +71,16 @@ function useMockQuery<T>(resolver: () => T, deps: unknown[]): QueryState<T> {
   return { data, isLoading, isError, refetch }
 }
 
-export function useChampionships(): QueryState<Championship[]> {
-  return useMockQuery(() => getChampionships(), [])
+export function useTournaments(): QueryState<Tournament[]> {
+  return useMockQuery(() => getTournaments(), [])
 }
 
-export function useChampionship(id: string | undefined): QueryState<Championship | undefined> {
-  return useMockQuery(() => (id ? getChampionshipById(id) : undefined), [id])
+export function useTournament(id: string | undefined): QueryState<Tournament | undefined> {
+  return useMockQuery(() => (id ? getTournamentById(id) : undefined), [id])
 }
 
-export function useChampionshipMatches(id: string | undefined): QueryState<Match[]> {
-  return useMockQuery(() => (id ? getMatchesByChampionship(id) : []), [id])
+export function useTournamentMatches(id: string | undefined): QueryState<Match[]> {
+  return useMockQuery(() => (id ? getMatchesByTournament(id) : []), [id])
 }
 
 export function useMatches(): QueryState<Match[]> {
@@ -103,6 +103,6 @@ export function useAthleteMatches(id: string | undefined): QueryState<AthleteMat
   return useMockQuery(() => (id ? getAthleteMatches(id) : []), [id])
 }
 
-export function useAthleteChampionshipStats(id: string | undefined): QueryState<AthleteChampionshipStatsRow[]> {
-  return useMockQuery(() => (id ? getAthleteChampionshipStats(id) : []), [id])
+export function useAthleteTournamentStats(id: string | undefined): QueryState<AthleteTournamentStatsRow[]> {
+  return useMockQuery(() => (id ? getAthleteTournamentStats(id) : []), [id])
 }

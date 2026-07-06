@@ -14,8 +14,8 @@ import { AdminTeamsPage } from './pages/admin/AdminTeamsPage'
 import { AdminAffiliationsPage } from './pages/admin/AdminAffiliationsPage'
 import { OrgUsersPage } from './pages/users/OrgUsersPage'
 import { OrgTeamsPage } from './pages/teams/OrgTeamsPage'
-import { ChampionshipsPage } from './pages/championships/ChampionshipsPage'
-import { ChampionshipDetailPage } from './pages/championships/ChampionshipDetailPage'
+import { TournamentsPage } from './pages/tournaments/TournamentsPage'
+import { TournamentDetailPage } from './pages/tournaments/TournamentDetailPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
@@ -38,8 +38,8 @@ export const router = createBrowserRouter([
           { path: '/home', element: <HomePage /> },
           { path: '/users', element: <OrgUsersPage /> },
           { path: '/teams', element: <OrgTeamsPage /> },
-          { path: '/championships', element: <ChampionshipsPage /> },
-          { path: '/championships/:championshipId', element: <ChampionshipDetailPage /> },
+          { path: '/tournaments', element: <TournamentsPage /> },
+          { path: '/tournaments/:tournamentId', element: <TournamentDetailPage /> },
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
           { path: '/athletes/:athleteId', element: <AthleteDetailPage /> },

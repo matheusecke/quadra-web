@@ -7,9 +7,9 @@
 import type {
   AthleteStatTotals,
   AthleteStatus,
-  Championship,
-  ChampionshipPhase,
-  ChampionshipStatus,
+  Tournament,
+  TournamentPhase,
+  TournamentStatus,
   LeaderStat,
   Match,
   MatchStatus,
@@ -45,7 +45,7 @@ export function formatDiff(row: StandingRow): string {
 }
 
 /**
- * Sort standings by championship tie-break order:
+ * Sort standings by tournament tie-break order:
  * wins → point differential → points for.
  * Returns a new array with `position` reassigned.
  */
@@ -61,8 +61,8 @@ export function rankStandings(rows: StandingRow[]): StandingRow[] {
 }
 
 /** Consolidated standings across all groups, re-ranked into a single table. */
-export function consolidatedStandings(championship: Championship): StandingRow[] {
-  const all = championship.groups.flatMap((g) => g.standings)
+export function consolidatedStandings(tournament: Tournament): StandingRow[] {
+  const all = tournament.groups.flatMap((g) => g.standings)
   return rankStandings(all)
 }
 
@@ -85,7 +85,7 @@ export function teamMap(teams: Team[]): Map<string, Team> {
 
 // ── Labels (Portuguese) ────────────────────────────────────────────────────────
 
-export const CHAMPIONSHIP_STATUS_LABELS: Record<ChampionshipStatus, string> = {
+export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
   SCHEDULED: 'Agendado',
   IN_PROGRESS: 'Em andamento',
   PLAYOFFS: 'Playoffs',
@@ -93,7 +93,7 @@ export const CHAMPIONSHIP_STATUS_LABELS: Record<ChampionshipStatus, string> = {
   CANCELED: 'Cancelado',
 }
 
-export const PHASE_LABELS: Record<ChampionshipPhase, string> = {
+export const PHASE_LABELS: Record<TournamentPhase, string> = {
   GROUPS: 'Fase de grupos',
   ROUNDS_OF_16: 'Oitavas de final',
   QUARTERS: 'Quartas de final',
@@ -135,7 +135,7 @@ export const LEADER_STAT_ORDER: LeaderStat[] = ['ppg', 'rpg', 'apg', 'stg', 'bpg
 
 type BadgeVariant = 'default' | 'accent' | 'live' | 'success' | 'warning' | 'danger' | 'ghost'
 
-export function championshipStatusVariant(status: ChampionshipStatus): BadgeVariant {
+export function tournamentStatusVariant(status: TournamentStatus): BadgeVariant {
   switch (status) {
     case 'IN_PROGRESS':
       return 'accent'
@@ -214,12 +214,12 @@ export function formatRelative(iso: string): string {
 }
 
 /** `realizadas/total` progress string, e.g. `12/18`. */
-export function matchProgress(championship: Championship): string {
-  return `${championship.finishedMatchCount}/${championship.matchCount}`
+export function matchProgress(tournament: Tournament): string {
+  return `${tournament.finishedMatchCount}/${tournament.matchCount}`
 }
 
-export function formatPeriod(championship: Championship): string {
-  return `${formatDate(championship.startDate)} - ${formatDate(championship.endDate)}`
+export function formatPeriod(tournament: Tournament): string {
+  return `${formatDate(tournament.startDate)} - ${formatDate(tournament.endDate)}`
 }
 
 const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })

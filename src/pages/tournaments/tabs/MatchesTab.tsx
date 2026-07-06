@@ -3,24 +3,24 @@ import { Link } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import type { Championship, Match, MatchStatus, Team } from '../../../features/sports/types'
+import type { Tournament, Match, MatchStatus, Team } from '../../../features/sports/types'
 import {
   formatDateTime,
   MATCH_STATUS_LABELS,
   matchStatusVariant,
   sortMatchesByDateDesc,
 } from '../../../features/sports/sportsUtils'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface MatchesTabProps {
-  championship: Championship
+  tournament: Tournament
   matches: Match[]
   teams: Map<string, Team>
 }
 
 const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED']
 
-export function MatchesTab({ championship, matches, teams }: MatchesTabProps) {
+export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
   const [q, setQ] = useState('')
   const [team, setTeam] = useState('')
   const [status, setStatus] = useState<MatchStatus | ''>('')
@@ -67,7 +67,7 @@ export function MatchesTab({ championship, matches, teams }: MatchesTabProps) {
         </div>
         <select className={s.filterSelect} value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Filtrar por equipe">
           <option value="">Equipe</option>
-          {championship.teamIds.map((id) => (
+          {tournament.teamIds.map((id) => (
             <option key={id} value={id}>
               {teams.get(id)?.name ?? id}
             </option>

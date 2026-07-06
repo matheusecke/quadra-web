@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import type { Championship, Match, Team } from '../../../features/sports/types'
+import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { MatchesTab } from './MatchesTab'
 
 const teams = new Map<string, Team>([
@@ -11,11 +11,12 @@ const teams = new Map<string, Team>([
   ['lobos', { id: 'lobos', name: 'Lobos do Norte', shortName: 'LOB' }],
 ])
 
-const championship: Championship = {
+const tournament: Tournament = {
   id: 'c1',
   name: 'Supercopa Nacional',
-  season: '2026',
-  category: 'Adulto Masculino',
+  seasonId: 'season-2025-26',
+  categoryId: 'cat-adulto-masc',
+  format: 'GROUP_STAGE_KNOCKOUT',
   status: 'IN_PROGRESS',
   currentPhase: 'GROUPS',
   teamIds: ['abutres', 'aguias', 'linces', 'lobos'],
@@ -40,7 +41,7 @@ const championship: Championship = {
 const matches: Match[] = [
   {
     id: 'm1',
-    championshipId: 'c1',
+    tournamentId: 'c1',
     phase: 'Oitavas de final',
     date: '2026-06-07T21:00:00.000Z',
     homeTeamId: 'abutres',
@@ -53,7 +54,7 @@ const matches: Match[] = [
   },
   {
     id: 'm2',
-    championshipId: 'c1',
+    tournamentId: 'c1',
     phase: 'Semifinais',
     date: '2026-06-14T20:00:00.000Z',
     homeTeamId: 'linces',
@@ -70,7 +71,7 @@ describe('MatchesTab', () => {
   it('renders matches with inline matchup scores and no statistics status labels', () => {
     render(
       <MemoryRouter>
-        <MatchesTab championship={championship} matches={matches} teams={teams} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} />
       </MemoryRouter>,
     )
 
@@ -100,7 +101,7 @@ describe('MatchesTab', () => {
   it('links each matchup to the match detail page', () => {
     render(
       <MemoryRouter>
-        <MatchesTab championship={championship} matches={matches} teams={teams} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} />
       </MemoryRouter>,
     )
 

@@ -7,8 +7,8 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getTeams } from '../../features/sports/mockSportsData'
-import { useMatch, useChampionships } from '../../features/sports/useSportsData'
+import { getTeams } from '../../features/sports/mock-sports-data'
+import { useMatch, useTournaments } from '../../features/sports/useSportsData'
 import {
   formatDate,
   formatTime,
@@ -28,11 +28,11 @@ const TABS: TabItem[] = [
 export function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>()
   const { data: match, isLoading, isError, refetch } = useMatch(matchId)
-  const { data: championships } = useChampionships()
+  const { data: tournaments } = useTournaments()
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams        = teamMap(getTeams())
-  const championship = championships?.find((c) => c.id === match?.championshipId)
+  const tournament = tournaments?.find((c) => c.id === match?.tournamentId)
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -106,9 +106,9 @@ export function MatchDetailPage() {
           <Link to="/matches" className={s.backLink}>
             <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
           </Link>
-          {championship && (
-            <Link to={`/championships/${championship.id}`} className={s.champLink}>
-              {championship.name}
+          {tournament && (
+            <Link to={`/tournaments/${tournament.id}`} className={s.champLink}>
+              {tournament.name}
               <ExternalLink size={11} strokeWidth={1.6} />
             </Link>
           )}
@@ -116,8 +116,8 @@ export function MatchDetailPage() {
 
         {/* ── Context ── */}
         <div className={s.detailContext}>
-          {championship && <span>{championship.name}</span>}
-          {championship && <span className={s.detailContextSep}>·</span>}
+          {tournament && <span>{tournament.name}</span>}
+          {tournament && <span className={s.detailContextSep}>·</span>}
           <span>{match.phase}</span>
           <span className={s.detailContextSep}>·</span>
           <Badge variant={matchDisplayStatusVariant(match.status, match.statsStatus)}>

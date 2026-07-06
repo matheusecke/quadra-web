@@ -7,15 +7,15 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getTeams } from '../../features/sports/mockSportsData'
+import { getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import {
   useAthlete,
-  useAthleteChampionshipStats,
+  useAthleteTournamentStats,
   useAthleteMatches,
   useAthleteSummary,
 } from '../../features/sports/useSportsData'
 import type {
-  AthleteChampionshipStatsRow,
+  AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
   AthleteStatTotals,
   PlayerMatchStats,
@@ -36,7 +36,7 @@ import s from './athletes.module.css'
 const TABS: TabItem[] = [
   { id: 'summary', label: 'Resumo' },
   { id: 'matches', label: 'Partidas' },
-  { id: 'championships', label: 'Campeonatos' },
+  { id: 'tournaments', label: 'Campeonatos' },
 ]
 
 function formatAvg(value: number): string {
@@ -179,7 +179,7 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
                 }}
               >
                 <td className={s.td}>{formatDateShort(row.match.date)}</td>
-                <td className={s.td}>{row.championship.name}</td>
+                <td className={s.td}>{row.tournament.name}</td>
                 <td className={s.tdStrong}>
                   <Link
                     to={`/matches/${row.match.id}`}
@@ -212,11 +212,11 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
   )
 }
 
-function ChampionshipsContent({
+function TournamentsContent({
   rows,
   teams,
 }: {
-  rows: AthleteChampionshipStatsRow[]
+  rows: AthleteTournamentStatsRow[]
   teams: Map<string, Team>
 }) {
   const navigate = useNavigate()
@@ -260,25 +260,25 @@ function ChampionshipsContent({
             const efi = perGame(calcEffFromTotals(row.totals), games)
             return (
               <tr
-                key={`${row.championship.id}-${row.teamId}`}
+                key={`${row.tournament.id}-${row.teamId}`}
                 className={s.tr}
                 tabIndex={0}
-                onClick={() => navigate(`/championships/${row.championship.id}`)}
+                onClick={() => navigate(`/tournaments/${row.tournament.id}`)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') navigate(`/championships/${row.championship.id}`)
+                  if (event.key === 'Enter') navigate(`/tournaments/${row.tournament.id}`)
                 }}
               >
                 <td className={s.tdStrong}>
                   <Link
-                    to={`/championships/${row.championship.id}`}
+                    to={`/tournaments/${row.tournament.id}`}
                     className={s.rowLink}
                     onClick={(event) => event.stopPropagation()}
                   >
-                    {row.championship.name}
+                    {row.tournament.name}
                   </Link>
                 </td>
                 <td className={s.td}>{teams.get(row.teamId)?.name ?? row.teamId}</td>
-                <td className={s.td}>{row.championship.season}</td>
+                <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.min, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, games))}</td>
@@ -307,15 +307,15 @@ export function AthleteDetailPage() {
   const { data: summary, isLoading: summaryLoading, isError: summaryError } = useAthleteSummary(athleteId)
   const { data: matches, isLoading: matchesLoading, isError: matchesError } = useAthleteMatches(athleteId)
   const {
-    data: championshipStats,
-    isLoading: championshipLoading,
-    isError: championshipError,
-  } = useAthleteChampionshipStats(athleteId)
+    data: tournamentStats,
+    isLoading: tournamentLoading,
+    isError: tournamentError,
+  } = useAthleteTournamentStats(athleteId)
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams = teamMap(getTeams())
-  const isLoading = athleteLoading || summaryLoading || matchesLoading || championshipLoading
-  const isError = athleteError || summaryError || matchesError || championshipError
+  const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading
+  const isError = athleteError || summaryError || matchesError || tournamentError
 
   if (isLoading) {
     return (
@@ -397,8 +397,8 @@ export function AthleteDetailPage() {
       <div className={s.detailBody}>
         {activeTab === 'summary' && <SummaryContent summary={summary} />}
         {activeTab === 'matches' && <MatchesContent rows={matches ?? []} />}
-        {activeTab === 'championships' && (
-          <ChampionshipsContent rows={championshipStats ?? []} teams={teams} />
+        {activeTab === 'tournaments' && (
+          <TournamentsContent rows={tournamentStats ?? []} teams={teams} />
         )}
       </div>
     </div>

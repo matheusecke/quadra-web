@@ -6,7 +6,7 @@ import {
   MATCH_STATUS_LABELS,
   matchStatusVariant,
 } from '../../../features/sports/sportsUtils'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface MatchListProps {
   matches: Match[]

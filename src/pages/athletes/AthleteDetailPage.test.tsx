@@ -66,7 +66,7 @@ describe('AthleteDetailPage', () => {
     expect(finalLink).toBeDefined()
   })
 
-  it('shows team context in Campeonatos and links rows to championship details', async () => {
+  it('shows team context in Campeonatos and links rows to tournament details', async () => {
     const user = userEvent.setup()
     renderAthletePage()
 
@@ -77,7 +77,7 @@ describe('AthleteDetailPage', () => {
     expect(screen.getByText('Time 1')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /campeonato geral da puc 2026/i })).toHaveAttribute(
       'href',
-      '/championships/puc-geral-2026',
+      '/tournaments/puc-geral-2026',
     )
   })
 })

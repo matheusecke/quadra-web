@@ -5,20 +5,20 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getSeasons } from '../../features/sports/mockSportsData'
-import { useChampionships } from '../../features/sports/useSportsData'
-import type { ChampionshipStatus } from '../../features/sports/types'
+import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
+import { useTournaments } from '../../features/sports/useSportsData'
+import type { TournamentStatus } from '../../features/sports/types'
 import {
-  CHAMPIONSHIP_STATUS_LABELS,
-  championshipStatusVariant,
+  TOURNAMENT_STATUS_LABELS,
+  tournamentStatusVariant,
   formatDate,
   formatRelative,
   matchProgress,
   PHASE_LABELS,
 } from '../../features/sports/sportsUtils'
-import s from './championships.module.css'
+import s from './tournaments.module.css'
 
-const STATUS_OPTIONS: ChampionshipStatus[] = [
+const STATUS_OPTIONS: TournamentStatus[] = [
   'SCHEDULED',
   'IN_PROGRESS',
   'PLAYOFFS',
@@ -26,15 +26,15 @@ const STATUS_OPTIONS: ChampionshipStatus[] = [
   'CANCELED',
 ]
 
-export function ChampionshipsPage() {
+export function TournamentsPage() {
   const navigate = useNavigate()
 
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
-  const [status, setStatus] = useState<ChampionshipStatus | ''>('')
+  const [status, setStatus] = useState<TournamentStatus | ''>('')
   const [season, setSeason] = useState('')
 
-  const { data, isLoading, isError, refetch } = useChampionships()
+  const { data, isLoading, isError, refetch } = useTournaments()
   const seasons = useMemo(() => getSeasons(), [])
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function ChampionshipsPage() {
     return all.filter((c) => {
       if (debouncedQ && !c.name.toLowerCase().includes(debouncedQ.toLowerCase())) return false
       if (status && c.status !== status) return false
-      if (season && c.season !== season) return false
+      if (season && c.seasonId !== season) return false
       return true
     })
   }, [data, debouncedQ, status, season])
@@ -90,13 +90,13 @@ export function ChampionshipsPage() {
           <select
             className={s.filterSelect}
             value={status}
-            onChange={(e) => setStatus(e.target.value as ChampionshipStatus | '')}
+            onChange={(e) => setStatus(e.target.value as TournamentStatus | '')}
             aria-label="Filtrar por status"
           >
             <option value="">Status</option>
             {STATUS_OPTIONS.map((st) => (
               <option key={st} value={st}>
-                {CHAMPIONSHIP_STATUS_LABELS[st]}
+                {TOURNAMENT_STATUS_LABELS[st]}
               </option>
             ))}
           </select>
@@ -108,8 +108,8 @@ export function ChampionshipsPage() {
           >
             <option value="">Temporada</option>
             {seasons.map((sea) => (
-              <option key={sea} value={sea}>
-                {sea}
+              <option key={sea.id} value={sea.id}>
+                {sea.label}
               </option>
             ))}
           </select>
@@ -157,22 +157,22 @@ export function ChampionshipsPage() {
                         key={c.id}
                         className={s.tr}
                         tabIndex={0}
-                        onClick={() => navigate(`/championships/${c.id}`)}
+                        onClick={() => navigate(`/tournaments/${c.id}`)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault()
-                            navigate(`/championships/${c.id}`)
+                            navigate(`/tournaments/${c.id}`)
                           }
                         }}
                       >
                         <td className={s.td}>
                           <span className={s.cName}>{c.name}</span>
                         </td>
-                        <td className={`${s.td} ${s.mono}`}>{c.season}</td>
-                        <td className={s.tdMuted}>{c.category}</td>
+                        <td className={`${s.td} ${s.mono}`}>{getSeasonLabel(c.seasonId)}</td>
+                        <td className={s.tdMuted}>{getCategoryName(c.categoryId)}</td>
                         <td className={s.td}>
-                          <Badge variant={championshipStatusVariant(c.status)}>
-                            {CHAMPIONSHIP_STATUS_LABELS[c.status]}
+                          <Badge variant={tournamentStatusVariant(c.status)}>
+                            {TOURNAMENT_STATUS_LABELS[c.status]}
                           </Badge>
                         </td>
                         <td className={`${s.td} ${s.tdNum} ${s.mono}`}>{c.teamIds.length}</td>

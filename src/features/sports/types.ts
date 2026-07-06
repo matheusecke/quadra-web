@@ -4,7 +4,7 @@
  * ⚠️ TEMPORARY / MOCK DOMAIN
  * The sports domain does not yet exist in the real backend. These types describe
  * the shape we expect the future API to expose so that screens can be built today
- * against local mock data (see `mockSportsData.ts`). When the API lands, keep these
+ * against local mock data (see `mock-sports-data.ts`). When the API lands, keep these
  * types as the contract and swap the mock source for real fetch calls.
  *
  * Enum *values* are kept in English (consistent with `types/admin.ts`, e.g.
@@ -34,7 +34,7 @@ export type MatchStatus =
   | 'FINISHED' // Finalizada
   | 'POSTPONED' // Adiada
 
-/** Completeness of the statistical record for a match / championship. */
+/** Completeness of the statistical record for a match / tournament. */
 export type StatsStatus =
   | 'COMPLETE' // Estatísticas completas
   | 'PARTIAL' // Estatísticas incompletas
@@ -91,7 +91,7 @@ export interface StatLeader {
   gamesPlayed: number
 }
 
-/** Championship statistical leaders — basic per-game categories only. */
+/** Tournament statistical leaders — basic per-game categories only. */
 export interface StatLeaders {
   ppg: StatLeader[] // pontos por jogo
   rpg: StatLeader[] // rebotes por jogo

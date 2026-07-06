@@ -77,7 +77,7 @@ export function Sidebar() {
                 <NavItem to="/users" icon={<Users size={15} strokeWidth={1.6} />} label="Usuários" />
                 <NavItem to="/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />
                 <span className={s.sectionLabel}>Esportivo</span>
-                <NavItem to="/championships" icon={<Trophy size={15} strokeWidth={1.6} />} label="Campeonatos" />
+                <NavItem to="/tournaments" icon={<Trophy size={15} strokeWidth={1.6} />} label="Campeonatos" />
                 <NavItem to="/matches" icon={<CalendarDays size={15} strokeWidth={1.6} />} label="Partidas" />
               </>
             )}

@@ -2,23 +2,23 @@ import { useMemo } from 'react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { cn } from '../../../components/ui/cn'
-import type { Championship, StandingRow, Team } from '../../../features/sports/types'
+import type { Tournament, StandingRow, Team } from '../../../features/sports/types'
 import { formatDiff, pointDiff } from '../../../features/sports/sportsUtils'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface TeamsTabProps {
-  championship: Championship
+  tournament: Tournament
   teams: Map<string, Team>
 }
 
-export function TeamsTab({ championship, teams }: TeamsTabProps) {
+export function TeamsTab({ tournament, teams }: TeamsTabProps) {
   const standingsByTeam = useMemo(() => {
     const map = new Map<string, StandingRow>()
-    championship.groups.forEach((g) => g.standings.forEach((r) => map.set(r.teamId, r)))
+    tournament.groups.forEach((g) => g.standings.forEach((r) => map.set(r.teamId, r)))
     return map
-  }, [championship])
+  }, [tournament])
 
-  if (championship.teamIds.length === 0) {
+  if (tournament.teamIds.length === 0) {
     return (
       <div className={s.tabEmpty}>
         <EmptyState title="Nenhuma equipe participante." />
@@ -42,7 +42,7 @@ export function TeamsTab({ championship, teams }: TeamsTabProps) {
           </tr>
         </thead>
         <tbody>
-          {championship.teamIds.map((teamId) => {
+          {tournament.teamIds.map((teamId) => {
             const team = teams.get(teamId)
             const row = standingsByTeam.get(teamId)
             const diff = row ? pointDiff(row) : 0

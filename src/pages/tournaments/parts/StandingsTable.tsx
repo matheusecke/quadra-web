@@ -1,7 +1,7 @@
 import type { StandingRow, Team } from '../../../features/sports/types'
 import { cn } from '../../../components/ui/cn'
 import { formatDiff, formatPct, pointDiff, rankStandings } from '../../../features/sports/sportsUtils'
-import s from '../championships.module.css'
+import s from '../tournaments.module.css'
 
 interface StandingsTableProps {
   rows: StandingRow[]

@@ -5,8 +5,8 @@ import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getTeams } from '../../features/sports/mockSportsData'
-import { useMatches, useChampionships } from '../../features/sports/useSportsData'
+import { getTeams } from '../../features/sports/mock-sports-data'
+import { useMatches, useTournaments } from '../../features/sports/useSportsData'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
@@ -32,7 +32,7 @@ export function MatchesPage() {
 
   const [q, setQ]                       = useState('')
   const [debouncedQ, setDebouncedQ]     = useState('')
-  const [championshipId, setChampionshipId] = useState('')
+  const [tournamentId, setTournamentId] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
 
   useEffect(() => {
@@ -41,18 +41,18 @@ export function MatchesPage() {
   }, [q])
 
   const { data: matches,       isLoading, isError, refetch } = useMatches()
-  const { data: championships }                               = useChampionships()
+  const { data: tournaments }                               = useTournaments()
 
   const champMap = useMemo(
-    () => new Map((championships ?? []).map((c) => [c.id, c])),
-    [championships],
+    () => new Map((tournaments ?? []).map((c) => [c.id, c])),
+    [tournaments],
   )
   const teams = useMemo(() => teamMap(getTeams()), [])
 
   const items = useMemo(() => {
     const all = sortMatchesByDateDesc(matches ?? [])
     return all.filter((m) => {
-      if (championshipId && m.championshipId !== championshipId) return false
+      if (tournamentId && m.tournamentId !== tournamentId) return false
       if (statusFilter === 'WAITING_STATS') {
         if (!(m.status === 'FINISHED' && m.statsStatus === 'PENDING')) return false
       } else if (statusFilter && m.status !== statusFilter) {
@@ -66,10 +66,10 @@ export function MatchesPage() {
       }
       return true
     })
-  }, [matches, championshipId, statusFilter, debouncedQ, teams])
+  }, [matches, tournamentId, statusFilter, debouncedQ, teams])
 
   const total      = matches?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || championshipId || statusFilter)
+  const hasFilters = Boolean(debouncedQ || tournamentId || statusFilter)
 
   return (
     <div className={s.page}>
@@ -104,12 +104,12 @@ export function MatchesPage() {
 
           <select
             className={s.filterSelect}
-            value={championshipId}
-            onChange={(e) => setChampionshipId(e.target.value)}
+            value={tournamentId}
+            onChange={(e) => setTournamentId(e.target.value)}
             aria-label="Filtrar por campeonato"
           >
             <option value="">Campeonato</option>
-            {(championships ?? []).map((c) => (
+            {(tournaments ?? []).map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -165,7 +165,7 @@ export function MatchesPage() {
                   : items.map((m) => {
                       const home     = teams.get(m.homeTeamId)
                       const away     = teams.get(m.awayTeamId)
-                      const champ    = champMap.get(m.championshipId)
+                      const champ    = champMap.get(m.tournamentId)
                       const hasScore = m.homeScore !== null && m.awayScore !== null
                       return (
                         <tr

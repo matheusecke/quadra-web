@@ -7,11 +7,11 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getTeams } from '../../features/sports/mockSportsData'
-import { useChampionship, useChampionshipMatches } from '../../features/sports/useSportsData'
+import { getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
+import { useTournament, useTournamentMatches } from '../../features/sports/useSportsData'
 import {
-  CHAMPIONSHIP_STATUS_LABELS,
-  championshipStatusVariant,
+  TOURNAMENT_STATUS_LABELS,
+  tournamentStatusVariant,
   formatPeriod,
   matchProgress,
   PHASE_LABELS,
@@ -22,7 +22,7 @@ import { TeamsTab } from './tabs/TeamsTab'
 import { MatchesTab } from './tabs/MatchesTab'
 import { StandingsTab } from './tabs/StandingsTab'
 import { StatsTab } from './tabs/StatsTab'
-import s from './championships.module.css'
+import s from './tournaments.module.css'
 
 const TABS: TabItem[] = [
   { id: 'overview', label: 'Visão geral' },
@@ -32,10 +32,10 @@ const TABS: TabItem[] = [
   { id: 'stats', label: 'Estatísticas' },
 ]
 
-export function ChampionshipDetailPage() {
-  const { championshipId } = useParams<{ championshipId: string }>()
-  const { data: championship, isLoading, isError, refetch } = useChampionship(championshipId)
-  const { data: matches } = useChampionshipMatches(championshipId)
+export function TournamentDetailPage() {
+  const { tournamentId } = useParams<{ tournamentId: string }>()
+  const { data: tournament, isLoading, isError, refetch } = useTournament(tournamentId)
+  const { data: matches } = useTournamentMatches(tournamentId)
   const [activeTab, setActiveTab] = useState('overview')
   const teams = teamMap(getTeams())
 
@@ -44,7 +44,7 @@ export function ChampionshipDetailPage() {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
-          <Link to="/championships" className={s.backLink}>
+          <Link to="/tournaments" className={s.backLink}>
             <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
           </Link>
           <div className={s.detailTitleRow}>
@@ -74,7 +74,7 @@ export function ChampionshipDetailPage() {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
-          <Link to="/championships" className={s.backLink}>
+          <Link to="/tournaments" className={s.backLink}>
             <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
           </Link>
         </div>
@@ -86,11 +86,11 @@ export function ChampionshipDetailPage() {
   }
 
   // ── Not found ──
-  if (!championship) {
+  if (!tournament) {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
-          <Link to="/championships" className={s.backLink}>
+          <Link to="/tournaments" className={s.backLink}>
             <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
           </Link>
         </div>
@@ -98,7 +98,7 @@ export function ChampionshipDetailPage() {
           <EmptyState
             title="Campeonato não encontrado."
             description="Ele pode ter sido removido ou o endereço está incorreto."
-            action={<Link to="/championships" className={s.athleteLink}>Ver todos os campeonatos</Link>}
+            action={<Link to="/tournaments" className={s.athleteLink}>Ver todos os campeonatos</Link>}
           />
         </div>
       </div>
@@ -110,24 +110,24 @@ export function ChampionshipDetailPage() {
   return (
     <div className={s.page}>
       <div className={s.detailHeader}>
-        <Link to="/championships" className={s.backLink}>
+        <Link to="/tournaments" className={s.backLink}>
           <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
         </Link>
 
         <div className={s.detailTitleRow}>
           <div>
-            <h1 className={s.detailTitle}>{championship.name}</h1>
+            <h1 className={s.detailTitle}>{tournament.name}</h1>
             <div className={s.detailMeta}>
-              <span className={s.mono}>{championship.season}</span>
+              <span className={s.mono}>{getSeasonLabel(tournament.seasonId)}</span>
               <span className={s.detailMetaSep}>·</span>
-              <span>{championship.category}</span>
+              <span>{getCategoryName(tournament.categoryId)}</span>
               <span className={s.detailMetaSep}>·</span>
-              <span>{PHASE_LABELS[championship.currentPhase]}</span>
+              <span>{PHASE_LABELS[tournament.currentPhase]}</span>
             </div>
           </div>
           <div className={s.detailStatusCol}>
-            <Badge variant={championshipStatusVariant(championship.status)}>
-              {CHAMPIONSHIP_STATUS_LABELS[championship.status]}
+            <Badge variant={tournamentStatusVariant(tournament.status)}>
+              {TOURNAMENT_STATUS_LABELS[tournament.status]}
             </Badge>
           </div>
         </div>
@@ -136,19 +136,19 @@ export function ChampionshipDetailPage() {
         <div className={s.infoStrip}>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Período</span>
-            <span className={s.infoValue}>{formatPeriod(championship)}</span>
+            <span className={s.infoValue}>{formatPeriod(tournament)}</span>
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Equipes</span>
-            <span className={s.infoValue}>{championship.teamIds.length}</span>
+            <span className={s.infoValue}>{tournament.teamIds.length}</span>
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Partidas</span>
-            <span className={s.infoValue}>{matchProgress(championship)}</span>
+            <span className={s.infoValue}>{matchProgress(tournament)}</span>
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Fase atual</span>
-            <span className={s.infoValue}>{PHASE_LABELS[championship.currentPhase]}</span>
+            <span className={s.infoValue}>{PHASE_LABELS[tournament.currentPhase]}</span>
           </div>
         </div>
 
@@ -159,14 +159,14 @@ export function ChampionshipDetailPage() {
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && (
-          <OverviewTab championship={championship} matches={allMatches} teams={teams} />
+          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
-        {activeTab === 'teams' && <TeamsTab championship={championship} teams={teams} />}
+        {activeTab === 'teams' && <TeamsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
-          <MatchesTab championship={championship} matches={allMatches} teams={teams} />
+          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
-        {activeTab === 'standings' && <StandingsTab championship={championship} teams={teams} />}
-        {activeTab === 'stats' && <StatsTab championship={championship} teams={teams} />}
+        {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
+        {activeTab === 'stats' && <StatsTab tournament={tournament} teams={teams} />}
       </div>
     </div>
   )
