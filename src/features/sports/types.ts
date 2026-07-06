@@ -13,14 +13,14 @@
 
 // ── Status enums ────────────────────────────────────────────────────────────
 
-export type ChampionshipStatus =
+export type TournamentStatus =
   | 'SCHEDULED' // Agendado — ainda não começou
   | 'IN_PROGRESS' // Em andamento — fase classificatória
   | 'PLAYOFFS' // Playoffs — mata-mata em curso
   | 'FINISHED' // Encerrado
   | 'CANCELED' // Cancelado
 
-export type ChampionshipPhase =
+export type TournamentPhase =
   | 'GROUPS' // Fase de grupos
   | 'ROUNDS_OF_16' // Oitavas de final
   | 'QUARTERS' // Quartas de final
@@ -102,7 +102,7 @@ export interface StatLeaders {
 
 export interface Match {
   id: string
-  championshipId: string
+  tournamentId: string
   /** Free-text phase label, e.g. 'Fase de grupos', 'Quartas de final'. */
   phase: string
   date: string // ISO datetime
@@ -133,13 +133,39 @@ export interface BracketRound {
   matches: BracketMatch[]
 }
 
-export interface Championship {
+export type TournamentFormat =
+  | 'LEAGUE'
+  | 'GROUP_STAGE'
+  | 'KNOCKOUT'
+  | 'GROUP_STAGE_KNOCKOUT'
+
+export type SeasonStatus = 'ACTIVE' | 'ARCHIVED'
+
+/** Time-bounded grouping of tournaments within an organization. */
+export interface Season {
+  id: string
+  /** Free display label: '2025/26' or 'Temporada 2026'. */
+  label: string
+  startDate: string // ISO date
+  endDate: string // ISO date
+  status: SeasonStatus
+}
+
+/** Controlled division vocabulary per organization (Sub-19, Adulto…). */
+export interface TournamentCategory {
   id: string
   name: string
-  season: string // '2025/26'
-  category: string // 'Adulto Masculino', 'Sub-19', ...
-  status: ChampionshipStatus
-  currentPhase: ChampionshipPhase
+  sortOrder: number
+}
+
+export interface Tournament {
+  id: string
+  name: string
+  seasonId: string
+  categoryId: string | null
+  format: TournamentFormat
+  status: TournamentStatus
+  currentPhase: TournamentPhase
   teamIds: string[]
   matchCount: number
   finishedMatchCount: number
@@ -152,7 +178,7 @@ export interface Championship {
   groups: Group[]
   leaders: StatLeaders
   bracket: BracketRound[]
-  /** Champion team id once the championship is finished. */
+  /** Champion team id once the tournament is finished. */
   championTeamId?: string | null
 }
 
@@ -210,15 +236,15 @@ export interface AthleteStatTotals {
 
 export interface AthleteMatchStatsRow {
   match: Match
-  championship: Championship
+  tournament: Tournament
   teamId: string
   matchup: string
   result: string
   stats: PlayerMatchStats
 }
 
-export interface AthleteChampionshipStatsRow {
-  championship: Championship
+export interface AthleteTournamentStatsRow {
+  tournament: Tournament
   teamId: string
   totals: AthleteStatTotals
 }
