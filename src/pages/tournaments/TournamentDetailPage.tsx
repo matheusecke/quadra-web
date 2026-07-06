@@ -1,14 +1,17 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
-import { useMatchesQuery, useTournamentQuery } from '../../features/sports/queries'
+import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
+import { useEnrollTeam, useMatchesQuery, useRemoveTournamentTeam, useTournamentQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
@@ -34,10 +37,31 @@ const TABS: TabItem[] = [
 
 export function TournamentDetailPage() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
+  const navigate = useNavigate()
+  const isOrgAdmin = useIsOrgAdmin()
   const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId)
   const { data: matches } = useMatchesQuery({ tournamentId })
+  const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId)
+  const enrollTeam = useEnrollTeam()
+  const removeTeam = useRemoveTournamentTeam()
   const [activeTab, setActiveTab] = useState('overview')
+  const [enrollError, setEnrollError] = useState('')
   const teams = teamMap(getTeams())
+
+  const availableTeams = useMemo(() => {
+    const enrolled = new Set(tournament?.teamIds ?? [])
+    return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
+  }, [tournament])
+
+  const handleEnroll = async (teamId: string) => {
+    if (!tournamentId) return
+    try {
+      await enrollTeam.mutateAsync({ tournamentId, teamId })
+      setEnrollError('')
+    } catch {
+      setEnrollError('Equipe já inscrita neste campeonato.')
+    }
+  }
 
   // ── Loading ──
   if (isLoading) {
@@ -129,6 +153,11 @@ export function TournamentDetailPage() {
             <Badge variant={tournamentStatusVariant(tournament.status)}>
               {TOURNAMENT_STATUS_LABELS[tournament.status]}
             </Badge>
+            {isOrgAdmin && (
+              <Button variant="secondary" size="sm" onClick={() => navigate(`/tournaments/${tournamentId}/edit`)}>
+                Editar
+              </Button>
+            )}
           </div>
         </div>
 
@@ -161,7 +190,28 @@ export function TournamentDetailPage() {
         {activeTab === 'overview' && (
           <OverviewTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
-        {activeTab === 'teams' && <TeamsTab tournament={tournament} teams={teams} />}
+        {activeTab === 'teams' && (
+          <div className={s.teamsTab}>
+            {isOrgAdmin && (
+              <div className={s.enrollManage}>
+                <EnrollTeamPanel availableTeams={availableTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
+                {enrolledJoins && enrolledJoins.length > 0 && (
+                  <ul className={s.enrolledList}>
+                    {enrolledJoins.map((join) => (
+                      <li key={join.id} className={s.enrolledRow}>
+                        <span>{teams.get(join.teamId)?.name ?? join.teamId}</span>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                          Remover
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            <TeamsTab tournament={tournament} teams={teams} />
+          </div>
+        )}
         {activeTab === 'matches' && (
           <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
