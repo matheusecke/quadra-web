@@ -8,6 +8,7 @@ import type {
   AthleteStatTotals,
   AthleteStatus,
   Tournament,
+  TournamentFormat,
   TournamentPhase,
   TournamentStatus,
   LeaderStat,
@@ -91,6 +92,13 @@ export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
   PLAYOFFS: 'Playoffs',
   FINISHED: 'Encerrado',
   CANCELED: 'Cancelado',
+}
+
+export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
+  LEAGUE: 'Pontos corridos',
+  GROUP_STAGE: 'Fase de grupos',
+  KNOCKOUT: 'Mata-mata',
+  GROUP_STAGE_KNOCKOUT: 'Grupos + mata-mata',
 }
 
 export const PHASE_LABELS: Record<TournamentPhase, string> = {

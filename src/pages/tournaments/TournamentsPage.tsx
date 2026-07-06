@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Trophy, X } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
 import { useTournamentsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { TournamentStatus } from '../../features/sports/types'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -35,6 +37,7 @@ export function TournamentsPage() {
   const [season, setSeason] = useState('')
 
   const { data, isPending: isLoading, isError, refetch } = useTournamentsQuery()
+  const isOrgAdmin = useIsOrgAdmin()
   const seasons = useMemo(() => getSeasons(), [])
 
   useEffect(() => {
@@ -66,6 +69,19 @@ export function TournamentsPage() {
               Competições da organização, com status, fase e progresso das partidas.
             </p>
           </div>
+          {isOrgAdmin && (
+            <div className={s.headerActions}>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/tournaments/seasons')}>
+                Temporadas
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/tournaments/categories')}>
+                Categorias
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => navigate('/tournaments/new')}>
+                Novo campeonato
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className={s.toolbar}>
