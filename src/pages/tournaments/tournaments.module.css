@@ -68,6 +68,12 @@
   border-radius: var(--radius-sm);
 }
 
+.enrolledActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .kicker {
   font-size: 10px;
   font-weight: 600;

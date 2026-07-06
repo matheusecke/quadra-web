@@ -8,9 +8,11 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
+import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
-import { useEnrollTeam, useMatchesQuery, useRemoveTournamentTeam, useTournamentQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
+import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
+import { useAddRosterEntry, useEnrollTeam, useMatchesQuery, useRemoveTournamentTeam, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -44,9 +46,36 @@ export function TournamentDetailPage() {
   const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId)
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
+  const addRosterEntry = useAddRosterEntry()
   const [activeTab, setActiveTab] = useState('overview')
   const [enrollError, setEnrollError] = useState('')
+  const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
+  const [rosterError, setRosterError] = useState('')
+  const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
   const teams = teamMap(getTeams())
+
+  const rosterDisplay = (roster ?? []).map((entry) => ({
+    athleteId: entry.athleteId,
+    name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? entry.athleteId,
+    jerseyNumber: entry.jerseyNumber,
+    role: entry.role,
+  }))
+
+  const availableAthletes = rosterTeamId
+    ? getAthletes()
+        .filter((athlete) => athlete.currentTeamId === rosterTeamId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
+        .map((athlete) => ({ id: athlete.id, name: athlete.name }))
+    : []
+
+  const handleAddRoster = async (draft: RosterEntryDraft) => {
+    if (!tournamentId || !rosterTeamId) return
+    try {
+      await addRosterEntry.mutateAsync({ tournamentId, teamId: rosterTeamId, ...draft })
+      setRosterError('')
+    } catch {
+      setRosterError('Atleta já está em uma equipe no mesmo campeonato.')
+    }
+  }
 
   const availableTeams = useMemo(() => {
     const enrolled = new Set(tournament?.teamIds ?? [])
@@ -200,12 +229,30 @@ export function TournamentDetailPage() {
                     {enrolledJoins.map((join) => (
                       <li key={join.id} className={s.enrolledRow}>
                         <span>{teams.get(join.teamId)?.name ?? join.teamId}</span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
-                          Remover
-                        </Button>
+                        <div className={s.enrolledActions}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                          >
+                            Elenco
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                            Remover
+                          </Button>
+                        </div>
                       </li>
                     ))}
                   </ul>
+                )}
+                {rosterTeamId && (
+                  <TournamentRosterPanel
+                    roster={rosterDisplay}
+                    availableAthletes={availableAthletes}
+                    onAdd={handleAddRoster}
+                    errorMessage={rosterError}
+                  />
                 )}
               </div>
             )}
