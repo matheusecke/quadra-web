@@ -93,6 +93,16 @@ export interface StatLeaders {
   bpg: StatLeader[] // tocos por jogo
 }
 
+/** Why the loser lost. Drives FIBA classification points: NORMAL/DEFAULT = 1, FORFEIT = 0. */
+export type LossType = 'NORMAL' | 'DEFAULT' | 'FORFEIT'
+
+/**
+ * Where the final score came from (DB spec §8.9).
+ * 'PERIODS' is the sum of the periods; 'AWARDED' is assigned by the rules.
+ * null means the match is not finished yet.
+ */
+export type ScoreSource = 'PERIODS' | 'AWARDED' | null
+
 export interface Match {
   id: string
   tournamentId: string
@@ -106,6 +116,11 @@ export interface Match {
   status: MatchStatus
   venue?: string
   statsStatus: StatsStatus
+  /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
+  homeLossType: LossType | null
+  awayLossType: LossType | null
+  /** null while the match is not FINISHED. §8.9 */
+  scoreSource: ScoreSource
 }
 
 export interface BracketMatch {
@@ -178,6 +193,7 @@ export interface Tournament {
 
 /** Individual player box-score line for a single match. */
 export interface PlayerMatchStats {
+  tournamentRosterId: string
   athleteId: string
   athleteName: string
   number: number

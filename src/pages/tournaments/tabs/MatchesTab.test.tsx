@@ -50,6 +50,9 @@ const matches: Match[] = [
     status: 'FINISHED',
     venue: 'Ginásio Central',
     statsStatus: 'COMPLETE',
+    homeLossType: null,
+    awayLossType: 'NORMAL',
+    scoreSource: 'PERIODS',
   },
   {
     id: 'm2',
@@ -63,6 +66,9 @@ const matches: Match[] = [
     status: 'SCHEDULED',
     venue: 'Arena Metropolitana',
     statsStatus: 'PARTIAL',
+    homeLossType: null,
+    awayLossType: null,
+    scoreSource: null,
   },
 ]
 

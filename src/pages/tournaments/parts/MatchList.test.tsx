@@ -20,6 +20,9 @@ const finishedMatch: Match = {
   awayScore: 74,
   status: 'FINISHED',
   statsStatus: 'COMPLETE',
+  homeLossType: null,
+  awayLossType: 'NORMAL',
+  scoreSource: 'PERIODS',
 }
 
 describe('MatchList', () => {

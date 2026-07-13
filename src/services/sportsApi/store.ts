@@ -90,6 +90,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     players: input.playerStats
       .filter((line) => line.teamId === teamId)
       .map<PlayerMatchStats>((line) => ({
+        tournamentRosterId: line.athleteId,
         athleteId: line.athleteId,
         athleteName: line.athleteId,
         number: 0,
@@ -256,6 +257,9 @@ export function createSportsStore(seed: SportsStoreSeed) {
         status: 'SCHEDULED',
         venue: input.venue,
         statsStatus: 'PENDING',
+        homeLossType: null,
+        awayLossType: null,
+        scoreSource: null,
       }
       matches.push(match)
       const tournament = tournaments.find((t) => t.id === input.tournamentId)
