@@ -121,7 +121,9 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
   const totals = periodsSum(state.periods)
   const homePts = teamTotalPoints(state, homeIds)
   const awayPts = teamTotalPoints(state, awayIds)
-  const hasWarning = !isScoreConsistent(homePts, totals.home) || !isScoreConsistent(awayPts, totals.away)
+  const hasWarning = match.scoreSource !== 'AWARDED' && (
+    !isScoreConsistent(homePts, totals.home) || !isScoreConsistent(awayPts, totals.away)
+  )
 
   const activeRoster = activeTeam === match.homeTeamId ? homeRoster : awayRoster
   const activeIds = activeTeam === match.homeTeamId ? homeIds : awayIds

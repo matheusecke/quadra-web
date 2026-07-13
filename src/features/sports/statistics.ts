@@ -54,6 +54,15 @@ export function periodsSum(periods: PeriodScore[]): { home: number; away: number
   )
 }
 
+/**
+ * Box-score sanity only: does the sum of the players' points match the team's score?
+ * Advisory (DB spec §11: alert, never block). Must not be called when the score was
+ * awarded by the rules (scoreSource === 'AWARDED') — a 20 × 0 or a 2 × 0 has nothing
+ * to reconcile against a box score.
+ *
+ * The old "sum of periods == final score" check is gone: the layer derives the score
+ * from the periods, so the two can never disagree.
+ */
 export function isScoreConsistent(teamPointsTotal: number, finalScore: number): boolean {
   return teamPointsTotal === finalScore
 }
