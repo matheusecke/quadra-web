@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest'
+import type { PeriodScore } from '../../features/sports/types'
 import { createSportsStore } from './store'
+
+const period = (n: number, home: number, away: number): PeriodScore => ({
+  periodNumber: n, type: 'REGULAR', overtimeNumber: null, homePoints: home, awayPoints: away,
+})
+
+function scheduledMatch() {
+  const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
+  const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
+  const tournament = store.createTournament({
+    name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
+  })
+  const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-1' })
+  const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-2' })
+  const match = store.scheduleMatch({
+    tournamentId: tournament.id, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T20:00:00Z',
+  })
+  return { store, matchId: match.id, homeTournamentTeamId: homeTournamentTeam.id, awayTournamentTeamId: awayTournamentTeam.id }
+}
 
 describe('createSportsStore', () => {
   it('creates a season and lists it', () => {
@@ -38,5 +57,56 @@ describe('createTournament', () => {
       startDate: '2026-02-01', endDate: '2026-06-01',
     })
     expect(created.status).toBe('DRAFT')
+  })
+})
+
+describe('submitMatchResult — W.O. (FORFEIT)', () => {
+  it('awards 20 x 0 to whoever showed up, with no periods and no box score', () => {
+    const { store, matchId, awayTournamentTeamId } = scheduledMatch()
+    const match = store.submitMatchResult({
+      resultType: 'FORFEIT', matchId, offendingTournamentTeamId: awayTournamentTeamId,
+    })
+    expect(match.homeScore).toBe(20)
+    expect(match.awayScore).toBe(0)
+    expect(match.awayLossType).toBe('FORFEIT')
+    expect(match.scoreSource).toBe('AWARDED')
+    expect(store.getMatchDetail(matchId)!.periodScores).toEqual([])
+  })
+})
+
+describe('submitMatchResult — abandonment (DEFAULT)', () => {
+  it('keeps the court score when the opponent was already ahead', () => {
+    const { store, matchId, awayTournamentTeamId } = scheduledMatch()
+    const match = store.submitMatchResult({
+      resultType: 'DEFAULT', matchId, offendingTournamentTeamId: awayTournamentTeamId,
+      periods: [period(1, 40, 30)], playerStats: [],
+    })
+    expect(match.homeScore).toBe(40)
+    expect(match.awayScore).toBe(30)
+    expect(match.scoreSource).toBe('PERIODS')
+    expect(match.awayLossType).toBe('DEFAULT')
+  })
+
+  it('awards 2 x 0 to the opponent when the offender was ahead (FIBA Art. 21)', () => {
+    const { store, matchId, awayTournamentTeamId } = scheduledMatch()
+    const match = store.submitMatchResult({
+      resultType: 'DEFAULT', matchId, offendingTournamentTeamId: awayTournamentTeamId,
+      periods: [period(1, 40, 55)], playerStats: [],
+    })
+    expect(match.homeScore).toBe(2)
+    expect(match.awayScore).toBe(0)
+    expect(match.scoreSource).toBe('AWARDED')
+  })
+})
+
+describe('submitMatchResult — NORMAL', () => {
+  it('takes the score from the periods and marks the loser NORMAL', () => {
+    const { store, matchId } = scheduledMatch()
+    const match = store.submitMatchResult({ matchId, periods: [period(1, 70, 60)], playerStats: [] })
+    expect(match.homeScore).toBe(70)
+    expect(match.awayScore).toBe(60)
+    expect(match.scoreSource).toBe('PERIODS')
+    expect(match.awayLossType).toBe('NORMAL')
+    expect(match.homeLossType).toBeNull()
   })
 })

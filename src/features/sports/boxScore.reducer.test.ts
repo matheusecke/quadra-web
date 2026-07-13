@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { boxScoreReducer, initBoxScoreState } from './boxScore.reducer'
 
-const init = () => initBoxScoreState({ athleteIds: ['a1', 'a2'], regularPeriods: 4 })
+const init = () => initBoxScoreState({ tournamentRosterIds: ['roster-1', 'roster-2'], regularPeriods: 4 })
 
 describe('boxScoreReducer', () => {
   it('adds an overtime period after the regular ones', () => {
@@ -16,8 +16,8 @@ describe('boxScoreReducer', () => {
     s = boxScoreReducer(s, { type: 'removeOvertime' })
     expect(s.periods).toHaveLength(4)
   })
-  it('updates a single stat field for one athlete', () => {
-    const s = boxScoreReducer(init(), { type: 'setStat', athleteId: 'a1', field: 'pts', value: 22 })
-    expect(s.lines.a1.pts).toBe(22)
+  it('updates a single stat field for one roster entry', () => {
+    const s = boxScoreReducer(init(), { type: 'setStat', tournamentRosterId: 'roster-1', field: 'pts', value: 22 })
+    expect(s.lines['roster-1'].pts).toBe(22)
   })
 })

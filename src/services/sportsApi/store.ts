@@ -45,6 +45,8 @@ export interface SportsStoreSeed {
   categories: TournamentCategory[]
   tournaments: Tournament[]
   matches: Match[]
+  tournamentTeams?: TournamentTeam[]
+  rosterEntries?: RosterEntry[]
   /** Optional pre-computed match details (reference box scores for seeded matches). */
   matchDetails?: MatchDetail[]
 }
@@ -64,8 +66,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const categories: TournamentCategory[] = [...seed.categories]
   const tournaments: Tournament[] = seed.tournaments.map((t) => ({ ...t }))
   const matches: Match[] = seed.matches.map((m) => ({ ...m }))
-  const tournamentTeams: TournamentTeam[] = []
-  const rosterEntries: RosterEntry[] = []
+  const tournamentTeams: TournamentTeam[] = seed.tournamentTeams?.map((entry) => ({ ...entry })) ?? []
+  const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
   const matchExtras = new Map<string, MatchExtra>()
 
   for (const detail of seed.matchDetails ?? []) {
@@ -85,15 +87,21 @@ export function createSportsStore(seed: SportsStoreSeed) {
     return found
   }
 
-  const toBoxScore = (teamId: string, input: SubmitMatchResultInput): TeamMatchStats => ({
+  const emptyTeamStats = (teamId: string): TeamMatchStats => ({ teamId, players: [] })
+
+  const toBoxScore = (
+    teamId: string,
+    input: Exclude<SubmitMatchResultInput, { resultType: 'FORFEIT' }>,
+  ): TeamMatchStats => ({
     teamId,
-    players: input.playerStats
-      .filter((line) => line.teamId === teamId)
-      .map<PlayerMatchStats>((line) => ({
-        tournamentRosterId: line.athleteId,
-        athleteId: line.athleteId,
-        athleteName: line.athleteId,
-        number: 0,
+    players: input.playerStats.flatMap<PlayerMatchStats>((line) => {
+      const rosterEntry = rosterEntries.find((entry) => entry.id === line.tournamentRosterId && isActive(entry))
+      if (!rosterEntry || rosterEntry.teamId !== teamId) return []
+      return [{
+        tournamentRosterId: rosterEntry.id,
+        athleteId: rosterEntry.athleteId,
+        athleteName: rosterEntry.athleteId,
+        number: rosterEntry.jerseyNumber,
         min: line.min,
         pts: line.pts,
         reb: line.reb,
@@ -109,8 +117,20 @@ export function createSportsStore(seed: SportsStoreSeed) {
         tpa: line.tpa,
         ftm: line.ftm,
         fta: line.fta,
-      })),
+      }]
+    }),
   })
+
+  const isHomeSide = (match: Match, tournamentTeamId: string): boolean => {
+    const tournamentTeam = tournamentTeams.find((entry) => entry.id === tournamentTeamId && isActive(entry))
+    if (!tournamentTeam) throw new Error(`Tournament team ${tournamentTeamId} not found`)
+    return tournamentTeam.teamId === match.homeTeamId
+  }
+
+  const bumpFinished = (match: Match) => {
+    const tournament = tournaments.find((entry) => entry.id === match.tournamentId)
+    if (tournament) tournament.finishedMatchCount += 1
+  }
 
   return {
     // ── Seasons ──────────────────────────────────────────────────────────────
@@ -269,18 +289,57 @@ export function createSportsStore(seed: SportsStoreSeed) {
     submitMatchResult(input: SubmitMatchResultInput): Match {
       const match = matches.find((m) => m.id === input.matchId)
       if (!match) throw new Error(`Match ${input.matchId} not found`)
-      const totals = periodsSum(input.periods)
-      match.homeScore = totals.home
-      match.awayScore = totals.away
       match.status = 'FINISHED'
+
+      if (input.resultType === 'FORFEIT') {
+        const offenderIsHome = isHomeSide(match, input.offendingTournamentTeamId)
+        match.homeScore = offenderIsHome ? 0 : 20
+        match.awayScore = offenderIsHome ? 20 : 0
+        match.homeLossType = offenderIsHome ? 'FORFEIT' : null
+        match.awayLossType = offenderIsHome ? null : 'FORFEIT'
+        match.scoreSource = 'AWARDED'
+        match.statsStatus = 'PENDING'
+        matchExtras.set(match.id, {
+          periodScores: [],
+          homeStats: emptyTeamStats(match.homeTeamId),
+          awayStats: emptyTeamStats(match.awayTeamId),
+        })
+        bumpFinished(match)
+        return match
+      }
+
+      const court = periodsSum(input.periods)
+
+      if (input.resultType === 'DEFAULT') {
+        const offenderIsHome = isHomeSide(match, input.offendingTournamentTeamId)
+        const offenderScore = offenderIsHome ? court.home : court.away
+        const opponentScore = offenderIsHome ? court.away : court.home
+        if (opponentScore > offenderScore) {
+          match.homeScore = court.home
+          match.awayScore = court.away
+          match.scoreSource = 'PERIODS'
+        } else {
+          match.homeScore = offenderIsHome ? 0 : 2
+          match.awayScore = offenderIsHome ? 2 : 0
+          match.scoreSource = 'AWARDED'
+        }
+        match.homeLossType = offenderIsHome ? 'DEFAULT' : null
+        match.awayLossType = offenderIsHome ? null : 'DEFAULT'
+      } else {
+        match.homeScore = court.home
+        match.awayScore = court.away
+        match.scoreSource = 'PERIODS'
+        match.homeLossType = court.home < court.away ? 'NORMAL' : null
+        match.awayLossType = court.away < court.home ? 'NORMAL' : null
+      }
+
       match.statsStatus = 'COMPLETE'
       matchExtras.set(match.id, {
         periodScores: input.periods,
         homeStats: toBoxScore(match.homeTeamId, input),
         awayStats: toBoxScore(match.awayTeamId, input),
       })
-      const tournament = tournaments.find((t) => t.id === match.tournamentId)
-      if (tournament) tournament.finishedMatchCount += 1
+      bumpFinished(match)
       return match
     },
   }

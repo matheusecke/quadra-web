@@ -2,6 +2,7 @@ import { Field } from '../../../components/ui/Field/Field'
 import s from './MvpSelect.module.css'
 
 export interface MvpCandidate {
+  tournamentRosterId: string
   athleteId: string
   name: string
   teamName: string
@@ -10,7 +11,7 @@ export interface MvpCandidate {
 export interface MvpSelectProps {
   candidates: MvpCandidate[]
   value: string | null
-  onChange: (athleteId: string | null) => void
+  onChange: (tournamentRosterId: string | null) => void
 }
 
 export function MvpSelect({ candidates, value, onChange }: MvpSelectProps) {
@@ -24,7 +25,7 @@ export function MvpSelect({ candidates, value, onChange }: MvpSelectProps) {
       >
         <option value="">— nenhum —</option>
         {candidates.map((candidate) => (
-          <option key={candidate.athleteId} value={candidate.athleteId}>
+          <option key={candidate.tournamentRosterId} value={candidate.tournamentRosterId}>
             {candidate.name} ({candidate.teamName})
           </option>
         ))}

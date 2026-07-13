@@ -9,13 +9,13 @@ const zero: PlayerStatInput = { pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, 
 describe('BoxScoreTable', () => {
   it('emits a stat change for the edited cell', async () => {
     const onStatChange = vi.fn()
-    render(<BoxScoreTable roster={[{ athleteId: 'a1', name: 'R. Albuquerque', number: 7 }]} lines={{ a1: zero }} onStatChange={onStatChange} />)
+    render(<BoxScoreTable roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]} lines={{ 'roster-1': zero }} onStatChange={onStatChange} />)
     const cell = screen.getByLabelText(/r\. albuquerque.*pts/i)
     await userEvent.type(cell, '5')
-    expect(onStatChange).toHaveBeenLastCalledWith('a1', 'pts', 5)
+    expect(onStatChange).toHaveBeenLastCalledWith('roster-1', 'pts', 5)
   })
   it('flags fgm greater than fga inline', () => {
-    render(<BoxScoreTable roster={[{ athleteId: 'a1', name: 'R. Albuquerque', number: 7 }]} lines={{ a1: { ...zero, fgm: 9, fga: 4 } }} onStatChange={() => {}} />)
+    render(<BoxScoreTable roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]} lines={{ 'roster-1': { ...zero, fgm: 9, fga: 4 } }} onStatChange={() => {}} />)
     expect(screen.getByText(/fgm não pode exceder fga/i)).toBeInTheDocument()
   })
 })

@@ -1,5 +1,6 @@
 // SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
 import {
+  getAthletes,
   getMatchDetailById,
   seedCategories,
   seedMatches,
@@ -8,6 +9,7 @@ import {
 } from '../../features/sports/mock-sports-data'
 import type { MatchDetail } from '../../features/sports/types'
 import { createSportsStore } from './store'
+import type { RosterEntry, TournamentTeam } from './store'
 import type {
   CreateCategoryInput,
   CreateSeasonInput,
@@ -24,11 +26,35 @@ const seedMatchDetails = seedMatches
   .map((match) => getMatchDetailById(match.id))
   .filter((detail): detail is MatchDetail => Boolean(detail))
 
+const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournament) =>
+  tournament.teamIds.map((teamId) => ({
+    id: `tournament-team-${tournament.id}-${teamId}`,
+    tournamentId: tournament.id,
+    teamId,
+    seed: null,
+  })),
+)
+
+const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
+  getAthletes()
+    .filter((athlete) => athlete.currentTeamId === tournamentTeam.teamId)
+    .map((athlete) => ({
+      id: `tournament-roster-${tournamentTeam.tournamentId}-${tournamentTeam.teamId}-${athlete.id}`,
+      tournamentId: tournamentTeam.tournamentId,
+      teamId: tournamentTeam.teamId,
+      athleteId: athlete.id,
+      jerseyNumber: athlete.number,
+      role: 'ATHLETE' as const,
+    })),
+)
+
 const store = createSportsStore({
   seasons: seedSeasons,
   categories: seedCategories,
   tournaments: seedTournaments,
   matches: seedMatches,
+  tournamentTeams: seedTournamentTeams,
+  rosterEntries: seedRosterEntries,
   matchDetails: seedMatchDetails,
 })
 

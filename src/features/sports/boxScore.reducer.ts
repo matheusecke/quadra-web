@@ -5,22 +5,22 @@ import { validatePlayerStatLine } from './statistics'
 export interface BoxScoreState {
   periods: PeriodScore[]
   lines: Record<string, PlayerStatInput>
-  mvpAthleteId: string | null
+  mvpTournamentRosterId: string | null
 }
 
 export type BoxScoreAction =
   | { type: 'setPeriod'; index: number; side: 'home' | 'away'; value: number }
   | { type: 'addOvertime' }
   | { type: 'removeOvertime' }
-  | { type: 'setStat'; athleteId: string; field: keyof PlayerStatInput; value: number }
-  | { type: 'setMvp'; athleteId: string | null }
+  | { type: 'setStat'; tournamentRosterId: string; field: keyof PlayerStatInput; value: number }
+  | { type: 'setMvp'; tournamentRosterId: string | null }
 
 const zeroLine = (): PlayerStatInput => ({
   pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
   reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0,
 })
 
-export function initBoxScoreState({ athleteIds, regularPeriods }: { athleteIds: string[]; regularPeriods: number }): BoxScoreState {
+export function initBoxScoreState({ tournamentRosterIds, regularPeriods }: { tournamentRosterIds: string[]; regularPeriods: number }): BoxScoreState {
   const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, i) => ({
     periodNumber: i + 1,
     type: 'REGULAR',
@@ -29,8 +29,8 @@ export function initBoxScoreState({ athleteIds, regularPeriods }: { athleteIds: 
     awayPoints: null,
   }))
   const lines: Record<string, PlayerStatInput> = {}
-  for (const id of athleteIds) lines[id] = zeroLine()
-  return { periods, lines, mvpAthleteId: null }
+  for (const id of tournamentRosterIds) lines[id] = zeroLine()
+  return { periods, lines, mvpTournamentRosterId: null }
 }
 
 export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): BoxScoreState {
@@ -60,24 +60,24 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
       return { ...state, periods: state.periods.slice(0, -1) }
     }
     case 'setStat': {
-      const current = state.lines[action.athleteId] ?? zeroLine()
+      const current = state.lines[action.tournamentRosterId] ?? zeroLine()
       return {
         ...state,
-        lines: { ...state.lines, [action.athleteId]: { ...current, [action.field]: Number(action.value) } },
+        lines: { ...state.lines, [action.tournamentRosterId]: { ...current, [action.field]: Number(action.value) } },
       }
     }
     case 'setMvp':
-      return { ...state, mvpAthleteId: action.athleteId }
+      return { ...state, mvpTournamentRosterId: action.tournamentRosterId }
     default:
       return state
   }
 }
 
-export function teamTotalPoints(state: BoxScoreState, athleteIds: string[]): number {
-  return athleteIds.reduce((sum, id) => sum + (state.lines[id]?.pts ?? 0), 0)
+export function teamTotalPoints(state: BoxScoreState, tournamentRosterIds: string[]): number {
+  return tournamentRosterIds.reduce((sum, id) => sum + (state.lines[id]?.pts ?? 0), 0)
 }
 
-export function lineErrors(state: BoxScoreState, athleteId: string): StatValidationError[] {
-  const line = state.lines[athleteId]
+export function lineErrors(state: BoxScoreState, tournamentRosterId: string): StatValidationError[] {
+  const line = state.lines[tournamentRosterId]
   return line ? validatePlayerStatLine(line) : []
 }

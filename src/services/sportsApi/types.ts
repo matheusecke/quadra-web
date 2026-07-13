@@ -50,11 +50,26 @@ export interface ScheduleMatchInput {
   phaseLabel?: string
 }
 
-export type PlayerBoxScoreInput = PlayerStatInput & { athleteId: string; teamId: string }
+/** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
+export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: string }
 
-export interface SubmitMatchResultInput {
+interface PlayedResultInput {
   matchId: string
   periods: PeriodScore[]
   playerStats: PlayerBoxScoreInput[]
-  mvpAthleteId?: string | null
+  mvpTournamentRosterId?: string | null
 }
+
+/**
+ * Discriminated by resultType (§8.9). The client sends what happened on court and how it
+ * ended; the server derives finalScore, result and lossType. The client never sends a score.
+ */
+export type SubmitMatchResultInput =
+  | ({ resultType?: 'NORMAL' } & PlayedResultInput)
+  | ({ resultType: 'DEFAULT'; offendingTournamentTeamId: string } & PlayedResultInput)
+  | {
+      // A W.O. has no game: no periods, no box score, no MVP. Not optional — forbidden.
+      resultType: 'FORFEIT'
+      matchId: string
+      offendingTournamentTeamId: string
+    }

@@ -34,3 +34,23 @@ describe('MatchSumulaPage', () => {
     await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
   })
 })
+
+describe('MatchSumulaPage — W.O.', () => {
+  it('hides the súmula entirely when the match is a W.O.', async () => {
+    renderSumula('match-1')
+    await userEvent.selectOptions(await screen.findByLabelText(/como a partida terminou/i), 'FORFEIT')
+    await userEvent.selectOptions(screen.getByLabelText(/equipe que não compareceu/i), 'puc-time-2')
+    expect(screen.queryByText(/placar por período/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/mvp da partida/i)).not.toBeInTheDocument()
+    expect(screen.getByText('20')).toBeInTheDocument()
+  })
+})
+
+describe('MatchSumulaPage — abandonment', () => {
+  it('warns that the official score will be assigned by the rules', async () => {
+    renderSumula('match-1')
+    await userEvent.selectOptions(await screen.findByLabelText(/como a partida terminou/i), 'DEFAULT')
+    await userEvent.selectOptions(screen.getByLabelText(/equipe que abandonou/i), 'puc-time-2')
+    expect(screen.getByText(/placar oficial será atribuído/i)).toBeInTheDocument()
+  })
+})

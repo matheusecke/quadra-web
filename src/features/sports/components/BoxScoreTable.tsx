@@ -3,7 +3,7 @@ import { validatePlayerStatLine } from '../statistics'
 import s from './BoxScoreTable.module.css'
 
 export interface BoxScoreRosterEntry {
-  athleteId: string
+  tournamentRosterId: string
   name: string
   number: number
 }
@@ -11,7 +11,7 @@ export interface BoxScoreRosterEntry {
 export interface BoxScoreTableProps {
   roster: BoxScoreRosterEntry[]
   lines: Record<string, PlayerStatInput>
-  onStatChange: (athleteId: string, field: keyof PlayerStatInput, value: number) => void
+  onStatChange: (tournamentRosterId: string, field: keyof PlayerStatInput, value: number) => void
 }
 
 const STAT_COLUMNS: { field: keyof PlayerStatInput; label: string }[] = [
@@ -38,7 +38,7 @@ const emptyLine = (): PlayerStatInput => ({
 
 export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProps) {
   const columnTotal = (field: keyof PlayerStatInput) =>
-    roster.reduce((sum, entry) => sum + (lines[entry.athleteId]?.[field] ?? 0), 0)
+    roster.reduce((sum, entry) => sum + (lines[entry.tournamentRosterId]?.[field] ?? 0), 0)
 
   return (
     <div className={s.scroll}>
@@ -54,10 +54,10 @@ export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProp
         </thead>
         <tbody>
           {roster.map((entry) => {
-            const line = lines[entry.athleteId] ?? emptyLine()
+            const line = lines[entry.tournamentRosterId] ?? emptyLine()
             const errors = validatePlayerStatLine(line)
             return (
-              <tr key={entry.athleteId}>
+              <tr key={entry.tournamentRosterId}>
                 <td className={`${s.cell} ${s.mono}`}>{entry.number}</td>
                 <td className={s.cell}>
                   <span className={s.name}>{entry.name}</span>
@@ -77,7 +77,7 @@ export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProp
                       min={0}
                       aria-label={`${entry.name} — ${column.label}`}
                       value={line[column.field]}
-                      onChange={(e) => onStatChange(entry.athleteId, column.field, Number(e.target.value))}
+                      onChange={(e) => onStatChange(entry.tournamentRosterId, column.field, Number(e.target.value))}
                     />
                   </td>
                 ))}
