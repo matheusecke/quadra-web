@@ -23,6 +23,7 @@ export function MatchList({ matches, teams }: MatchListProps) {
         const homeName = home?.name ?? 'A definir'
         const awayName = away?.name ?? 'A definir'
         const hasScore = m.homeScore !== null && m.awayScore !== null
+        const isForfeit = m.homeLossType === 'FORFEIT' || m.awayLossType === 'FORFEIT'
         const matchupLabel = hasScore
           ? `${homeName} ${m.homeScore} - ${m.awayScore} ${awayName}`
           : `${homeName} vs ${awayName}`
@@ -49,6 +50,7 @@ export function MatchList({ matches, teams }: MatchListProps) {
             <span className={s.matchPhase}>{m.phase}</span>
             <span className={s.matchStatusCell}>
               <Badge variant={matchStatusVariant(m.status)}>{MATCH_STATUS_LABELS[m.status]}</Badge>
+              {isForfeit && <Badge variant="warning">W.O.</Badge>}
             </span>
           </Link>
         )

@@ -101,6 +101,11 @@ export function MatchDetailPage() {
   const homeTeam = teams.get(match.homeTeamId)
   const awayTeam = teams.get(match.awayTeamId)
   const hasScore = match.homeScore !== null && match.awayScore !== null
+  const isForfeit = match.homeLossType === 'FORFEIT' || match.awayLossType === 'FORFEIT'
+  const isAwardedScore = match.scoreSource === 'AWARDED'
+  const awardedScoreLabel = isForfeit
+    ? 'Vitória por W.O. (FIBA D.3.1)'
+    : 'Placar atribuído por abandono (Art. 21)'
 
   return (
     <div className={s.page}>
@@ -153,6 +158,7 @@ export function MatchDetailPage() {
                 <span className={s.scoreNumPending}>× × ×</span>
               )}
             </div>
+            {isAwardedScore && <Badge variant="warning">{awardedScoreLabel}</Badge>}
           </div>
 
           <div className={s.scoreTeamRight}>
@@ -181,16 +187,21 @@ export function MatchDetailPage() {
           </div>
         </div>
 
-        <div className={s.tabsBar}>
+        {!isForfeit && <div className={s.tabsBar}>
           <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="line" />
-        </div>
+        </div>}
       </div>
 
       <div className={s.detailBody}>
-        {activeTab === 'summary' && (
+        {isForfeit ? (
+          <EmptyState
+            title="Partida não disputada. Não há súmula."
+            description="A vitória foi atribuída por W.O. conforme a FIBA D.3.1."
+          />
+        ) : activeTab === 'summary' && (
           <SummaryTab match={match} teams={teams} />
         )}
-        {activeTab === 'stats' && (
+        {!isForfeit && activeTab === 'stats' && (
           <StatsTab match={match} teams={teams} />
         )}
       </div>

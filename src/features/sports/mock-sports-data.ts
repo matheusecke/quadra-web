@@ -257,10 +257,18 @@ const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC'
 export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
 // Stable scheduled match used to demo/record a súmula (two teams with rostered athletes).
 const sumulaSeedMatch = mkMatch(INVERNO, 'Fase de grupos', '2026-07-04T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'match-1')
-export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaSeedMatch]
+const abandonedSeedMatch = mkMatch('read-model-fixtures', 'Fase de grupos', '2026-07-05T19:00:00', 'puc-time-3', 'puc-time-4', 2, 0, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'match-abandoned')
+abandonedSeedMatch.awayLossType = 'DEFAULT'
+abandonedSeedMatch.scoreSource = 'AWARDED'
+const forfeitSeedMatch = mkMatch('read-model-fixtures', 'Fase de grupos', '2026-07-06T19:00:00', 'puc-time-3', 'puc-time-4', 20, 0, 'FINISHED', 'Ginásio PUC Campinas', 'PENDING', 'match-forfeit')
+forfeitSeedMatch.awayLossType = 'FORFEIT'
+forfeitSeedMatch.scoreSource = 'AWARDED'
+export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaSeedMatch, abandonedSeedMatch, forfeitSeedMatch]
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
 const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }> = {
+  'match-abandoned': (() => { const b = buildBoxScore(68, 71, 'puc-time-3', 'puc-time-4'); return { periodScores: mkPeriods([17,18], [16,19], [18,17], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'match-forfeit': { periodScores: [], homeStats: { teamId: 'puc-time-3', players: [] }, awayStats: { teamId: 'puc-time-4', players: [] } },
   'puc-geral-m01': (() => { const b = buildBoxScore(80, 89, 'puc-time-1', 'puc-time-2'); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
   'puc-geral-m02': (() => { const b = buildBoxScore(87, 83, 'puc-time-1', 'puc-time-3'); return { periodScores: mkPeriods([21,20], [25,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
   'puc-geral-m03': (() => { const b = buildBoxScore(94, 77, 'puc-time-1', 'puc-time-4'); return { periodScores: mkPeriods([23,19], [26,20], [23,21], [22,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
