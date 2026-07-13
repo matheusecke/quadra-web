@@ -7,12 +7,15 @@ import { AthleteDetailPage } from './AthleteDetailPage'
 const RAFAEL_ID = 'rafael.moura@quadra.com.br'
 
 function renderAthletePage(athleteId = RAFAEL_ID) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
-      <Routes>
-        <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
+        <Routes>
+          <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -81,3 +84,4 @@ describe('AthleteDetailPage', () => {
     )
   })
 })
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

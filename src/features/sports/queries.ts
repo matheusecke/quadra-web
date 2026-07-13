@@ -35,6 +35,14 @@ export const matchKeys = {
   detail: (id: string) => [...matchKeys.all, 'detail', id] as const,
 }
 
+export const athleteKeys = {
+  all: ['athletes'] as const,
+  detail: (id: string) => [...athleteKeys.all, 'detail', id] as const,
+  summary: (id: string) => [...athleteKeys.all, 'summary', id] as const,
+  matches: (id: string) => [...athleteKeys.all, 'matches', id] as const,
+  tournaments: (id: string) => [...athleteKeys.all, 'tournaments', id] as const,
+}
+
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 export function useSeasonsQuery() {
@@ -86,6 +94,22 @@ export function useMatchDetailQuery(id: string | undefined) {
     queryFn: () => sportsApi.getMatchDetail(id as string),
     enabled: Boolean(id),
   })
+}
+
+export function useAthleteQuery(id: string | undefined) {
+  return useQuery({ queryKey: athleteKeys.detail(id ?? ''), queryFn: () => sportsApi.getAthlete(id as string), enabled: Boolean(id) })
+}
+
+export function useAthleteSummaryQuery(id: string | undefined) {
+  return useQuery({ queryKey: athleteKeys.summary(id ?? ''), queryFn: () => sportsApi.getAthleteSummary(id as string), enabled: Boolean(id) })
+}
+
+export function useAthleteMatchesQuery(id: string | undefined) {
+  return useQuery({ queryKey: athleteKeys.matches(id ?? ''), queryFn: () => sportsApi.getAthleteMatches(id as string), enabled: Boolean(id) })
+}
+
+export function useAthleteTournamentStatsQuery(id: string | undefined) {
+  return useQuery({ queryKey: athleteKeys.tournaments(id ?? ''), queryFn: () => sportsApi.getAthleteTournamentStats(id as string), enabled: Boolean(id) })
 }
 
 // ── Mutations ────────────────────────────────────────────────────────────────

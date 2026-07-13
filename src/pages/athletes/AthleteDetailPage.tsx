@@ -8,12 +8,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
-import {
-  useAthlete,
-  useAthleteTournamentStats,
-  useAthleteMatches,
-  useAthleteSummary,
-} from '../../features/sports/useSportsData'
+import { useAthleteMatchesQuery, useAthleteQuery, useAthleteSummaryQuery, useAthleteTournamentStatsQuery } from '../../features/sports/queries'
 import type {
   AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
@@ -303,14 +298,14 @@ function TournamentsContent({
 export function AthleteDetailPage() {
   const { athleteId } = useParams<{ athleteId: string }>()
   const navigate = useNavigate()
-  const { data: athlete, isLoading: athleteLoading, isError: athleteError, refetch } = useAthlete(athleteId)
-  const { data: summary, isLoading: summaryLoading, isError: summaryError } = useAthleteSummary(athleteId)
-  const { data: matches, isLoading: matchesLoading, isError: matchesError } = useAthleteMatches(athleteId)
+  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch } = useAthleteQuery(athleteId)
+  const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId)
+  const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId)
   const {
     data: tournamentStats,
-    isLoading: tournamentLoading,
+    isPending: tournamentLoading,
     isError: tournamentError,
-  } = useAthleteTournamentStats(athleteId)
+  } = useAthleteTournamentStatsQuery(athleteId)
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams = teamMap(getTeams())

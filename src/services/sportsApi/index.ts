@@ -1,6 +1,10 @@
 // SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
 import {
   getAthletes,
+  getAthleteById,
+  getAthleteMatches as getMockAthleteMatches,
+  getAthleteSummaryById,
+  getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
   seedCategories,
   seedMatches,
@@ -81,6 +85,12 @@ export const removeTournamentTeam = (id: string) => Promise.resolve(store.remove
 // ── Roster ───────────────────────────────────────────────────────────────────────
 export const getRoster = (tournamentId: string, teamId: string) => Promise.resolve(store.listRoster(tournamentId, teamId))
 export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
+
+// ── Athletes ─────────────────────────────────────────────────────────────────
+export const getAthlete = (id: string) => Promise.resolve(getAthleteById(id))
+export const getAthleteSummary = (id: string) => Promise.resolve(getAthleteSummaryById(id))
+export const getAthleteMatches = (id: string) => Promise.resolve(getMockAthleteMatches(id))
+export const getAthleteTournamentStats = (id: string) => Promise.resolve(getMockAthleteTournamentStats(id))
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
 export const getMatches = (filter?: { tournamentId?: string }) => Promise.resolve(store.listMatches(filter))
