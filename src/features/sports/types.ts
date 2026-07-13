@@ -14,25 +14,18 @@
 // ── Status enums ────────────────────────────────────────────────────────────
 
 export type TournamentStatus =
-  | 'SCHEDULED' // Agendado — ainda não começou
-  | 'IN_PROGRESS' // Em andamento — fase classificatória
-  | 'PLAYOFFS' // Playoffs — mata-mata em curso
-  | 'FINISHED' // Encerrado
-  | 'CANCELED' // Cancelado
-
-export type TournamentPhase =
-  | 'GROUPS' // Fase de grupos
-  | 'ROUNDS_OF_16' // Oitavas de final
-  | 'QUARTERS' // Quartas de final
-  | 'SEMIS' // Semifinais
-  | 'FINAL' // Final
-  | 'FINISHED' // Encerrado
+  | 'DRAFT' // Rascunho — sendo montado, invisível para a organização
+  | 'REGISTRATION' // Inscrições — pré-competição: elenco, grupos e calendário
+  | 'IN_PROGRESS' // Em andamento — a bola rolou
+  | 'COMPLETED' // Encerrado
+  | 'CANCELLED' // Cancelado
 
 export type MatchStatus =
   | 'SCHEDULED' // Agendada
   | 'LIVE' // Ao vivo
   | 'FINISHED' // Finalizada
-  | 'POSTPONED' // Adiada
+  | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
+  | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
 /** Completeness of the statistical record for a match / tournament. */
 export type StatsStatus =
@@ -165,7 +158,6 @@ export interface Tournament {
   categoryId: string | null
   format: TournamentFormat
   status: TournamentStatus
-  currentPhase: TournamentPhase
   teamIds: string[]
   matchCount: number
   finishedMatchCount: number

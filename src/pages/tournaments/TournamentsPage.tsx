@@ -16,16 +16,15 @@ import {
   formatDate,
   formatRelative,
   matchProgress,
-  PHASE_LABELS,
 } from '../../features/sports/sportsUtils'
 import s from './tournaments.module.css'
 
 const STATUS_OPTIONS: TournamentStatus[] = [
-  'SCHEDULED',
+  'DRAFT',
+  'REGISTRATION',
   'IN_PROGRESS',
-  'PLAYOFFS',
-  'FINISHED',
-  'CANCELED',
+  'COMPLETED',
+  'CANCELLED',
 ]
 
 export function TournamentsPage() {
@@ -148,7 +147,6 @@ export function TournamentsPage() {
                   <th className={s.th}>Status</th>
                   <th className={`${s.th} ${s.thNum}`}>Equipes</th>
                   <th className={`${s.th} ${s.thNum}`}>Partidas</th>
-                  <th className={s.th}>Fase</th>
                   <th className={s.th}>Período</th>
                   <th className={s.th}>Atualizado</th>
                 </tr>
@@ -163,7 +161,6 @@ export function TournamentsPage() {
                         <td><Skeleton width={84} height={20} /></td>
                         <td><Skeleton width={28} height={14} /></td>
                         <td><Skeleton width={44} height={14} /></td>
-                        <td><Skeleton width={96} height={14} /></td>
                         <td><Skeleton width={150} height={14} /></td>
                         <td><Skeleton width={70} height={14} /></td>
                       </tr>
@@ -196,7 +193,6 @@ export function TournamentsPage() {
                           {matchProgress(c)}
                           <span className={s.numSub}>fin./total</span>
                         </td>
-                        <td className={s.tdMuted}>{PHASE_LABELS[c.currentPhase]}</td>
                         <td className={s.tdMuted}>
                           <span className={s.mono}>{formatDate(c.startDate)}</span>
                           <span className={s.periodSep}>-</span>

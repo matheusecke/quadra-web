@@ -28,3 +28,15 @@ describe('createSportsStore', () => {
       .toThrow(/same tournament/i)
   })
 })
+
+describe('createTournament', () => {
+  it('creates a tournament as a draft, invisible until the admin publishes it', () => {
+    const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
+    const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
+    const created = store.createTournament({
+      name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE',
+      startDate: '2026-02-01', endDate: '2026-06-01',
+    })
+    expect(created.status).toBe('DRAFT')
+  })
+})

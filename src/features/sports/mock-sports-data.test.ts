@@ -18,7 +18,7 @@ describe('PUC sports mock data', () => {
     const c = getTournamentById('puc-geral-2026')
     expect(c?.teamIds).toHaveLength(16)
     expect(c?.groups).toHaveLength(4)
-    expect(c?.status).toBe('FINISHED')
+    expect(c?.status).toBe('COMPLETED')
     expect(c?.championTeamId).toBe('puc-time-1')
     const matches = getMatchesByTournament('puc-geral-2026')
     expect(matches).toHaveLength(31)

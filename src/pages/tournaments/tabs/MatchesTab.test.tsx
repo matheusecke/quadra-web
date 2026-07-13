@@ -18,7 +18,6 @@ const tournament: Tournament = {
   categoryId: 'cat-adulto-masc',
   format: 'GROUP_STAGE_KNOCKOUT',
   status: 'IN_PROGRESS',
-  currentPhase: 'GROUPS',
   teamIds: ['abutres', 'aguias', 'linces', 'lobos'],
   matchCount: 2,
   finishedMatchCount: 1,

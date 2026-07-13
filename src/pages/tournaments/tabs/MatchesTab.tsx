@@ -18,7 +18,7 @@ interface MatchesTabProps {
   teams: Map<string, Team>
 }
 
-const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED']
+const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED']
 
 export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
   const [q, setQ] = useState('')

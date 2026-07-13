@@ -9,7 +9,6 @@ import type {
   AthleteStatus,
   Tournament,
   TournamentFormat,
-  TournamentPhase,
   TournamentStatus,
   LeaderStat,
   Match,
@@ -87,11 +86,11 @@ export function teamMap(teams: Team[]): Map<string, Team> {
 // ── Labels (Portuguese) ────────────────────────────────────────────────────────
 
 export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
-  SCHEDULED: 'Agendado',
+  DRAFT: 'Rascunho',
+  REGISTRATION: 'Inscrições',
   IN_PROGRESS: 'Em andamento',
-  PLAYOFFS: 'Playoffs',
-  FINISHED: 'Encerrado',
-  CANCELED: 'Cancelado',
+  COMPLETED: 'Encerrado',
+  CANCELLED: 'Cancelado',
 }
 
 export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
@@ -101,20 +100,12 @@ export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
   GROUP_STAGE_KNOCKOUT: 'Grupos + mata-mata',
 }
 
-export const PHASE_LABELS: Record<TournamentPhase, string> = {
-  GROUPS: 'Fase de grupos',
-  ROUNDS_OF_16: 'Oitavas de final',
-  QUARTERS: 'Quartas de final',
-  SEMIS: 'Semifinais',
-  FINAL: 'Final',
-  FINISHED: 'Encerrado',
-}
-
 export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   SCHEDULED: 'Agendada',
   LIVE: 'Ao vivo',
   FINISHED: 'Finalizada',
   POSTPONED: 'Adiada',
+  CANCELLED: 'Cancelada',
 }
 
 export const STATS_STATUS_LABELS: Record<StatsStatus, string> = {
@@ -147,13 +138,13 @@ export function tournamentStatusVariant(status: TournamentStatus): BadgeVariant 
   switch (status) {
     case 'IN_PROGRESS':
       return 'accent'
-    case 'PLAYOFFS':
+    case 'REGISTRATION':
       return 'warning'
-    case 'FINISHED':
+    case 'COMPLETED':
       return 'success'
-    case 'CANCELED':
+    case 'CANCELLED':
       return 'danger'
-    case 'SCHEDULED':
+    case 'DRAFT':
     default:
       return 'ghost'
   }
@@ -167,6 +158,8 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
       return 'success'
     case 'POSTPONED':
       return 'warning'
+    case 'CANCELLED':
+      return 'danger'
     case 'SCHEDULED':
     default:
       return 'ghost'

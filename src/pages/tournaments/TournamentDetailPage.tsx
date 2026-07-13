@@ -19,7 +19,6 @@ import {
   tournamentStatusVariant,
   formatPeriod,
   matchProgress,
-  PHASE_LABELS,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import { OverviewTab } from './tabs/OverviewTab'
@@ -174,8 +173,6 @@ export function TournamentDetailPage() {
               <span className={s.mono}>{getSeasonLabel(tournament.seasonId)}</span>
               <span className={s.detailMetaSep}>·</span>
               <span>{getCategoryName(tournament.categoryId)}</span>
-              <span className={s.detailMetaSep}>·</span>
-              <span>{PHASE_LABELS[tournament.currentPhase]}</span>
             </div>
           </div>
           <div className={s.detailStatusCol}>
@@ -203,10 +200,6 @@ export function TournamentDetailPage() {
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Partidas</span>
             <span className={s.infoValue}>{matchProgress(tournament)}</span>
-          </div>
-          <div className={s.infoItem}>
-            <span className={s.infoLabel}>Fase atual</span>
-            <span className={s.infoValue}>{PHASE_LABELS[tournament.currentPhase]}</span>
           </div>
         </div>
 
