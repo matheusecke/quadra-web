@@ -10,6 +10,7 @@ This file supplements the repository-level `AGENTS.md` for work inside `tcc-web/
 ## Frontend Conventions
 
 - Follow the existing design system in `src/design-system/` and the UI primitives already used by the project.
+- Before introducing a visible native control, consult [`docs/design-system/interactive-controls.md`](docs/design-system/interactive-controls.md). Do not leave generic browser styling when Quadra DS requires a reusable, accessible treatment.
 - Do not hardcode colors, spacing, radius, shadows, or typography in components when a token or existing primitive already covers the case.
 - Keep styling aligned with the current CSS approach. Do not introduce a competing styling system for a localized change.
 - Use semantic HTML and keep keyboard interaction, focus states, labels, and contrast intact.

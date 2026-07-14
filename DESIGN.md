@@ -96,6 +96,10 @@ Component use:
 - Tabs are appropriate for closely related admin workspaces such as user affiliations and team affiliations.
 - Empty and error states must be explicit about whether the state is empty, blocked, unauthorized, or not implemented by the API yet.
 
+### Interactive controls
+
+The complete, normative policy for native and custom interactive controls is [docs/design-system/interactive-controls.md](docs/design-system/interactive-controls.md). Visible controls must not retain a generic browser appearance when it conflicts with Quadra DS; reuse or extend an accessible primitive, preserve native semantics and behavior, and consume `theme.css` tokens.
+
 ## Motion
 
 Motion should be purposeful and restrained. Use motion for session transitions, loading feedback, focus, and small state changes only.
