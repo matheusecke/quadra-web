@@ -67,6 +67,16 @@ export interface ScheduleMatchInput {
 /** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
 export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: string }
 
+export interface SetTiebreakOrderInput {
+  tournamentId: string
+  entries: { tournamentTeamId: string; order: number }[]
+}
+
+export interface ClearTiebreakOrderInput {
+  tournamentId: string
+  blockKey: string
+}
+
 interface PlayedResultInput {
   matchId: string
   periods: PeriodScore[]

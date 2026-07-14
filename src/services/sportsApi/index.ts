@@ -40,6 +40,8 @@ const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournamen
     teamId,
     displayNameSnapshot: teamNameById.get(teamId) ?? teamId,
     seed: null,
+    tiebreakOrder: null,
+    tiebreakBlockKey: null,
   })),
 )
 
