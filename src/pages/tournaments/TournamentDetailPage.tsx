@@ -84,7 +84,7 @@ export function TournamentDetailPage() {
   const handleEnroll = async (teamId: string) => {
     if (!tournamentId) return
     try {
-      await enrollTeam.mutateAsync({ tournamentId, teamId })
+      await enrollTeam.mutateAsync({ tournamentId, teamId, displayName: teams.get(teamId)?.name ?? teamId })
       setEnrollError('')
     } catch {
       setEnrollError('Equipe já inscrita neste campeonato.')

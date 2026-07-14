@@ -12,7 +12,9 @@ import type {
 } from '../../features/sports/types'
 import { periodsSum } from '../../features/sports/statistics'
 import type {
+  AssignGroupTeamInput,
   CreateCategoryInput,
+  CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
@@ -28,7 +30,25 @@ export interface TournamentTeam {
   id: string
   tournamentId: string
   teamId: string
+  /** The team's name at enrollment. Survives a later rename (DB spec §5.3). */
+  displayNameSnapshot: string
   seed: number | null
+  isDeleted?: boolean
+}
+
+export interface TournamentGroup {
+  id: string
+  tournamentId: string
+  name: string
+  sortOrder: number
+  isDeleted?: boolean
+}
+
+export interface TournamentGroupTeam {
+  id: string
+  tournamentId: string
+  groupId: string
+  teamId: string
   isDeleted?: boolean
 }
 
@@ -49,6 +69,8 @@ export interface SportsStoreSeed {
   matches: Match[]
   tournamentTeams?: TournamentTeam[]
   rosterEntries?: RosterEntry[]
+  tournamentGroups?: TournamentGroup[]
+  tournamentGroupTeams?: TournamentGroupTeam[]
   /** Optional pre-computed match details (reference box scores for seeded matches). */
   matchDetails?: MatchDetail[]
 }
@@ -71,6 +93,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const matches: Match[] = seed.matches.map((m) => ({ ...m }))
   const tournamentTeams: TournamentTeam[] = seed.tournamentTeams?.map((entry) => ({ ...entry })) ?? []
   const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
+  const tournamentGroups: TournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
+  const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
   const matchExtras = new Map<string, MatchExtra>()
 
   for (const detail of seed.matchDetails ?? []) {
@@ -224,7 +248,13 @@ export function createSportsStore(seed: SportsStoreSeed) {
         (tt) => isActive(tt) && tt.tournamentId === input.tournamentId && tt.teamId === input.teamId,
       )
       if (exists) throw new Error('Team already enrolled in this tournament')
-      const record: TournamentTeam = { id: nextId('tournament-team'), tournamentId: input.tournamentId, teamId: input.teamId, seed: input.seed ?? null }
+      const record: TournamentTeam = {
+        id: nextId('tournament-team'),
+        tournamentId: input.tournamentId,
+        teamId: input.teamId,
+        displayNameSnapshot: input.displayName,
+        seed: input.seed ?? null,
+      }
       tournamentTeams.push(record)
       const tournament = requireTournament(input.tournamentId)
       if (!tournament.teamIds.includes(input.teamId)) tournament.teamIds = [...tournament.teamIds, input.teamId]
@@ -266,6 +296,41 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return record
     },
 
+    // ── Groups ─────────────────────────────────────────────────────────────────
+    listGroups(tournamentId: string): TournamentGroup[] {
+      return tournamentGroups
+        .filter((g) => isActive(g) && g.tournamentId === tournamentId)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+    },
+    createGroup(input: CreateGroupInput): TournamentGroup {
+      const existing = tournamentGroups.filter((g) => isActive(g) && g.tournamentId === input.tournamentId)
+      const sortOrder = input.sortOrder ?? existing.reduce((max, g) => Math.max(max, g.sortOrder), 0) + 1
+      const group: TournamentGroup = { id: nextId('group'), tournamentId: input.tournamentId, name: input.name, sortOrder }
+      tournamentGroups.push(group)
+      return group
+    },
+    listGroupTeams(tournamentId: string): TournamentGroupTeam[] {
+      return tournamentGroupTeams.filter((gt) => isActive(gt) && gt.tournamentId === tournamentId)
+    },
+    assignTeamToGroup(input: AssignGroupTeamInput): TournamentGroupTeam {
+      const taken = tournamentGroupTeams.some(
+        (gt) => isActive(gt) && gt.tournamentId === input.tournamentId && gt.teamId === input.teamId,
+      )
+      if (taken) throw new Error('Team already assigned to a group in this tournament')
+      const record: TournamentGroupTeam = {
+        id: nextId('group-team'),
+        tournamentId: input.tournamentId,
+        groupId: input.groupId,
+        teamId: input.teamId,
+      }
+      tournamentGroupTeams.push(record)
+      return record
+    },
+    removeGroupTeam(id: string): void {
+      const record = tournamentGroupTeams.find((gt) => gt.id === id)
+      if (record) record.isDeleted = true
+    },
+
     // ── Matches ────────────────────────────────────────────────────────────────
     listMatches(filter?: { tournamentId?: string }): Match[] {
       return matches.filter((m) => !filter?.tournamentId || m.tournamentId === filter.tournamentId)
@@ -298,6 +363,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         homeLossType: null,
         awayLossType: null,
         scoreSource: null,
+        tournamentGroupId: input.groupId ?? null,
       }
       matches.push(match)
       const tournament = tournaments.find((t) => t.id === input.tournamentId)

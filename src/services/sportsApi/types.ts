@@ -29,7 +29,21 @@ export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: 
 export interface EnrollTeamInput {
   tournamentId: string
   teamId: string
+  /** display_name_snapshot — the team's name at enrollment (DB spec §5.3). */
+  displayName: string
   seed?: number
+}
+
+export interface CreateGroupInput {
+  tournamentId: string
+  name: string
+  sortOrder?: number
+}
+
+export interface AssignGroupTeamInput {
+  tournamentId: string
+  groupId: string
+  teamId: string
 }
 
 export interface RosterEntryInput {

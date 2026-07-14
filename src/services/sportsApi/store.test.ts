@@ -12,8 +12,8 @@ function scheduledMatch() {
   const tournament = store.createTournament({
     name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
   })
-  const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-1' })
-  const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-2' })
+  const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-1', displayName: 'Tigres' })
+  const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-2', displayName: 'Albatrozes' })
   const match = store.scheduleMatch({
     tournamentId: tournament.id, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T20:00:00Z',
   })
@@ -32,16 +32,16 @@ describe('createSportsStore', () => {
     const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
     const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
     const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1' })
-    expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 'team-1' })).toThrow(/already enrolled/i)
+    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })
+    expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })).toThrow(/already enrolled/i)
   })
 
   it('rejects an athlete on two teams in the same tournament', () => {
     const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
     const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
     const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-2' })
+    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })
+    store.enrollTeam({ tournamentId: t.id, teamId: 'team-2', displayName: 'Albatrozes' })
     store.addRosterEntry({ tournamentId: t.id, teamId: 'team-1', athleteId: 'ath-1', jerseyNumber: 7, role: 'ATHLETE' })
     expect(() => store.addRosterEntry({ tournamentId: t.id, teamId: 'team-2', athleteId: 'ath-1', jerseyNumber: 9, role: 'ATHLETE' }))
       .toThrow(/same tournament/i)

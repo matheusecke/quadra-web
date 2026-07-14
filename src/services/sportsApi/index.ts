@@ -6,6 +6,7 @@ import {
   getAthleteSummaryById,
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
+  getTeams,
   seedCategories,
   seedMatches,
   seedSeasons,
@@ -30,11 +31,14 @@ const seedMatchDetails = seedMatches
   .map((match) => getMatchDetailById(match.id))
   .filter((detail): detail is MatchDetail => Boolean(detail))
 
+const teamNameById = new Map(getTeams().map((team) => [team.id, team.name]))
+
 const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournament) =>
   tournament.teamIds.map((teamId) => ({
     id: `tournament-team-${tournament.id}-${teamId}`,
     tournamentId: tournament.id,
     teamId,
+    displayNameSnapshot: teamNameById.get(teamId) ?? teamId,
     seed: null,
   })),
 )
