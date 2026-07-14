@@ -40,3 +40,6 @@ export type { PasswordInputProps } from './PasswordInput'
 
 export { Combobox } from './Combobox'
 export type { ComboboxOption, ComboboxProps } from './Combobox'
+
+export { NumberField } from './NumberField'
+export type { NumberFieldProps } from './NumberField'
