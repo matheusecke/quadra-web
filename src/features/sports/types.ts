@@ -281,6 +281,12 @@ export interface MatchLeader {
   teamId: string
 }
 
+/** Curated award, chosen by the ORG_ADMIN — not derived from statistics. DB spec §8.10. */
+export interface MatchMvp {
+  tournamentRosterId: string
+  athleteId: string
+}
+
 /** Match with full box score data. */
 export interface MatchDetail extends Match {
   /** Dynamic per-period scores. Drives the "Placar por período" table.
@@ -288,4 +294,6 @@ export interface MatchDetail extends Match {
   periodScores: PeriodScore[] | null
   homeStats: TeamMatchStats
   awayStats: TeamMatchStats
+  /** null on a W.O. and until the admin picks one. §8.10 */
+  mvp: MatchMvp | null
 }

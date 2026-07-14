@@ -110,3 +110,59 @@ describe('submitMatchResult — NORMAL', () => {
     expect(match.homeLossType).toBeNull()
   })
 })
+
+describe('submitMatchResult — MVP', () => {
+  it('persists the MVP and returns it on the match detail', () => {
+    const { store, matchId } = scheduledMatch()
+    const entry = store.addRosterEntry({
+      tournamentId: store.listTournaments()[0].id, teamId: 'team-1',
+      athleteId: 'ath-1', jerseyNumber: 7, role: 'ATHLETE',
+    })
+
+    store.submitMatchResult({
+      matchId,
+      periods: [period(1, 70, 60)],
+      playerStats: [{ tournamentRosterId: entry.id, pts: 20, fgm: 8, fga: 15, tpm: 2, tpa: 5, ftm: 2, fta: 2, reb: 5, ast: 3, stl: 1, blk: 0, to: 2, pf: 3, min: 30 }],
+      mvpTournamentRosterId: entry.id,
+    })
+
+    expect(store.getMatchDetail(matchId)?.mvp).toEqual({ tournamentRosterId: entry.id, athleteId: 'ath-1' })
+  })
+
+  it('rejects an MVP with no line in the box score', () => {
+    const { store, matchId } = scheduledMatch()
+
+    expect(() =>
+      store.submitMatchResult({
+        matchId,
+        periods: [period(1, 70, 60)],
+        playerStats: [],
+        mvpTournamentRosterId: 'roster-does-not-exist',
+      }),
+    ).toThrow(/MVP must be one of the players in the box score/i)
+  })
+
+  it('rejects a coaching staff member as MVP even with a box-score line', () => {
+    const { store, matchId } = scheduledMatch()
+    const entry = store.addRosterEntry({
+      tournamentId: store.listTournaments()[0].id, teamId: 'team-1',
+      athleteId: 'staff-1', jerseyNumber: 7, role: 'COACHING_STAFF',
+    })
+
+    expect(() =>
+      store.submitMatchResult({
+        matchId,
+        periods: [period(1, 70, 60)],
+        playerStats: [{ tournamentRosterId: entry.id, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 }],
+        mvpTournamentRosterId: entry.id,
+      }),
+    ).toThrow(/MVP must be one of the players in the box score/i)
+  })
+
+  it('leaves the MVP null on a W.O. — there was no game to be best in', () => {
+    const { store, matchId, awayTournamentTeamId } = scheduledMatch()
+    store.submitMatchResult({ resultType: 'FORFEIT', matchId, offendingTournamentTeamId: awayTournamentTeamId })
+
+    expect(store.getMatchDetail(matchId)?.mvp).toBeNull()
+  })
+})

@@ -329,7 +329,7 @@ export function getCategories(): TournamentCategory[] { return seedCategories }
 export function getSeasonLabel(seasonId: string): string { return seedSeasons.find((s) => s.id === seasonId)?.label ?? seasonId }
 export function getCategoryName(categoryId: string | null): string { return categoryId ? (seedCategories.find((c) => c.id === categoryId)?.name ?? categoryId) : '—' }
 export function getAllMatches(): Match[] { return MOCK_MATCHES }
-export function getMatchDetailById(id: string): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA[id]; return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] }, awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] } } }
+export function getMatchDetailById(id: string): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA[id]; return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] }, awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] }, mvp: null } }
 export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
 export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
 export function getAthleteById(athleteId: string): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }

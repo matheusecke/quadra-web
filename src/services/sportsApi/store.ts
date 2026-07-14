@@ -1,6 +1,7 @@
 import type {
   Match,
   MatchDetail,
+  MatchMvp,
   PeriodScore,
   PlayerMatchStats,
   Season,
@@ -17,6 +18,7 @@ import type {
   EnrollTeamInput,
   RosterEntryInput,
   ScheduleMatchInput,
+  PlayerBoxScoreInput,
   SubmitMatchResultInput,
   UpdateSeasonInput,
   UpdateTournamentInput,
@@ -55,6 +57,7 @@ export interface MatchExtra {
   periodScores: PeriodScore[] | null
   homeStats: TeamMatchStats
   awayStats: TeamMatchStats
+  mvp: MatchMvp | null
 }
 
 const emptyLeaders = (): StatLeaders => ({ ppg: [], rpg: [], apg: [], stg: [], bpg: [] })
@@ -75,6 +78,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       periodScores: detail.periodScores,
       homeStats: detail.homeStats,
       awayStats: detail.awayStats,
+      mvp: detail.mvp,
     })
   }
 
@@ -120,6 +124,19 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }]
     }),
   })
+
+  const resolveMvp = (
+    mvpTournamentRosterId: string | null | undefined,
+    playerStats: PlayerBoxScoreInput[],
+  ): MatchMvp | null => {
+    if (!mvpTournamentRosterId) return null
+    const line = playerStats.find((stat) => stat.tournamentRosterId === mvpTournamentRosterId)
+    const rosterEntry = rosterEntries.find((entry) => entry.id === mvpTournamentRosterId && isActive(entry))
+    if (!line || !rosterEntry || rosterEntry.role !== 'ATHLETE') {
+      throw new Error('MVP must be one of the players in the box score')
+    }
+    return { tournamentRosterId: rosterEntry.id, athleteId: rosterEntry.athleteId }
+  }
 
   const isHomeSide = (match: Match, tournamentTeamId: string): boolean => {
     const tournamentTeam = tournamentTeams.find((entry) => entry.id === tournamentTeamId && isActive(entry))
@@ -262,6 +279,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         periodScores: extra?.periodScores ?? null,
         homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] },
         awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] },
+        mvp: extra?.mvp ?? null,
       }
     },
     scheduleMatch(input: ScheduleMatchInput): Match {
@@ -289,10 +307,10 @@ export function createSportsStore(seed: SportsStoreSeed) {
     submitMatchResult(input: SubmitMatchResultInput): Match {
       const match = matches.find((m) => m.id === input.matchId)
       if (!match) throw new Error(`Match ${input.matchId} not found`)
-      match.status = 'FINISHED'
 
       if (input.resultType === 'FORFEIT') {
         const offenderIsHome = isHomeSide(match, input.offendingTournamentTeamId)
+        match.status = 'FINISHED'
         match.homeScore = offenderIsHome ? 0 : 20
         match.awayScore = offenderIsHome ? 20 : 0
         match.homeLossType = offenderIsHome ? 'FORFEIT' : null
@@ -303,12 +321,15 @@ export function createSportsStore(seed: SportsStoreSeed) {
           periodScores: [],
           homeStats: emptyTeamStats(match.homeTeamId),
           awayStats: emptyTeamStats(match.awayTeamId),
+          mvp: null,
         })
         bumpFinished(match)
         return match
       }
 
+      const mvp = resolveMvp(input.mvpTournamentRosterId, input.playerStats)
       const court = periodsSum(input.periods)
+      match.status = 'FINISHED'
 
       if (input.resultType === 'DEFAULT') {
         const offenderIsHome = isHomeSide(match, input.offendingTournamentTeamId)
@@ -338,6 +359,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         periodScores: input.periods,
         homeStats: toBoxScore(match.homeTeamId, input),
         awayStats: toBoxScore(match.awayTeamId, input),
+        mvp,
       })
       bumpFinished(match)
       return match
