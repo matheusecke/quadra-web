@@ -1,0 +1,287 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  height: var(--row-h);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 var(--space-3);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease;
+}
+
+.field:hover:not(:disabled) {
+  border-color: var(--border-bold);
+}
+
+.field[aria-expanded='true'],
+.field:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.field:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.field--error {
+  border-color: var(--status-live);
+}
+
+.field--error[aria-expanded='true'],
+.field--error:focus-visible {
+  border-color: var(--status-live);
+  box-shadow: 0 0 0 3px var(--status-live-bg);
+}
+
+.field svg {
+  color: var(--muted);
+  flex: none;
+}
+
+.placeholder {
+  color: var(--muted-2);
+}
+
+.cal {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-3) / 2);
+  left: 0;
+  width: 284px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--space-3);
+  outline: none;
+}
+
+.calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.calMonth {
+  font-size: 14px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.calNav {
+  display: flex;
+  gap: calc(var(--space-1) / 2);
+}
+
+.calNav button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.calNav button:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.calNav button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: calc(var(--space-1) / 2);
+}
+
+.calDow {
+  font: var(--type-micro);
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+  text-align: center;
+  padding-bottom: var(--space-2);
+}
+
+.calDay {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.calDay:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.calDay:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.calDay--out {
+  color: var(--muted-3);
+}
+
+.calDay--today {
+  box-shadow: inset 0 0 0 1px var(--border-bold);
+  font-weight: 500;
+}
+
+.calDay--sel {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.calDay--sel:hover {
+  background: var(--accent-deep);
+}
+
+.calTime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.calTimeLabel {
+  font: var(--type-micro);
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+  flex: 1;
+}
+
+.colon {
+  color: var(--muted-2);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.calFoot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.btnGhost,
+.btnPrimary {
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btnGhost {
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.btnGhost:hover {
+  background: var(--surface-2);
+}
+
+.btnPrimary {
+  padding: 0 var(--space-4);
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-deep);
+}
+
+.btnPrimary:active {
+  transform: translateY(1px);
+}
+
+.btnGhost:focus-visible,
+.btnPrimary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nativeField {
+  width: 100%;
+  height: var(--row-h);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 var(--space-3);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.nativeField:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-bold);
+}
+
+.nativeField:focus {
+  border-color: var(--accent);
+}
+
+.nativeField:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.nativeField--error {
+  border-color: var(--status-live);
+}
+
+.nativeField--error:focus {
+  border-color: var(--status-live);
+  box-shadow: 0 0 0 3px var(--status-live-bg);
+}

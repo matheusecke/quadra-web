@@ -43,3 +43,6 @@ export type { ComboboxOption, ComboboxProps } from './Combobox'
 
 export { NumberField } from './NumberField'
 export type { NumberFieldProps } from './NumberField'
+
+export { DateTimeField } from './DateTimeField'
+export type { DateTimeFieldProps } from './DateTimeField'
