@@ -541,6 +541,33 @@
   color: var(--muted-3) !important;
 }
 
+/* ── Curated match MVP ── */
+.mvpCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.mvpBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--type-micro-tracking);
+  color: var(--accent);
+}
+
+.mvpName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.mvpName:hover { text-decoration: underline; }
+
 /* ── Match leaders grid ── */
 .matchLeaders {
   display: grid;
