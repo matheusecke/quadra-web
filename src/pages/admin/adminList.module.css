@@ -155,25 +155,6 @@
   border-radius: var(--radius);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.tableWrap::-webkit-scrollbar {
-  width: 4px;
-}
-
-.tableWrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.tableWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-
-.tableWrap::-webkit-scrollbar-thumb:hover {
-  background: var(--border-bold);
 }
 
 .table {

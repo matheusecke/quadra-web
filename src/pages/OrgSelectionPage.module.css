@@ -176,30 +176,6 @@
   gap: 6px;
   padding-right: 10px;
   padding-bottom: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.orgList::-webkit-scrollbar {
-  width: 3px;
-}
-
-.orgList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.orgList::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-
-.orgList::-webkit-scrollbar-thumb:hover {
-  background: var(--border-bold);
-}
-
-.orgList::-webkit-scrollbar-button {
-  display: none;
-  height: 0;
 }
 
 /* ── Org card ────────────────────────────────────────────── */

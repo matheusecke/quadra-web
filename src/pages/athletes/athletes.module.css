@@ -127,18 +127,6 @@
   background: var(--surface);
   padding: var(--space-4) var(--space-5);
   overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.statsBlock::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.statsBlock::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 .statsRow {
@@ -193,18 +181,6 @@
   border-radius: var(--radius);
   background: var(--surface);
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.tableWrap::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.tableWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 .table {
