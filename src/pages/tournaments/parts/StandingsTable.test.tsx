@@ -29,8 +29,9 @@ describe('StandingsTable', () => {
 
   it('renders a dash for a null position and a null win percentage', () => {
     render(<StandingsTable rows={[row({ position: null, played: 0, wins: 0, losses: 0, winPct: null })]} teams={teams} variant="full" />)
-    expect(screen.queryByText('0%')).not.toBeInTheDocument()
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    const cells = screen.getAllByRole('row')[1].querySelectorAll('td')
+    expect(cells[0]).toHaveTextContent('—')                      // position
+    expect(cells[cells.length - 1]).toHaveTextContent('—')       // win percentage — never .000
   })
 
   it('marks an unresolved tie with a textual chip, not only colour', () => {

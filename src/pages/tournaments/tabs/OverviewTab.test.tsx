@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { getTournamentById, getMatchesByTournament, getTeams } from '../../../features/sports/mock-sports-data'
+import * as sportsApi from '../../../services/sportsApi'
 import { OverviewTab } from './OverviewTab'
 
 const renderGeral = () => {
@@ -40,5 +41,14 @@ describe('OverviewTab', () => {
 
     await waitFor(() => expect(screen.getByText('Grupo A')).toBeInTheDocument())
     expect(screen.getByText('Grupo D')).toBeInTheDocument()
+  })
+
+  // A failed request must not read as "this tournament has no groups".
+  it('says the classification failed to load instead of claiming there are no groups', async () => {
+    vi.spyOn(sportsApi, 'listStandings').mockRejectedValueOnce(new Error('network down'))
+    renderGeral()
+
+    await waitFor(() => expect(screen.getByText(/não foi possível carregar a classificação/i)).toBeInTheDocument())
+    expect(screen.queryByText(/grupos ainda não definidos/i)).not.toBeInTheDocument()
   })
 })

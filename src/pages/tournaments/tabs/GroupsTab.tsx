@@ -124,7 +124,8 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(tournament.id) })
       return
     }
-    throw error
+    // The panel already blocks an incomplete permutation; this is the safety net behind it.
+    setCardError('Não foi possível registrar o sorteio. Tente novamente.')
   }
 
   const handleSetTiebreakOrder = async (entries: { tournamentTeamId: string; order: number }[]) => {

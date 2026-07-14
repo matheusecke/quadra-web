@@ -69,6 +69,8 @@ export function StandingsCard({
 
       {openBlockKey && (
         <TiebreakPanel
+          // Re-seed the positions when another block is opened: the panel holds them in state.
+          key={openBlockKey}
           rows={blockRows(openBlockKey)}
           standingsState={standingsState}
           isResolved={isBlockResolved(openBlockKey)}

@@ -20,13 +20,13 @@ const envelope = (over: Partial<StandingsEnvelope>): StandingsEnvelope => ({
   group: { id: 'g1', name: 'Grupo A' }, standingsState: 'FINAL', pendingMatches: 0, rows: [row({})], ...over,
 })
 
-const renderCard = (env: StandingsEnvelope, isOrgAdmin = true) =>
+const renderCard = (env: StandingsEnvelope, isOrgAdmin = true, onSetTiebreakOrder = vi.fn().mockResolvedValue(undefined)) =>
   render(
     <StandingsCard
       envelope={env}
       teams={teams}
       isOrgAdmin={isOrgAdmin}
-      onSetTiebreakOrder={vi.fn().mockResolvedValue(undefined)}
+      onSetTiebreakOrder={onSetTiebreakOrder}
       onClearTiebreakOrder={vi.fn().mockResolvedValue(undefined)}
     />,
   )
@@ -62,5 +62,33 @@ describe('StandingsCard', () => {
   it('gives a non-admin no draw affordance at all', () => {
     renderCard(envelope({ rows: [row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' })] }), false)
     expect(screen.queryByRole('button', { name: /registrar sorteio/i })).not.toBeInTheDocument()
+  })
+
+  // Opening a second block must re-seed the panel: a panel still holding the first block's
+  // orders would submit `undefined` positions for teams it has never seen.
+  it('records the draw of the block that is open, after switching from another block', async () => {
+    const onSetTiebreakOrder = vi.fn().mockResolvedValue(undefined)
+    const twoBlocks = envelope({
+      rows: [
+        row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
+        row({ teamId: 'B', tournamentTeamId: 'tt-B', teamName: 'Beta', position: 2, isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
+        row({ teamId: 'C', tournamentTeamId: 'tt-C', teamName: 'Cetus', position: 3, isTiedUnresolved: true, tieBlockKey: 'tt-C-tt-D' }),
+        row({ teamId: 'D', tournamentTeamId: 'tt-D', teamName: 'Delta', position: 4, isTiedUnresolved: true, tieBlockKey: 'tt-C-tt-D' }),
+      ],
+    })
+    renderCard(twoBlocks, true, onSetTiebreakOrder)
+
+    const rowButtons = screen.getAllByRole('button', { name: /registrar sorteio/i })
+    await userEvent.click(rowButtons[0]) // opens the Alfa/Beta block
+    await userEvent.click(rowButtons[2]) // switches to the Cetus/Delta block, without cancelling
+
+    expect(screen.getByLabelText(/posição de cetus/i)).toBeInTheDocument()
+    // The panel's own save button is the last one on the page, below the table.
+    await userEvent.click(screen.getAllByRole('button', { name: /registrar sorteio/i }).at(-1)!)
+
+    expect(onSetTiebreakOrder).toHaveBeenCalledWith([
+      { tournamentTeamId: 'tt-C', order: 1 },
+      { tournamentTeamId: 'tt-D', order: 2 },
+    ])
   })
 })
