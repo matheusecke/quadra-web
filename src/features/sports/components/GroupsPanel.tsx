@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { Button } from '../../../components/ui/Button/Button'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Field } from '../../../components/ui/Field/Field'
 import { Input } from '../../../components/ui/Input/Input'
 import s from './GroupsPanel.module.css'
@@ -85,34 +86,26 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
       <div className={s.row}>
         <div className={s.fieldGroup}>
           <Field label="Grupo" id={groupFieldId}>
-            <select
+            <Combobox
               id={groupFieldId}
-              className={s.select}
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
+              options={groups.map((group) => ({ value: group.id, label: group.name }))}
+              value={groupId || null}
+              onChange={setGroupId}
+              placeholder="Selecione um grupo…"
               disabled={groups.length === 0}
-            >
-              <option value="" disabled>Selecione um grupo…</option>
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>{group.name}</option>
-              ))}
-            </select>
+            />
           </Field>
         </div>
         <div className={s.fieldGroup}>
           <Field label="Equipe" id={teamFieldId}>
-            <select
+            <Combobox
               id={teamFieldId}
-              className={s.select}
-              value={teamId}
-              onChange={(e) => setTeamId(e.target.value)}
+              options={unassigned.map((team) => ({ value: team.id, label: team.name }))}
+              value={teamId || null}
+              onChange={setTeamId}
+              placeholder="Selecione uma equipe…"
               disabled={unassigned.length === 0}
-            >
-              <option value="" disabled>Selecione uma equipe…</option>
-              {unassigned.map((team) => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            />
           </Field>
         </div>
         <Button type="button" variant="primary" size="sm" onClick={handleAssign} loading={assigning} disabled={!groupId || !teamId}>

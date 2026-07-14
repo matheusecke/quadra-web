@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState } from 'react'
+import { useCallback, useMemo, useReducer, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
@@ -15,6 +15,7 @@ import { boxScoreReducer, initBoxScoreState, teamTotalPoints } from '../../featu
 import { getAthletes, getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
+import type { PlayerStatInput } from '../../features/sports/statistics'
 import { teamMap } from '../../features/sports/sportsUtils'
 import type { MatchDetail } from '../../features/sports/types'
 import type { PlayerBoxScoreInput, SubmitMatchResultInput } from '../../services/sportsApi/types'
@@ -103,8 +104,8 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
   const submit = useSubmitMatchResult()
   const teams = useMemo(() => teamMap(getTeams()), [])
 
-  const homeIds = homeRoster.map((r) => r.tournamentRosterId)
-  const awayIds = awayRoster.map((r) => r.tournamentRosterId)
+  const homeIds = useMemo(() => homeRoster.map((r) => r.tournamentRosterId), [homeRoster])
+  const awayIds = useMemo(() => awayRoster.map((r) => r.tournamentRosterId), [awayRoster])
 
   const [state, dispatch] = useReducer(
     boxScoreReducer,
@@ -119,6 +120,9 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
   const [confirming, setConfirming] = useState(false)
   const [resultType, setResultType] = useState<'NORMAL' | 'DEFAULT' | 'FORFEIT'>('NORMAL')
   const [offendingTeamId, setOffendingTeamId] = useState('')
+  const handleStatChange = useCallback((tournamentRosterId: string, field: keyof PlayerStatInput, value: number) => {
+    dispatch({ type: 'setStat', tournamentRosterId, field, value })
+  }, [])
 
   const homeName = teams.get(match.homeTeamId)?.name ?? 'Mandante'
   const awayName = teams.get(match.awayTeamId)?.name ?? 'Visitante'
@@ -131,7 +135,10 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
   const activeRoster = activeTeam === match.homeTeamId ? homeRoster : awayRoster
   const activeIds = activeTeam === match.homeTeamId ? homeIds : awayIds
-  const activeLines = Object.fromEntries(activeIds.map((id) => [id, state.lines[id]]))
+  const activeLines = useMemo(
+    () => Object.fromEntries(activeIds.map((id) => [id, state.lines[id]])),
+    [activeIds, state.lines],
+  )
 
   const mvpCandidates = [
     ...homeRoster.map((r) => ({ tournamentRosterId: r.tournamentRosterId, athleteId: r.tournamentRosterId, name: r.name, teamName: homeName })),
@@ -234,7 +241,7 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
         <BoxScoreTable
           roster={activeRoster}
           lines={activeLines}
-          onStatChange={(tournamentRosterId, field, value) => dispatch({ type: 'setStat', tournamentRosterId, field, value })}
+          onStatChange={handleStatChange}
         />
       </section>}
 

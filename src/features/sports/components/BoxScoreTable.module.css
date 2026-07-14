@@ -44,24 +44,6 @@
   text-align: center;
 }
 
-.input {
-  width: 52px;
-  height: 32px;
-  padding: 0 var(--space-1);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  text-align: center;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 .errors {
   list-style: none;
   margin: var(--space-1) 0 0;

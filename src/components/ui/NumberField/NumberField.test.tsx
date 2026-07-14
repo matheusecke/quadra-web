@@ -76,7 +76,7 @@ describe('NumberField', () => {
     expect(onValueChange).toHaveBeenCalledWith('')
   })
 
-  it('keeps the arrows in the dense variant — the box score has them too', () => {
+  it('hides the dense arrows until the cell is engaged — 246 mounted buttons is what a box score is not', () => {
     render(
       <NumberField
         aria-label="PTS"
@@ -86,6 +86,25 @@ describe('NumberField', () => {
         onValueChange={vi.fn()}
       />,
     )
+    expect(screen.queryByRole('button', { name: /aumentar pts/i })).not.toBeInTheDocument()
+  })
+
+  it('reveals the dense arrows on hover, like the native spinner always did', async () => {
+    render(<NumberField aria-label="PTS" controlLabel="PTS" value={12} dense onValueChange={vi.fn()} />)
+    await userEvent.hover(screen.getByLabelText('PTS'))
     expect(screen.getByRole('button', { name: /aumentar pts/i })).toBeInTheDocument()
+  })
+
+  it('reveals them on focus too, so the keyboard is not a second-class citizen', async () => {
+    render(<NumberField aria-label="PTS" controlLabel="PTS" value={12} dense onValueChange={vi.fn()} />)
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: /aumentar pts/i })).toBeInTheDocument()
+  })
+
+  it('steps with the arrow keys — we killed the native spinner, so this is now our job', async () => {
+    const onValueChange = vi.fn()
+    render(<NumberField aria-label="PTS" controlLabel="PTS" value={12} dense onValueChange={onValueChange} />)
+    await userEvent.type(screen.getByLabelText('PTS'), '{ArrowUp}')
+    expect(onValueChange).toHaveBeenCalledWith(13)
   })
 })

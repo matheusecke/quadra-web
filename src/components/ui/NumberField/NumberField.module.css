@@ -98,6 +98,8 @@
 
 .root--dense {
   border-radius: var(--radius-xs);
+  padding-right: 18px;
+  position: relative;
 }
 
 .root--dense .input {
@@ -109,5 +111,25 @@
 }
 
 .root--dense .stack {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 18px;
+}
+
+.root--dense .stack button::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
+}
+
+.root--dense .stack button:first-child::before {
+  border-bottom: 4px solid currentColor;
+}
+
+.root--dense .stack button:last-child::before {
+  border-top: 4px solid currentColor;
 }

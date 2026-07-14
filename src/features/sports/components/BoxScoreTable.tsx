@@ -1,3 +1,5 @@
+import { memo } from 'react'
+import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import type { PlayerStatInput } from '../statistics'
 import { validatePlayerStatLine } from '../statistics'
 import s from './BoxScoreTable.module.css'
@@ -36,7 +38,7 @@ const emptyLine = (): PlayerStatInput => ({
   reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0,
 })
 
-export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProps) {
+export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProps) {
   const columnTotal = (field: keyof PlayerStatInput) =>
     roster.reduce((sum, entry) => sum + (lines[entry.tournamentRosterId]?.[field] ?? 0), 0)
 
@@ -71,13 +73,13 @@ export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProp
                 </td>
                 {STAT_COLUMNS.map((column) => (
                   <td key={column.field} className={s.cell}>
-                    <input
-                      className={s.input}
-                      type="number"
-                      min={0}
+                    <NumberField
+                      dense
                       aria-label={`${entry.name} — ${column.label}`}
+                      controlLabel={column.label}
                       value={line[column.field]}
-                      onChange={(e) => onStatChange(entry.tournamentRosterId, column.field, Number(e.target.value))}
+                      onValueChange={(next) => onStatChange(entry.tournamentRosterId, column.field, next === '' ? 0 : next)}
+                      min={0}
                     />
                   </td>
                 ))}
@@ -97,4 +99,4 @@ export function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProp
       </table>
     </div>
   )
-}
+})

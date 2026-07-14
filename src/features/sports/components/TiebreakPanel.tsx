@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { Button } from '../../../components/ui/Button/Button'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Field } from '../../../components/ui/Field/Field'
 import type { StandingRow, StandingsState } from '../types'
 import s from './TiebreakPanel.module.css'
@@ -61,16 +62,14 @@ export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClea
           <li key={row.tournamentTeamId} className={s.row}>
             <span className={s.teamName}>{row.teamName}</span>
             <Field label={`Posição de ${row.teamName}`} id={`tiebreak-${row.tournamentTeamId}`}>
-              <select
-                id={`tiebreak-${row.tournamentTeamId}`}
-                className={s.select}
-                value={orders[row.tournamentTeamId]}
-                onChange={(event) => setOrders((current) => ({ ...current, [row.tournamentTeamId]: Number(event.target.value) }))}
-              >
-                {rows.map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}º</option>
-                ))}
-              </select>
+              <div className={s.controlWrap}>
+                <Combobox
+                  id={`tiebreak-${row.tournamentTeamId}`}
+                  options={rows.map((_, i) => ({ value: String(i + 1), label: `${i + 1}º` }))}
+                  value={String(orders[row.tournamentTeamId])}
+                  onChange={(next) => setOrders((current) => ({ ...current, [row.tournamentTeamId]: Number(next) }))}
+                />
+              </div>
             </Field>
           </li>
         ))}

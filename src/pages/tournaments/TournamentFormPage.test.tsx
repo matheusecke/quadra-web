@@ -23,7 +23,8 @@ describe('TournamentFormPage (create)', () => {
   it('creates a tournament and navigates to its detail', async () => {
     renderNew()
     await userEvent.type(screen.getByLabelText(/nome/i), 'Copa de Verão')
-    await userEvent.selectOptions(await screen.findByLabelText(/temporada/i), await screen.findByRole('option', { name: /2025\/26/i }))
+    await userEvent.click(await screen.findByLabelText(/temporada/i))
+    await userEvent.click(screen.getByRole('option', { name: '2025/26' }))
     await userEvent.selectOptions(screen.getByLabelText(/formato/i), 'GROUP_STAGE_KNOCKOUT')
     await userEvent.type(screen.getByLabelText(/início/i), '2026-02-01')
     await userEvent.type(screen.getByLabelText(/fim/i), '2026-06-01')

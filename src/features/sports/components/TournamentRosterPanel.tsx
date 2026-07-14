@@ -1,6 +1,8 @@
 import { useId, useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
+import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../../../components/ui/Table/Table'
 import s from './TournamentRosterPanel.module.css'
 
@@ -41,17 +43,17 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, errorM
   const jerseyId = useId()
   const roleId = useId()
   const [selectedAthlete, setSelectedAthlete] = useState('')
-  const [jersey, setJersey] = useState('')
+  const [jerseyNumber, setJerseyNumber] = useState<number | ''>('')
   const [role, setRole] = useState<RosterRole>('ATHLETE')
   const [busy, setBusy] = useState(false)
 
   const handleAdd = async () => {
-    if (!selectedAthlete || !jersey) return
+    if (!selectedAthlete || jerseyNumber === '') return
     setBusy(true)
     try {
-      await onAdd({ athleteId: selectedAthlete, jerseyNumber: Number(jersey), role })
+      await onAdd({ athleteId: selectedAthlete, jerseyNumber, role })
       setSelectedAthlete('')
-      setJersey('')
+      setJerseyNumber('')
       setRole('ATHLETE')
     } finally {
       setBusy(false)
@@ -86,38 +88,39 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, errorM
       <div className={s.addRow}>
         <div className={s.field}>
           <label className={s.label} htmlFor={athleteId}>Atleta</label>
-          <select
+          <Combobox
             id={athleteId}
-            className={s.select}
-            value={selectedAthlete}
-            onChange={(e) => setSelectedAthlete(e.target.value)}
+            options={availableAthletes.map((athlete) => ({ value: athlete.id, label: athlete.name }))}
+            value={selectedAthlete || null}
+            onChange={setSelectedAthlete}
+            placeholder="Selecione um atleta…"
             disabled={availableAthletes.length === 0}
-          >
-            <option value="" disabled>Selecione um atleta…</option>
-            {availableAthletes.map((athlete) => (
-              <option key={athlete.id} value={athlete.id}>{athlete.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className={s.field}>
-          <label className={s.label} htmlFor={jerseyId}>Número</label>
-          <input
-            id={jerseyId}
-            className={s.input}
-            type="number"
-            min={0}
-            value={jersey}
-            onChange={(e) => setJersey(e.target.value)}
           />
         </div>
         <div className={s.field}>
-          <label className={s.label} htmlFor={roleId}>Papel</label>
-          <select id={roleId} className={s.select} value={role} onChange={(e) => setRole(e.target.value as RosterRole)}>
-            <option value="ATHLETE">Atleta</option>
-            <option value="COACHING_STAFF">Comissão técnica</option>
-          </select>
+          <label className={s.label} htmlFor={jerseyId}>Número</label>
+          <div className={s.numberWrap}>
+            <NumberField
+              id={jerseyId}
+              aria-label="Número"
+              controlLabel="número"
+              value={jerseyNumber}
+              onValueChange={setJerseyNumber}
+              min={0}
+              max={99}
+            />
+          </div>
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={!selectedAthlete || !jersey}>
+        <div className={s.field}>
+          <label className={s.label} htmlFor={roleId}>Papel</label>
+          <Combobox
+            id={roleId}
+            options={Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))}
+            value={role}
+            onChange={(next) => setRole(next as RosterRole)}
+          />
+        </div>
+        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={!selectedAthlete || jerseyNumber === ''}>
           Adicionar ao elenco
         </Button>
       </div>

@@ -1,4 +1,5 @@
-import type { ChangeEvent, FocusEvent, InputHTMLAttributes } from 'react'
+import { memo, useState } from 'react'
+import type { ChangeEvent, FocusEvent, InputHTMLAttributes, KeyboardEvent } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '../cn'
 import styles from './NumberField.module.css'
@@ -15,7 +16,7 @@ export interface NumberFieldProps
   step?: number
 }
 
-export function NumberField({
+export const NumberField = memo(function NumberField({
   value,
   onValueChange,
   dense = false,
@@ -27,8 +28,10 @@ export function NumberField({
   disabled,
   className,
   onBlur,
+  onKeyDown,
   ...props
 }: NumberFieldProps) {
+  const [isEngaged, setIsEngaged] = useState(false)
   const current = value === '' ? null : value
 
   const clamp = (next: number) => {
@@ -66,9 +69,29 @@ export function NumberField({
 
   const atMin = Boolean(disabled) || (min !== undefined && current !== null && current <= min)
   const atMax = Boolean(disabled) || (max !== undefined && current !== null && current >= max)
+  const showArrows = !dense || isEngaged
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown?.(event)
+    if (event.defaultPrevented) return
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      nudge(step)
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      nudge(-step)
+    }
+  }
 
   return (
-    <span className={cn(styles.root, dense && styles['root--dense'], error && styles['root--error'])}>
+    <span
+      className={cn(styles.root, dense && styles['root--dense'], error && styles['root--error'])}
+      onMouseEnter={() => setIsEngaged(true)}
+      onMouseLeave={() => setIsEngaged(false)}
+      onFocus={() => setIsEngaged(true)}
+      onBlur={() => setIsEngaged(false)}
+    >
       <input
         type="number"
         inputMode="numeric"
@@ -80,28 +103,31 @@ export function NumberField({
         disabled={disabled}
         onChange={handleChange}
         onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         {...props}
       />
-      <span className={styles.stack}>
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={`Aumentar ${controlLabel}`}
-          disabled={atMax}
-          onClick={() => nudge(step)}
-        >
-          <ChevronUp size={dense ? 9 : 11} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={`Diminuir ${controlLabel}`}
-          disabled={atMin}
-          onClick={() => nudge(-step)}
-        >
-          <ChevronDown size={dense ? 9 : 11} aria-hidden="true" />
-        </button>
-      </span>
+      {showArrows && (
+        <span className={styles.stack}>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Aumentar ${controlLabel}`}
+            disabled={atMax}
+            onClick={() => nudge(step)}
+          >
+            {!dense && <ChevronUp size={11} aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Diminuir ${controlLabel}`}
+            disabled={atMin}
+            onClick={() => nudge(-step)}
+          >
+            {!dense && <ChevronDown size={11} aria-hidden="true" />}
+          </button>
+        </span>
+      )}
     </span>
   )
-}
+})
