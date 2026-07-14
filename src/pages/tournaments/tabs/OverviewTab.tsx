@@ -1,6 +1,7 @@
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
+import { useStandingsQuery } from '../../../features/sports/queries'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
 import { BracketView } from '../parts/BracketView'
@@ -20,8 +21,10 @@ interface OverviewTabProps {
 export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
   const hasLeaders = tournament.leaders.ppg.length > 0
-  const hasGroups = tournament.groups.length > 0
   const hasBracket = tournament.bracket.length > 0
+  // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
+  const { data: envelopes } = useStandingsQuery(tournament.id)
+  const tables = envelopes ?? []
 
   return (
     <>
@@ -29,14 +32,14 @@ export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Grupos</h2>
-          <span className={s.sectionHint}>Top 2 avançam aos playoffs</span>
+          <span className={s.sectionHint}>Ordenação FIBA por pontos de classificação</span>
         </div>
-        {hasGroups ? (
+        {tables.length > 0 ? (
           <div className={s.groupsGrid}>
-            {tournament.groups.map((g) => (
-              <div key={g.id} className={s.standCard}>
-                <div className={s.standCardHead}>{g.name}</div>
-                <StandingsTable rows={g.standings} teams={teams} variant="compact" qualified={2} />
+            {tables.map((envelope) => (
+              <div key={envelope.group?.id ?? tournament.id} className={s.standCard}>
+                <div className={s.standCardHead}>{envelope.group?.name ?? 'Classificação'}</div>
+                <StandingsTable rows={envelope.rows} teams={teams} variant="compact" />
               </div>
             ))}
           </div>

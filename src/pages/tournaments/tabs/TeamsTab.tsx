@@ -3,7 +3,8 @@ import { Badge } from '../../../components/ui/Badge/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { cn } from '../../../components/ui/cn'
 import type { Tournament, StandingRow, Team } from '../../../features/sports/types'
-import { formatDiff, pointDiff } from '../../../features/sports/sportsUtils'
+import { formatDiff } from '../../../features/sports/sportsUtils'
+import { useStandingsQuery } from '../../../features/sports/queries'
 import s from '../tournaments.module.css'
 
 interface TeamsTabProps {
@@ -12,11 +13,12 @@ interface TeamsTabProps {
 }
 
 export function TeamsTab({ tournament, teams }: TeamsTabProps) {
+  const { data: envelopes } = useStandingsQuery(tournament.id)
   const standingsByTeam = useMemo(() => {
     const map = new Map<string, StandingRow>()
-    tournament.groups.forEach((g) => g.standings.forEach((r) => map.set(r.teamId, r)))
+    ;(envelopes ?? []).forEach((envelope) => envelope.rows.forEach((row) => map.set(row.teamId, row)))
     return map
-  }, [tournament])
+  }, [envelopes])
 
   if (tournament.teamIds.length === 0) {
     return (
@@ -45,7 +47,7 @@ export function TeamsTab({ tournament, teams }: TeamsTabProps) {
           {tournament.teamIds.map((teamId) => {
             const team = teams.get(teamId)
             const row = standingsByTeam.get(teamId)
-            const diff = row ? pointDiff(row) : 0
+            const diff = row?.pointDiff ?? 0
             return (
               <tr key={teamId} className={s.tr} style={{ cursor: 'default' }}>
                 <td className={s.td}>

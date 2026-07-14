@@ -20,6 +20,7 @@ const finishedMatch: Match = {
   awayScore: 74,
   status: 'FINISHED',
   statsStatus: 'COMPLETE',
+  tournamentGroupId: null,
   homeLossType: null,
   awayLossType: 'NORMAL',
   scoreSource: 'PERIODS',

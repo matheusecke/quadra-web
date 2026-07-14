@@ -93,12 +93,6 @@ export interface StandingsEnvelope {
   rows: StandingRow[]
 }
 
-export interface Group {
-  id: string
-  name: string // 'Grupo A'
-  standings: StandingRow[]
-}
-
 export interface StatLeader {
   athleteId: string
   athleteName: string
@@ -208,7 +202,6 @@ export interface Tournament {
   statsStatus: StatsStatus
   /** Short regulation summary (mocked). */
   regulation: string
-  groups: Group[]
   leaders: StatLeaders
   bracket: BracketRound[]
   /** Champion team id once the tournament is finished. */

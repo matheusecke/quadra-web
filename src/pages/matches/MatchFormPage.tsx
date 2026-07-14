@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button/Button'
 import { Field } from '../../components/ui/Field/Field'
 import { getTeams } from '../../features/sports/mock-sports-data'
-import { useScheduleMatch, useTournamentsQuery } from '../../features/sports/queries'
+import { useGroupsQuery, useScheduleMatch, useTournamentsQuery } from '../../features/sports/queries'
 import { teamMap } from '../../features/sports/sportsUtils'
 import s from './MatchFormPage.module.css'
 
@@ -17,10 +17,16 @@ export function MatchFormPage() {
   const [tournamentId, setTournamentId] = useState(lockedTournamentId ?? '')
   const [homeTeamId, setHomeTeamId] = useState('')
   const [awayTeamId, setAwayTeamId] = useState('')
+  const [groupId, setGroupId] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [venue, setVenue] = useState('')
   const [phaseLabel, setPhaseLabel] = useState('')
   const [error, setError] = useState('')
+
+  const selectedTournament = tournaments?.find((t) => t.id === tournamentId)
+  const hasGroupStage =
+    selectedTournament?.format === 'GROUP_STAGE' || selectedTournament?.format === 'GROUP_STAGE_KNOCKOUT'
+  const { data: groups } = useGroupsQuery(hasGroupStage ? tournamentId : undefined)
 
   const teamOptions = useMemo(() => {
     const tournament = tournaments?.find((t) => t.id === tournamentId)
@@ -45,6 +51,7 @@ export function MatchFormPage() {
       scheduledAt,
       venue: venue || undefined,
       phaseLabel: phaseLabel || undefined,
+      groupId: groupId || null,
     })
     navigate(`/matches/${created.id}`)
   }
@@ -67,6 +74,7 @@ export function MatchFormPage() {
               setTournamentId(e.target.value)
               setHomeTeamId('')
               setAwayTeamId('')
+              setGroupId('')
             }}
           >
             <option value="" disabled>Selecione o campeonato…</option>
@@ -94,6 +102,17 @@ export function MatchFormPage() {
             </select>
           </Field>
         </div>
+
+        {hasGroupStage && (
+          <Field label="Grupo" id="match-group" hint="Só os jogos de grupo entram na classificação do grupo.">
+            <select id="match-group" className={s.select} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+              <option value="">— sem grupo —</option>
+              {(groups ?? []).map((group) => (
+                <option key={group.id} value={group.id}>{group.name}</option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         <Field
           label="Data e hora"

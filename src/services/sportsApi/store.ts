@@ -269,7 +269,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         updatedAt: new Date().toISOString(),
         statsStatus: 'PENDING',
         regulation: input.regulation ?? '',
-        groups: [],
         leaders: emptyLeaders(),
         bracket: [],
         championTeamId: null,

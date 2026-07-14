@@ -26,7 +26,6 @@ const tournament: Tournament = {
   updatedAt: '2026-06-10T12:00:00.000Z',
   statsStatus: 'PARTIAL',
   regulation: 'Todos contra todos.',
-  groups: [],
   leaders: {
     ppg: [],
     rpg: [],
@@ -50,6 +49,7 @@ const matches: Match[] = [
     status: 'FINISHED',
     venue: 'Ginásio Central',
     statsStatus: 'COMPLETE',
+    tournamentGroupId: null,
     homeLossType: null,
     awayLossType: 'NORMAL',
     scoreSource: 'PERIODS',
@@ -66,6 +66,7 @@ const matches: Match[] = [
     status: 'SCHEDULED',
     venue: 'Arena Metropolitana',
     statsStatus: 'PARTIAL',
+    tournamentGroupId: null,
     homeLossType: null,
     awayLossType: null,
     scoreSource: null,

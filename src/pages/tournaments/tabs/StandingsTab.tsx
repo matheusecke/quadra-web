@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import { cn } from '../../../components/ui/cn'
+import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
+import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
+import { StandingsCard } from '../../../features/sports/components/StandingsCard'
+import { useClearTiebreakOrder, useSetTiebreakOrder, useStandingsQuery } from '../../../features/sports/queries'
+import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import type { Tournament, Team } from '../../../features/sports/types'
-import { consolidatedStandings } from '../../../features/sports/sportsUtils'
-import { StandingsTable } from '../parts/StandingsTable'
 import s from '../tournaments.module.css'
 
 interface StandingsTabProps {
@@ -11,55 +13,61 @@ interface StandingsTabProps {
   teams: Map<string, Team>
 }
 
+/**
+ * The classification of a LEAGUE — the only format where the tournament is a single group and
+ * the general table *is* the official classification (UI spec §7.5). Formats with a group stage
+ * show their tables inside the Grupos tab, and a pure knockout has no classification at all.
+ */
 export function StandingsTab({ tournament, teams }: StandingsTabProps) {
-  const hasGroups = tournament.groups.length > 0
-  const multiGroup = tournament.groups.length > 1
-  // 'all' = consolidated; otherwise a group id.
-  const [view, setView] = useState<string>(multiGroup ? 'all' : (tournament.groups[0]?.id ?? 'all'))
+  const isOrgAdmin = useIsOrgAdmin()
+  const { data: envelopes, isPending, isError, refetch } = useStandingsQuery(tournament.id)
+  const setTiebreak = useSetTiebreakOrder()
+  const clearTiebreak = useClearTiebreakOrder()
+  const [tiebreakError, setTiebreakError] = useState('')
 
-  if (!hasGroups) {
+  if (isPending) {
     return (
       <div className={s.tabEmpty}>
-        <EmptyState title="Classificação indisponível." description="A tabela aparece quando os grupos e jogos forem definidos." />
+        <Skeleton width="100%" height={240} />
       </div>
     )
   }
 
-  const activeGroup = tournament.groups.find((g) => g.id === view)
+  if (isError) {
+    return (
+      <div className={s.tabEmpty}>
+        <ErrorState title="Não foi possível carregar a classificação." onRetry={() => refetch()} />
+      </div>
+    )
+  }
+
+  const envelope = envelopes?.[0]
+  if (!envelope) {
+    return (
+      <div className={s.tabEmpty}>
+        <EmptyState title="Classificação indisponível." description="A tabela aparece quando houver equipes inscritas." />
+      </div>
+    )
+  }
 
   return (
-    <>
-      {multiGroup && (
-        <div className={s.sectionHead}>
-          <div className={s.segmented}>
-            <button type="button" className={cn(s.segBtn, view === 'all' && s.segActive)} onClick={() => setView('all')}>
-              Consolidada
-            </button>
-            {tournament.groups.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className={cn(s.segBtn, view === g.id && s.segActive)}
-                onClick={() => setView(g.id)}
-              >
-                {g.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className={s.standCard}>
-        <div className={s.standCardHead}>
-          {view === 'all' ? 'Classificação consolidada' : (activeGroup?.name ?? 'Classificação')}
-        </div>
-        <StandingsTable
-          rows={view === 'all' ? consolidatedStandings(tournament) : (activeGroup?.standings ?? [])}
-          teams={teams}
-          variant="full"
-          qualified={view === 'all' ? 4 : 2}
-        />
-      </div>
-    </>
+    <StandingsCard
+      envelope={envelope}
+      teams={teams}
+      isOrgAdmin={isOrgAdmin}
+      errorMessage={tiebreakError}
+      onSetTiebreakOrder={async (entries) => {
+        try {
+          await setTiebreak.mutateAsync({ tournamentId: tournament.id, entries })
+          setTiebreakError('')
+        } catch {
+          setTiebreakError('A composição do empate mudou. Recarregue a classificação.')
+          await refetch()
+        }
+      }}
+      onClearTiebreakOrder={async (blockKey) => {
+        await clearTiebreak.mutateAsync({ tournamentId: tournament.id, blockKey })
+      }}
+    />
   )
 }
