@@ -37,3 +37,6 @@ export { Skeleton } from './Skeleton'
 
 export { PasswordInput } from './PasswordInput'
 export type { PasswordInputProps } from './PasswordInput'
+
+export { Combobox } from './Combobox'
+export type { ComboboxOption, ComboboxProps } from './Combobox'
