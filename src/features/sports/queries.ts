@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import type {
+  AssignGroupTeamInput,
+  ClearTiebreakOrderInput,
   CreateCategoryInput,
+  CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
   RosterEntryInput,
   ScheduleMatchInput,
+  SetTiebreakOrderInput,
   SubmitMatchResultInput,
   UpdateTournamentInput,
 } from '../../services/sportsApi/types'
@@ -41,6 +45,17 @@ export const athleteKeys = {
   summary: (id: string) => [...athleteKeys.all, 'summary', id] as const,
   matches: (id: string) => [...athleteKeys.all, 'matches', id] as const,
   tournaments: (id: string) => [...athleteKeys.all, 'tournaments', id] as const,
+}
+
+export const groupKeys = {
+  all: ['groups'] as const,
+  list: (tournamentId: string) => ['groups', tournamentId] as const,
+  teams: (tournamentId: string) => ['groups', tournamentId, 'teams'] as const,
+}
+
+export const standingsKeys = {
+  all: ['standings'] as const,
+  list: (tournamentId: string) => ['standings', tournamentId] as const,
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -112,6 +127,31 @@ export function useAthleteTournamentStatsQuery(id: string | undefined) {
   return useQuery({ queryKey: athleteKeys.tournaments(id ?? ''), queryFn: () => sportsApi.getAthleteTournamentStats(id as string), enabled: Boolean(id) })
 }
 
+export function useGroupsQuery(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: groupKeys.list(tournamentId ?? ''),
+    queryFn: () => sportsApi.getGroups(tournamentId as string),
+    enabled: Boolean(tournamentId),
+  })
+}
+
+export function useGroupTeamsQuery(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: groupKeys.teams(tournamentId ?? ''),
+    queryFn: () => sportsApi.getGroupTeams(tournamentId as string),
+    enabled: Boolean(tournamentId),
+  })
+}
+
+/** One request, N tables. The rows arrive ranked — nothing here sorts. */
+export function useStandingsQuery(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: standingsKeys.list(tournamentId ?? ''),
+    queryFn: () => sportsApi.listStandings(tournamentId as string),
+    enabled: Boolean(tournamentId),
+  })
+}
+
 // ── Mutations ────────────────────────────────────────────────────────────────
 
 export function useCreateSeason() {
@@ -175,7 +215,10 @@ export function useScheduleMatch() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ScheduleMatchInput) => sportsApi.scheduleMatch(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: matchKeys.all }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
   })
 }
 
@@ -183,6 +226,64 @@ export function useSubmitMatchResult() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: SubmitMatchResultInput) => sportsApi.submitMatchResult(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: matchKeys.all }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useCreateGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateGroupInput) => sportsApi.createGroup(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useAssignTeamToGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: AssignGroupTeamInput) => sportsApi.assignTeamToGroup(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useRemoveGroupTeam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => sportsApi.removeGroupTeam(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useSetTiebreakOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: SetTiebreakOrderInput) => sportsApi.setTiebreakOrder(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useClearTiebreakOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ClearTiebreakOrderInput) => sportsApi.clearTiebreakOrder(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
   })
 }
