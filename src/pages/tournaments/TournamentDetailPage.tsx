@@ -24,17 +24,10 @@ import {
 import { OverviewTab } from './tabs/OverviewTab'
 import { TeamsTab } from './tabs/TeamsTab'
 import { MatchesTab } from './tabs/MatchesTab'
+import { GroupsTab } from './tabs/GroupsTab'
 import { StandingsTab } from './tabs/StandingsTab'
 import { StatsTab } from './tabs/StatsTab'
 import s from './tournaments.module.css'
-
-const TABS: TabItem[] = [
-  { id: 'overview', label: 'Visão geral' },
-  { id: 'teams', label: 'Equipes' },
-  { id: 'matches', label: 'Partidas' },
-  { id: 'standings', label: 'Classificação' },
-  { id: 'stats', label: 'Estatísticas' },
-]
 
 export function TournamentDetailPage() {
   const { tournamentId } = useParams<{ tournamentId: string }>()
@@ -159,6 +152,17 @@ export function TournamentDetailPage() {
 
   const allMatches = matches ?? []
 
+  // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
+  const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
+  const tabs: TabItem[] = [
+    { id: 'overview', label: 'Visão geral' },
+    { id: 'teams', label: 'Equipes' },
+    ...(hasGroupStage ? [{ id: 'groups', label: 'Grupos' }] : []),
+    { id: 'matches', label: 'Partidas' },
+    ...(tournament.format === 'LEAGUE' ? [{ id: 'standings', label: 'Classificação' }] : []),
+    { id: 'stats', label: 'Estatísticas' },
+  ]
+
   return (
     <div className={s.page}>
       <div className={s.detailHeader}>
@@ -204,7 +208,7 @@ export function TournamentDetailPage() {
         </div>
 
         <div className={s.tabsBar}>
-          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="line" />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="line" />
         </div>
       </div>
 
@@ -252,6 +256,7 @@ export function TournamentDetailPage() {
             <TeamsTab tournament={tournament} teams={teams} />
           </div>
         )}
+        {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
           <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
         )}

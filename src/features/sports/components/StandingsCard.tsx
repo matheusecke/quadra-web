@@ -15,10 +15,12 @@ export interface StandingsCardProps {
   onClearTiebreakOrder: (blockKey: string) => Promise<void>
   errorMessage?: string
   headerAction?: ReactNode
+  /** Rendered in the same row action slot, only for rows with no tieBlockKey (e.g. "Remover do grupo"). */
+  renderExtraRowAction?: (row: StandingRow) => ReactNode
 }
 
 export function StandingsCard({
-  envelope, teams, isOrgAdmin, onSetTiebreakOrder, onClearTiebreakOrder, errorMessage, headerAction,
+  envelope, teams, isOrgAdmin, onSetTiebreakOrder, onClearTiebreakOrder, errorMessage, headerAction, renderExtraRowAction,
 }: StandingsCardProps) {
   const [openBlockKey, setOpenBlockKey] = useState<string | null>(null)
   const { group, standingsState, pendingMatches, rows } = envelope
@@ -27,13 +29,16 @@ export function StandingsCard({
   const isBlockResolved = (blockKey: string) => blockRows(blockKey).every((row) => !row.isTiedUnresolved)
 
   const renderRowAction = (row: StandingRow): ReactNode => {
-    if (!isOrgAdmin || !row.tieBlockKey) return null
-    const resolved = !row.isTiedUnresolved
-    return (
-      <Button type="button" variant="ghost" size="sm" onClick={() => setOpenBlockKey(row.tieBlockKey)}>
-        {resolved ? '✓ sorteio · refazer' : 'Registrar sorteio'}
-      </Button>
-    )
+    if (row.tieBlockKey) {
+      if (!isOrgAdmin) return null
+      const resolved = !row.isTiedUnresolved
+      return (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpenBlockKey(row.tieBlockKey)}>
+          {resolved ? '✓ sorteio · refazer' : 'Registrar sorteio'}
+        </Button>
+      )
+    }
+    return renderExtraRowAction?.(row) ?? null
   }
 
   return (
