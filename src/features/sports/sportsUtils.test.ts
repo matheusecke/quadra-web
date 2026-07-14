@@ -2,9 +2,39 @@ import { describe, expect, it } from 'vitest'
 import {
   MATCH_STATUS_LABELS,
   TOURNAMENT_STATUS_LABELS,
+  formatDiff,
+  formatPct,
   matchStatusVariant,
   tournamentStatusVariant,
 } from './sportsUtils'
+import type { StandingRow } from './types'
+
+const row = (over: Partial<StandingRow>): StandingRow => ({
+  position: 1, tournamentTeamId: 'tt-1', teamId: 'team-1', teamName: 'Alfa',
+  played: 4, wins: 3, losses: 1, classificationPoints: 7,
+  pointsFor: 312, pointsAgainst: 288, pointDiff: 24, winPct: 0.75,
+  isTiedUnresolved: false, tieBlockKey: null, ...over,
+})
+
+describe('formatPct', () => {
+  it('formats the win percentage the row carries, basketball style', () => {
+    expect(formatPct(row({}))).toBe('.750')
+  })
+
+  it('renders a dash when the row was never measured — never 0%', () => {
+    expect(formatPct(row({ played: 0, wins: 0, losses: 0, winPct: null }))).toBe('—')
+  })
+})
+
+describe('formatDiff', () => {
+  it('reads the differential the data layer computed instead of re-deriving it', () => {
+    expect(formatDiff(row({ pointsFor: 150, pointsAgainst: 140, pointDiff: 24 }))).toBe('+24')
+  })
+
+  it('keeps the sign of a negative differential', () => {
+    expect(formatDiff(row({ pointDiff: -8 }))).toBe('-8')
+  })
+})
 
 describe('TOURNAMENT_STATUS_LABELS', () => {
   it('labels every tournament status in PT-BR', () => {

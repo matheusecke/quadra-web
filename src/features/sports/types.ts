@@ -59,14 +59,38 @@ export interface Athlete {
   status: AthleteStatus
 }
 
+export type StandingsState = 'EMPTY' | 'PARTIAL' | 'FINAL'
+
+/** One row of a classification table, ranked by the server. The UI never re-orders it. §8.7 */
 export interface StandingRow {
+  /** null if and only if standingsState === 'EMPTY'. */
+  position: number | null
+  tournamentTeamId: string
   teamId: string
-  position: number
+  /** display_name_snapshot — the name at enrollment time. */
+  teamName: string
   played: number
   wins: number
   losses: number
+  /** FIBA D.1.1: 2 win / 1 loss / 0 loss by W.O. This is the ordering criterion. */
+  classificationPoints: number
   pointsFor: number
   pointsAgainst: number
+  pointDiff: number
+  /** null whenever played === 0 — never 0. Display only, never an ordering key. */
+  winPct: number | null
+  /** Every criterion was exhausted and no draw is recorded for this block. */
+  isTiedUnresolved: boolean
+  /** Shared by every row of the same tie block, resolved or not. null outside a block. */
+  tieBlockKey: string | null
+}
+
+/** One classification table: a group, or the whole tournament in LEAGUE. §8.7 */
+export interface StandingsEnvelope {
+  group: { id: string; name: string } | null
+  standingsState: StandingsState
+  pendingMatches: number
+  rows: StandingRow[]
 }
 
 export interface Group {
@@ -116,6 +140,8 @@ export interface Match {
   status: MatchStatus
   venue?: string
   statsStatus: StatsStatus
+  /** Set when the match belongs to a group stage; null for league and knockout games. */
+  tournamentGroupId: string | null
   /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
   homeLossType: LossType | null
   awayLossType: LossType | null

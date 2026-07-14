@@ -20,50 +20,20 @@ import type {
   Team,
 } from './types'
 
-// ── Standings calculations ──────────────────────────────────────────────────
+// ── Standings formatting ────────────────────────────────────────────────────
+// The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
+// Appendix D). Rows arrive ranked, with pointDiff and winPct already resolved —
+// recomputing them here would be the client re-deriving a server decision.
 
-/** Point differential (saldo de pontos). */
-export function pointDiff(row: StandingRow): number {
-  return row.pointsFor - row.pointsAgainst
-}
-
-/** Win percentage (aproveitamento) as 0–1; guards against 0 games. */
-export function winPct(row: StandingRow): number {
-  return row.played === 0 ? 0 : row.wins / row.played
-}
-
-/** Format a win percentage as a `.XXX` string, basketball convention. */
+/** Format a win percentage as a `.XXX` string, basketball convention. `—` when unmeasured. */
 export function formatPct(row: StandingRow): string {
-  if (row.played === 0) return '—'
-  return winPct(row).toFixed(3).replace(/^0/, '')
+  if (row.winPct === null) return '—'
+  return row.winPct.toFixed(3).replace(/^0/, '')
 }
 
 /** Format a signed point differential, e.g. `+42`, `-8`, `0`. */
 export function formatDiff(row: StandingRow): string {
-  const d = pointDiff(row)
-  return d > 0 ? `+${d}` : `${d}`
-}
-
-/**
- * Sort standings by tournament tie-break order:
- * wins → point differential → points for.
- * Returns a new array with `position` reassigned.
- */
-export function rankStandings(rows: StandingRow[]): StandingRow[] {
-  return [...rows]
-    .sort(
-      (a, b) =>
-        b.wins - a.wins ||
-        pointDiff(b) - pointDiff(a) ||
-        b.pointsFor - a.pointsFor,
-    )
-    .map((row, i) => ({ ...row, position: i + 1 }))
-}
-
-/** Consolidated standings across all groups, re-ranked into a single table. */
-export function consolidatedStandings(tournament: Tournament): StandingRow[] {
-  const all = tournament.groups.flatMap((g) => g.standings)
-  return rankStandings(all)
+  return row.pointDiff > 0 ? `+${row.pointDiff}` : `${row.pointDiff}`
 }
 
 // ── Match helpers ─────────────────────────────────────────────────────────────
