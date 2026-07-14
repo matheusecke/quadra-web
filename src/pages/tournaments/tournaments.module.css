@@ -707,6 +707,10 @@
   text-align: left;
 }
 
+.standTable th.standPtsCol {
+  background: var(--surface-2);
+}
+
 .standTable td {
   padding: 7px 8px;
   text-align: right;
@@ -728,11 +732,6 @@
   color: var(--muted-3);
   text-align: center;
   width: 26px;
-}
-
-.standQualified .standPos {
-  color: var(--accent);
-  font-weight: 600;
 }
 
 .standTeam {
@@ -761,12 +760,47 @@
   font-family: var(--font-mono);
 }
 
+.standPts {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
 .posDiff {
   color: var(--status-ok);
 }
 
 .negDiff {
   color: var(--status-live);
+}
+
+.standTied {
+  background: var(--status-warn-bg);
+}
+
+.standTieChip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: var(--type-micro-tracking);
+  text-transform: uppercase;
+  color: var(--status-warn);
+  background: var(--surface);
+}
+
+.standAction {
+  text-align: right;
+}
+
+.standLegend {
+  margin: 8px 2px 0;
+  font-size: 10px;
+  color: var(--muted-3);
 }
 
 /* ── Group selector (standings tab) ── */

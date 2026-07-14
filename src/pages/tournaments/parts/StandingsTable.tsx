@@ -1,19 +1,20 @@
+import type { ReactNode } from 'react'
 import type { StandingRow, Team } from '../../../features/sports/types'
 import { cn } from '../../../components/ui/cn'
-import { formatDiff, formatPct, pointDiff, rankStandings } from '../../../features/sports/sportsUtils'
+import { formatDiff, formatPct } from '../../../features/sports/sportsUtils'
 import s from '../tournaments.module.css'
 
 interface StandingsTableProps {
+  /** Already ranked by the data layer (FIBA Appendix D). This component never sorts. */
   rows: StandingRow[]
   teams: Map<string, Team>
-  /** 'compact' (overview) hides PF/PA/% ; 'full' (standings tab) shows all. */
+  /** 'compact' (overview) hides PP/PC/% ; 'full' (standings tab) shows all. */
   variant?: 'compact' | 'full'
-  /** Top N positions flagged as qualified for the playoffs. */
-  qualified?: number
+  /** Rendered in the row's action slot — used for the draw affordance. */
+  renderRowAction?: (row: StandingRow) => ReactNode
 }
 
-export function StandingsTable({ rows, teams, variant = 'compact', qualified = 2 }: StandingsTableProps) {
-  const ranked = rankStandings(rows)
+export function StandingsTable({ rows, teams, variant = 'compact', renderRowAction }: StandingsTableProps) {
   const full = variant === 'full'
 
   return (
@@ -26,37 +27,42 @@ export function StandingsTable({ rows, teams, variant = 'compact', qualified = 2
             <th>J</th>
             <th>V</th>
             <th>D</th>
+            <th className={s.standPtsCol}>PTS</th>
             {full && <th>PP</th>}
             {full && <th>PC</th>}
             <th>Saldo</th>
             {full && <th>%</th>}
+            {renderRowAction && <th aria-label="Ações" />}
           </tr>
         </thead>
         <tbody>
-          {ranked.map((row) => {
+          {rows.map((row) => {
             const team = teams.get(row.teamId)
-            const diff = pointDiff(row)
             return (
-              <tr key={row.teamId} className={cn(row.position <= qualified && s.standQualified)}>
-                <td className={s.standPos}>{row.position}</td>
+              <tr key={row.teamId} className={cn(row.isTiedUnresolved && s.standTied)}>
+                <td className={s.standPos}>{row.position ?? '—'}</td>
                 <td className={s.standTeam}>
-                  <span className={s.standTeamName}>{team?.name ?? '—'}</span>
+                  <span className={s.standTeamName}>{team?.name ?? row.teamName}</span>
                   <span className={s.standTeamTag}>{team?.shortName}</span>
+                  {row.isTiedUnresolved && <span className={s.standTieChip}>⇅ empate</span>}
                 </td>
                 <td className={s.numCell}>{row.played}</td>
                 <td className={s.numCell}>{row.wins}</td>
                 <td className={s.numCell}>{row.losses}</td>
+                <td className={cn(s.numCell, s.standPts)}>{row.classificationPoints}</td>
                 {full && <td className={s.numCell}>{row.pointsFor}</td>}
                 {full && <td className={s.numCell}>{row.pointsAgainst}</td>}
-                <td className={cn(s.numCell, diff > 0 && s.posDiff, diff < 0 && s.negDiff)}>
+                <td className={cn(s.numCell, row.pointDiff > 0 && s.posDiff, row.pointDiff < 0 && s.negDiff)}>
                   {formatDiff(row)}
                 </td>
                 {full && <td className={s.numCell}>{formatPct(row)}</td>}
+                {renderRowAction && <td className={s.standAction}>{renderRowAction(row)}</td>}
               </tr>
             )
           })}
         </tbody>
       </table>
+      <p className={s.standLegend}>PTS = 2 vitória · 1 derrota · 0 derrota por W.O.</p>
     </div>
   )
 }
