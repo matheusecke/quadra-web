@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import popover from '../Combobox/Combobox.module.css'
 import s from './SearchSelect.module.css'
 
 export type SearchSelectOption = {
@@ -99,28 +100,41 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
         )}
       </div>
       {isOpen && (
-        <div className={s.dropdown} role="listbox">
+        <div className={popover.popover}>
           {isLoading && (
-            <div className={s.dropMessage}><span className={s.muted}>Buscando...</span></div>
+            <p className={s.loading}>Buscando...</p>
           )}
           {!isLoading && isError && (
-            <div className={s.dropMessage}><span className={s.muted}>Erro ao buscar. Tente novamente.</span></div>
+            <p className={popover.empty}>Erro ao buscar. Tente novamente.</p>
           )}
           {!isLoading && !isError && results.length === 0 && (
-            <div className={s.dropMessage}><span className={s.muted}>Nenhum resultado encontrado.</span></div>
+            <p className={popover.empty}>Nenhum resultado encontrado.</p>
           )}
-          {!isLoading && !isError && results.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              className={s.dropItem}
-              aria-selected={value?.id === opt.id}
-              onClick={() => handleSelect(opt)}
-            >
-              <span className={s.optLabel}>{opt.label}</span>
-              {opt.secondary && <span className={s.optSecondary}>{opt.secondary}</span>}
-            </button>
-          ))}
+          {!isLoading && !isError && results.length > 0 && (
+            <ul className={popover.list} role="listbox">
+              {results.map((opt) => (
+                <li
+                  key={opt.id}
+                  role="option"
+                  className={popover.option}
+                  aria-selected={value?.id === opt.id}
+                  tabIndex={0}
+                  onClick={() => handleSelect(opt)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleSelect(opt)
+                    }
+                  }}
+                >
+                  <span className={popover.optionLabel}>
+                    {opt.label}
+                    {opt.secondary && <span className={popover.secondary}>{opt.secondary}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
