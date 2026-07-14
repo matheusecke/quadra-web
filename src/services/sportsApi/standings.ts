@@ -35,8 +35,12 @@ const emptyTally = (): Tally => ({ played: 0, wins: 0, losses: 0, pointsFor: 0, 
 
 const diff = (t: Tally) => t.pointsFor - t.pointsAgainst
 
+/** A match belongs to this table only when both of its teams do — a team removed from the
+ *  group leaves fixtures behind, and they are no longer games of this classification. */
+const isInScope = (m: Match, ids: Set<string>) => ids.has(m.homeTeamId) && ids.has(m.awayTeamId)
+
 const isFinished = (m: Match, ids: Set<string>) =>
-  m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null && ids.has(m.homeTeamId) && ids.has(m.awayTeamId)
+  m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null && isInScope(m, ids)
 
 /** Tallies only the finished matches played between the given teams. */
 function tally(teamIds: Set<string>, matches: Match[]): Map<string, Tally> {
@@ -86,7 +90,7 @@ export function computeStandings(
   const byId = new Map(teams.map((t) => [t.teamId, t]))
   const allIds = new Set(byId.keys())
 
-  const pendingMatches = matches.filter((m) => PENDING_STATUSES.includes(m.status)).length
+  const pendingMatches = matches.filter((m) => PENDING_STATUSES.includes(m.status) && isInScope(m, allIds)).length
   const finishedCount = matches.filter((m) => isFinished(m, allIds)).length
   const standingsState = finishedCount === 0 ? 'EMPTY' : pendingMatches > 0 ? 'PARTIAL' : 'FINAL'
 

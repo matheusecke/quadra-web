@@ -394,6 +394,16 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
     },
     scheduleMatch(input: ScheduleMatchInput): Match {
+      // A match filed into a group its two teams do not share would enter no classification
+      // table at all — the ranking only counts a match when both sides are in the scope.
+      if (input.groupId) {
+        const inGroup = (teamId: string) =>
+          tournamentGroupTeams.some((gt) => isActive(gt) && gt.groupId === input.groupId && gt.teamId === teamId)
+        if (!inGroup(input.homeTeamId) || !inGroup(input.awayTeamId)) {
+          throw new Error('Both teams must belong to the group of the match')
+        }
+      }
+
       const match: Match = {
         id: nextId('match'),
         tournamentId: input.tournamentId,

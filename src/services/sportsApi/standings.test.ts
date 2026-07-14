@@ -107,6 +107,17 @@ describe('computeStandings — FIBA Appendix D', () => {
     expect(envelope.pendingMatches).toBe(1)
   })
 
+  // A team removed from the group leaves its fixtures behind, still tagged to it. They are
+  // not games of this table any more — counting them would pin the group to PARTIAL forever.
+  it('ignores a pending match played by a team outside the scope', () => {
+    const envelope = computeStandings(teams('A', 'B'), [
+      played('A', 70, 'B', 60),
+      scheduled('A', 'Z'), // Z was removed from the group
+    ])
+    expect(envelope.pendingMatches).toBe(0)
+    expect(envelope.standingsState).toBe('FINAL')
+  })
+
   it('is FINAL when the only unplayed match was cancelled — CANCELLED is not pending', () => {
     const envelope = computeStandings(teams('A', 'B'), [
       played('A', 70, 'B', 60),

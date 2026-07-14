@@ -44,16 +44,24 @@ export function MatchFormPage() {
       return
     }
     setError('')
-    const created = await scheduleMatch.mutateAsync({
-      tournamentId,
-      homeTeamId,
-      awayTeamId,
-      scheduledAt,
-      venue: venue || undefined,
-      phaseLabel: phaseLabel || undefined,
-      groupId: groupId || null,
-    })
-    navigate(`/matches/${created.id}`)
+    try {
+      const created = await scheduleMatch.mutateAsync({
+        tournamentId,
+        homeTeamId,
+        awayTeamId,
+        scheduledAt,
+        venue: venue || undefined,
+        phaseLabel: phaseLabel || undefined,
+        groupId: groupId || null,
+      })
+      navigate(`/matches/${created.id}`)
+    } catch {
+      setError(
+        groupId
+          ? 'As duas equipes precisam estar no grupo escolhido. Deixe "sem grupo" para um jogo de mata-mata.'
+          : 'Não foi possível agendar a partida. Tente novamente.',
+      )
+    }
   }
 
   return (

@@ -38,7 +38,22 @@ describe('groups store', () => {
   it('persists the group on a scheduled match', () => {
     const { store, tournamentId } = freshTournament()
     const a = store.createGroup({ tournamentId, name: 'Grupo A' })
+    store.assignTeamToGroup({ tournamentId, groupId: a.id, teamId: 'team-1' })
+    store.assignTeamToGroup({ tournamentId, groupId: a.id, teamId: 'team-2' })
     const m = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00', groupId: a.id })
     expect(m.tournamentGroupId).toBe(a.id)
+  })
+
+  // A match filed into a group its teams do not both belong to would enter no classification
+  // table at all: the engine only counts a match when both sides are in the scope.
+  it('rejects a match filed into a group that is not the group of both teams', () => {
+    const { store, tournamentId } = freshTournament()
+    const a = store.createGroup({ tournamentId, name: 'Grupo A' })
+    const b = store.createGroup({ tournamentId, name: 'Grupo B' })
+    store.assignTeamToGroup({ tournamentId, groupId: a.id, teamId: 'team-1' })
+    store.assignTeamToGroup({ tournamentId, groupId: b.id, teamId: 'team-2' })
+    expect(() =>
+      store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00', groupId: a.id }),
+    ).toThrow(/both teams must belong to the group/i)
   })
 })
