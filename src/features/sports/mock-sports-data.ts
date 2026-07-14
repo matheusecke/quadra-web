@@ -164,7 +164,7 @@ const PUC_ATHLETES: Athlete[] = [
 
 const ATHLETES_BY_TEAM: Record<string, Athlete[]> = Object.fromEntries(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
 let matchSeq=0
-function mkMatch(tournamentId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{const isFinished=status==='FINISHED';return{id:id??`m${++matchSeq}`,tournamentId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
+function mkMatch(tournamentId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{const isFinished=status==='FINISHED';return{id:id??`m${++matchSeq}`,tournamentId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus,tournamentGroupId:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
 function group(id:string,name:string,rows:Array<[string,number,number,number,number,number]>):Group{return{id,name,standings:rows.map(([teamId,played,wins,losses,pf,pa],i)=>({teamId,position:i+1,played,wins,losses,pointsFor:pf,pointsAgainst:pa}))}}
 function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,plusMinus:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:`mock-roster-${a.currentTeamId}-${a.id}`,athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,plusMinus,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
@@ -255,6 +255,29 @@ const invernoMatches: Match[] = [
 ]
 const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'REGISTRATION', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, groups: invernoGroups, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, bracket: [], championTeamId: null }
 export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
+
+/** Group membership of the demo tournaments, seeded into the store (UI spec §7.4). The
+ *  classification itself is not seeded: it is derived from the matches, which already exist. */
+export const seedGroupMembership = [
+  ...geralGroups.map((g) => ({ tournamentId: GERAL, groupName: g.name, teamIds: g.standings.map((row) => row.teamId) })),
+  ...invernoGroups.map((g) => ({ tournamentId: INVERNO, groupName: g.name, teamIds: g.standings.map((row) => row.teamId) })),
+]
+
+const GROUP_PHASE = 'Fase de grupos'
+
+const seedGroupNameOf = (tournamentId: string, teamId: string): string | null =>
+  seedGroupMembership.find((g) => g.tournamentId === tournamentId && g.teamIds.includes(teamId))?.groupName ?? null
+
+/** A match belongs to a group only when it is a group-phase game between two teams of the same
+ *  group. The phase is what excludes the knockout rounds: both demo tournaments have bracket
+ *  games between teams that shared a group (Inverno's semifinals do), and those are not group
+ *  games. The id shape is the one `sportsApi/index.ts` rebuilds for the store seed. */
+const seedGroupIdOf = (match: Match): string | null => {
+  if (match.phase !== GROUP_PHASE) return null
+  const home = seedGroupNameOf(match.tournamentId, match.homeTeamId)
+  const away = seedGroupNameOf(match.tournamentId, match.awayTeamId)
+  return home && home === away ? `seed-group-${match.tournamentId}-${home}` : null
+}
 // Stable scheduled match used to demo/record a súmula (two teams with rostered athletes).
 const sumulaSeedMatch = mkMatch(INVERNO, 'Fase de grupos', '2026-07-04T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'match-1')
 const abandonedSeedMatch = mkMatch('read-model-fixtures', 'Fase de grupos', '2026-07-05T19:00:00', 'puc-time-3', 'puc-time-4', 2, 0, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'match-abandoned')
@@ -264,6 +287,7 @@ const forfeitSeedMatch = mkMatch('read-model-fixtures', 'Fase de grupos', '2026-
 forfeitSeedMatch.awayLossType = 'FORFEIT'
 forfeitSeedMatch.scoreSource = 'AWARDED'
 export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaSeedMatch, abandonedSeedMatch, forfeitSeedMatch]
+  .map((match) => ({ ...match, tournamentGroupId: seedGroupIdOf(match) }))
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
 const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }> = {

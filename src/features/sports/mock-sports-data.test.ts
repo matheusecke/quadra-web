@@ -6,8 +6,33 @@ import {
   getTournamentById,
   getTournaments,
   MOCK_TEAMS,
+  seedGroupMembership,
+  seedMatches,
 } from './mock-sports-data'
 import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
+
+describe('seeded group membership', () => {
+  it('puts every enrolled team of the demo tournaments in exactly one group', () => {
+    const geral = seedGroupMembership.filter((g) => g.tournamentId === 'puc-geral-2026')
+    const teamIds = geral.flatMap((g) => g.teamIds)
+    expect(geral.map((g) => g.groupName)).toEqual(['Grupo A', 'Grupo B', 'Grupo C', 'Grupo D'])
+    expect(new Set(teamIds).size).toBe(16)
+  })
+
+  it('tags group-stage matches with their group and leaves knockout games ungrouped', () => {
+    const geralMatches = seedMatches.filter((m) => m.tournamentId === 'puc-geral-2026')
+    expect(geralMatches.filter((m) => m.tournamentGroupId !== null)).toHaveLength(24)
+    expect(seedMatches.find((m) => m.id === 'puc-geral-m31')?.tournamentGroupId).toBeNull() // the final
+  })
+
+  // Inverno's semifinal pairs two teams of the same group, so "same group on both sides"
+  // is not enough on its own to call a match a group match.
+  it('leaves a knockout game between two teams of the same group ungrouped', () => {
+    const semifinal = seedMatches.find((m) => m.id === 'puc-inverno-m13')
+    expect(semifinal?.phase).toBe('Semifinais')
+    expect(semifinal?.tournamentGroupId).toBeNull()
+  })
+})
 
 describe('PUC sports mock data', () => {
   it('exposes exactly 2 tournaments', () => {

@@ -8,13 +8,14 @@ import {
   getMatchDetailById,
   getTeams,
   seedCategories,
+  seedGroupMembership,
   seedMatches,
   seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import type { MatchDetail, StandingsEnvelope } from '../../features/sports/types'
 import { createSportsStore } from './store'
-import type { RosterEntry, TournamentTeam } from './store'
+import type { RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -62,6 +63,23 @@ const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournament
     })),
 )
 
+/** Same id shape the mock stamps on its group matches — the two sides agree without a lookup table. */
+const seedTournamentGroups: TournamentGroup[] = seedGroupMembership.map((g) => ({
+  id: `seed-group-${g.tournamentId}-${g.groupName}`,
+  tournamentId: g.tournamentId,
+  name: g.groupName,
+  sortOrder: g.groupName.charCodeAt(g.groupName.length - 1),
+}))
+
+const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flatMap((g) =>
+  g.teamIds.map((teamId) => ({
+    id: `seed-group-team-${g.tournamentId}-${g.groupName}-${teamId}`,
+    tournamentId: g.tournamentId,
+    groupId: `seed-group-${g.tournamentId}-${g.groupName}`,
+    teamId,
+  })),
+)
+
 const store = createSportsStore({
   seasons: seedSeasons,
   categories: seedCategories,
@@ -69,6 +87,8 @@ const store = createSportsStore({
   matches: seedMatches,
   tournamentTeams: seedTournamentTeams,
   rosterEntries: seedRosterEntries,
+  tournamentGroups: seedTournamentGroups,
+  tournamentGroupTeams: seedTournamentGroupTeams,
   matchDetails: seedMatchDetails,
 })
 
