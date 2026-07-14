@@ -20,7 +20,15 @@ const zeroLine = (): PlayerStatInput => ({
   reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0,
 })
 
-export function initBoxScoreState({ tournamentRosterIds, regularPeriods }: { tournamentRosterIds: string[]; regularPeriods: number }): BoxScoreState {
+export function initBoxScoreState({
+  tournamentRosterIds,
+  regularPeriods,
+  mvpTournamentRosterId = null,
+}: {
+  tournamentRosterIds: string[]
+  regularPeriods: number
+  mvpTournamentRosterId?: string | null
+}): BoxScoreState {
   const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, i) => ({
     periodNumber: i + 1,
     type: 'REGULAR',
@@ -30,7 +38,7 @@ export function initBoxScoreState({ tournamentRosterIds, regularPeriods }: { tou
   }))
   const lines: Record<string, PlayerStatInput> = {}
   for (const id of tournamentRosterIds) lines[id] = zeroLine()
-  return { periods, lines, mvpTournamentRosterId: null }
+  return { periods, lines, mvpTournamentRosterId }
 }
 
 export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): BoxScoreState {

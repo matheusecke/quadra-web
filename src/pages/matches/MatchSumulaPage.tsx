@@ -108,7 +108,11 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
   const [state, dispatch] = useReducer(
     boxScoreReducer,
-    { tournamentRosterIds: [...homeIds, ...awayIds], regularPeriods: 4 },
+    {
+      tournamentRosterIds: [...homeIds, ...awayIds],
+      regularPeriods: 4,
+      mvpTournamentRosterId: match.mvp?.tournamentRosterId ?? null,
+    },
     initBoxScoreState,
   )
   const [activeTeam, setActiveTeam] = useState(match.homeTeamId)

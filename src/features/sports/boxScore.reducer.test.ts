@@ -20,4 +20,10 @@ describe('boxScoreReducer', () => {
     const s = boxScoreReducer(init(), { type: 'setStat', tournamentRosterId: 'roster-1', field: 'pts', value: 22 })
     expect(s.lines['roster-1'].pts).toBe(22)
   })
+
+  it('starts from the MVP already recorded on the match', () => {
+    const state = initBoxScoreState({ tournamentRosterIds: ['r1', 'r2'], regularPeriods: 4, mvpTournamentRosterId: 'r2' })
+
+    expect(state.mvpTournamentRosterId).toBe('r2')
+  })
 })
