@@ -29,7 +29,6 @@ describe('OverviewTab', () => {
 
     expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
       'Grupos',
-      'Chaveamento',
       'Líderes',
       'Partidas',
       'Regulamento',

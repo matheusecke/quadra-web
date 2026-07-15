@@ -10,6 +10,7 @@ import {
   seedCategories,
   seedGroupMembership,
   seedMatches,
+  seedBracketRounds,
   seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
@@ -54,6 +55,20 @@ const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournamen
   })),
 )
 
+const seedBracketSlots: BracketSlot[] = seedBracketRounds.flatMap((round, roundIndex) =>
+    round.matches.map((slot, position) => ({
+      id: `seed-bracket-${slot.id}`,
+      tournamentId: 'puc-geral-2026',
+      roundNumber: roundIndex + 1,
+      position: position + 1,
+      label: `${round.name} ${position + 1}`,
+      homeTournamentTeamId: slot.homeTeamId ? `tournament-team-puc-geral-2026-${slot.homeTeamId}` : null,
+      awayTournamentTeamId: slot.awayTeamId ? `tournament-team-puc-geral-2026-${slot.awayTeamId}` : null,
+      matchId: slot.matchId,
+      winnerTournamentTeamId: slot.winnerId ? `tournament-team-puc-geral-2026-${slot.winnerId}` : null,
+    })),
+)
+
 const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
   getAthletes()
     .filter((athlete) => athlete.currentTeamId === tournamentTeam.teamId)
@@ -93,6 +108,7 @@ const store = createSportsStore({
   rosterEntries: seedRosterEntries,
   tournamentGroups: seedTournamentGroups,
   tournamentGroupTeams: seedTournamentGroupTeams,
+  bracketSlots: seedBracketSlots,
   matchDetails: seedMatchDetails,
 })
 

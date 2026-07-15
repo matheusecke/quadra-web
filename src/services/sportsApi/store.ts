@@ -289,8 +289,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         statsStatus: 'PENDING',
         regulation: input.regulation ?? '',
         leaders: emptyLeaders(),
-        bracket: [],
-        championTeamId: null,
+        championTournamentTeamId: null,
       }
       tournaments.push(tournament)
       return tournament

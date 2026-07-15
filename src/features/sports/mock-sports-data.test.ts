@@ -10,6 +10,7 @@ import {
   seedMatches,
 } from './mock-sports-data'
 import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
+import * as sportsApi from '../../services/sportsApi'
 
 describe('seeded group membership', () => {
   it('puts every enrolled team of the demo tournaments in exactly one group', () => {
@@ -43,10 +44,24 @@ describe('PUC sports mock data', () => {
     const c = getTournamentById('puc-geral-2026')
     expect(c?.teamIds).toHaveLength(16)
     expect(c?.status).toBe('COMPLETED')
-    expect(c?.championTeamId).toBe('puc-time-1')
+    expect(c?.championTournamentTeamId).toBe('tournament-team-puc-geral-2026-puc-time-1')
     const matches = getMatchesByTournament('puc-geral-2026')
     expect(matches).toHaveLength(31)
     expect(matches.every((m) => m.status === 'FINISHED')).toBe(true)
+  })
+
+  it('seeds the demo bracket as three rounds ending in a single slot', async () => {
+    const slots = await sportsApi.getBracketSlots('puc-geral-2026')
+    const lastRound = Math.max(...slots.map((slot) => slot.roundNumber))
+    const finalRoundSlots = slots.filter((slot) => slot.roundNumber === lastRound)
+    expect(lastRound).toBe(3)
+    expect(finalRoundSlots).toHaveLength(1)
+    expect(finalRoundSlots[0].winnerTournamentTeamId).toBe('tournament-team-puc-geral-2026-puc-time-1')
+  })
+
+  it('keeps the declared champion on the completed demo tournament', async () => {
+    const tournament = await sportsApi.getTournament('puc-geral-2026')
+    expect(tournament?.championTournamentTeamId).toBe('tournament-team-puc-geral-2026-puc-time-1')
   })
 
   it('Geral final is OT with consistent box score', () => {

@@ -6,7 +6,6 @@ import { sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
 import { useStandingsQuery } from '../../../features/sports/queries'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
-import { BracketView } from '../parts/BracketView'
 import { MatchList } from '../parts/MatchList'
 import s from '../tournaments.module.css'
 
@@ -18,12 +17,11 @@ interface OverviewTabProps {
 
 /**
  * Overview — the main reading surface. Fixed section order:
- * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
+ * 1. Grupos → 2. Líderes → 3. Partidas recentes → 4. Regulamento.
  */
 export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
   const hasLeaders = tournament.leaders.ppg.length > 0
-  const hasBracket = tournament.bracket.length > 0
   // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
     useStandingsQuery(tournament.id)
@@ -65,22 +63,7 @@ export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
         )}
       </section>
 
-      {/* 2. Chaveamento de playoffs */}
-      {hasBracket && (
-        <section className={s.section}>
-          <div className={s.sectionHead}>
-            <h2 className={s.sectionTitle}>Chaveamento</h2>
-            <span className={s.sectionHint}>Clique em um confronto para abrir a partida</span>
-          </div>
-          <BracketView
-            rounds={tournament.bracket}
-            teams={teams}
-            championTeamId={tournament.championTeamId}
-          />
-        </section>
-      )}
-
-      {/* 3. Líderes estatísticos principais */}
+      {/* 2. Líderes estatísticos principais */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Líderes</h2>
@@ -95,7 +78,7 @@ export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
         )}
       </section>
 
-      {/* 4. Lista de partidas, mais recente para mais antiga */}
+      {/* 3. Lista de partidas, mais recente para mais antiga */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
@@ -110,7 +93,7 @@ export function OverviewTab({ tournament, matches, teams }: OverviewTabProps) {
         )}
       </section>
 
-      {/* 5. Regulamento */}
+      {/* 4. Regulamento */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Regulamento</h2>
