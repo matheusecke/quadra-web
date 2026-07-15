@@ -77,7 +77,7 @@ describe('BracketCanvas', () => {
   it('creates a slot and a round from the ghost affordances', async () => {
     const h = handlers()
     render(<BracketCanvas slots={[slot()]} teams={teams} isOrgAdmin {...h} />)
-    await userEvent.click(screen.getByRole('button', { name: /adicionar vaga/i }))
+    await userEvent.click(screen.getByRole('button', { name: /adicionar partida/i }))
     expect(h.onCreateSlot).toHaveBeenCalledWith(1)
     await userEvent.click(screen.getByRole('button', { name: /nova rodada/i }))
     expect(h.onCreateRound).toHaveBeenCalled()

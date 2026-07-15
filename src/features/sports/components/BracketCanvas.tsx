@@ -93,7 +93,7 @@ export function BracketCanvas({ slots, teams, isOrgAdmin, onFillSide, onSetWinne
               {renderFooter(slot)}
             </article>
           })}
-          {isOrgAdmin && <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round) }}>+ Adicionar vaga</button>}
+          {isOrgAdmin && <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round) }}>+ Adicionar partida</button>}
         </div>
       })}
       {isOrgAdmin && <button type="button" className={s.ghostRound} onClick={() => { void onCreateRound() }}>+ Nova rodada</button>}
