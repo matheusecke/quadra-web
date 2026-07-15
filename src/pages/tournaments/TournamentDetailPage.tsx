@@ -27,6 +27,7 @@ import { MatchesTab } from './tabs/MatchesTab'
 import { GroupsTab } from './tabs/GroupsTab'
 import { StandingsTab } from './tabs/StandingsTab'
 import { StatsTab } from './tabs/StatsTab'
+import { BracketTab } from './tabs/BracketTab'
 import s from './tournaments.module.css'
 
 export function TournamentDetailPage() {
@@ -154,11 +155,13 @@ export function TournamentDetailPage() {
 
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
+  const hasKnockout = tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Visão geral' },
     { id: 'teams', label: 'Equipes' },
     ...(hasGroupStage ? [{ id: 'groups', label: 'Grupos' }] : []),
     { id: 'matches', label: 'Partidas' },
+    ...(hasKnockout ? [{ id: 'bracket', label: 'Chaveamento' }] : []),
     ...(tournament.format === 'LEAGUE' ? [{ id: 'standings', label: 'Classificação' }] : []),
     { id: 'stats', label: 'Estatísticas' },
   ]
@@ -260,6 +263,7 @@ export function TournamentDetailPage() {
         {activeTab === 'matches' && (
           <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
+        {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
         {activeTab === 'stats' && <StatsTab tournament={tournament} teams={teams} />}
       </div>
