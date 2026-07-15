@@ -6,34 +6,25 @@
 .field {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
   width: 100%;
   height: var(--row-h);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--ink);
-  padding: 0 var(--space-3);
-  font-size: 14px;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  text-align: left;
   transition: border-color 140ms ease;
 }
 
-.field:hover:not(:disabled) {
+.field:hover {
   border-color: var(--border-bold);
 }
 
-.field[aria-expanded='true'],
-.field:focus-visible {
+.field:focus-within {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.field:disabled {
+.field:has(.input:disabled) {
   background: var(--surface-2);
   color: var(--muted);
   cursor: not-allowed;
@@ -43,19 +34,54 @@
   border-color: var(--status-live);
 }
 
-.field--error[aria-expanded='true'],
-.field--error:focus-visible {
+.field--error:focus-within {
   border-color: var(--status-live);
   box-shadow: 0 0 0 3px var(--status-live-bg);
 }
 
-.field svg {
-  color: var(--muted);
-  flex: none;
+.input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 0 var(--space-3);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  outline: none;
 }
 
-.placeholder {
+.input::placeholder {
   color: var(--muted-2);
+}
+
+.calendarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: var(--row-h);
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.calendarButton:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.calendarButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.calendarButton:disabled {
+  cursor: not-allowed;
 }
 
 .cal {

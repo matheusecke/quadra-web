@@ -41,6 +41,7 @@ export function DateTimeField({
 
   return (
     <DatePicker
+      key={`${type}-${value}`}
       value={value}
       onChange={onChange}
       type={type}

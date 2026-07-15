@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { NumberField } from '../NumberField'
 import { cn } from '../cn'
 import type { DateTimeFieldProps } from './DateTimeField'
+import { fromDisplay, toDisplay } from './dateDisplay'
 import styles from './DateTimeField.module.css'
 
 const pad = (value: number) => String(value).padStart(2, '0')
@@ -53,7 +54,6 @@ const addMonths = (date: Date, amount: number) =>
 
 const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
 const dayLabel = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' })
-const valueLabel = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' })
 const weekdays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 
 type DatePickerProps = DateTimeFieldProps & { type: 'datetime-local' | 'date' }
@@ -68,6 +68,7 @@ export function DatePicker({
   ...aria
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [text, setText] = useState(() => toDisplay(value, type))
   const [draft, setDraft] = useState(() => fromValue(value))
   const [viewMonth, setViewMonth] = useState(() => fromValue(value).day)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -87,7 +88,9 @@ export function DatePicker({
   }
 
   const confirm = () => {
-    onChange(toValue(draft.day, draft.hours, draft.minutes, type))
+    const next = toValue(draft.day, draft.hours, draft.minutes, type)
+    onChange(next)
+    setText(toDisplay(next, type))
     close()
   }
 
@@ -151,32 +154,40 @@ export function DatePicker({
     }
   }
 
-  const parsedValue = fromValue(value)
-  const displayValue = parsedValue.isEmpty
-    ? type === 'date'
-      ? 'Selecione uma data'
-      : 'Selecione data e hora'
-    : `${valueLabel.format(parsedValue.day)}${
-        type === 'datetime-local' ? `, ${pad(parsedValue.hours)}:${pad(parsedValue.minutes)}` : ''
-      }`
   const today = new Date()
 
   return (
     <div className={styles.root} ref={rootRef}>
-      <button
-        type="button"
-        id={id}
-        ref={fieldRef}
-        className={cn(styles.field, error && styles['field--error'])}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        disabled={disabled}
-        onClick={() => (isOpen ? close() : open())}
-        {...aria}
-      >
-        <span className={cn(parsedValue.isEmpty && styles.placeholder)}>{displayValue}</span>
-        <Calendar size={16} aria-hidden="true" />
-      </button>
+      <span className={cn(styles.field, error && styles['field--error'])}>
+        <input
+          type="text"
+          inputMode="numeric"
+          id={id}
+          className={styles.input}
+          placeholder={type === 'date' ? 'dd/mm/aaaa' : 'dd/mm/aaaa hh:mm'}
+          value={text}
+          disabled={disabled}
+          onChange={(event) => {
+            setText(event.target.value)
+            const parsed = fromDisplay(event.target.value, type)
+            if (parsed) onChange(parsed)
+          }}
+          onBlur={() => setText(toDisplay(value, type))}
+          {...aria}
+        />
+        <button
+          type="button"
+          ref={fieldRef}
+          className={styles.calendarButton}
+          aria-label="Abrir calendário"
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+          disabled={disabled}
+          onClick={() => (isOpen ? close() : open())}
+        >
+          <Calendar size={16} aria-hidden="true" />
+        </button>
+      </span>
 
       {isOpen && (
         <div
