@@ -71,4 +71,10 @@ describe('Combobox', () => {
     await userEvent.click(screen.getByRole('button', { name: /grupo/i }))
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
+
+  it('shows the filter title, not the generic placeholder, when the placeholder option itself is selected', () => {
+    const withPlaceholderOption: ComboboxOption[] = [{ value: '', label: 'Campeonato' }, ...short]
+    render(<Combobox aria-label="Filtrar por campeonato" options={withPlaceholderOption} value={null} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /filtrar por campeonato/i })).toHaveTextContent('Campeonato')
+  })
 })

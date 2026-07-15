@@ -51,7 +51,7 @@ export function Combobox({
   const visible = query
     ? options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()))
     : options
-  const selected = options.find((option) => option.value === value) ?? null
+  const selected = options.find((option) => option.value === (value ?? '')) ?? null
 
   const close = () => {
     setIsOpen(false)
