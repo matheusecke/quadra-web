@@ -10,7 +10,7 @@ describe('CompleteTournamentPanel', () => {
     const onComplete = vi.fn().mockResolvedValue(undefined)
     render(<CompleteTournamentPanel teams={teams} suggestion="tt-a" requiresChampion onComplete={onComplete} onCancel={vi.fn()} />)
     expect(screen.getByText('Alfa')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /encerrar campeonato/i }))
+    await userEvent.click(screen.getByRole('button', { name: /confirmar encerramento/i }))
     expect(onComplete).toHaveBeenCalledWith('tt-a')
   })
 })

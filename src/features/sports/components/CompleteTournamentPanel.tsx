@@ -9,6 +9,6 @@ export function CompleteTournamentPanel({ teams, suggestion, requiresChampion, o
     <Field label="Campeão"><Combobox aria-label="Campeão" options={teams.map((team) => ({ value: team.tournamentTeamId, label: team.name, secondary: team.shortName }))} value={champion} onChange={setChampion} placeholder="Selecione…" /></Field>
     {requiresChampion && !suggestion && <p>A rodada final tem mais de uma vaga ou o vencedor ainda não foi definido — escolha o campeão.</p>}
     {errorMessage && <p role="alert">{errorMessage}</p>}
-    <div className={s.actions}><Button onClick={() => { void onComplete(champion) }} disabled={requiresChampion && !champion}>Encerrar campeonato</Button><Button variant="ghost" onClick={onCancel}>Cancelar</Button></div>
+    <div className={s.actions}><Button onClick={() => { void onComplete(champion) }} disabled={requiresChampion && !champion}>Confirmar encerramento</Button><Button variant="ghost" onClick={onCancel}>Cancelar</Button></div>
   </div>
 }
