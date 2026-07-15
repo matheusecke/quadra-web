@@ -8,6 +8,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
+import { Collapse } from '../../components/ui/Collapse'
 import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
@@ -275,36 +276,53 @@ export function TournamentDetailPage() {
               <div className={s.enrollManage}>
                 <EnrollTeamPanel availableTeams={availableTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
                 {enrolledJoins && enrolledJoins.length > 0 && (
-                  <ul className={s.enrolledList}>
-                    {enrolledJoins.map((join) => (
-                      <li key={join.id} className={s.enrolledRow}>
-                        <span>{teams.get(join.teamId)?.name ?? join.teamId}</span>
-                        <div className={s.enrolledActions}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                  <ul className={s.enrolledList} aria-label="Equipes inscritas">
+                    {enrolledJoins.map((join) => {
+                      const teamName = teams.get(join.teamId)?.name ?? join.teamId
+                      const isOpen = rosterTeamId === join.teamId
+                      const panelId = `roster-panel-${join.teamId}`
+                      return (
+                        <li key={join.id} className={s.enrolledItem}>
+                          <div className={s.enrolledRow}>
+                            <span>{teamName}</span>
+                            <div className={s.enrolledActions}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                aria-expanded={isOpen}
+                                aria-controls={panelId}
+                                className={isOpen ? s.rosterToggleActive : undefined}
+                                onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                              >
+                                Elenco
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                                Remover
+                              </Button>
+                            </div>
+                          </div>
+                          <Collapse
+                            open={isOpen}
+                            id={panelId}
+                            role={isOpen ? 'region' : undefined}
+                            aria-label={isOpen ? `Elenco ${teamName}` : undefined}
                           >
-                            Elenco
-                          </Button>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
-                            Remover
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
+                            {isOpen ? (
+                              <TournamentRosterPanel
+                                roster={rosterDisplay}
+                                availableAthletes={availableAthletes}
+                                onAdd={handleAddRoster}
+                                onUpdate={handleUpdateRoster}
+                                onRemove={handleRemoveRoster}
+                                errorMessage={rosterError}
+                              />
+                            ) : null}
+                          </Collapse>
+                        </li>
+                      )
+                    })}
                   </ul>
-                )}
-                {rosterTeamId && (
-                  <TournamentRosterPanel
-                    roster={rosterDisplay}
-                    availableAthletes={availableAthletes}
-                    onAdd={handleAddRoster}
-                    onUpdate={handleUpdateRoster}
-                    onRemove={handleRemoveRoster}
-                    errorMessage={rosterError}
-                  />
                 )}
               </div>
             )}

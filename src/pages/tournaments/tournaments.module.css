@@ -74,6 +74,16 @@
   gap: var(--space-1);
 }
 
+.enrolledItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.rosterToggleActive {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
 .kicker {
   font-size: 10px;
   font-weight: 600;
