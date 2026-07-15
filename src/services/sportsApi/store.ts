@@ -18,16 +18,20 @@ import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
   CreateCategoryInput,
+  CreateBracketSlotInput,
   CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
+  LinkSlotMatchInput,
   RosterEntryInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
   SetTiebreakOrderInput,
+  SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateSeasonInput,
+  UpdateBracketSlotInput,
   UpdateTournamentInput,
 } from './types'
 
@@ -70,6 +74,19 @@ export interface RosterEntry {
   isDeleted?: boolean
 }
 
+export interface BracketSlot {
+  id: string
+  tournamentId: string
+  roundNumber: number
+  position: number
+  label: string | null
+  homeTournamentTeamId: string | null
+  awayTournamentTeamId: string | null
+  matchId: string | null
+  winnerTournamentTeamId: string | null
+  isDeleted?: boolean
+}
+
 export interface SportsStoreSeed {
   seasons: Season[]
   categories: TournamentCategory[]
@@ -79,6 +96,7 @@ export interface SportsStoreSeed {
   rosterEntries?: RosterEntry[]
   tournamentGroups?: TournamentGroup[]
   tournamentGroupTeams?: TournamentGroupTeam[]
+  bracketSlots?: BracketSlot[]
   /** Optional pre-computed match details (reference box scores for seeded matches). */
   matchDetails?: MatchDetail[]
 }
@@ -103,6 +121,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
   const tournamentGroups: TournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
   const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
+  const bracketSlots: BracketSlot[] = seed.bracketSlots?.map((slot) => ({ ...slot })) ?? []
   const matchExtras = new Map<string, MatchExtra>()
 
   for (const detail of seed.matchDetails ?? []) {
@@ -312,6 +331,72 @@ export function createSportsStore(seed: SportsStoreSeed) {
       record.isDeleted = true
       const tournament = tournaments.find((t) => t.id === record.tournamentId)
       if (tournament) tournament.teamIds = tournament.teamIds.filter((teamId) => teamId !== record.teamId)
+    },
+
+    // ── Bracket ────────────────────────────────────────────────────────────────
+    listBracketSlots(tournamentId: string): BracketSlot[] {
+      return bracketSlots
+        .filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
+        .sort((a, b) => a.roundNumber - b.roundNumber || a.position - b.position)
+    },
+    createBracketSlot(input: CreateBracketSlotInput): BracketSlot {
+      const inRound = bracketSlots.filter(
+        (slot) => isActive(slot) && slot.tournamentId === input.tournamentId && slot.roundNumber === input.roundNumber,
+      )
+      const position = input.position ?? inRound.reduce((max, slot) => Math.max(max, slot.position), 0) + 1
+      const slot: BracketSlot = {
+        id: nextId('bracket-slot'),
+        tournamentId: input.tournamentId,
+        roundNumber: input.roundNumber,
+        position,
+        label: input.label ?? null,
+        homeTournamentTeamId: null,
+        awayTournamentTeamId: null,
+        matchId: null,
+        winnerTournamentTeamId: null,
+      }
+      bracketSlots.push(slot)
+      return slot
+    },
+    updateBracketSlot(id: string, input: UpdateBracketSlotInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${id} not found`)
+      if (input.homeTournamentTeamId !== undefined) slot.homeTournamentTeamId = input.homeTournamentTeamId
+      if (input.awayTournamentTeamId !== undefined) slot.awayTournamentTeamId = input.awayTournamentTeamId
+      if (input.label !== undefined) slot.label = input.label
+      if (
+        slot.winnerTournamentTeamId !== null &&
+        slot.winnerTournamentTeamId !== slot.homeTournamentTeamId &&
+        slot.winnerTournamentTeamId !== slot.awayTournamentTeamId
+      ) {
+        slot.winnerTournamentTeamId = null
+      }
+      return slot
+    },
+    linkSlotMatch(input: LinkSlotMatchInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
+      slot.matchId = input.matchId
+      return slot
+    },
+    setSlotWinner(input: SetSlotWinnerInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
+      if (![slot.homeTournamentTeamId, slot.awayTournamentTeamId].includes(input.winnerTournamentTeamId)) {
+        throw new Error('Winner must be one of the slot sides')
+      }
+      slot.winnerTournamentTeamId = input.winnerTournamentTeamId
+      return slot
+    },
+    removeBracketSlot(id: string): void {
+      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
+      if (!slot) return
+      if (slot.matchId) {
+        const match = matches.find((entry) => entry.id === slot.matchId)
+        if (match?.status === 'FINISHED') throw new Error('Cannot remove a slot whose match is finished')
+        if (match) match.status = 'CANCELLED'
+      }
+      slot.isDeleted = true
     },
 
     // ── Roster ─────────────────────────────────────────────────────────────────

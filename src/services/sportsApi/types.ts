@@ -26,6 +26,30 @@ export interface CreateTournamentInput {
 
 export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: TournamentStatus }
 
+export interface CreateBracketSlotInput {
+  tournamentId: string
+  roundNumber: number
+  /** Optional: defaults to the next free position in the round. The UI never types it. */
+  position?: number
+  label?: string
+}
+
+export interface UpdateBracketSlotInput {
+  homeTournamentTeamId?: string | null
+  awayTournamentTeamId?: string | null
+  label?: string
+}
+
+export interface SetSlotWinnerInput {
+  slotId: string
+  winnerTournamentTeamId: string
+}
+
+export interface LinkSlotMatchInput {
+  slotId: string
+  matchId: string
+}
+
 export interface EnrollTeamInput {
   tournamentId: string
   teamId: string
