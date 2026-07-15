@@ -143,24 +143,6 @@ export interface Match {
   scoreSource: ScoreSource
 }
 
-export interface BracketMatch {
-  /** Stable id for the bracket slot. */
-  id: string
-  /** Reference to a real Match, when the confrontation is defined. */
-  matchId: string | null
-  homeTeamId: string | null
-  awayTeamId: string | null
-  homeScore: number | null
-  awayScore: number | null
-  winnerId: string | null
-}
-
-export interface BracketRound {
-  id: string
-  name: string // 'Quartas de final', 'Semifinais', 'Final'
-  matches: BracketMatch[]
-}
-
 export type TournamentFormat =
   | 'LEAGUE'
   | 'GROUP_STAGE'
@@ -203,9 +185,8 @@ export interface Tournament {
   /** Short regulation summary (mocked). */
   regulation: string
   leaders: StatLeaders
-  bracket: BracketRound[]
-  /** Champion team id once the tournament is finished. */
-  championTeamId?: string | null
+  /** Explicit declared tournament-team champion, null while no title is declared. */
+  championTournamentTeamId: string | null
 }
 
 // ── Match detail (with per-game box score) ────────────────────────────────────

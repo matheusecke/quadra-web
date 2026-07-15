@@ -11,8 +11,10 @@ import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
+import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
 import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
-import { useAddRosterEntry, useEnrollTeam, useMatchesQuery, useRemoveTournamentTeam, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
+import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -27,6 +29,7 @@ import { MatchesTab } from './tabs/MatchesTab'
 import { GroupsTab } from './tabs/GroupsTab'
 import { StandingsTab } from './tabs/StandingsTab'
 import { StatsTab } from './tabs/StatsTab'
+import { BracketTab } from './tabs/BracketTab'
 import s from './tournaments.module.css'
 
 export function TournamentDetailPage() {
@@ -39,14 +42,24 @@ export function TournamentDetailPage() {
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
   const addRosterEntry = useAddRosterEntry()
+  const updateRosterEntry = useUpdateRosterEntry()
+  const removeRosterEntry = useRemoveRosterEntry()
+  const completeTournament = useCompleteTournament()
+  const reopenTournament = useReopenTournament()
+  const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId)
   const [activeTab, setActiveTab] = useState('overview')
   const [enrollError, setEnrollError] = useState('')
   const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
   const [rosterError, setRosterError] = useState('')
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [completionError, setCompletionError] = useState('')
   const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
   const teams = teamMap(getTeams())
+  const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
+  const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
 
   const rosterDisplay = (roster ?? []).map((entry) => ({
+    id: entry.id,
     athleteId: entry.athleteId,
     name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? entry.athleteId,
     jerseyNumber: entry.jerseyNumber,
@@ -69,6 +82,16 @@ export function TournamentDetailPage() {
     }
   }
 
+  const handleUpdateRoster = async (id: string, input: UpdateRosterEntryInput) => {
+    if (!tournamentId || !rosterTeamId) return
+    await updateRosterEntry.mutateAsync({ id, tournamentId, teamId: rosterTeamId, input })
+  }
+
+  const handleRemoveRoster = (id: string) => {
+    if (!tournamentId || !rosterTeamId) return
+    removeRosterEntry.mutate({ id, tournamentId, teamId: rosterTeamId })
+  }
+
   const availableTeams = useMemo(() => {
     const enrolled = new Set(tournament?.teamIds ?? [])
     return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
@@ -81,6 +104,17 @@ export function TournamentDetailPage() {
       setEnrollError('')
     } catch {
       setEnrollError('Equipe já inscrita neste campeonato.')
+    }
+  }
+
+  const handleComplete = async (championTournamentTeamId: string | null) => {
+    if (!tournamentId) return
+    try {
+      await completeTournament.mutateAsync({ tournamentId, championTournamentTeamId })
+      setCompletionError('')
+      setIsCompleting(false)
+    } catch (error) {
+      setCompletionError(error instanceof Error && error.message === 'Champion must have won a bracket slot' ? 'O campeão precisa ser uma equipe que venceu uma vaga do chaveamento.' : error instanceof Error ? error.message : '')
     }
   }
 
@@ -154,11 +188,13 @@ export function TournamentDetailPage() {
 
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
+  const hasKnockout = tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Visão geral' },
     { id: 'teams', label: 'Equipes' },
     ...(hasGroupStage ? [{ id: 'groups', label: 'Grupos' }] : []),
     { id: 'matches', label: 'Partidas' },
+    ...(hasKnockout ? [{ id: 'bracket', label: 'Chaveamento' }] : []),
     ...(tournament.format === 'LEAGUE' ? [{ id: 'standings', label: 'Classificação' }] : []),
     { id: 'stats', label: 'Estatísticas' },
   ]
@@ -188,8 +224,25 @@ export function TournamentDetailPage() {
                 Editar
               </Button>
             )}
+            {tournament.status === 'COMPLETED' && championName && <span>🏆 Campeão: {championName}</span>}
+            {isOrgAdmin && tournament.status === 'IN_PROGRESS' && (
+              <Button variant="secondary" size="sm" onClick={() => setIsCompleting(true)}>Encerrar campeonato</Button>
+            )}
+            {isOrgAdmin && tournament.status === 'COMPLETED' && (
+              <Button variant="secondary" size="sm" onClick={() => { if (tournamentId) void reopenTournament.mutateAsync({ tournamentId }) }}>Reabrir</Button>
+            )}
           </div>
         </div>
+        {isCompleting && (
+          <CompleteTournamentPanel
+            teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? entry.teamId }))}
+            suggestion={championSuggestion ?? null}
+            requiresChampion={tournament.format !== 'GROUP_STAGE'}
+            onComplete={handleComplete}
+            onCancel={() => { setIsCompleting(false); setCompletionError('') }}
+            errorMessage={completionError}
+          />
+        )}
 
         {/* Compact info strip — not dashboard cards */}
         <div className={s.infoStrip}>
@@ -248,6 +301,8 @@ export function TournamentDetailPage() {
                     roster={rosterDisplay}
                     availableAthletes={availableAthletes}
                     onAdd={handleAddRoster}
+                    onUpdate={handleUpdateRoster}
+                    onRemove={handleRemoveRoster}
                     errorMessage={rosterError}
                   />
                 )}
@@ -260,6 +315,7 @@ export function TournamentDetailPage() {
         {activeTab === 'matches' && (
           <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
         )}
+        {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
         {activeTab === 'stats' && <StatsTab tournament={tournament} teams={teams} />}
       </div>

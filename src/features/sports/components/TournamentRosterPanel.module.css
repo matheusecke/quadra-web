@@ -31,6 +31,38 @@
   width: 96px;
 }
 
+.rosterRow:focus-within .actions,
+.rosterRow:hover .actions,
+.actionsVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.actionCell {
+  position: relative;
+  width: 0;
+  padding: 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+
+.confirmation {
+  color: var(--ink);
+  font-weight: 500;
+}
+
 .error {
   font-size: 13px;
   color: var(--accent-deep);

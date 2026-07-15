@@ -17,17 +17,24 @@ import type { StandingTeamInput } from './standings'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CompleteTournamentInput,
   CreateCategoryInput,
+  CreateBracketSlotInput,
   CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
+  LinkSlotMatchInput,
   RosterEntryInput,
+  ReopenTournamentInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
   SetTiebreakOrderInput,
+  SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateSeasonInput,
+  UpdateBracketSlotInput,
+  UpdateRosterEntryInput,
   UpdateTournamentInput,
 } from './types'
 
@@ -70,6 +77,19 @@ export interface RosterEntry {
   isDeleted?: boolean
 }
 
+export interface BracketSlot {
+  id: string
+  tournamentId: string
+  roundNumber: number
+  position: number
+  label: string | null
+  homeTournamentTeamId: string | null
+  awayTournamentTeamId: string | null
+  matchId: string | null
+  winnerTournamentTeamId: string | null
+  isDeleted?: boolean
+}
+
 export interface SportsStoreSeed {
   seasons: Season[]
   categories: TournamentCategory[]
@@ -79,6 +99,7 @@ export interface SportsStoreSeed {
   rosterEntries?: RosterEntry[]
   tournamentGroups?: TournamentGroup[]
   tournamentGroupTeams?: TournamentGroupTeam[]
+  bracketSlots?: BracketSlot[]
   /** Optional pre-computed match details (reference box scores for seeded matches). */
   matchDetails?: MatchDetail[]
 }
@@ -103,6 +124,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
   const tournamentGroups: TournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
   const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
+  const bracketSlots: BracketSlot[] = seed.bracketSlots?.map((slot) => ({ ...slot })) ?? []
   const matchExtras = new Map<string, MatchExtra>()
 
   for (const detail of seed.matchDetails ?? []) {
@@ -270,8 +292,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         statsStatus: 'PENDING',
         regulation: input.regulation ?? '',
         leaders: emptyLeaders(),
-        bracket: [],
-        championTeamId: null,
+        championTournamentTeamId: null,
       }
       tournaments.push(tournament)
       return tournament
@@ -314,6 +335,118 @@ export function createSportsStore(seed: SportsStoreSeed) {
       if (tournament) tournament.teamIds = tournament.teamIds.filter((teamId) => teamId !== record.teamId)
     },
 
+    // ── Bracket ────────────────────────────────────────────────────────────────
+    listBracketSlots(tournamentId: string): BracketSlot[] {
+      return bracketSlots
+        .filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
+        .sort((a, b) => a.roundNumber - b.roundNumber || a.position - b.position)
+    },
+    createBracketSlot(input: CreateBracketSlotInput): BracketSlot {
+      const inRound = bracketSlots.filter(
+        (slot) => isActive(slot) && slot.tournamentId === input.tournamentId && slot.roundNumber === input.roundNumber,
+      )
+      const position = input.position ?? inRound.reduce((max, slot) => Math.max(max, slot.position), 0) + 1
+      const slot: BracketSlot = {
+        id: nextId('bracket-slot'),
+        tournamentId: input.tournamentId,
+        roundNumber: input.roundNumber,
+        position,
+        label: input.label ?? null,
+        homeTournamentTeamId: null,
+        awayTournamentTeamId: null,
+        matchId: null,
+        winnerTournamentTeamId: null,
+      }
+      bracketSlots.push(slot)
+      return slot
+    },
+    updateBracketSlot(id: string, input: UpdateBracketSlotInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${id} not found`)
+      if (input.homeTournamentTeamId !== undefined) slot.homeTournamentTeamId = input.homeTournamentTeamId
+      if (input.awayTournamentTeamId !== undefined) slot.awayTournamentTeamId = input.awayTournamentTeamId
+      if (input.label !== undefined) slot.label = input.label
+      if (
+        slot.winnerTournamentTeamId !== null &&
+        slot.winnerTournamentTeamId !== slot.homeTournamentTeamId &&
+        slot.winnerTournamentTeamId !== slot.awayTournamentTeamId
+      ) {
+        slot.winnerTournamentTeamId = null
+      }
+      return slot
+    },
+    linkSlotMatch(input: LinkSlotMatchInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
+      slot.matchId = input.matchId
+      return slot
+    },
+    setSlotWinner(input: SetSlotWinnerInput): BracketSlot {
+      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
+      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
+      if (![slot.homeTournamentTeamId, slot.awayTournamentTeamId].includes(input.winnerTournamentTeamId)) {
+        throw new Error('Winner must be one of the slot sides')
+      }
+      slot.winnerTournamentTeamId = input.winnerTournamentTeamId
+      const tournament = requireTournament(slot.tournamentId)
+      if (tournament.status === 'COMPLETED') {
+        tournament.status = 'IN_PROGRESS'
+        tournament.championTournamentTeamId = null
+      }
+      return slot
+    },
+
+    championSuggestion(tournamentId: string): string | null {
+      const tournament = requireTournament(tournamentId)
+      if (tournament.format === 'GROUP_STAGE') return null
+      if (tournament.format === 'LEAGUE') {
+        const envelope = buildStandings(tournamentId)[0]
+        return envelope?.standingsState === 'FINAL' ? envelope.rows.find((row) => row.position === 1)?.tournamentTeamId ?? null : null
+      }
+      const slots = bracketSlots.filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
+      if (slots.length === 0) return null
+      const lastRound = Math.max(...slots.map((slot) => slot.roundNumber))
+      const finalRound = slots.filter((slot) => slot.roundNumber === lastRound)
+      return finalRound.length === 1 ? finalRound[0].winnerTournamentTeamId : null
+    },
+    completeTournament(input: CompleteTournamentInput): Tournament {
+      const tournament = requireTournament(input.tournamentId)
+      if (tournament.status !== 'IN_PROGRESS') throw new Error('Only a tournament in progress can be completed')
+      const champion = input.championTournamentTeamId
+      if (tournament.format === 'GROUP_STAGE') {
+        if (champion) throw new Error('A group stage has no champion')
+      } else {
+        if (!champion) throw new Error('Champion is required for this format')
+        const enrolled = tournamentTeams.find((entry) => entry.id === champion && isActive(entry) && entry.tournamentId === input.tournamentId)
+        if (!enrolled) throw new Error('Champion must be a team enrolled in this tournament')
+        if ((tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT') && !bracketSlots.some((slot) => isActive(slot) && slot.tournamentId === input.tournamentId && slot.winnerTournamentTeamId === champion)) {
+          throw new Error('Champion must have won a bracket slot')
+        }
+      }
+      tournament.status = 'COMPLETED'
+      tournament.championTournamentTeamId = champion
+      tournament.updatedAt = new Date().toISOString()
+      return tournament
+    },
+    reopenTournament(input: ReopenTournamentInput): Tournament {
+      const tournament = requireTournament(input.tournamentId)
+      if (tournament.status !== 'COMPLETED') throw new Error('Only a completed tournament can be reopened')
+      tournament.status = 'IN_PROGRESS'
+      tournament.championTournamentTeamId = null
+      tournament.updatedAt = new Date().toISOString()
+      return tournament
+    },
+    removeBracketSlot(id: string): void {
+      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
+      if (!slot) return
+      if (slot.matchId) {
+        const match = matches.find((entry) => entry.id === slot.matchId)
+        if (match?.status === 'FINISHED') throw new Error('Cannot remove a slot whose match is finished')
+        if (match) match.status = 'CANCELLED'
+      }
+      slot.isDeleted = true
+    },
+
     // ── Roster ─────────────────────────────────────────────────────────────────
     listRoster(tournamentId: string, teamId: string): RosterEntry[] {
       return rosterEntries.filter((r) => isActive(r) && r.tournamentId === tournamentId && r.teamId === teamId)
@@ -340,6 +473,16 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
       rosterEntries.push(record)
       return record
+    },
+    updateRosterEntry(id: string, input: UpdateRosterEntryInput): RosterEntry {
+      const entry = rosterEntries.find((record) => record.id === id)
+      if (!entry) throw new Error('Roster entry not found')
+      Object.assign(entry, input)
+      return entry
+    },
+    removeRosterEntry(id: string): void {
+      const entry = rosterEntries.find((record) => record.id === id)
+      if (entry) entry.isDeleted = true
     },
 
     // ── Groups ─────────────────────────────────────────────────────────────────

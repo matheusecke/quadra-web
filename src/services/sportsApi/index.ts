@@ -10,25 +10,33 @@ import {
   seedCategories,
   seedGroupMembership,
   seedMatches,
+  seedBracketRounds,
   seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import type { MatchDetail, StandingsEnvelope } from '../../features/sports/types'
 import { createSportsStore } from './store'
-import type { RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
+import type { BracketSlot, RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CompleteTournamentInput,
+  CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
+  LinkSlotMatchInput,
   RosterEntryInput,
+  ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
+  SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateSeasonInput,
+  UpdateBracketSlotInput,
+  UpdateRosterEntryInput,
   UpdateTournamentInput,
 } from './types'
 
@@ -48,6 +56,20 @@ const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournamen
     tiebreakOrder: null,
     tiebreakBlockKey: null,
   })),
+)
+
+const seedBracketSlots: BracketSlot[] = seedBracketRounds.flatMap((round, roundIndex) =>
+    round.matches.map((slot, position) => ({
+      id: `seed-bracket-${slot.id}`,
+      tournamentId: 'puc-geral-2026',
+      roundNumber: roundIndex + 1,
+      position: position + 1,
+      label: `${round.name} ${position + 1}`,
+      homeTournamentTeamId: slot.homeTeamId ? `tournament-team-puc-geral-2026-${slot.homeTeamId}` : null,
+      awayTournamentTeamId: slot.awayTeamId ? `tournament-team-puc-geral-2026-${slot.awayTeamId}` : null,
+      matchId: slot.matchId,
+      winnerTournamentTeamId: slot.winnerId ? `tournament-team-puc-geral-2026-${slot.winnerId}` : null,
+    })),
 )
 
 const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
@@ -89,6 +111,7 @@ const store = createSportsStore({
   rosterEntries: seedRosterEntries,
   tournamentGroups: seedTournamentGroups,
   tournamentGroupTeams: seedTournamentGroupTeams,
+  bracketSlots: seedBracketSlots,
   matchDetails: seedMatchDetails,
 })
 
@@ -106,15 +129,28 @@ export const getTournaments = () => Promise.resolve(store.listTournaments())
 export const getTournament = (id: string) => Promise.resolve(store.getTournament(id))
 export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
 export const updateTournament = (id: string, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
+export const completeTournament = (input: CompleteTournamentInput) => Promise.resolve(store.completeTournament(input))
+export const reopenTournament = (input: ReopenTournamentInput) => Promise.resolve(store.reopenTournament(input))
+export const getChampionSuggestion = (tournamentId: string) => Promise.resolve(store.championSuggestion(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export const getTournamentTeams = (tournamentId: string) => Promise.resolve(store.listTournamentTeams(tournamentId))
 export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
 export const removeTournamentTeam = (id: string) => Promise.resolve(store.removeTournamentTeam(id))
 
+// ── Bracket ──────────────────────────────────────────────────────────────────
+export const getBracketSlots = (tournamentId: string): Promise<BracketSlot[]> => Promise.resolve(store.listBracketSlots(tournamentId))
+export const createBracketSlot = (input: CreateBracketSlotInput) => Promise.resolve(store.createBracketSlot(input))
+export const updateBracketSlot = (id: string, input: UpdateBracketSlotInput) => Promise.resolve(store.updateBracketSlot(id, input))
+export const linkSlotMatch = (input: LinkSlotMatchInput) => Promise.resolve(store.linkSlotMatch(input))
+export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(store.setSlotWinner(input))
+export const removeBracketSlot = (id: string) => Promise.resolve(store.removeBracketSlot(id))
+
 // ── Roster ───────────────────────────────────────────────────────────────────────
 export const getRoster = (tournamentId: string, teamId: string) => Promise.resolve(store.listRoster(tournamentId, teamId))
 export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
+export const updateRosterEntry = (id: string, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
+export const removeRosterEntry = (id: string) => Promise.resolve(store.removeRosterEntry(id))
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
 export const getAthlete = (id: string) => Promise.resolve(getAthleteById(id))

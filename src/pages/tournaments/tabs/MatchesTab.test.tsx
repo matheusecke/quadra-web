@@ -33,7 +33,7 @@ const tournament: Tournament = {
     stg: [],
     bpg: [],
   },
-  bracket: [],
+  championTournamentTeamId: null,
 }
 
 const matches: Match[] = [
