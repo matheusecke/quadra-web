@@ -13,6 +13,8 @@ There are two distinct categories:
 - **Data and search UX:** pagination, `search`, repeated `ids`, cumulative filters, selected-item loading, and the choice between a simple `select` and `SearchSelect`. The contract is defined in the [sports spec, section 8.12](../../../docs/superpowers/specs/2026-07-06-sports-db-structure-design.md#812-contrato-de-listagem--pagina%C3%A7%C3%A3o-e-filtros-opcionais-pendente-decidido-em-2026-07-14).
 - **Visual consistency of controls:** appearance, states, accessibility, responsiveness, and reuse. This guideline is the source of truth for this category and applies to every module, not only sports.
 
+`color-scheme` is declared in `theme.css` (`light` on `:root`, `dark` on `html[data-theme="dark"]`). It tells the browser which scheme to paint the widgets it still draws itself: the document scrollbar, autofill fill, search field cancel button, and textarea resize grip.
+
 ## Global rules
 
 1. Before creating or styling a control, **must** look for an equivalent in `src/components/ui/` and tokens in `src/design-system/theme.css`.
@@ -44,6 +46,8 @@ Native spin buttons on `input[type="number"]` **must not** remain visible when t
 - It must expose hover, focus, error, `disabled`, and `read-only` states, including in tables, forms, and statistics interfaces.
 - When buttons are not useful, native spin buttons may be visually removed, but the field must retain its semantics and manual entry. Do not use a text field to work around a visual concern without consciously handling validation, `inputMode`, and accessibility.
 
+`NumberField` (`src/components/ui/NumberField`) hides native spin buttons and offers stacked arrows instead. The dense `dense` variant is for box scores. Values clamp on blur, never while typing; its arrows are outside the tab order because arrow keys on the field already step the value.
+
 ## Selection, comboboxes, and search
 
 The following names have different purposes and must not be used interchangeably:
@@ -58,6 +62,8 @@ The following names have different purposes and must not be used interchangeably
 
 For large, paginated, dynamic, API-loaded, searchable, multi-select, or selected-value-preserving collections, **must** use `SearchSelect`, a combobox, or another suitable reusable primitive — not a `<select>` populated with the entire collection.
 
+`Combobox` (`src/components/ui/Combobox`) replaces every native `<select>` in the product. Search appears automatically past eight options. Because its listbox is custom, every change must preserve its keyboard, focus-return, and `aria-selected` tests. `SearchSelect` (`src/components/ui/SearchSelect`) is its remote sibling, with debounce, loading, and error states; it shares the same popover.
+
 These primitives must include loading, empty, no-results, error, `disabled`, `read-only`, focus, active-item, selection, and incremental-loading/pagination states where applicable. Selected items must remain visible when search or page changes; retrieval by `ids` follows section 8.12. The pattern must provide keyboard navigation, managed focus, correct ARIA roles/attributes, and readable screen-reader feedback.
 
 Search fields must integrate the search icon, empty value, loading, no-results, and error states into the design system. The native cancel button for `input[type="search"]` may be hidden or replaced only when there is an equivalent, clearly labelled, keyboard-operable button. Debounce is appropriate for remote search, but must not delay clearing, cancellation, or state announcements in a misleading way.
@@ -67,6 +73,8 @@ Search fields must integrate the search icon, empty value, loading, no-results, 
 `input[type="date"]`, `time`, and `datetime-local` can vary significantly between browsers and operating systems. The visible field surface — typography, border, icon, focus, error, and value — must follow Quadra DS.
 
 On desktop, a reusable picker or calendar can be preferable when the project supports it adequately. On mobile, the native picker may be retained when it offers a better platform experience. The component must document this adaptive difference. Do not replace a native picker with a custom control that is less accessible, less localized, or less functional. The displayed format and the technical value sent by the application must be treated separately; locale and timezone follow established product standards.
+
+`DateTimeField` (`src/components/ui/DateTimeField`) opens a Quadra calendar on a fine pointer and falls back to native `datetime-local` on a coarse pointer. The emitted value is identical either way.
 
 ## Checkboxes, radios, switches, and range
 
