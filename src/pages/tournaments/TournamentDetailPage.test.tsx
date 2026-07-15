@@ -106,4 +106,24 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     await screen.findByRole('region', { name: 'Elenco Time 1' })
     expect(elenco('Time 1')).toHaveAttribute('aria-controls', 'roster-panel-puc-time-1')
   })
+
+  it('requires inline confirmation before removing an enrolled team', async () => {
+    await openTeamsTab()
+    const row = teamRow('Time 1')
+    await userEvent.click(within(row).getByRole('button', { name: 'Remover' }))
+
+    expect(within(row).getByText('Remover Time 1 do campeonato?')).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Confirmar' })).toBeInTheDocument()
+  })
+
+  it('cancels the enrolled-team removal confirmation', async () => {
+    await openTeamsTab()
+    const row = teamRow('Time 1')
+    await userEvent.click(within(row).getByRole('button', { name: 'Remover' }))
+    await userEvent.click(within(row).getByRole('button', { name: 'Cancelar' }))
+
+    expect(within(row).getByRole('button', { name: 'Remover' })).toBeInTheDocument()
+    expect(screen.queryByText('Remover Time 1 do campeonato?')).not.toBeInTheDocument()
+  })
 })

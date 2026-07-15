@@ -52,6 +52,7 @@ export function TournamentDetailPage() {
   const [enrollError, setEnrollError] = useState('')
   const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
   const [rosterError, setRosterError] = useState('')
+  const [confirmingTeamId, setConfirmingTeamId] = useState<string | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState('')
   const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
@@ -280,26 +281,40 @@ export function TournamentDetailPage() {
                     {enrolledJoins.map((join) => {
                       const teamName = teams.get(join.teamId)?.name ?? join.teamId
                       const isOpen = rosterTeamId === join.teamId
+                      const isConfirming = confirmingTeamId === join.id
                       const panelId = `roster-panel-${join.teamId}`
                       return (
                         <li key={join.id} className={s.enrolledItem}>
                           <div className={s.enrolledRow}>
-                            <span>{teamName}</span>
+                            <span>{isConfirming ? `Remover ${teamName} do campeonato?` : teamName}</span>
                             <div className={s.enrolledActions}>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                aria-expanded={isOpen}
-                                aria-controls={panelId}
-                                className={isOpen ? s.rosterToggleActive : undefined}
-                                onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
-                              >
-                                Elenco
-                              </Button>
-                              <Button type="button" variant="ghost" size="sm" onClick={() => removeTeam.mutate(join.id)}>
-                                Remover
-                              </Button>
+                              {isConfirming ? (
+                                <>
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingTeamId(null)}>
+                                    Cancelar
+                                  </Button>
+                                  <Button type="button" variant="danger" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                                    Confirmar
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    aria-expanded={isOpen}
+                                    aria-controls={panelId}
+                                    className={isOpen ? s.rosterToggleActive : undefined}
+                                    onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                                  >
+                                    Elenco
+                                  </Button>
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingTeamId(join.id)}>
+                                    Remover
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                           <Collapse
