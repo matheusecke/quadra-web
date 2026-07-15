@@ -61,7 +61,7 @@ export function BracketCanvas({ slots, teams, isOrgAdmin, onFillSide, onSetWinne
     return <div className={cn(s.side, isWinner && s.sideWinner)}>
       {isOrgAdmin ? <button type="button" className={s.sideName} aria-label={`Definir ${name} como vencedora`} onClick={() => { void onSetWinner(slot.id, teamId) }}>{name}</button> : <span className={s.sideName}>{name}</span>}
       {score !== null && <span className={s.sideScore}>{score}</span>}
-      {isWinner && <span className={s.winnerTag}>✓ Vencedor</span>}
+      {isWinner && <span className={s.srOnly}>Vencedor</span>}
     </div>
   }
 
