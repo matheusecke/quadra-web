@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { Avatar } from '../../components/ui/Avatar/Avatar'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { useAuth } from '../../hooks/useAuth'
@@ -99,29 +100,12 @@ export function OrgUsersPage() {
               </button>
             )}
           </div>
-          <select
-            className={s.filterSelect}
-            value={status}
-            onChange={(event) => setStatus(event.target.value as AffiliationStatus | '')}
-            aria-label="Filtrar usuários por status"
-          >
-            <option value="">Status</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="PENDING">Pendente</option>
-            <option value="REJECTED">Rejeitado</option>
-          </select>
-          <select
-            className={s.filterSelect}
-            value={role}
-            onChange={(event) => setRole(event.target.value as OrgRole | '')}
-            aria-label="Filtrar usuários por papel"
-          >
-            <option value="">Papel</option>
-            <option value="ORG_ADMIN">ORG_ADMIN</option>
-            <option value="TEAM_ADMIN">TEAM_ADMIN</option>
-            <option value="ATHLETE">ATHLETE</option>
-            <option value="COACHING_STAFF">COACHING_STAFF</option>
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar usuários por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'PENDING', label: 'Pendente' }, { value: 'REJECTED', label: 'Rejeitado' }]} value={status || null} onChange={(value) => setStatus(value as AffiliationStatus | '')} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar usuários por papel" options={[{ value: '', label: 'Papel' }, { value: 'ORG_ADMIN', label: 'ORG_ADMIN' }, { value: 'TEAM_ADMIN', label: 'TEAM_ADMIN' }, { value: 'ATHLETE', label: 'ATHLETE' }, { value: 'COACHING_STAFF', label: 'COACHING_STAFF' }]} value={role || null} onChange={(value) => setRole(value as OrgRole | '')} />
+          </div>
         </div>
       </div>
 

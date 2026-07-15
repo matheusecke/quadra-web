@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button/Button'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Field } from '../../../components/ui/Field/Field'
+import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../../../components/ui/Table/Table'
 import { useCategoriesQuery, useCreateCategory } from '../../../features/sports/queries'
@@ -16,7 +17,7 @@ export function CategoriesPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [name, setName] = useState('')
-  const [sortOrder, setSortOrder] = useState('')
+  const [sortOrder, setSortOrder] = useState<number | ''>('')
   const [formError, setFormError] = useState('')
 
   const sorted = useMemo(
@@ -37,7 +38,7 @@ export function CategoriesPage() {
       setFormError('Informe o nome da categoria.')
       return
     }
-    await createCategory.mutateAsync({ name: name.trim(), sortOrder: sortOrder ? Number(sortOrder) : undefined })
+    await createCategory.mutateAsync({ name: name.trim(), sortOrder: sortOrder === '' ? undefined : sortOrder })
     closeForm()
   }
 
@@ -63,10 +64,9 @@ export function CategoriesPage() {
               label="Nome"
               inputProps={{ value: name, onChange: (e) => setName(e.target.value), placeholder: 'Veterano' }}
             />
-            <Field
-              label="Ordem"
-              inputProps={{ type: 'number', min: 0, value: sortOrder, onChange: (e) => setSortOrder(e.target.value) }}
-            />
+            <Field label="Ordem" id="category-sort-order">
+              <NumberField id="category-sort-order" value={sortOrder} onValueChange={setSortOrder} min={0} />
+            </Field>
           </div>
           {formError && <p className={s.formError} role="alert">{formError}</p>}
           <div className={s.formActions}>

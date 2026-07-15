@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -72,19 +73,12 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
             <button type="button" className={ls.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
           )}
         </div>
-        <select className={ls.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as AffiliationStatus | '')} aria-label="Filtrar por status">
-          <option value="">Status</option>
-          <option value="ACTIVE">Ativo</option>
-          <option value="PENDING">Pendente</option>
-          <option value="REJECTED">Rejeitado</option>
-        </select>
-        <select className={ls.filterSelect} value={role} onChange={(e) => setRole(e.target.value as OrgRole | '')} aria-label="Filtrar por papel">
-          <option value="">Papel</option>
-          <option value="ORG_ADMIN">ORG_ADMIN</option>
-          <option value="TEAM_ADMIN">TEAM_ADMIN</option>
-          <option value="ATHLETE">ATHLETE</option>
-          <option value="COACHING_STAFF">COACHING_STAFF</option>
-        </select>
+        <div className={ls.filterControl}>
+          <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'PENDING', label: 'Pendente' }, { value: 'REJECTED', label: 'Rejeitado' }]} value={status || null} onChange={(value) => setStatus(value as AffiliationStatus | '')} />
+        </div>
+        <div className={ls.filterControl}>
+          <Combobox aria-label="Filtrar por papel" options={[{ value: '', label: 'Papel' }, { value: 'ORG_ADMIN', label: 'ORG_ADMIN' }, { value: 'TEAM_ADMIN', label: 'TEAM_ADMIN' }, { value: 'ATHLETE', label: 'ATHLETE' }, { value: 'COACHING_STAFF', label: 'COACHING_STAFF' }]} value={role || null} onChange={(value) => setRole(value as OrgRole | '')} />
+        </div>
         <Button variant="primary" onClick={() => setShowInvite(true)}>+ Convidar usuário</Button>
       </div>
 
@@ -179,12 +173,9 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
             <button type="button" className={ls.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
           )}
         </div>
-        <select className={ls.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as AffiliationStatus | '')} aria-label="Filtrar por status">
-          <option value="">Status</option>
-          <option value="ACTIVE">Ativo</option>
-          <option value="PENDING">Pendente</option>
-          <option value="REJECTED">Rejeitado</option>
-        </select>
+        <div className={ls.filterControl}>
+          <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'PENDING', label: 'Pendente' }, { value: 'REJECTED', label: 'Rejeitado' }]} value={status || null} onChange={(value) => setStatus(value as AffiliationStatus | '')} />
+        </div>
         <Button variant="primary" onClick={() => setShowInvite(true)}>+ Convidar equipe</Button>
       </div>
 

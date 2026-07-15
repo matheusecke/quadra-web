@@ -215,8 +215,10 @@ describe('OrgUsersPage', () => {
     await screen.findByRole('heading', { name: 'Usuários' })
 
     await user.type(screen.getByLabelText('Buscar usuários da organização'), 'ana')
-    await user.selectOptions(screen.getByLabelText('Filtrar usuários por status'), 'ACTIVE')
-    await user.selectOptions(screen.getByLabelText('Filtrar usuários por papel'), 'ATHLETE')
+    await user.click(screen.getByLabelText('Filtrar usuários por status'))
+    await user.click(screen.getByRole('option', { name: 'Ativo' }))
+    await user.click(screen.getByLabelText('Filtrar usuários por papel'))
+    await user.click(screen.getByRole('option', { name: 'ATHLETE' }))
 
     await waitFor(() => {
       expect(listOrgUsersMock).toHaveBeenLastCalledWith({

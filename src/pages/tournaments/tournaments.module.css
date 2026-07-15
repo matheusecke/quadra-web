@@ -169,19 +169,8 @@
   color: var(--muted);
 }
 
-.filterSelect {
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: var(--accent);
+.filterControl {
+  width: 160px;
 }
 
 /* ── Body (list) ── */
@@ -210,22 +199,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.tableWrap::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.tableWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-
-.tableWrap::-webkit-scrollbar-thumb:hover {
-  background: var(--border-bold);
 }
 
 .table {
@@ -490,17 +463,6 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-6) var(--space-7);
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.detailBody::-webkit-scrollbar {
-  width: 7px;
-}
-
-.detailBody::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 /* ── Sections ── */
@@ -809,7 +771,6 @@
   gap: var(--space-5);
   overflow-x: auto;
   padding-bottom: var(--space-2);
-  scrollbar-width: thin;
 }
 
 .bracketRound {

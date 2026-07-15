@@ -1,4 +1,5 @@
 import { Button } from '../../../components/ui/Button/Button'
+import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import { periodsSum } from '../statistics'
 import { getPeriodLabel } from '../sportsUtils'
 import type { PeriodScore } from '../types'
@@ -28,14 +29,13 @@ export function PeriodScoreEditor({ periods, onChange, onAddOvertime, onRemoveOv
         const value = side === 'home' ? period.homePoints : period.awayPoints
         return (
           <td key={period.periodNumber} className={s.cell}>
-            <input
-              key={`${period.periodNumber}-${side}`}
-              className={s.input}
-              type="number"
-              min={0}
+            <NumberField
+              dense
               aria-label={`${teamName} — ${periodAriaLabel(period)}`}
-              defaultValue={value ?? ''}
-              onChange={(e) => onChange(index, side, Number(e.target.value))}
+              controlLabel={periodAriaLabel(period)}
+              value={value ?? ''}
+              onValueChange={(next) => onChange(index, side, next === '' ? 0 : next)}
+              min={0}
             />
           </td>
         )

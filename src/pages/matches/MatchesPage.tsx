@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -110,29 +111,12 @@ export function MatchesPage() {
             )}
           </div>
 
-          <select
-            className={s.filterSelect}
-            value={tournamentId}
-            onChange={(e) => setTournamentId(e.target.value)}
-            aria-label="Filtrar por campeonato"
-          >
-            <option value="">Campeonato</option>
-            {(tournaments ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            className={s.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            aria-label="Filtrar por status"
-          >
-            <option value="">Status</option>
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: tournament.id, label: tournament.name }))]} value={tournamentId || null} onChange={setTournamentId} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS]} value={statusFilter || null} onChange={(value) => setStatusFilter(value as StatusFilter)} />
+          </div>
         </div>
       </div>
 

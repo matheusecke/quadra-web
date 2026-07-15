@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Input } from '../../../components/ui/Input/Input'
 import s from './InlineCreateField.module.css'
 
@@ -41,17 +42,15 @@ export function InlineCreateField({ label, options, value, onChange, onCreate, c
     <div className={s.wrap}>
       <label className={s.label} htmlFor={selectId}>{label}</label>
       <div className={s.row}>
-        <select
-          id={selectId}
-          className={s.select}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="" disabled>Selecione…</option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>{option.label}</option>
-          ))}
-        </select>
+        <div className={s.controlWrap}>
+          <Combobox
+            id={selectId}
+            options={options.map((option) => ({ value: option.id, label: option.label }))}
+            value={value}
+            onChange={onChange}
+            placeholder="Selecione…"
+          />
+        </div>
         {!isCreating && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setIsCreating(true)}>
             + {createLabel}

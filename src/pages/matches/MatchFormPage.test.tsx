@@ -22,12 +22,12 @@ const renderNew = () => {
 describe('MatchFormPage', () => {
   it('rejects scheduling a team against itself', async () => {
     renderNew()
-    await userEvent.selectOptions(await screen.findByLabelText(/campeonato/i), await screen.findByRole('option', { name: /copa/i }))
-    const home = await screen.findByLabelText(/mandante/i)
-    const away = screen.getByLabelText(/visitante/i)
-    const firstTeam = (home.querySelectorAll('option')[1] as HTMLOptionElement).value
-    await userEvent.selectOptions(home, firstTeam)
-    await userEvent.selectOptions(away, firstTeam)
+    await userEvent.click(await screen.findByLabelText(/campeonato/i))
+    await userEvent.click(await screen.findByRole('option', { name: /copa/i }))
+    await userEvent.click(await screen.findByLabelText(/mandante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
+    await userEvent.click(screen.getByLabelText(/visitante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
     await userEvent.click(screen.getByRole('button', { name: /agendar/i }))
     expect(screen.getByText(/não pode enfrentar a si/i)).toBeInTheDocument()
   })

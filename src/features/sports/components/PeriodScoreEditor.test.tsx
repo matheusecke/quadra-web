@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { PeriodScoreEditor } from './PeriodScoreEditor'
 import type { PeriodScore } from '../types'
 
@@ -13,8 +12,7 @@ describe('PeriodScoreEditor', () => {
     const onChange = vi.fn()
     render(<PeriodScoreEditor periods={periods} onChange={onChange} onAddOvertime={() => {}} onRemoveOvertime={() => {}} homeName="Casa" awayName="Fora" />)
     const input = screen.getByLabelText(/casa.*1º período/i)
-    await userEvent.clear(input)
-    await userEvent.type(input, '20')
+    fireEvent.change(input, { target: { value: '20' } })
     expect(onChange).toHaveBeenLastCalledWith(0, 'home', 20)
   })
   it('shows the derived total for the home row', () => {

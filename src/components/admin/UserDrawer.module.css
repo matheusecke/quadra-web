@@ -52,18 +52,3 @@
   display: flex;
   justify-content: flex-end;
 }
-
-.select {
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 13px;
-}
-
-.select:focus {
-  outline: none;
-  border-color: var(--accent);
-}

@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import s from './EnrollTeamPanel.module.css'
 
 export interface EnrollTeamOption {
@@ -33,18 +34,16 @@ export function EnrollTeamPanel({ availableTeams, onEnroll, errorMessage }: Enro
     <div className={s.panel}>
       <div className={s.row}>
         <label className={s.label} htmlFor={selectId}>Equipe</label>
-        <select
-          id={selectId}
-          className={s.select}
-          value={teamId}
-          onChange={(e) => setTeamId(e.target.value)}
-          disabled={availableTeams.length === 0}
-        >
-          <option value="" disabled>Selecione uma equipe…</option>
-          {availableTeams.map((team) => (
-            <option key={team.id} value={team.id}>{team.name}</option>
-          ))}
-        </select>
+        <div className={s.controlWrap}>
+          <Combobox
+            id={selectId}
+            options={availableTeams.map((team) => ({ value: team.id, label: team.name }))}
+            value={teamId || null}
+            onChange={setTeamId}
+            placeholder="Selecione uma equipe…"
+            disabled={availableTeams.length === 0}
+          />
+        </div>
         <Button type="button" variant="primary" size="sm" onClick={handleEnroll} loading={busy} disabled={!teamId}>
           Inscrever
         </Button>

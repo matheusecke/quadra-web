@@ -23,8 +23,10 @@ describe('TiebreakPanel', () => {
   it('saves the recorded order over the whole block', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     render(<TiebreakPanel rows={rows} standingsState="FINAL" isResolved={false} onSave={onSave} onClear={vi.fn()} onCancel={vi.fn()} />)
-    await userEvent.selectOptions(screen.getByLabelText(/posição de alfa/i), '2')
-    await userEvent.selectOptions(screen.getByLabelText(/posição de beta/i), '1')
+    await userEvent.click(screen.getByLabelText(/posição de alfa/i))
+    await userEvent.click(screen.getByRole('option', { name: '2º' }))
+    await userEvent.click(screen.getByLabelText(/posição de beta/i))
+    await userEvent.click(screen.getByRole('option', { name: '1º' }))
     await userEvent.click(screen.getByRole('button', { name: /registrar sorteio/i }))
     expect(onSave).toHaveBeenCalledWith([
       { tournamentTeamId: 'tt-A', order: 2 },
@@ -35,8 +37,10 @@ describe('TiebreakPanel', () => {
   it('refuses to save an order that repeats a position', async () => {
     const onSave = vi.fn()
     render(<TiebreakPanel rows={rows} standingsState="FINAL" isResolved={false} onSave={onSave} onClear={vi.fn()} onCancel={vi.fn()} />)
-    await userEvent.selectOptions(screen.getByLabelText(/posição de alfa/i), '1')
-    await userEvent.selectOptions(screen.getByLabelText(/posição de beta/i), '1')
+    await userEvent.click(screen.getByLabelText(/posição de alfa/i))
+    await userEvent.click(screen.getByRole('option', { name: '1º' }))
+    await userEvent.click(screen.getByLabelText(/posição de beta/i))
+    await userEvent.click(screen.getByRole('option', { name: '1º' }))
     expect(screen.getByRole('button', { name: /registrar sorteio/i })).toBeDisabled()
     expect(onSave).not.toHaveBeenCalled()
   })

@@ -7,6 +7,7 @@ import { queryClient } from './lib/query-client'
 import { router } from './router'
 import './index.css'
 import './design-system/theme.css'
+import './design-system/scrollbar.css'
 
 const getStoredThemePreference = () => {
   try {

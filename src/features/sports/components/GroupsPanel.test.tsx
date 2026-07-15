@@ -17,8 +17,10 @@ describe('GroupsPanel', () => {
   it('assigns an enrolled team to a group', async () => {
     const onAssign = vi.fn().mockResolvedValue(undefined)
     render(<GroupsPanel groups={[{ id: 'g1', name: 'Grupo A' }]} enrolledTeams={enrolledTeams} assignedTeamIds={[]} onCreateGroup={vi.fn()} onAssign={onAssign} />)
-    await userEvent.selectOptions(screen.getByLabelText(/^grupo$/i), 'g1')
-    await userEvent.selectOptions(screen.getByLabelText(/^equipe$/i), 'team-1')
+    await userEvent.click(screen.getByLabelText(/^grupo$/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Grupo A' }))
+    await userEvent.click(screen.getByLabelText(/^equipe$/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Tigres' }))
     await userEvent.click(screen.getByRole('button', { name: /adicionar ao grupo/i }))
     expect(onAssign).toHaveBeenCalledWith('g1', 'team-1')
   })
@@ -28,8 +30,9 @@ describe('GroupsPanel', () => {
     expect(screen.getByText(/1 equipe inscrita ainda não está em nenhum grupo/i)).toBeInTheDocument()
   })
 
-  it('offers only unassigned teams for assignment', () => {
+  it('offers only unassigned teams for assignment', async () => {
     render(<GroupsPanel groups={[{ id: 'g1', name: 'Grupo A' }]} enrolledTeams={enrolledTeams} assignedTeamIds={['team-1']} onCreateGroup={vi.fn()} onAssign={vi.fn()} />)
+    await userEvent.click(screen.getByLabelText(/^equipe$/i))
     expect(screen.queryByRole('option', { name: 'Tigres' })).not.toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Albatrozes' })).toBeInTheDocument()
   })

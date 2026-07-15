@@ -96,7 +96,7 @@ describe('OrgTeamsPage', () => {
 
     expect(heading).toBeInTheDocument()
     expect(await screen.findByText('Lobos')).toBeInTheDocument()
-    expect(screen.getAllByText('Ativo')[1]).toBeInTheDocument()
+    expect(screen.getByText('Ativo')).toBeInTheDocument()
     expect(pageHeader).toContainElement(screen.getByLabelText('Buscar equipes da organização'))
     expect(pageHeader).toContainElement(screen.getByLabelText('Filtrar equipes por status'))
     expect(listOrgTeamsMock).toHaveBeenCalledWith({
@@ -201,7 +201,8 @@ describe('OrgTeamsPage', () => {
     await screen.findByRole('heading', { name: 'Equipes' })
 
     await user.type(screen.getByLabelText('Buscar equipes da organização'), 'lob')
-    await user.selectOptions(screen.getByLabelText('Filtrar equipes por status'), 'ACTIVE')
+    await user.click(screen.getByLabelText('Filtrar equipes por status'))
+    await user.click(screen.getByRole('option', { name: 'Ativo' }))
 
     await waitFor(() => {
       expect(listOrgTeamsMock).toHaveBeenLastCalledWith({

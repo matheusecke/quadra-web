@@ -12,14 +12,16 @@ describe('MvpSelect', () => {
   it('selects a candidate as MVP', async () => {
     const onChange = vi.fn()
     render(<MvpSelect candidates={candidates} value={null} onChange={onChange} />)
-    await userEvent.selectOptions(screen.getByLabelText(/mvp da partida/i), 'roster-2')
+    await userEvent.click(screen.getByLabelText(/mvp da partida/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Diego Santos (Fora)' }))
     expect(onChange).toHaveBeenCalledWith('roster-2')
   })
 
   it('clears the MVP selection', async () => {
     const onChange = vi.fn()
     render(<MvpSelect candidates={candidates} value="roster-1" onChange={onChange} />)
-    await userEvent.selectOptions(screen.getByLabelText(/mvp da partida/i), '')
+    await userEvent.click(screen.getByLabelText(/mvp da partida/i))
+    await userEvent.click(screen.getByRole('option', { name: '— nenhum —' }))
     expect(onChange).toHaveBeenCalledWith(null)
   })
 })

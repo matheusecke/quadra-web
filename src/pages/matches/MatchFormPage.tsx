@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
+import { DateTimeField } from '../../components/ui/DateTimeField/DateTimeField'
 import { Field } from '../../components/ui/Field/Field'
 import { getTeams } from '../../features/sports/mock-sports-data'
 import { useGroupsQuery, useScheduleMatch, useTournamentsQuery } from '../../features/sports/queries'
@@ -73,59 +75,39 @@ export function MatchFormPage() {
 
       <form className={s.form} onSubmit={handleSubmit}>
         <Field label="Campeonato" id="match-tournament">
-          <select
+          <Combobox
             id="match-tournament"
-            className={s.select}
-            value={tournamentId}
+            options={(tournaments ?? []).map((tournament) => ({ value: tournament.id, label: tournament.name }))}
+            value={tournamentId || null}
+            placeholder="Selecione o campeonato…"
             disabled={Boolean(lockedTournamentId)}
-            onChange={(e) => {
-              setTournamentId(e.target.value)
+            onChange={(value) => {
+              setTournamentId(value)
               setHomeTeamId('')
               setAwayTeamId('')
               setGroupId('')
             }}
-          >
-            <option value="" disabled>Selecione o campeonato…</option>
-            {(tournaments ?? []).map((tournament) => (
-              <option key={tournament.id} value={tournament.id}>{tournament.name}</option>
-            ))}
-          </select>
+          />
         </Field>
 
         <div className={s.teams}>
           <Field label="Mandante" id="match-home">
-            <select id="match-home" className={s.select} value={homeTeamId} onChange={(e) => setHomeTeamId(e.target.value)}>
-              <option value="" disabled>Selecione…</option>
-              {teamOptions.map((team) => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <Combobox id="match-home" options={teamOptions.map((team) => ({ value: team.id, label: team.name }))} value={homeTeamId || null} onChange={setHomeTeamId} placeholder="Selecione…" />
           </Field>
           <Field label="Visitante" id="match-away">
-            <select id="match-away" className={s.select} value={awayTeamId} onChange={(e) => setAwayTeamId(e.target.value)}>
-              <option value="" disabled>Selecione…</option>
-              {teamOptions.map((team) => (
-                <option key={team.id} value={team.id}>{team.name}</option>
-              ))}
-            </select>
+            <Combobox id="match-away" options={teamOptions.map((team) => ({ value: team.id, label: team.name }))} value={awayTeamId || null} onChange={setAwayTeamId} placeholder="Selecione…" />
           </Field>
         </div>
 
         {hasGroupStage && (
           <Field label="Grupo" id="match-group" hint="Só os jogos de grupo entram na classificação do grupo.">
-            <select id="match-group" className={s.select} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-              <option value="">— sem grupo —</option>
-              {(groups ?? []).map((group) => (
-                <option key={group.id} value={group.id}>{group.name}</option>
-              ))}
-            </select>
+            <Combobox id="match-group" options={[{ value: '', label: '— sem grupo —' }, ...(groups ?? []).map((group) => ({ value: group.id, label: group.name }))]} value={groupId || null} onChange={setGroupId} />
           </Field>
         )}
 
-        <Field
-          label="Data e hora"
-          inputProps={{ type: 'datetime-local', value: scheduledAt, onChange: (e) => setScheduledAt(e.target.value) }}
-        />
+        <Field label="Data e hora" id="match-date">
+          <DateTimeField id="match-date" type="datetime-local" value={scheduledAt} onChange={setScheduledAt} />
+        </Field>
         <Field
           label="Local"
           inputProps={{ value: venue, onChange: (e) => setVenue(e.target.value), placeholder: 'Ginásio (opcional)' }}

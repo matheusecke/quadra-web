@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Trophy, X } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -102,32 +103,12 @@ export function TournamentsPage() {
               </button>
             )}
           </div>
-          <select
-            className={s.filterSelect}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TournamentStatus | '')}
-            aria-label="Filtrar por status"
-          >
-            <option value="">Status</option>
-            {STATUS_OPTIONS.map((st) => (
-              <option key={st} value={st}>
-                {TOURNAMENT_STATUS_LABELS[st]}
-              </option>
-            ))}
-          </select>
-          <select
-            className={s.filterSelect}
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-            aria-label="Filtrar por temporada"
-          >
-            <option value="">Temporada</option>
-            {seasons.map((sea) => (
-              <option key={sea.id} value={sea.id}>
-                {sea.label}
-              </option>
-            ))}
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((season) => ({ value: season.id, label: season.label }))]} value={season || null} onChange={setSeason} />
+          </div>
         </div>
       </div>
 

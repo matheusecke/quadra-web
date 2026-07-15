@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { Avatar } from '../../components/ui/Avatar/Avatar'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -97,23 +98,15 @@ export function AdminUsersPage() {
               <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
             )}
           </div>
-          <select className={s.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as EntityStatus | '')} aria-label="Filtrar por status">
-            <option value="">Status</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="INACTIVE">Inativo</option>
-          </select>
-          <select className={s.filterSelect} value={role} onChange={(e) => setRole(e.target.value as OrgRole | '')} aria-label="Filtrar por papel">
-            <option value="">Papel</option>
-            <option value="ORG_ADMIN">ORG_ADMIN</option>
-            <option value="TEAM_ADMIN">TEAM_ADMIN</option>
-            <option value="ATHLETE">ATHLETE</option>
-            <option value="COACHING_STAFF">COACHING_STAFF</option>
-          </select>
-          <select className={s.filterSelect} value={isSystemAdmin} onChange={(e) => setIsSystemAdmin(e.target.value as '' | 'true' | 'false')} aria-label="Filtrar por admin">
-            <option value="">Admin</option>
-            <option value="true">Sim</option>
-            <option value="false">Não</option>
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'INACTIVE', label: 'Inativo' }]} value={status || null} onChange={(value) => setStatus(value as EntityStatus | '')} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por papel" options={[{ value: '', label: 'Papel' }, { value: 'ORG_ADMIN', label: 'ORG_ADMIN' }, { value: 'TEAM_ADMIN', label: 'TEAM_ADMIN' }, { value: 'ATHLETE', label: 'ATHLETE' }, { value: 'COACHING_STAFF', label: 'COACHING_STAFF' }]} value={role || null} onChange={(value) => setRole(value as OrgRole | '')} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por admin" options={[{ value: '', label: 'Admin' }, { value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} value={isSystemAdmin || null} onChange={(value) => setIsSystemAdmin(value as '' | 'true' | 'false')} />
+          </div>
         </div>
       </div>
 

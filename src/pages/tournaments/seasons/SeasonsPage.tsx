@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { CalendarRange } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { Button } from '../../../components/ui/Button/Button'
+import { DateTimeField } from '../../../components/ui/DateTimeField/DateTimeField'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Field } from '../../../components/ui/Field/Field'
@@ -68,14 +69,12 @@ export function SeasonsPage() {
               label="Rótulo"
               inputProps={{ value: label, onChange: (e) => setLabel(e.target.value), placeholder: '2026/27' }}
             />
-            <Field
-              label="Início"
-              inputProps={{ type: 'date', value: startDate, onChange: (e) => setStartDate(e.target.value) }}
-            />
-            <Field
-              label="Fim"
-              inputProps={{ type: 'date', value: endDate, onChange: (e) => setEndDate(e.target.value) }}
-            />
+            <Field label="Início" id="season-start">
+              <DateTimeField id="season-start" type="date" value={startDate} onChange={setStartDate} />
+            </Field>
+            <Field label="Fim" id="season-end">
+              <DateTimeField id="season-end" type="date" value={endDate} onChange={setEndDate} />
+            </Field>
           </div>
           {formError && <p className={s.formError} role="alert">{formError}</p>}
           <div className={s.formActions}>

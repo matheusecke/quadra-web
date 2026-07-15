@@ -37,3 +37,15 @@ export { Skeleton } from './Skeleton'
 
 export { PasswordInput } from './PasswordInput'
 export type { PasswordInputProps } from './PasswordInput'
+
+export { Combobox } from './Combobox'
+export type { ComboboxOption, ComboboxProps } from './Combobox'
+
+export { SearchSelect } from './SearchSelect'
+export type { SearchSelectOption } from './SearchSelect'
+
+export { NumberField } from './NumberField'
+export type { NumberFieldProps } from './NumberField'
+
+export { DateTimeField } from './DateTimeField'
+export type { DateTimeFieldProps } from './DateTimeField'
