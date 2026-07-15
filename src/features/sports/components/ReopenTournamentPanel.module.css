@@ -1,0 +1,44 @@
+.panel {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-strong);
+  background: var(--status-warn-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.risk {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.risk svg {
+  color: var(--status-warn);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.risk strong {
+  color: var(--ink);
+}
+
+.error {
+  margin: 0;
+  background: var(--status-live-bg);
+  color: var(--status-live);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: 2px;
+}
