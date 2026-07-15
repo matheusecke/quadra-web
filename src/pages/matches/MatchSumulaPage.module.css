@@ -34,7 +34,7 @@
 
 .scoreLabel {
   position: absolute;
-  top: var(--space-1);
+  top: var(--space-3);
   font-size: 12px;
   color: var(--muted);
 }
