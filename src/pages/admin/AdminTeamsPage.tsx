@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -56,11 +57,9 @@ export function AdminTeamsPage() {
               <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">✕</button>
             )}
           </div>
-          <select className={s.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as EntityStatus | '')} aria-label="Filtrar por status">
-            <option value="">Status</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="INACTIVE">Inativo</option>
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'INACTIVE', label: 'Inativo' }]} value={status || null} onChange={(value) => setStatus(value as EntityStatus | '')} />
+          </div>
         </div>
       </div>
 

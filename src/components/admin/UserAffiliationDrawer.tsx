@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Drawer } from './Drawer'
 import { Button } from '../ui/Button/Button'
+import { Combobox } from '../ui/Combobox/Combobox'
 import { Field } from '../ui/Field/Field'
 import { SearchSelect, type SearchSelectOption } from '../ui/SearchSelect'
 import * as adminApi from '../../services/adminApi'
@@ -72,12 +73,7 @@ function UserAffiliationEditForm({ affiliation, orgId, onSaved }: EditFormProps)
     <>
       {saveError && <p className={s.saveError}>{saveError}</p>}
       <Field label="Papel">
-        <select className={s.select} value={role} onChange={(e) => setRole(e.target.value as OrgRole)} aria-label="Papel">
-          <option value="ORG_ADMIN">ORG_ADMIN</option>
-          <option value="TEAM_ADMIN">TEAM_ADMIN</option>
-          <option value="ATHLETE">ATHLETE</option>
-          <option value="COACHING_STAFF">COACHING_STAFF</option>
-        </select>
+        <Combobox aria-label="Papel" options={[{ value: 'ORG_ADMIN', label: 'ORG_ADMIN' }, { value: 'TEAM_ADMIN', label: 'TEAM_ADMIN' }, { value: 'ATHLETE', label: 'ATHLETE' }, { value: 'COACHING_STAFF', label: 'COACHING_STAFF' }]} value={role} onChange={(value) => setRole(value as OrgRole)} />
       </Field>
       {role !== 'ORG_ADMIN' && (
         <Field label="Equipe (opcional)">
@@ -148,12 +144,7 @@ function UserAffiliationInviteForm({ orgId, onSaved }: InviteFormProps) {
         />
       </Field>
       <Field label="Papel">
-        <select className={s.select} value={role} onChange={(e) => setRole(e.target.value as OrgRole)} aria-label="Papel">
-          <option value="ORG_ADMIN">ORG_ADMIN</option>
-          <option value="TEAM_ADMIN">TEAM_ADMIN</option>
-          <option value="ATHLETE">ATHLETE</option>
-          <option value="COACHING_STAFF">COACHING_STAFF</option>
-        </select>
+        <Combobox aria-label="Papel" options={[{ value: 'ORG_ADMIN', label: 'ORG_ADMIN' }, { value: 'TEAM_ADMIN', label: 'TEAM_ADMIN' }, { value: 'ATHLETE', label: 'ATHLETE' }, { value: 'COACHING_STAFF', label: 'COACHING_STAFF' }]} value={role} onChange={(value) => setRole(value as OrgRole)} />
       </Field>
       {role !== 'ORG_ADMIN' && (
         <Field label="Equipe">
