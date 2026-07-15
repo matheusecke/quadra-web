@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-4);
+  margin-top: var(--space-2);
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -19,6 +20,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+/* Papel must fit its longest option ("Comissão técnica") from the first render,
+   so the trigger width never changes with the selected value. No width token
+   exists in the DS; this min-width covers the longest label + chevron + padding.
+   min-width (not width) so it can still grow but never compress the label. */
+.roleField {
+  min-width: 12rem;
 }
 
 .label {

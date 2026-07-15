@@ -118,7 +118,7 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
                   <TableCell>{entry.name}</TableCell>
                   <TableCell>
                     {isEditing ? (
-                      <div className={s.field}>
+                      <div className={`${s.field} ${s.roleField}`}>
                         <label className={s.label} htmlFor={editRoleId}>Papel</label>
                         <Combobox
                           id={editRoleId}
@@ -159,7 +159,7 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
       )}
 
       <div className={s.addRow}>
-        <div className={s.field}>
+        <div className={`${s.field} ${s.roleField}`}>
           <label className={s.label} htmlFor={athleteId}>Atleta</label>
           <Combobox
             id={athleteId}
