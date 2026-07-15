@@ -17,6 +17,7 @@ import type { StandingTeamInput } from './standings'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CompleteTournamentInput,
   CreateCategoryInput,
   CreateBracketSlotInput,
   CreateGroupInput,
@@ -25,6 +26,7 @@ import type {
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
+  ReopenTournamentInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
   SetTiebreakOrderInput,
@@ -385,7 +387,53 @@ export function createSportsStore(seed: SportsStoreSeed) {
         throw new Error('Winner must be one of the slot sides')
       }
       slot.winnerTournamentTeamId = input.winnerTournamentTeamId
+      const tournament = requireTournament(slot.tournamentId)
+      if (tournament.status === 'COMPLETED') {
+        tournament.status = 'IN_PROGRESS'
+        tournament.championTournamentTeamId = null
+      }
       return slot
+    },
+
+    championSuggestion(tournamentId: string): string | null {
+      const tournament = requireTournament(tournamentId)
+      if (tournament.format === 'GROUP_STAGE') return null
+      if (tournament.format === 'LEAGUE') {
+        const envelope = buildStandings(tournamentId)[0]
+        return envelope?.standingsState === 'FINAL' ? envelope.rows.find((row) => row.position === 1)?.tournamentTeamId ?? null : null
+      }
+      const slots = bracketSlots.filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
+      if (slots.length === 0) return null
+      const lastRound = Math.max(...slots.map((slot) => slot.roundNumber))
+      const finalRound = slots.filter((slot) => slot.roundNumber === lastRound)
+      return finalRound.length === 1 ? finalRound[0].winnerTournamentTeamId : null
+    },
+    completeTournament(input: CompleteTournamentInput): Tournament {
+      const tournament = requireTournament(input.tournamentId)
+      if (tournament.status !== 'IN_PROGRESS') throw new Error('Only a tournament in progress can be completed')
+      const champion = input.championTournamentTeamId
+      if (tournament.format === 'GROUP_STAGE') {
+        if (champion) throw new Error('A group stage has no champion')
+      } else {
+        if (!champion) throw new Error('Champion is required for this format')
+        const enrolled = tournamentTeams.find((entry) => entry.id === champion && isActive(entry) && entry.tournamentId === input.tournamentId)
+        if (!enrolled) throw new Error('Champion must be a team enrolled in this tournament')
+        if ((tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT') && !bracketSlots.some((slot) => isActive(slot) && slot.tournamentId === input.tournamentId && slot.winnerTournamentTeamId === champion)) {
+          throw new Error('Champion must have won a bracket slot')
+        }
+      }
+      tournament.status = 'COMPLETED'
+      tournament.championTournamentTeamId = champion
+      tournament.updatedAt = new Date().toISOString()
+      return tournament
+    },
+    reopenTournament(input: ReopenTournamentInput): Tournament {
+      const tournament = requireTournament(input.tournamentId)
+      if (tournament.status !== 'COMPLETED') throw new Error('Only a completed tournament can be reopened')
+      tournament.status = 'IN_PROGRESS'
+      tournament.championTournamentTeamId = null
+      tournament.updatedAt = new Date().toISOString()
+      return tournament
     },
     removeBracketSlot(id: string): void {
       const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))

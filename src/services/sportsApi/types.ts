@@ -24,7 +24,16 @@ export interface CreateTournamentInput {
   regulation?: string
 }
 
-export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: TournamentStatus }
+export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: Exclude<TournamentStatus, 'COMPLETED'> }
+
+export interface CompleteTournamentInput {
+  tournamentId: string
+  championTournamentTeamId: string | null
+}
+
+export interface ReopenTournamentInput {
+  tournamentId: string
+}
 
 export interface CreateBracketSlotInput {
   tournamentId: string

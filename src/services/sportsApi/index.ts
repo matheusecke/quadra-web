@@ -20,6 +20,7 @@ import type { BracketSlot, RosterEntry, TournamentGroup, TournamentGroupTeam, To
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CompleteTournamentInput,
   CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
@@ -28,6 +29,7 @@ import type {
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
+  ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
@@ -126,6 +128,9 @@ export const getTournaments = () => Promise.resolve(store.listTournaments())
 export const getTournament = (id: string) => Promise.resolve(store.getTournament(id))
 export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
 export const updateTournament = (id: string, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
+export const completeTournament = (input: CompleteTournamentInput) => Promise.resolve(store.completeTournament(input))
+export const reopenTournament = (input: ReopenTournamentInput) => Promise.resolve(store.reopenTournament(input))
+export const getChampionSuggestion = (tournamentId: string) => Promise.resolve(store.championSuggestion(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export const getTournamentTeams = (tournamentId: string) => Promise.resolve(store.listTournamentTeams(tournamentId))

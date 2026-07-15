@@ -3,6 +3,7 @@ import * as sportsApi from '../../services/sportsApi'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CompleteTournamentInput,
   CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
@@ -11,6 +12,7 @@ import type {
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
+  ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
@@ -35,6 +37,7 @@ export const tournamentKeys = {
   detail: (id: string) => [...tournamentKeys.all, 'detail', id] as const,
   teams: (id: string) => [...tournamentKeys.all, 'teams', id] as const,
   roster: (tournamentId: string, teamId: string) => [...tournamentKeys.all, 'roster', tournamentId, teamId] as const,
+  championSuggestion: (id: string) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
 }
 
 export const matchKeys = {
@@ -169,6 +172,10 @@ export function useBracketSlotsQuery(tournamentId: string | undefined) {
   })
 }
 
+export function useChampionSuggestionQuery(tournamentId: string | undefined) {
+  return useQuery({ queryKey: tournamentKeys.championSuggestion(tournamentId ?? ''), queryFn: () => sportsApi.getChampionSuggestion(tournamentId!), enabled: Boolean(tournamentId) })
+}
+
 // ── Mutations ────────────────────────────────────────────────────────────────
 
 export function useCreateSeason() {
@@ -201,6 +208,16 @@ export function useUpdateTournament() {
     mutationFn: ({ id, input }: { id: string; input: UpdateTournamentInput }) => sportsApi.updateTournament(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
   })
+}
+
+export function useCompleteTournament() {
+  const queryClient = useQueryClient()
+  return useMutation({ mutationFn: (input: CompleteTournamentInput) => sportsApi.completeTournament(input), onSuccess: () => { queryClient.invalidateQueries({ queryKey: tournamentKeys.all }); queryClient.invalidateQueries({ queryKey: bracketKeys.all }) } })
+}
+
+export function useReopenTournament() {
+  const queryClient = useQueryClient()
+  return useMutation({ mutationFn: (input: ReopenTournamentInput) => sportsApi.reopenTournament(input), onSuccess: () => { queryClient.invalidateQueries({ queryKey: tournamentKeys.all }); queryClient.invalidateQueries({ queryKey: bracketKeys.all }) } })
 }
 
 export function useEnrollTeam() {
