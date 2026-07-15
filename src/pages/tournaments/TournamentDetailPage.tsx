@@ -13,7 +13,8 @@ import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPane
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
 import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
 import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
-import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
+import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -41,6 +42,8 @@ export function TournamentDetailPage() {
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
   const addRosterEntry = useAddRosterEntry()
+  const updateRosterEntry = useUpdateRosterEntry()
+  const removeRosterEntry = useRemoveRosterEntry()
   const completeTournament = useCompleteTournament()
   const reopenTournament = useReopenTournament()
   const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId)
@@ -56,6 +59,7 @@ export function TournamentDetailPage() {
   const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
 
   const rosterDisplay = (roster ?? []).map((entry) => ({
+    id: entry.id,
     athleteId: entry.athleteId,
     name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? entry.athleteId,
     jerseyNumber: entry.jerseyNumber,
@@ -76,6 +80,16 @@ export function TournamentDetailPage() {
     } catch {
       setRosterError('Atleta já está em uma equipe no mesmo campeonato.')
     }
+  }
+
+  const handleUpdateRoster = async (id: string, input: UpdateRosterEntryInput) => {
+    if (!tournamentId || !rosterTeamId) return
+    await updateRosterEntry.mutateAsync({ id, tournamentId, teamId: rosterTeamId, input })
+  }
+
+  const handleRemoveRoster = (id: string) => {
+    if (!tournamentId || !rosterTeamId) return
+    removeRosterEntry.mutate({ id, tournamentId, teamId: rosterTeamId })
   }
 
   const availableTeams = useMemo(() => {
@@ -287,6 +301,8 @@ export function TournamentDetailPage() {
                     roster={rosterDisplay}
                     availableAthletes={availableAthletes}
                     onAdd={handleAddRoster}
+                    onUpdate={handleUpdateRoster}
+                    onRemove={handleRemoveRoster}
                     errorMessage={rosterError}
                   />
                 )}
