@@ -127,3 +127,75 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     expect(screen.queryByText('Remover Time 1 do campeonato?')).not.toBeInTheDocument()
   })
 })
+
+describe('TournamentDetailPage champion band', () => {
+  it('labels the champion to a non-admin on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-geral-2026')
+    expect(await screen.findByText('Campeão')).toBeInTheDocument()
+  })
+
+  it('shows the champion team name on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-geral-2026')
+    const championLabel = await screen.findByText('Campeão')
+    expect(within(championLabel.parentElement!).getByText('Time 1')).toBeInTheDocument()
+  })
+
+  it('shows no champion on a tournament that is not completed', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+    expect(screen.queryByText('Campeão')).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage admin region', () => {
+  const region = () => screen.getByRole('region', { name: 'Administração' })
+
+  it('offers reopen on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    expect(within(region()).getByRole('button', { name: 'Reabrir campeonato' })).toBeInTheDocument()
+  })
+
+  it('does not offer complete on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    expect(within(region()).queryByRole('button', { name: 'Encerrar campeonato' })).not.toBeInTheDocument()
+  })
+
+  it('offers only edit on a tournament that is neither in progress nor completed', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+    expect(within(region()).queryByRole('button', { name: 'Reabrir campeonato' })).not.toBeInTheDocument()
+  })
+
+  it('reveals the reopen confirmation when reopen is clicked', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    expect(screen.getByRole('button', { name: 'Confirmar reabertura' })).toBeInTheDocument()
+  })
+
+  it('keeps the tournament completed until reopen is confirmed', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    expect(screen.getByText('Encerrado')).toBeInTheDocument()
+  })
+
+  it('hides the reopen confirmation on cancel', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('button', { name: 'Confirmar reabertura' })).not.toBeInTheDocument()
+  })
+})

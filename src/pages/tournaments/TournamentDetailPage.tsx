@@ -13,6 +13,8 @@ import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../fe
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
 import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
+import { ChampionHighlight } from '../../features/sports/components/ChampionHighlight'
+import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
 import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
 import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
 import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
@@ -55,6 +57,8 @@ export function TournamentDetailPage() {
   const [confirmingTeamId, setConfirmingTeamId] = useState<string | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState('')
+  const [isReopening, setIsReopening] = useState(false)
+  const [reopenError, setReopenError] = useState('')
   const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
   const teams = teamMap(getTeams())
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
@@ -117,6 +121,17 @@ export function TournamentDetailPage() {
       setIsCompleting(false)
     } catch (error) {
       setCompletionError(error instanceof Error && error.message === 'Champion must have won a bracket slot' ? 'O campeão precisa ser uma equipe que venceu uma vaga do chaveamento.' : error instanceof Error ? error.message : '')
+    }
+  }
+
+  const handleReopen = async () => {
+    if (!tournamentId) return
+    try {
+      await reopenTournament.mutateAsync({ tournamentId })
+      setReopenError('')
+      setIsReopening(false)
+    } catch (error) {
+      setReopenError(error instanceof Error ? error.message : 'Não foi possível reabrir o campeonato.')
     }
   }
 
@@ -221,29 +236,11 @@ export function TournamentDetailPage() {
             <Badge variant={tournamentStatusVariant(tournament.status)}>
               {TOURNAMENT_STATUS_LABELS[tournament.status]}
             </Badge>
-            {isOrgAdmin && (
-              <Button variant="secondary" size="sm" onClick={() => navigate(`/tournaments/${tournamentId}/edit`)}>
-                Editar
-              </Button>
-            )}
-            {tournament.status === 'COMPLETED' && championName && <span>🏆 Campeão: {championName}</span>}
-            {isOrgAdmin && tournament.status === 'IN_PROGRESS' && (
-              <Button variant="secondary" size="sm" onClick={() => setIsCompleting(true)}>Encerrar campeonato</Button>
-            )}
-            {isOrgAdmin && tournament.status === 'COMPLETED' && (
-              <Button variant="secondary" size="sm" onClick={() => { if (tournamentId) void reopenTournament.mutateAsync({ tournamentId }) }}>Reabrir</Button>
-            )}
           </div>
         </div>
-        {isCompleting && (
-          <CompleteTournamentPanel
-            teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? entry.teamId }))}
-            suggestion={championSuggestion ?? null}
-            requiresChampion={tournament.format !== 'GROUP_STAGE'}
-            onComplete={handleComplete}
-            onCancel={() => { setIsCompleting(false); setCompletionError('') }}
-            errorMessage={completionError}
-          />
+
+        {tournament.status === 'COMPLETED' && championName && (
+          <ChampionHighlight teamName={championName} />
         )}
 
         {/* Compact info strip — not dashboard cards */}
@@ -261,6 +258,46 @@ export function TournamentDetailPage() {
             <span className={s.infoValue}>{matchProgress(tournament)}</span>
           </div>
         </div>
+
+        {isOrgAdmin && (
+          <section className={s.adminRegion} aria-label="Administração">
+            <span className={s.adminLabel}>Administração</span>
+            <div className={s.adminRow}>
+              <Button variant="secondary" size="sm" onClick={() => navigate(`/tournaments/${tournamentId}/edit`)}>
+                Editar campeonato
+              </Button>
+              {tournament.status === 'IN_PROGRESS' && (
+                <Button variant="secondary" size="sm" onClick={() => setIsCompleting(true)}>
+                  Encerrar campeonato
+                </Button>
+              )}
+              {tournament.status === 'COMPLETED' && (
+                <Button variant="secondary" size="sm" onClick={() => setIsReopening(true)}>
+                  Reabrir campeonato
+                </Button>
+              )}
+            </div>
+            {isCompleting && (
+              <CompleteTournamentPanel
+                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? entry.teamId }))}
+                suggestion={championSuggestion ?? null}
+                requiresChampion={tournament.format !== 'GROUP_STAGE'}
+                onComplete={handleComplete}
+                onCancel={() => { setIsCompleting(false); setCompletionError('') }}
+                errorMessage={completionError}
+              />
+            )}
+            {isReopening && (
+              <ReopenTournamentPanel
+                championName={championName}
+                onConfirm={handleReopen}
+                onCancel={() => { setIsReopening(false); setReopenError('') }}
+                loading={reopenTournament.isPending}
+                errorMessage={reopenError}
+              />
+            )}
+          </section>
+        )}
 
         <div className={s.tabsBar}>
           <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="line" />
