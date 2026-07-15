@@ -36,6 +36,7 @@ import type {
   SubmitMatchResultInput,
   UpdateSeasonInput,
   UpdateBracketSlotInput,
+  UpdateRosterEntryInput,
   UpdateTournamentInput,
 } from './types'
 
@@ -148,6 +149,8 @@ export const removeBracketSlot = (id: string) => Promise.resolve(store.removeBra
 // ── Roster ───────────────────────────────────────────────────────────────────────
 export const getRoster = (tournamentId: string, teamId: string) => Promise.resolve(store.listRoster(tournamentId, teamId))
 export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
+export const updateRosterEntry = (id: string, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
+export const removeRosterEntry = (id: string) => Promise.resolve(store.removeRosterEntry(id))
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
 export const getAthlete = (id: string) => Promise.resolve(getAthleteById(id))

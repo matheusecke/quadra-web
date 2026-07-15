@@ -19,6 +19,7 @@ import type {
   SubmitMatchResultInput,
   UpdateTournamentInput,
   UpdateBracketSlotInput,
+  UpdateRosterEntryInput,
 } from '../../services/sportsApi/types'
 
 export const seasonKeys = {
@@ -288,6 +289,25 @@ export function useAddRosterEntry() {
     mutationFn: (input: RosterEntryInput) => sportsApi.addRosterEntry(input),
     onSuccess: (_data, input) =>
       queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(input.tournamentId, input.teamId) }),
+  })
+}
+
+export function useUpdateRosterEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; tournamentId: string; teamId: string; input: UpdateRosterEntryInput }) =>
+      sportsApi.updateRosterEntry(id, input),
+    onSuccess: (_data, variables) =>
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.teamId) }),
+  })
+}
+
+export function useRemoveRosterEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: string; tournamentId: string; teamId: string }) => sportsApi.removeRosterEntry(id),
+    onSuccess: (_data, variables) =>
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.teamId) }),
   })
 }
 
