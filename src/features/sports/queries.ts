@@ -3,16 +3,20 @@ import * as sportsApi from '../../services/sportsApi'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
+  CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
+  LinkSlotMatchInput,
   RosterEntryInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
+  SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateTournamentInput,
+  UpdateBracketSlotInput,
 } from '../../services/sportsApi/types'
 
 export const seasonKeys = {
@@ -56,6 +60,11 @@ export const groupKeys = {
 export const standingsKeys = {
   all: ['standings'] as const,
   list: (tournamentId: string) => ['standings', tournamentId] as const,
+}
+
+export const bracketKeys = {
+  all: ['bracket'] as const,
+  list: (tournamentId: string) => ['bracket', tournamentId] as const,
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -152,6 +161,14 @@ export function useStandingsQuery(tournamentId: string | undefined) {
   })
 }
 
+export function useBracketSlotsQuery(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: bracketKeys.list(tournamentId ?? ''),
+    queryFn: () => sportsApi.getBracketSlots(tournamentId!),
+    enabled: Boolean(tournamentId),
+  })
+}
+
 // ── Mutations ────────────────────────────────────────────────────────────────
 
 export function useCreateSeason() {
@@ -199,6 +216,52 @@ export function useRemoveTournamentTeam() {
   return useMutation({
     mutationFn: (id: string) => sportsApi.removeTournamentTeam(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
+  })
+}
+
+export function useCreateBracketSlot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateBracketSlotInput) => sportsApi.createBracketSlot(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useUpdateBracketSlot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateBracketSlotInput }) => sportsApi.updateBracketSlot(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useLinkSlotMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: LinkSlotMatchInput) => sportsApi.linkSlotMatch(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bracketKeys.all })
+      queryClient.invalidateQueries({ queryKey: matchKeys.all })
+    },
+  })
+}
+
+export function useSetSlotWinner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: SetSlotWinnerInput) => sportsApi.setSlotWinner(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useRemoveBracketSlot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => sportsApi.removeBracketSlot(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bracketKeys.all })
+      queryClient.invalidateQueries({ queryKey: matchKeys.all })
+    },
   })
 }
 
