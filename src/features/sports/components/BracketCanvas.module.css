@@ -1,15 +1,15 @@
 .canvas { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: var(--space-4); overflow-x: auto; }
 .round { display: grid; align-content: start; gap: var(--space-3); }
-.slot { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.slot { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .slotHeader { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .slotTitle, .remove, .sideName { border: 0; padding: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
-.slotTitle { font-weight: var(--font-weight-semibold); }
-.remove { color: var(--color-text-muted); }
+.slotTitle { font-weight: 600; }
+.remove { color: var(--muted); }
 .side { display: flex; align-items: center; gap: var(--space-2); min-height: var(--space-6); }
-.sideWinner { font-weight: var(--font-weight-semibold); }
+.sideWinner { font-weight: 600; }
 .sideScore { margin-left: auto; }
-.winnerTag, .hint, .tbd { color: var(--color-text-muted); font-size: var(--font-size-sm); }
-.footer, .scheduler { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: var(--font-size-sm); }
-.ghostSlot, .ghostRound { min-height: var(--space-10); border: 1px dashed var(--color-border); border-radius: var(--radius-md); color: var(--color-text-muted); background: transparent; font: inherit; cursor: pointer; }
+.winnerTag, .hint, .tbd { color: var(--muted); font-size: 13px; }
+.footer, .scheduler { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: 13px; }
+.ghostSlot, .ghostRound { min-height: var(--space-7); border: 1px dashed var(--border); border-radius: var(--radius); color: var(--muted); background: transparent; font: inherit; cursor: pointer; }
 .ghostRound { align-self: stretch; min-width: 200px; padding: var(--space-3); }
-.error { margin-top: var(--space-3); color: var(--color-danger); }
+.error { margin-top: var(--space-3); color: var(--status-live); }
