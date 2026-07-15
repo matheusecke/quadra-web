@@ -104,10 +104,10 @@ export function TournamentsPage() {
             )}
           </div>
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />
+            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((season) => ({ value: season.id, label: season.label }))]} value={season || null} onChange={setSeason} />
           </div>
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((season) => ({ value: season.id, label: season.label }))]} value={season || null} onChange={setSeason} />
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />
           </div>
         </div>
       </div>
