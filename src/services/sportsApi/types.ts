@@ -87,6 +87,11 @@ export interface RosterEntryInput {
   role: 'ATHLETE' | 'COACHING_STAFF'
 }
 
+export interface UpdateRosterEntryInput {
+  jerseyNumber?: number
+  role?: 'ATHLETE' | 'COACHING_STAFF'
+}
+
 export interface ScheduleMatchInput {
   tournamentId: string
   homeTeamId: string

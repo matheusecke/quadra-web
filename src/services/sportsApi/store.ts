@@ -34,6 +34,7 @@ import type {
   SubmitMatchResultInput,
   UpdateSeasonInput,
   UpdateBracketSlotInput,
+  UpdateRosterEntryInput,
   UpdateTournamentInput,
 } from './types'
 
@@ -472,6 +473,16 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
       rosterEntries.push(record)
       return record
+    },
+    updateRosterEntry(id: string, input: UpdateRosterEntryInput): RosterEntry {
+      const entry = rosterEntries.find((record) => record.id === id)
+      if (!entry) throw new Error('Roster entry not found')
+      Object.assign(entry, input)
+      return entry
+    },
+    removeRosterEntry(id: string): void {
+      const entry = rosterEntries.find((record) => record.id === id)
+      if (entry) entry.isDeleted = true
     },
 
     // ── Groups ─────────────────────────────────────────────────────────────────
