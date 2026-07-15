@@ -35,6 +35,14 @@ describe('validatePlayerStatLine', () => {
     const errors = validatePlayerStatLine({ pts: 5, fgm: 9, fga: 4, tpm: 0, tpa: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
     expect(errors.map((e) => e.field)).toContain('fgm')
   })
+  it('flags three-point attempts greater than field-goal attempts', () => {
+    const errors = validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, tpm: 0, tpa: 5, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
+    expect(errors.map((e) => e.field)).toContain('tpa')
+  })
+  it('flags three-point makes greater than field-goal makes', () => {
+    const errors = validatePlayerStatLine({ pts: 9, fgm: 2, fga: 4, tpm: 3, tpa: 4, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
+    expect(errors.map((e) => e.field)).toContain('tpm')
+  })
   it('returns no errors for a consistent line', () => {
     expect(validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, tpm: 1, tpa: 2, ftm: 0, fta: 0, reb: 3, ast: 1, stl: 0, blk: 0, to: 1, pf: 2, min: 600 })).toEqual([])
   })

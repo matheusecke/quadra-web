@@ -42,7 +42,9 @@ export function validatePlayerStatLine(line: PlayerStatInput): StatValidationErr
     if (line[field] < 0) errors.push({ field, message: 'Não pode ser negativo' })
   }
   if (line.fgm > line.fga) errors.push({ field: 'fgm', message: 'FGM não pode exceder FGA' })
+  if (line.tpa > line.fga) errors.push({ field: 'tpa', message: '3PA não pode exceder FGA' })
   if (line.tpm > line.tpa) errors.push({ field: 'tpm', message: '3PM não pode exceder 3PA' })
+  if (line.tpm > line.fgm) errors.push({ field: 'tpm', message: '3PM não pode exceder FGM' })
   if (line.ftm > line.fta) errors.push({ field: 'ftm', message: 'FTM não pode exceder FTA' })
   return errors
 }
