@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge/Badge'
+import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import type { Tournament, Match, MatchStatus, Team } from '../../../features/sports/types'
 import {
@@ -65,30 +66,15 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
             </button>
           )}
         </div>
-        <select className={s.filterSelect} value={team} onChange={(e) => setTeam(e.target.value)} aria-label="Filtrar por equipe">
-          <option value="">Equipe</option>
-          {tournament.teamIds.map((id) => (
-            <option key={id} value={id}>
-              {teams.get(id)?.name ?? id}
-            </option>
-          ))}
-        </select>
-        <select className={s.filterSelect} value={status} onChange={(e) => setStatus(e.target.value as MatchStatus | '')} aria-label="Filtrar por status">
-          <option value="">Status</option>
-          {STATUS_OPTIONS.map((st) => (
-            <option key={st} value={st}>
-              {MATCH_STATUS_LABELS[st]}
-            </option>
-          ))}
-        </select>
-        <select className={s.filterSelect} value={phase} onChange={(e) => setPhase(e.target.value)} aria-label="Filtrar por fase">
-          <option value="">Fase</option>
-          {phases.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        <div className={s.filterControl}>
+          <Combobox aria-label="Filtrar por equipe" options={[{ value: '', label: 'Equipe' }, ...tournament.teamIds.map((id) => ({ value: id, label: teams.get(id)?.name ?? id }))]} value={team || null} onChange={setTeam} />
+        </div>
+        <div className={s.filterControl}>
+          <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: MATCH_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as MatchStatus | '')} />
+        </div>
+        <div className={s.filterControl}>
+          <Combobox aria-label="Filtrar por fase" options={[{ value: '', label: 'Fase' }, ...phases.map((value) => ({ value, label: value }))]} value={phase || null} onChange={setPhase} />
+        </div>
       </div>
 
       {filtered.length === 0 ? (

@@ -2,6 +2,8 @@ import { useEffect, useReducer } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
+import { DateTimeField } from '../../components/ui/DateTimeField/DateTimeField'
 import { Field } from '../../components/ui/Field/Field'
 import { InlineCreateField } from '../../features/sports/components/InlineCreateField'
 import {
@@ -111,28 +113,21 @@ export function TournamentFormPage() {
         />
 
         <Field label="Formato" id="tournament-format">
-          <select
+          <Combobox
             id="tournament-format"
-            className={s.select}
+            options={FORMAT_OPTIONS.map((format) => ({ value: format, label: TOURNAMENT_FORMAT_LABELS[format] }))}
             value={state.format}
-            onChange={(e) => dispatch({ type: 'setField', field: 'format', value: e.target.value as TournamentFormat })}
-          >
-            {FORMAT_OPTIONS.map((format) => (
-              <option key={format} value={format}>{TOURNAMENT_FORMAT_LABELS[format]}</option>
-            ))}
-          </select>
+            onChange={(value) => dispatch({ type: 'setField', field: 'format', value: value as TournamentFormat })}
+          />
         </Field>
 
         <div className={s.dates}>
-          <Field
-            label="Início"
-            inputProps={{ type: 'date', value: state.startDate, onChange: (e) => dispatch({ type: 'setField', field: 'startDate', value: e.target.value }) }}
-          />
-          <Field
-            label="Fim"
-            error={errors.dateRange}
-            inputProps={{ type: 'date', value: state.endDate, onChange: (e) => dispatch({ type: 'setField', field: 'endDate', value: e.target.value }) }}
-          />
+          <Field label="Início" id="tournament-start">
+            <DateTimeField id="tournament-start" type="date" value={state.startDate} onChange={(value) => dispatch({ type: 'setField', field: 'startDate', value })} />
+          </Field>
+          <Field label="Fim" id="tournament-end" error={errors.dateRange}>
+            <DateTimeField id="tournament-end" type="date" value={state.endDate} onChange={(value) => dispatch({ type: 'setField', field: 'endDate', value })} />
+          </Field>
         </div>
 
         <Field label="Regulamento" id="tournament-regulation">

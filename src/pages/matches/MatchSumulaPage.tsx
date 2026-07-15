@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Field } from '../../components/ui/Field/Field'
@@ -199,19 +200,11 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
       <section className={s.section}>
         <Field label="Como a partida terminou?" id="result-type">
-          <select id="result-type" className={s.select} value={resultType} onChange={(event) => { setResultType(event.target.value as typeof resultType); setOffendingTeamId(''); setConfirming(false) }}>
-            <option value="NORMAL">Normal</option>
-            <option value="DEFAULT">Abandono</option>
-            <option value="FORFEIT">W.O.</option>
-          </select>
+          <Combobox id="result-type" options={[{ value: 'NORMAL', label: 'Normal' }, { value: 'DEFAULT', label: 'Abandono' }, { value: 'FORFEIT', label: 'W.O.' }]} value={resultType} onChange={(value) => { setResultType(value as typeof resultType); setOffendingTeamId(''); setConfirming(false) }} />
         </Field>
         {resultType !== 'NORMAL' && (
           <Field label={isForfeit ? 'Equipe que não compareceu' : 'Equipe que abandonou'} id="offending-team">
-            <select id="offending-team" className={s.select} value={offendingTeamId} onChange={(event) => setOffendingTeamId(event.target.value)}>
-              <option value="">— selecione —</option>
-              <option value={match.homeTeamId}>{homeName}</option>
-              <option value={match.awayTeamId}>{awayName}</option>
-            </select>
+            <Combobox id="offending-team" options={[{ value: '', label: '— selecione —' }, { value: match.homeTeamId, label: homeName }, { value: match.awayTeamId, label: awayName }]} value={offendingTeamId || null} onChange={setOffendingTeamId} />
           </Field>
         )}
         {isForfeit && <Badge variant="warning">Vitória atribuída por W.O. (FIBA D.3.1)</Badge>}

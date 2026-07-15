@@ -116,19 +116,8 @@
 
 .searchClear:hover { color: var(--muted); }
 
-.filterSelect {
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: var(--accent);
+.filterControl {
+  width: 160px;
 }
 
 /* ── Body ── */
