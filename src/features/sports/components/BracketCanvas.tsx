@@ -1,29 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { MatchStatus } from '../types'
 import { formatDate, formatTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 import { Button, Combobox, DateTimeField, Input } from '../../../components/ui'
 import { cn } from '../../../components/ui/cn'
 import type { BracketRound } from '../../../services/sportsApi/store'
+import type { BracketSlotView, BracketTeamOption } from '../useBracketView'
 import s from './BracketCanvas.module.css'
-
-export interface BracketTeamOption {
-  tournamentTeamId: string
-  name: string
-  shortName: string
-}
-
-export interface BracketSlotView {
-  id: string
-  roundId: string
-  position: number
-  label: string | null
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  matchId: string | null
-  winnerTournamentTeamId: string | null
-  match: { id: string; status: MatchStatus; date: string; homeScore: number | null; awayScore: number | null } | null
-}
 
 export interface BracketCanvasProps {
   rounds: BracketRound[]

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Combobox, Field } from '../../../components/ui'
-import type { BracketTeamOption } from './BracketCanvas'
+import type { BracketTeamOption } from '../useBracketView'
 import s from './CompleteTournamentPanel.module.css'
 
 export function CompleteTournamentPanel({ teams, suggestion, requiresChampion, onComplete, onCancel, errorMessage }: { teams: BracketTeamOption[]; suggestion: string | null; requiresChampion: boolean; onComplete: (championTournamentTeamId: string | null) => Promise<void>; onCancel: () => void; errorMessage?: string }) {

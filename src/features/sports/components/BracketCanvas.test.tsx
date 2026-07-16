@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BracketCanvas } from './BracketCanvas'
-import type { BracketSlotView, BracketTeamOption } from './BracketCanvas'
 import type { BracketRound } from '../../../services/sportsApi/store'
+import type { BracketSlotView, BracketTeamOption } from '../useBracketView'
 
 const teams: BracketTeamOption[] = [
   { tournamentTeamId: 'tt-A', name: 'Alfa', shortName: 'ALF' },
