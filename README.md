@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# Quadra Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend web do Quadra, uma plataforma para organizar e acompanhar competições de basquete. O sistema concentra em um único ambiente as equipes, atletas, campeonatos, partidas e informações esportivas de uma organização, oferecendo uma visão clara da evolução de cada competição e do desempenho de seus participantes.
 
-Currently, two official plugins are available:
+## Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+O Quadra acompanha o ciclo completo de uma competição: da organização das temporadas, categorias, equipes e elencos até o registro dos jogos, resultados e estatísticas. A navegação foi estruturada para que seja possível sair de uma visão geral do campeonato e chegar rapidamente aos detalhes de uma equipe, atleta ou partida.
 
-## React Compiler
+As principais telas e informações disponíveis são:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Início:** apresenta o contexto da organização e o ponto de entrada para as áreas esportivas do sistema.
+- **Equipes:** lista as equipes da organização, seus status e vínculos, permitindo consultar quais grupos e participantes estão disponíveis para as competições.
+- **Atletas:** exibe o perfil esportivo de cada atleta, com resumo de carreira, totais, médias, aproveitamento, histórico de partidas e participação em campeonatos.
+- **Temporadas e categorias:** organiza o calendário esportivo e as categorias usadas para agrupar os campeonatos.
+- **Campeonatos:** permite consultar competições por temporada e status, visualizar suas equipes inscritas e acompanhar a situação geral de cada torneio.
+- **Detalhes do campeonato:** reúne uma visão geral com grupos, chaveamento, líderes, partidas recentes e regulamento, além de abas específicas para equipes, partidas, grupos, classificação, estatísticas e chaveamento.
+- **Partidas:** apresenta a agenda e o histórico de jogos, com filtros por campeonato, equipe e status.
+- **Detalhes da partida:** mostra as equipes, placar, data, horário, local, fase da competição, resultado por período, destaques e estatísticas individuais no box score.
+- **Súmula:** registra ou atualiza o resultado da partida, o placar por período e os eventos necessários para manter o histórico esportivo da competição.
 
-## Expanding the ESLint configuration
+Com essas telas, o sistema permite acompanhar a composição dos campeonatos, a evolução das equipes na classificação e no chaveamento, os resultados de cada rodada e o desempenho individual dos atletas ao longo da temporada.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React 19 e TypeScript
+- Vite
+- React Router
+- TanStack Query
+- Axios
+- CSS Modules e Quadra Design System
+- Vitest e Testing Library
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Requisitos
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Node.js 22 ou superior
+- npm
+- API do Quadra em execução
+
+## Desenvolvimento local
+
+1. Instale as dependências:
+
+   ```bash
+   npm ci
+   ```
+
+2. Crie um arquivo `.env.local` na raiz do projeto:
+
+   ```env
+   VITE_API_URL=http://localhost:3001
+   ```
+
+3. Inicie o servidor de desenvolvimento:
+
+   ```bash
+   npm run dev
+   ```
+
+   A aplicação ficará disponível em `http://localhost:5173`.
+
+## Scripts
+
+```bash
+npm run dev       # inicia o servidor de desenvolvimento
+npm run build     # executa a verificação de tipos e gera o build de produção
+npm run lint      # verifica o código com ESLint
+npm test          # executa os testes
+npm run preview   # serve o build de produção localmente
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Docker
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Para executar o ambiente de desenvolvimento com Docker Compose:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+docker compose up --build
+```
+
+## Estrutura principal
+
+```text
+src/
+├── components/      # componentes reutilizáveis e shell da aplicação
+├── contexts/        # estado global, incluindo autenticação
+├── design-system/   # tokens e estilos do Quadra DS
+├── features/        # funcionalidades organizadas por domínio
+├── pages/           # telas e fluxos de navegação
+├── services/        # integração com a API
+└── router.tsx       # rotas da aplicação
 ```
