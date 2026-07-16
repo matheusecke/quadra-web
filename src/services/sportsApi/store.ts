@@ -77,6 +77,16 @@ export interface RosterEntry {
   isDeleted?: boolean
 }
 
+export interface BracketRound {
+  id: string
+  tournamentId: string
+  /** 1 = primeira rodada do mata-mata. Ordenação, não contagem. */
+  number: number
+  /** 'Quartas de final', 'Semifinais', 'Final'. Livre, escrito pelo admin. */
+  label: string | null
+  isDeleted?: boolean
+}
+
 export interface BracketSlot {
   id: string
   tournamentId: string
