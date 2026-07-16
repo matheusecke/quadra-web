@@ -307,7 +307,7 @@ export function TournamentDetailPage() {
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && (
-          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} />
+          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} onSeeBracket={() => setActiveTab('bracket')} />
         )}
         {activeTab === 'teams' && (
           <div className={s.teamsTab}>

@@ -530,6 +530,23 @@
   color: var(--muted-3);
 }
 
+.sectionLink {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.sectionLink:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* ── Regulation ── */
 .regulation {
   border: 1px solid var(--border);
