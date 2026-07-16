@@ -49,34 +49,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  scrollbar-width: none;
-}
-
-.list::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.scrollbar {
-  position: absolute;
-  top: 0;
-  right: calc(var(--space-3) * -1);
-  width: 3px;
-  height: 100%;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
-}
-
-.scrollbarVisible {
-  opacity: 1;
-}
-
-.scrollbarThumb {
-  width: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--border-bold);
-  transition: opacity 220ms ease;
 }
 
 .emptyWrap {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { useAuth } from '../../hooks/useAuth'
@@ -91,17 +92,9 @@ export function OrgTeamsPage() {
               </button>
             )}
           </div>
-          <select
-            className={s.filterSelect}
-            value={status}
-            onChange={(event) => setStatus(event.target.value as AffiliationStatus | '')}
-            aria-label="Filtrar equipes por status"
-          >
-            <option value="">Status</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="PENDING">Pendente</option>
-            <option value="REJECTED">Rejeitado</option>
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar equipes por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'PENDING', label: 'Pendente' }, { value: 'REJECTED', label: 'Rejeitado' }]} value={status || null} onChange={(value) => setStatus(value as AffiliationStatus | '')} />
+          </div>
         </div>
       </div>
 

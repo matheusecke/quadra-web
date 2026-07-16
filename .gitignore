@@ -25,4 +25,5 @@ dist-ssr
 *.sw?
 CLAUDE.local.md
 /docs/superpowers
-.superpowers
+/docs/wireframes
+.superpowers/

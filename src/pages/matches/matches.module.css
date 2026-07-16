@@ -116,19 +116,8 @@
 
 .searchClear:hover { color: var(--muted); }
 
-.filterSelect {
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: var(--accent);
+.filterControl {
+  width: 160px;
 }
 
 /* ── Body ── */
@@ -157,14 +146,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.tableWrap::-webkit-scrollbar { width: 6px; height: 6px; }
-.tableWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 .table {
@@ -345,7 +326,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .scoreNums {
@@ -424,14 +405,6 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-6) var(--space-7);
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.detailBody::-webkit-scrollbar { width: 7px; }
-.detailBody::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 /* ── Sections ── */
@@ -540,6 +513,33 @@
 .quarterPending {
   color: var(--muted-3) !important;
 }
+
+/* ── Curated match MVP ── */
+.mvpCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.mvpBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--type-micro-tracking);
+  color: var(--accent);
+}
+
+.mvpName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.mvpName:hover { text-decoration: underline; }
 
 /* ── Match leaders grid ── */
 .matchLeaders {
@@ -771,17 +771,9 @@
   border-radius: var(--radius);
   overflow: auto;
   max-height: 420px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
   background: var(--surface);
   width: 100%;
   max-width: 100%;
-}
-
-.boxWrap::-webkit-scrollbar { width: 6px; height: 6px; }
-.boxWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
 }
 
 .boxTable {

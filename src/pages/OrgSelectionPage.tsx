@@ -42,7 +42,7 @@ export function OrgSelectionPage() {
     : organizations
 
   useEffect(() => {
-    refreshOrganizationsScroll(false)
+    refreshOrganizationsScroll()
   }, [filtered.length, refreshOrganizationsScroll])
 
   const handleSelect = async (organizationId: number) => {
@@ -175,22 +175,6 @@ export function OrgSelectionPage() {
           )}
         </div>
 
-        {organizationsScrollState.canScroll && (
-          <div
-            className={`${s.scrollbar} ${
-              organizationsScrollState.isScrolling ? s.scrollbarVisible : ''
-            }`}
-            aria-hidden="true"
-          >
-            <div
-              className={s.scrollbarThumb}
-              style={{
-                height: organizationsScrollState.thumbHeight,
-                transform: `translateY(${organizationsScrollState.thumbTop}px)`,
-              }}
-            />
-          </div>
-        )}
       </div>
     </>
   )

@@ -1,0 +1,262 @@
+<style>
+/* ── Mockup tokens (espelham o Quadra DS real) ── */
+.mk-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px; border: 1px solid #e0e0e0; border-radius: 10px;
+  background: #fff; font-family: 'Inter', system-ui, sans-serif;
+  width: 100%;
+}
+.mk-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mk-identity { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mk-avatar {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 5px;
+  background: #f0f0f0; border: 1px solid #ddd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #777;
+}
+.mk-org { font-size: 13px; font-weight: 600; color: #1a1a1a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mk-meta { font-size: 11px; color: #777; margin: 1px 0 0; white-space: nowrap; }
+.mk-badge-warn { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 99px; background: #fef3c7; color: #92400e; white-space: nowrap; flex-shrink: 0; }
+.mk-badge-danger { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 99px; background: #fee2e2; color: #991b1b; white-space: nowrap; flex-shrink: 0; }
+.mk-badge-ghost { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 99px; background: #f5f5f5; color: #555; border: 1px solid #e0e0e0; }
+.mk-details { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.mk-detail { font-size: 11px; color: #888; }
+
+/* ── Actions row — mesma altura nos dois estados ── */
+.mk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 28px; /* altura fixa — não muda entre estados */
+}
+.mk-btn {
+  height: 28px; padding: 0 11px; border-radius: 5px; font-size: 11px;
+  font-weight: 500; cursor: default; border: none; font-family: inherit; white-space: nowrap;
+}
+.mk-btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #ddd; }
+.mk-btn-primary   { background: #EC5D2A; color: #fff; }
+.mk-btn-danger    { background: #dc2626; color: #fff; }
+.mk-btn-ghost     { background: transparent; color: #555; border: 1px solid #ddd; }
+.mk-btn:disabled  { opacity: 0.4; }
+
+/* Texto inline da confirmação — vive dentro da .mk-actions */
+.mk-confirm-label {
+  font-size: 11px; font-weight: 500; color: #6b2b00;
+  flex: 1; /* empurra os botões para a direita */
+  white-space: nowrap;
+}
+
+/* ── Layout de comparação ── */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.state-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: #999; margin: 0 0 8px;
+}
+.state-label.after { color: #16a34a; }
+
+/* Régua de altura — marca visual */
+.height-ruler {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.ruler-line {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+.ruler-line::before, .ruler-line::after {
+  content: '';
+  position: absolute;
+  left: -2px; width: 7px; height: 2px; background: inherit;
+}
+.ruler-line::before { top: 0; }
+.ruler-line::after  { bottom: 0; }
+
+.ruler-before { background: #d1d5db; }
+.ruler-after  { background: #16a34a; }
+.ruler-label {
+  font-size: 10px; font-weight: 600; writing-mode: vertical-lr;
+  text-orientation: mixed; color: #aaa; letter-spacing: 0.05em;
+  text-transform: uppercase; display: flex; align-items: center;
+}
+
+/* ── Seção expirado ── */
+.expired-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 32px;
+}
+
+/* ── Notas de comportamento ── */
+.notes {
+  margin-top: 28px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.notes h3 { font-size: 13px; font-weight: 700; color: #1a1a1a; margin: 0 0 12px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li { font-size: 12px; color: #444; line-height: 1.7; }
+.notes code { font-size: 11px; background: #eef; border-radius: 3px; padding: 1px 4px; font-family: monospace; }
+
+/* ── Annotation ── */
+.anno {
+  font-size: 11px; color: #666; margin: 6px 0 0; line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 5px;
+}
+.anno-icon { flex-shrink: 0; }
+
+@media (max-width: 680px) {
+  .compare-grid, .expired-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<h2>Opção A — Confirmação inline, tamanho do card imutável</h2>
+<p class="subtitle">Os dois estados ocupam exatamente a mesma área. Apenas o conteúdo da linha de ações é substituído.</p>
+
+<!-- ── Comparação principal ── -->
+<div class="compare-grid">
+
+  <!-- ANTES -->
+  <div>
+    <p class="state-label">Estado normal</p>
+    <div class="height-ruler">
+      <div class="ruler-line ruler-before"></div>
+      <div class="mk-card">
+        <div class="mk-topline">
+          <div class="mk-identity">
+            <div class="mk-avatar">LM</div>
+            <div style="min-width:0">
+              <p class="mk-org">Liga Metropolitana</p>
+              <p class="mk-meta">Campinas Hawks · #12</p>
+            </div>
+          </div>
+          <span class="mk-badge-warn">● Pendente</span>
+        </div>
+        <div class="mk-details">
+          <span class="mk-badge-ghost">Atleta</span>
+          <span class="mk-detail">Enviado há 2 dias</span>
+          <span class="mk-detail">Expira em 5 dias</span>
+        </div>
+        <!-- actions row: 2 botões -->
+        <div class="mk-actions">
+          <button class="mk-btn mk-btn-secondary">Recusar</button>
+          <button class="mk-btn mk-btn-primary">Aceitar</button>
+        </div>
+      </div>
+    </div>
+    <p class="anno"><span class="anno-icon">↑</span> Linha cinza marca a altura total do card.</p>
+  </div>
+
+  <!-- DEPOIS -->
+  <div>
+    <p class="state-label after">Após clicar em "Recusar"</p>
+    <div class="height-ruler">
+      <div class="ruler-line ruler-after"></div>
+      <div class="mk-card">
+        <div class="mk-topline">
+          <div class="mk-identity">
+            <div class="mk-avatar">LM</div>
+            <div style="min-width:0">
+              <p class="mk-org">Liga Metropolitana</p>
+              <p class="mk-meta">Campinas Hawks · #12</p>
+            </div>
+          </div>
+          <span class="mk-badge-warn">● Pendente</span>
+        </div>
+        <div class="mk-details">
+          <span class="mk-badge-ghost">Atleta</span>
+          <span class="mk-detail">Enviado há 2 dias</span>
+          <span class="mk-detail">Expira em 5 dias</span>
+        </div>
+        <!-- actions row: label + 2 botões — MESMA altura de 28px -->
+        <div class="mk-actions">
+          <span class="mk-confirm-label">Recusar este convite?</span>
+          <button class="mk-btn mk-btn-ghost">Cancelar</button>
+          <button class="mk-btn mk-btn-danger">Confirmar</button>
+        </div>
+      </div>
+    </div>
+    <p class="anno"><span class="anno-icon">↑</span> Mesma altura — apenas o conteúdo da linha muda.</p>
+  </div>
+
+</div>
+
+<!-- ── Convite expirado ── -->
+<div class="expired-grid">
+
+  <div>
+    <p class="state-label">Expirado — normal</p>
+    <div class="mk-card">
+      <div class="mk-topline">
+        <div class="mk-identity">
+          <div class="mk-avatar">CI</div>
+          <div style="min-width:0">
+            <p class="mk-org">Circuito Interior</p>
+            <p class="mk-meta">Sem time vinculado</p>
+          </div>
+        </div>
+        <span class="mk-badge-danger">● Expirado</span>
+      </div>
+      <div class="mk-details">
+        <span class="mk-badge-ghost">Comissão técnica</span>
+        <span class="mk-detail">Enviado há 3 dias</span>
+      </div>
+      <div class="mk-actions">
+        <button class="mk-btn mk-btn-secondary">Recusar</button>
+        <button class="mk-btn mk-btn-primary" disabled>Aceitar</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="state-label after">Expirado — após clicar em "Recusar"</p>
+    <div class="mk-card">
+      <div class="mk-topline">
+        <div class="mk-identity">
+          <div class="mk-avatar">CI</div>
+          <div style="min-width:0">
+            <p class="mk-org">Circuito Interior</p>
+            <p class="mk-meta">Sem time vinculado</p>
+          </div>
+        </div>
+        <span class="mk-badge-danger">● Expirado</span>
+      </div>
+      <div class="mk-details">
+        <span class="mk-badge-ghost">Comissão técnica</span>
+        <span class="mk-detail">Enviado há 3 dias</span>
+      </div>
+      <div class="mk-actions">
+        <span class="mk-confirm-label">Recusar este convite?</span>
+        <button class="mk-btn mk-btn-ghost">Cancelar</button>
+        <button class="mk-btn mk-btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Notas de comportamento ── -->
+<div class="notes">
+  <h3>Como funciona</h3>
+  <ul>
+    <li>Clicar em <strong>Recusar</strong> define <code>confirmingInviteId = invite.id</code> — o card substitui os dois botões pela linha de confirmação.</li>
+    <li>O <code>.actions</code> tem <code>height</code> fixo; label + botões cabem na mesma linha — o card não cresce nem encolhe.</li>
+    <li>Clicar em <strong>Cancelar</strong> redefine <code>confirmingInviteId = null</code> — nenhuma API chamada.</li>
+    <li>Clicar em <strong>Confirmar</strong> chama <code>onResolveInvite(invite.id, 'REJECT')</code> — fluxo atual inalterado.</li>
+    <li>Se outro card entrar em confirmação, o anterior volta ao estado normal (somente um card confirma por vez).</li>
+    <li>Enquanto <code>actionInviteId</code> está ativo (loading), mudanças de <code>confirmingInviteId</code> ficam bloqueadas.</li>
+    <li>Convite expirado mantém <strong>Recusar</strong> disponível; o mesmo fluxo de confirmação se aplica.</li>
+  </ul>
+</div>

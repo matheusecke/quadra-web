@@ -29,6 +29,7 @@ React frontend with feature-based structure:
 ## Key Decisions
 
 - Using Quadra DS (custom design system) for consistent UI across the app
+- Before introducing visible native controls, follow `docs/design-system/interactive-controls.md`; prefer accessible Quadra DS primitives or reusable visual layers over generic browser styling.
 - CSS Modules for scoped styling instead of global CSS
 - React Router v7 for client-side routing
 - React Query for server state management

@@ -13,6 +13,11 @@
    Light mode (default)
    -------------------------------------------------------------------------- */
 :root {
+  /* The app already knows its theme (main.tsx writes data-theme). This is how it tells the
+     browser, which paints the document scrollbar, autofill, search cancel button, textarea
+     resize grip, and any native widget we have not replaced. */
+  color-scheme: light;
+
   /* Accent — Persimmon */
   --accent:      #EC5D2A;
   --accent-deep: #C2410C;
@@ -94,6 +99,8 @@
    Dark mode overrides
    -------------------------------------------------------------------------- */
 html[data-theme="dark"] {
+  color-scheme: dark;
+
   --bg:          #18191b;
   --surface:     #202124;
   --surface-2:   #282a2e;

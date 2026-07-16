@@ -7,12 +7,15 @@ import { AthleteDetailPage } from './AthleteDetailPage'
 const RAFAEL_ID = 'rafael.moura@quadra.com.br'
 
 function renderAthletePage(athleteId = RAFAEL_ID) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
-      <Routes>
-        <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
+        <Routes>
+          <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -66,7 +69,7 @@ describe('AthleteDetailPage', () => {
     expect(finalLink).toBeDefined()
   })
 
-  it('shows team context in Campeonatos and links rows to championship details', async () => {
+  it('shows team context in Campeonatos and links rows to tournament details', async () => {
     const user = userEvent.setup()
     renderAthletePage()
 
@@ -77,7 +80,8 @@ describe('AthleteDetailPage', () => {
     expect(screen.getByText('Time 1')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /campeonato geral da puc 2026/i })).toHaveAttribute(
       'href',
-      '/championships/puc-geral-2026',
+      '/tournaments/puc-geral-2026',
     )
   })
 })
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

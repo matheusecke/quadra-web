@@ -1,0 +1,201 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { describe, expect, it, vi } from 'vitest'
+import { TournamentDetailPage } from './TournamentDetailPage'
+
+const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
+vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
+
+const renderDetail = (id: string) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/tournaments/${id}`]}>
+        <Routes>
+          <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('TournamentDetailPage info strip', () => {
+  it('does not show a current phase — the phase left the screen by decision (DB spec §6.3)', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-geral-2026')
+
+    await waitFor(() => expect(screen.getByText(/campeonato geral/i)).toBeInTheDocument())
+
+    expect(screen.queryByText(/fase atual/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage inline roster (org admin)', () => {
+  const enrolledList = () => screen.getByRole('list', { name: 'Equipes inscritas' })
+  const teamRow = (name: string) =>
+    within(enrolledList()).getByText(name).closest('li') as HTMLElement
+  const elenco = (name: string) =>
+    within(teamRow(name)).getByRole('button', { name: 'Elenco' })
+
+  const openTeamsTab = async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+    await userEvent.click(screen.getByRole('tab', { name: 'Equipes' }))
+    await screen.findByRole('list', { name: 'Equipes inscritas' })
+  }
+
+  it('opens the roster editor inside the clicked team row', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(teamRow('Time 1')).toContainElement(region)
+  })
+
+  it('places the editor before the following team in DOM order', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
+    const positionOfTime2 = region.compareDocumentPosition(teamRow('Time 2'))
+    expect(positionOfTime2 & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('renders exactly one open editor region', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(screen.getAllByRole('region', { name: /^Elenco / })).toHaveLength(1)
+  })
+
+  it('collapses the editor when the same team is clicked again', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+    await userEvent.click(elenco('Time 1'))
+    expect(screen.queryByRole('region', { name: 'Elenco Time 1' })).toBeNull()
+  })
+
+  it('closes Time 1 when Time 2 is opened', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+    await userEvent.click(elenco('Time 2'))
+    await screen.findByRole('region', { name: 'Elenco Time 2' })
+    expect(screen.queryByRole('region', { name: 'Elenco Time 1' })).toBeNull()
+  })
+
+  it('renders the roster content inside the opened region', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(await within(region).findByText('Rafael Moura')).toBeInTheDocument()
+  })
+
+  it('marks the Elenco control expanded when open', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(elenco('Time 1')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('wires the Elenco control to its panel via aria-controls', async () => {
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(elenco('Time 1')).toHaveAttribute('aria-controls', 'roster-panel-puc-time-1')
+  })
+
+  it('requires inline confirmation before removing an enrolled team', async () => {
+    await openTeamsTab()
+    const row = teamRow('Time 1')
+    await userEvent.click(within(row).getByRole('button', { name: 'Remover' }))
+
+    expect(within(row).getByText('Remover Time 1 do campeonato?')).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Confirmar' })).toBeInTheDocument()
+  })
+
+  it('cancels the enrolled-team removal confirmation', async () => {
+    await openTeamsTab()
+    const row = teamRow('Time 1')
+    await userEvent.click(within(row).getByRole('button', { name: 'Remover' }))
+    await userEvent.click(within(row).getByRole('button', { name: 'Cancelar' }))
+
+    expect(within(row).getByRole('button', { name: 'Remover' })).toBeInTheDocument()
+    expect(screen.queryByText('Remover Time 1 do campeonato?')).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage champion band', () => {
+  it('labels the champion to a non-admin on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-geral-2026')
+    expect(await screen.findByText('Campeão')).toBeInTheDocument()
+  })
+
+  it('shows the champion team name on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-geral-2026')
+    const championLabel = await screen.findByText('Campeão')
+    expect(within(championLabel.parentElement!).getByText('Time 1')).toBeInTheDocument()
+  })
+
+  it('shows no champion on a tournament that is not completed', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetail('puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+    expect(screen.queryByText('Campeão')).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage admin region', () => {
+  const region = () => screen.getByRole('region', { name: 'Administração' })
+
+  it('offers reopen on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    expect(within(region()).getByRole('button', { name: 'Reabrir campeonato' })).toBeInTheDocument()
+  })
+
+  it('does not offer complete on a completed tournament', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    expect(within(region()).queryByRole('button', { name: 'Encerrar campeonato' })).not.toBeInTheDocument()
+  })
+
+  it('offers only edit on a tournament that is neither in progress nor completed', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+    expect(within(region()).queryByRole('button', { name: 'Reabrir campeonato' })).not.toBeInTheDocument()
+  })
+
+  it('reveals the reopen confirmation when reopen is clicked', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    expect(screen.getByRole('button', { name: 'Confirmar reabertura' })).toBeInTheDocument()
+  })
+
+  it('keeps the tournament completed until reopen is confirmed', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    expect(screen.getByText('Encerrado')).toBeInTheDocument()
+  })
+
+  it('hides the reopen confirmation on cancel', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('puc-geral-2026')
+    await screen.findByText('Campeonato Geral da PUC 2026')
+    await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('button', { name: 'Confirmar reabertura' })).not.toBeInTheDocument()
+  })
+})

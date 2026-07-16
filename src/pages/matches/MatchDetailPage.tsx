@@ -1,19 +1,22 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getTeams } from '../../features/sports/mockSportsData'
-import { useMatch, useChampionships } from '../../features/sports/useSportsData'
+import { getTeams } from '../../features/sports/mock-sports-data'
+import { useMatchDetailQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
   formatTime,
   matchDisplayStatus,
   matchDisplayStatusVariant,
+  matchPhaseName,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import { SummaryTab } from './tabs/SummaryTab'
@@ -27,12 +30,14 @@ const TABS: TabItem[] = [
 
 export function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>()
-  const { data: match, isLoading, isError, refetch } = useMatch(matchId)
-  const { data: championships } = useChampionships()
+  const navigate = useNavigate()
+  const isOrgAdmin = useIsOrgAdmin()
+  const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId)
+  const { data: tournaments } = useTournamentsQuery()
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams        = teamMap(getTeams())
-  const championship = championships?.find((c) => c.id === match?.championshipId)
+  const tournament = tournaments?.find((c) => c.id === match?.tournamentId)
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -97,6 +102,11 @@ export function MatchDetailPage() {
   const homeTeam = teams.get(match.homeTeamId)
   const awayTeam = teams.get(match.awayTeamId)
   const hasScore = match.homeScore !== null && match.awayScore !== null
+  const isForfeit = match.homeLossType === 'FORFEIT' || match.awayLossType === 'FORFEIT'
+  const isAwardedScore = match.scoreSource === 'AWARDED'
+  const awardedScoreLabel = isForfeit
+    ? 'Vitória por W.O. (FIBA D.3.1)'
+    : 'Placar atribuído por abandono (Art. 21)'
 
   return (
     <div className={s.page}>
@@ -106,19 +116,24 @@ export function MatchDetailPage() {
           <Link to="/matches" className={s.backLink}>
             <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
           </Link>
-          {championship && (
-            <Link to={`/championships/${championship.id}`} className={s.champLink}>
-              {championship.name}
+          {tournament && (
+            <Link to={`/tournaments/${tournament.id}`} className={s.champLink}>
+              {tournament.name}
               <ExternalLink size={11} strokeWidth={1.6} />
             </Link>
+          )}
+          {isOrgAdmin && (
+            <Button variant="primary" size="sm" onClick={() => navigate(`/matches/${match.id}/sumula`)}>
+              {match.status === 'FINISHED' ? 'Editar súmula' : 'Lançar resultado'}
+            </Button>
           )}
         </div>
 
         {/* ── Context ── */}
         <div className={s.detailContext}>
-          {championship && <span>{championship.name}</span>}
-          {championship && <span className={s.detailContextSep}>·</span>}
-          <span>{match.phase}</span>
+          {tournament && <span>{tournament.name}</span>}
+          {tournament && <span className={s.detailContextSep}>·</span>}
+          <span>{matchPhaseName(match) ?? ''}</span>
           <span className={s.detailContextSep}>·</span>
           <Badge variant={matchDisplayStatusVariant(match.status, match.statsStatus)}>
             {matchDisplayStatus(match.status, match.statsStatus)}
@@ -144,6 +159,7 @@ export function MatchDetailPage() {
                 <span className={s.scoreNumPending}>× × ×</span>
               )}
             </div>
+            {isAwardedScore && <Badge variant="warning">{awardedScoreLabel}</Badge>}
           </div>
 
           <div className={s.scoreTeamRight}>
@@ -168,20 +184,25 @@ export function MatchDetailPage() {
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Fase</span>
-            <span className={s.infoValue}>{match.phase}</span>
+            <span className={s.infoValue}>{matchPhaseName(match) ?? '—'}</span>
           </div>
         </div>
 
-        <div className={s.tabsBar}>
+        {!isForfeit && <div className={s.tabsBar}>
           <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="line" />
-        </div>
+        </div>}
       </div>
 
       <div className={s.detailBody}>
-        {activeTab === 'summary' && (
+        {isForfeit ? (
+          <EmptyState
+            title="Partida não disputada. Não há súmula."
+            description="A vitória foi atribuída por W.O. conforme a FIBA D.3.1."
+          />
+        ) : activeTab === 'summary' && (
           <SummaryTab match={match} teams={teams} />
         )}
-        {activeTab === 'stats' && (
+        {!isForfeit && activeTab === 'stats' && (
           <StatsTab match={match} teams={teams} />
         )}
       </div>

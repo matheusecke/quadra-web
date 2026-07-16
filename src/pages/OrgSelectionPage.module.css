@@ -184,12 +184,6 @@
   flex-direction: column;
   gap: 6px;
   padding-bottom: 6px;
-  scrollbar-width: none;
-}
-
-.orgList::-webkit-scrollbar {
-  width: 0;
-  height: 0;
 }
 
 /* ── Org card ────────────────────────────────────────────── */
@@ -384,28 +378,6 @@
   color: var(--ink-2);
   font: var(--type-title);
   letter-spacing: var(--type-title-tracking);
-}
-
-.scrollbar {
-  position: absolute;
-  top: 0;
-  right: calc(var(--space-3) * -1);
-  width: 3px;
-  height: 100%;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
-}
-
-.scrollbarVisible {
-  opacity: 1;
-}
-
-.scrollbarThumb {
-  width: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--border-bold);
-  transition: opacity 220ms ease;
 }
 
 /* ── Refresh error banner ────────────────────────────────── */

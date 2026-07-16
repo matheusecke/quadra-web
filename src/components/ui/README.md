@@ -59,6 +59,19 @@ Intentional password exception for screens that benefit from it:
 
 ---
 
+### Combobox, NumberField, DateTimeField, and SearchSelect
+
+```tsx
+<Combobox options={[{ value: 'active', label: 'Ativo' }]} value={value} onChange={setValue} />
+<NumberField value={sortOrder} onValueChange={setSortOrder} min={0} />
+<DateTimeField type="date" value={startDate} onChange={setStartDate} />
+<SearchSelect value={team} onChange={setTeam} onSearch={searchTeams} />
+```
+
+Use `Combobox` for local selection, `SearchSelect` for remote search, `NumberField` for numeric values, and `DateTimeField` for dates and times.
+
+---
+
 ### Field
 
 Composes `Input` with a label, hint, and error message.

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { AdminRoute } from './components/AdminRoute'
+import { OrgAdminRoute } from './components/OrgAdminRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -14,8 +15,13 @@ import { AdminTeamsPage } from './pages/admin/AdminTeamsPage'
 import { AdminAffiliationsPage } from './pages/admin/AdminAffiliationsPage'
 import { OrgUsersPage } from './pages/users/OrgUsersPage'
 import { OrgTeamsPage } from './pages/teams/OrgTeamsPage'
-import { ChampionshipsPage } from './pages/championships/ChampionshipsPage'
-import { ChampionshipDetailPage } from './pages/championships/ChampionshipDetailPage'
+import { TournamentsPage } from './pages/tournaments/TournamentsPage'
+import { TournamentDetailPage } from './pages/tournaments/TournamentDetailPage'
+import { SeasonsPage } from './pages/tournaments/seasons/SeasonsPage'
+import { CategoriesPage } from './pages/tournaments/categories/CategoriesPage'
+import { TournamentFormPage } from './pages/tournaments/TournamentFormPage'
+import { MatchFormPage } from './pages/matches/MatchFormPage'
+import { MatchSumulaPage } from './pages/matches/MatchSumulaPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
@@ -38,8 +44,20 @@ export const router = createBrowserRouter([
           { path: '/home', element: <HomePage /> },
           { path: '/users', element: <OrgUsersPage /> },
           { path: '/teams', element: <OrgTeamsPage /> },
-          { path: '/championships', element: <ChampionshipsPage /> },
-          { path: '/championships/:championshipId', element: <ChampionshipDetailPage /> },
+          { path: '/tournaments', element: <TournamentsPage /> },
+          {
+            element: <OrgAdminRoute />,
+            children: [
+              { path: '/tournaments/seasons', element: <SeasonsPage /> },
+              { path: '/tournaments/categories', element: <CategoriesPage /> },
+              { path: '/tournaments/new', element: <TournamentFormPage /> },
+              { path: '/tournaments/:tournamentId/edit', element: <TournamentFormPage /> },
+              { path: '/tournaments/:tournamentId/matches/new', element: <MatchFormPage /> },
+              { path: '/matches/new', element: <MatchFormPage /> },
+              { path: '/matches/:matchId/sumula', element: <MatchSumulaPage /> },
+            ],
+          },
+          { path: '/tournaments/:tournamentId', element: <TournamentDetailPage /> },
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
           { path: '/athletes/:athleteId', element: <AthleteDetailPage /> },

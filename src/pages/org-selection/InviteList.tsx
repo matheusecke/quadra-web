@@ -36,7 +36,7 @@ export function InviteList({
   const [confirmingInviteId, setConfirmingInviteId] = useState<number | null>(null)
 
   useEffect(() => {
-    refresh(false)
+    refresh()
   }, [invites.length, refresh])
 
   if (isLoading) {
@@ -174,20 +174,6 @@ export function InviteList({
           })}
         </div>
 
-        {scrollState.canScroll && (
-          <div
-            className={`${s.scrollbar} ${scrollState.isScrolling ? s.scrollbarVisible : ''}`}
-            aria-hidden="true"
-          >
-            <div
-              className={s.scrollbarThumb}
-              style={{
-                height: scrollState.thumbHeight,
-                transform: `translateY(${scrollState.thumbTop}px)`,
-              }}
-            />
-          </div>
-        )}
       </div>
     </>
   )
