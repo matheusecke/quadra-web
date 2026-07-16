@@ -105,10 +105,10 @@ describe('OrgUsersPage', () => {
     expect(heading).toBeInTheDocument()
     expect(await screen.findByText('Ana Costa')).toBeInTheDocument()
     expect(screen.getByText('ana@liga.test')).toBeInTheDocument()
-    expect(screen.getAllByText('ATHLETE')[1]).toBeInTheDocument()
+    expect(screen.getByText('ATHLETE')).toBeInTheDocument()
     expect(screen.getByText('Tigres')).toBeInTheDocument()
     expect(screen.getByText('23')).toBeInTheDocument()
-    expect(screen.getAllByText('Ativo')[1]).toBeInTheDocument()
+    expect(screen.getByText('Ativo')).toBeInTheDocument()
     expect(pageHeader).toContainElement(screen.getByLabelText('Buscar usuários da organização'))
     expect(pageHeader).toContainElement(screen.getByLabelText('Filtrar usuários por status'))
     expect(pageHeader).toContainElement(screen.getByLabelText('Filtrar usuários por papel'))
@@ -215,8 +215,10 @@ describe('OrgUsersPage', () => {
     await screen.findByRole('heading', { name: 'Usuários' })
 
     await user.type(screen.getByLabelText('Buscar usuários da organização'), 'ana')
-    await user.selectOptions(screen.getByLabelText('Filtrar usuários por status'), 'ACTIVE')
-    await user.selectOptions(screen.getByLabelText('Filtrar usuários por papel'), 'ATHLETE')
+    await user.click(screen.getByLabelText('Filtrar usuários por status'))
+    await user.click(screen.getByRole('option', { name: 'Ativo' }))
+    await user.click(screen.getByLabelText('Filtrar usuários por papel'))
+    await user.click(screen.getByRole('option', { name: 'ATHLETE' }))
 
     await waitFor(() => {
       expect(listOrgUsersMock).toHaveBeenLastCalledWith({

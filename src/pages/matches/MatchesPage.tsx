@@ -2,16 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getTeams } from '../../features/sports/mockSportsData'
-import { useMatches, useChampionships } from '../../features/sports/useSportsData'
+import { getTeams } from '../../features/sports/mock-sports-data'
+import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
   matchDisplayStatus,
   matchDisplayStatusVariant,
+  matchPhaseName,
   sortMatchesByDateDesc,
   teamMap,
 } from '../../features/sports/sportsUtils'
@@ -32,7 +36,7 @@ export function MatchesPage() {
 
   const [q, setQ]                       = useState('')
   const [debouncedQ, setDebouncedQ]     = useState('')
-  const [championshipId, setChampionshipId] = useState('')
+  const [tournamentId, setTournamentId] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
 
   useEffect(() => {
@@ -40,19 +44,20 @@ export function MatchesPage() {
     return () => clearTimeout(t)
   }, [q])
 
-  const { data: matches,       isLoading, isError, refetch } = useMatches()
-  const { data: championships }                               = useChampionships()
+  const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
+  const { data: tournaments } = useTournamentsQuery()
+  const isOrgAdmin = useIsOrgAdmin()
 
   const champMap = useMemo(
-    () => new Map((championships ?? []).map((c) => [c.id, c])),
-    [championships],
+    () => new Map((tournaments ?? []).map((c) => [c.id, c])),
+    [tournaments],
   )
   const teams = useMemo(() => teamMap(getTeams()), [])
 
   const items = useMemo(() => {
     const all = sortMatchesByDateDesc(matches ?? [])
     return all.filter((m) => {
-      if (championshipId && m.championshipId !== championshipId) return false
+      if (tournamentId && m.tournamentId !== tournamentId) return false
       if (statusFilter === 'WAITING_STATS') {
         if (!(m.status === 'FINISHED' && m.statsStatus === 'PENDING')) return false
       } else if (statusFilter && m.status !== statusFilter) {
@@ -66,10 +71,10 @@ export function MatchesPage() {
       }
       return true
     })
-  }, [matches, championshipId, statusFilter, debouncedQ, teams])
+  }, [matches, tournamentId, statusFilter, debouncedQ, teams])
 
   const total      = matches?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || championshipId || statusFilter)
+  const hasFilters = Boolean(debouncedQ || tournamentId || statusFilter)
 
   return (
     <div className={s.page}>
@@ -82,6 +87,11 @@ export function MatchesPage() {
               Todas as partidas dos campeonatos da organização.
             </p>
           </div>
+          {isOrgAdmin && (
+            <Button variant="primary" size="sm" onClick={() => navigate('/matches/new')}>
+              Nova partida
+            </Button>
+          )}
         </div>
 
         <div className={s.toolbar}>
@@ -102,29 +112,12 @@ export function MatchesPage() {
             )}
           </div>
 
-          <select
-            className={s.filterSelect}
-            value={championshipId}
-            onChange={(e) => setChampionshipId(e.target.value)}
-            aria-label="Filtrar por campeonato"
-          >
-            <option value="">Campeonato</option>
-            {(championships ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            className={s.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            aria-label="Filtrar por status"
-          >
-            <option value="">Status</option>
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: tournament.id, label: tournament.name }))]} value={tournamentId || null} onChange={setTournamentId} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS]} value={statusFilter || null} onChange={(value) => setStatusFilter(value as StatusFilter)} />
+          </div>
         </div>
       </div>
 
@@ -165,7 +158,7 @@ export function MatchesPage() {
                   : items.map((m) => {
                       const home     = teams.get(m.homeTeamId)
                       const away     = teams.get(m.awayTeamId)
-                      const champ    = champMap.get(m.championshipId)
+                      const champ    = champMap.get(m.tournamentId)
                       const hasScore = m.homeScore !== null && m.awayScore !== null
                       return (
                         <tr
@@ -190,7 +183,7 @@ export function MatchesPage() {
                               : <span className={s.scorePending}>—</span>
                             }
                           </td>
-                          <td className={s.tdMuted}>{m.phase}</td>
+                          <td className={s.tdMuted}>{matchPhaseName(m) ?? ''}</td>
                           <td className={s.td}>
                             <Badge variant={matchDisplayStatusVariant(m.status, m.statsStatus)}>
                               {matchDisplayStatus(m.status, m.statsStatus)}

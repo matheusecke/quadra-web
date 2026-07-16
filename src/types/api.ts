@@ -1,3 +1,5 @@
+import type { OrgRole } from './admin'
+
 export type OrgAffiliation = {
   organizationId: number
   organizationName: string
@@ -51,4 +53,20 @@ export type RegisterBody = {
   password: string
   birth_date: string
   height?: number
+}
+
+export type InviteDecision = 'ACCEPT' | 'REJECT'
+
+export type MyInvite = {
+  id: number
+  organizationId: number
+  organizationName: string
+  role: OrgRole
+  teamId: number | null
+  teamName: string | null
+  jerseyNumber: number | null
+  status: 'PENDING'
+  sentAt: string
+  expiresAt: string | null
+  isExpired: boolean
 }

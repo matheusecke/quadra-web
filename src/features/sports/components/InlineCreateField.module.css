@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.controlWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.createRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

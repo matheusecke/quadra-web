@@ -62,12 +62,12 @@ vi.mock('./pages/admin/AdminAffiliationsPage', () => ({
   AdminAffiliationsPage: () => <div>admin-affiliations-page</div>,
 }))
 
-vi.mock('./pages/championships/ChampionshipsPage', () => ({
-  ChampionshipsPage: () => <div>championships-page</div>,
+vi.mock('./pages/tournaments/TournamentsPage', () => ({
+  TournamentsPage: () => <div>tournaments-page</div>,
 }))
 
-vi.mock('./pages/championships/ChampionshipDetailPage', () => ({
-  ChampionshipDetailPage: () => <div>championship-detail-page</div>,
+vi.mock('./pages/tournaments/TournamentDetailPage', () => ({
+  TournamentDetailPage: () => <div>tournament-detail-page</div>,
 }))
 
 vi.mock('./pages/matches/MatchesPage', () => ({

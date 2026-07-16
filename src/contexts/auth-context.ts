@@ -10,6 +10,7 @@ export type AuthContextValue = {
   login: (email: string, password: string) => Promise<{ organizations: OrgAffiliation[] }>
   register: (input: RegisterInput) => Promise<{ organizations: OrgAffiliation[] }>
   chooseOrg: (organizationId: number) => Promise<void>
+  refreshOrganizations: () => Promise<void>
   logout: () => Promise<void>
 }
 

@@ -4,7 +4,7 @@
  * ⚠️ TEMPORARY / MOCK DOMAIN
  * The sports domain does not yet exist in the real backend. These types describe
  * the shape we expect the future API to expose so that screens can be built today
- * against local mock data (see `mockSportsData.ts`). When the API lands, keep these
+ * against local mock data (see `mock-sports-data.ts`). When the API lands, keep these
  * types as the contract and swap the mock source for real fetch calls.
  *
  * Enum *values* are kept in English (consistent with `types/admin.ts`, e.g.
@@ -13,28 +13,21 @@
 
 // ── Status enums ────────────────────────────────────────────────────────────
 
-export type ChampionshipStatus =
-  | 'SCHEDULED' // Agendado — ainda não começou
-  | 'IN_PROGRESS' // Em andamento — fase classificatória
-  | 'PLAYOFFS' // Playoffs — mata-mata em curso
-  | 'FINISHED' // Encerrado
-  | 'CANCELED' // Cancelado
-
-export type ChampionshipPhase =
-  | 'GROUPS' // Fase de grupos
-  | 'ROUNDS_OF_16' // Oitavas de final
-  | 'QUARTERS' // Quartas de final
-  | 'SEMIS' // Semifinais
-  | 'FINAL' // Final
-  | 'FINISHED' // Encerrado
+export type TournamentStatus =
+  | 'DRAFT' // Rascunho — sendo montado, invisível para a organização
+  | 'REGISTRATION' // Inscrições — pré-competição: elenco, grupos e calendário
+  | 'IN_PROGRESS' // Em andamento — a bola rolou
+  | 'COMPLETED' // Encerrado
+  | 'CANCELLED' // Cancelado
 
 export type MatchStatus =
   | 'SCHEDULED' // Agendada
   | 'LIVE' // Ao vivo
   | 'FINISHED' // Finalizada
-  | 'POSTPONED' // Adiada
+  | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
+  | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
-/** Completeness of the statistical record for a match / championship. */
+/** Completeness of the statistical record for a match / tournament. */
 export type StatsStatus =
   | 'COMPLETE' // Estatísticas completas
   | 'PARTIAL' // Estatísticas incompletas
@@ -66,20 +59,38 @@ export interface Athlete {
   status: AthleteStatus
 }
 
+export type StandingsState = 'EMPTY' | 'PARTIAL' | 'FINAL'
+
+/** One row of a classification table, ranked by the server. The UI never re-orders it. §8.7 */
 export interface StandingRow {
+  /** null if and only if standingsState === 'EMPTY'. */
+  position: number | null
+  tournamentTeamId: string
   teamId: string
-  position: number
+  /** display_name_snapshot — the name at enrollment time. */
+  teamName: string
   played: number
   wins: number
   losses: number
+  /** FIBA D.1.1: 2 win / 1 loss / 0 loss by W.O. This is the ordering criterion. */
+  classificationPoints: number
   pointsFor: number
   pointsAgainst: number
+  pointDiff: number
+  /** null whenever played === 0 — never 0. Display only, never an ordering key. */
+  winPct: number | null
+  /** Every criterion was exhausted and no draw is recorded for this block. */
+  isTiedUnresolved: boolean
+  /** Shared by every row of the same tie block, resolved or not. null outside a block. */
+  tieBlockKey: string | null
 }
 
-export interface Group {
-  id: string
-  name: string // 'Grupo A'
-  standings: StandingRow[]
+/** One classification table: a group, or the whole tournament in LEAGUE. §8.7 */
+export interface StandingsEnvelope {
+  group: { id: string; name: string } | null
+  standingsState: StandingsState
+  pendingMatches: number
+  rows: StandingRow[]
 }
 
 export interface StatLeader {
@@ -91,7 +102,7 @@ export interface StatLeader {
   gamesPlayed: number
 }
 
-/** Championship statistical leaders — basic per-game categories only. */
+/** Tournament statistical leaders — basic per-game categories only. */
 export interface StatLeaders {
   ppg: StatLeader[] // pontos por jogo
   rpg: StatLeader[] // rebotes por jogo
@@ -100,11 +111,19 @@ export interface StatLeaders {
   bpg: StatLeader[] // tocos por jogo
 }
 
+/** Why the loser lost. Drives FIBA classification points: NORMAL/DEFAULT = 1, FORFEIT = 0. */
+export type LossType = 'NORMAL' | 'DEFAULT' | 'FORFEIT'
+
+/**
+ * Where the final score came from (DB spec §8.9).
+ * 'PERIODS' is the sum of the periods; 'AWARDED' is assigned by the rules.
+ * null means the match is not finished yet.
+ */
+export type ScoreSource = 'PERIODS' | 'AWARDED' | null
+
 export interface Match {
   id: string
-  championshipId: string
-  /** Free-text phase label, e.g. 'Fase de grupos', 'Quartas de final'. */
-  phase: string
+  tournamentId: string
   date: string // ISO datetime
   homeTeamId: string
   awayTeamId: string
@@ -113,33 +132,52 @@ export interface Match {
   status: MatchStatus
   venue?: string
   statsStatus: StatsStatus
+  /** Set when the match belongs to a group stage; null for league and knockout games. */
+  tournamentGroupId: string | null
+  /**
+   * Knockout round derived via match → bracket slot → round. Null outside the bracket.
+   * Mutually exclusive with tournamentGroupId by construction.
+   */
+  bracketRound: { id: string; number: number; label: string | null } | null
+  /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
+  homeLossType: LossType | null
+  awayLossType: LossType | null
+  /** null while the match is not FINISHED. §8.9 */
+  scoreSource: ScoreSource
 }
 
-export interface BracketMatch {
-  /** Stable id for the bracket slot. */
+export type TournamentFormat =
+  | 'LEAGUE'
+  | 'GROUP_STAGE'
+  | 'KNOCKOUT'
+  | 'GROUP_STAGE_KNOCKOUT'
+
+export type SeasonStatus = 'ACTIVE' | 'ARCHIVED'
+
+/** Time-bounded grouping of tournaments within an organization. */
+export interface Season {
   id: string
-  /** Reference to a real Match, when the confrontation is defined. */
-  matchId: string | null
-  homeTeamId: string | null
-  awayTeamId: string | null
-  homeScore: number | null
-  awayScore: number | null
-  winnerId: string | null
+  /** Free display label: '2025/26' or 'Temporada 2026'. */
+  label: string
+  startDate: string // ISO date
+  endDate: string // ISO date
+  status: SeasonStatus
 }
 
-export interface BracketRound {
-  id: string
-  name: string // 'Quartas de final', 'Semifinais', 'Final'
-  matches: BracketMatch[]
-}
-
-export interface Championship {
+/** Controlled division vocabulary per organization (Sub-19, Adulto…). */
+export interface TournamentCategory {
   id: string
   name: string
-  season: string // '2025/26'
-  category: string // 'Adulto Masculino', 'Sub-19', ...
-  status: ChampionshipStatus
-  currentPhase: ChampionshipPhase
+  sortOrder: number
+}
+
+export interface Tournament {
+  id: string
+  name: string
+  seasonId: string
+  categoryId: string | null
+  format: TournamentFormat
+  status: TournamentStatus
   teamIds: string[]
   matchCount: number
   finishedMatchCount: number
@@ -149,17 +187,16 @@ export interface Championship {
   statsStatus: StatsStatus
   /** Short regulation summary (mocked). */
   regulation: string
-  groups: Group[]
   leaders: StatLeaders
-  bracket: BracketRound[]
-  /** Champion team id once the championship is finished. */
-  championTeamId?: string | null
+  /** Explicit declared tournament-team champion, null while no title is declared. */
+  championTournamentTeamId: string | null
 }
 
 // ── Match detail (with per-game box score) ────────────────────────────────────
 
 /** Individual player box-score line for a single match. */
 export interface PlayerMatchStats {
+  tournamentRosterId: string
   athleteId: string
   athleteName: string
   number: number
@@ -169,7 +206,6 @@ export interface PlayerMatchStats {
   ast: number
   stl: number
   blk: number
-  plusMinus: number
   to: number
   pf: number
   fgm: number
@@ -210,15 +246,15 @@ export interface AthleteStatTotals {
 
 export interface AthleteMatchStatsRow {
   match: Match
-  championship: Championship
+  tournament: Tournament
   teamId: string
   matchup: string
   result: string
   stats: PlayerMatchStats
 }
 
-export interface AthleteChampionshipStatsRow {
-  championship: Championship
+export interface AthleteTournamentStatsRow {
+  tournament: Tournament
   teamId: string
   totals: AthleteStatTotals
 }
@@ -247,6 +283,12 @@ export interface MatchLeader {
   teamId: string
 }
 
+/** Curated award, chosen by the ORG_ADMIN — not derived from statistics. DB spec §8.10. */
+export interface MatchMvp {
+  tournamentRosterId: string
+  athleteId: string
+}
+
 /** Match with full box score data. */
 export interface MatchDetail extends Match {
   /** Dynamic per-period scores. Drives the "Placar por período" table.
@@ -254,4 +296,6 @@ export interface MatchDetail extends Match {
   periodScores: PeriodScore[] | null
   homeStats: TeamMatchStats
   awayStats: TeamMatchStats
+  /** null on a W.O. and until the admin picks one. §8.10 */
+  mvp: MatchMvp | null
 }

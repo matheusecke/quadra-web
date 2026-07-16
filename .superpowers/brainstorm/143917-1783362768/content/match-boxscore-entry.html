@@ -1,0 +1,141 @@
+<style>
+  .wf { --persimmon:#EC5D2A; --ink:#171717; --muted:#707070; --muted2:#9a9a9a;
+        --bg:#fafafa; --surface:#fff; --surface2:#f5f5f5; --border:#e6e6e6; --borderStrong:#dcdcdc;
+        --ok:#16a34a; --warn:#d97706; }
+  @media (prefers-color-scheme: dark){
+    .wf { --ink:#f5f5f5; --muted:#b5b7bd; --muted2:#8c9099; --bg:#18191b;
+          --surface:#202124; --surface2:#282a2e; --border:#303238; --borderStrong:#41444b; }
+  }
+  .wf { border:1px solid var(--border); border-radius:12px; background:var(--surface);
+        color:var(--ink); font-size:12px; padding:16px 18px; }
+  .wf .crumb { color:var(--muted2); font-size:11px; margin-bottom:10px; }
+  .wf .scorehead { display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:14px; }
+  .wf .side-team { display:flex; align-items:center; gap:10px; }
+  .wf .crest { width:30px; height:30px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); }
+  .wf .side-team .nm { font-weight:600; }
+  .wf .scorebox { width:52px; height:44px; border:1px solid var(--borderStrong); border-radius:9px;
+        display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace;
+        font-size:22px; font-weight:700; background:var(--surface2); }
+  .wf .vs { color:var(--muted2); font-size:11px; }
+  .wf .chip { font-size:10px; padding:2px 8px; border-radius:999px; border:1px solid var(--borderStrong); color:var(--muted); }
+  .wf .chip.live { color:#ef4444; border-color:#ef444455; }
+  .wf .section-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted2); margin:16px 0 7px; }
+  /* period strip */
+  .wf .periods { border:1px solid var(--border); border-radius:9px; overflow:hidden; width:max-content; max-width:100%; }
+  .wf .periods table { border-collapse:collapse; font-family:'JetBrains Mono',monospace; }
+  .wf .periods th, .wf .periods td { padding:6px 12px; text-align:center; border-right:1px solid var(--border); font-size:11px; }
+  .wf .periods thead th { background:var(--surface2); color:var(--muted); font-weight:600; }
+  .wf .periods tbody th { text-align:left; font-family:inherit; color:var(--ink); font-weight:600; background:var(--surface); }
+  .wf .periods tr td:last-child, .wf .periods tr th:last-child { border-right:0; }
+  .wf .periods .cell { display:inline-block; min-width:22px; border-bottom:1px dashed var(--borderStrong); }
+  .wf .periods .tot { color:var(--muted); }
+  .wf .addot { font-size:11px; color:var(--persimmon); font-weight:600; margin-left:10px; }
+  /* box score */
+  .wf .teamtabs { display:flex; gap:14px; border-bottom:1px solid var(--border); margin:6px 0 10px; }
+  .wf .teamtabs span { padding:6px 0; color:var(--muted); }
+  .wf .teamtabs span.on { color:var(--ink); font-weight:600; box-shadow:inset 0 -2px 0 var(--persimmon); }
+  .wf .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:9px; }
+  .wf table.box { border-collapse:collapse; width:100%; min-width:720px; font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .wf table.box th, .wf table.box td { padding:6px 8px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--border); }
+  .wf table.box thead th { background:var(--surface2); color:var(--muted); font-weight:600; position:sticky; top:0; }
+  .wf table.box td.name, .wf table.box th.name { text-align:left; font-family:'Inter',sans-serif; }
+  .wf table.box td .inp { display:inline-block; width:30px; padding:2px 0; border:1px solid var(--border);
+        border-radius:5px; background:var(--surface); text-align:center; }
+  .wf table.box tr.totals td { font-weight:700; color:var(--ink); background:var(--surface2); border-top:2px solid var(--borderStrong); }
+  .wf .mvpstar { color:var(--muted3,#b2b2b2); }
+  .wf .mvpstar.on { color:var(--persimmon); }
+  .wf .validate { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:11px; color:var(--ok); }
+  .wf .validate.warn { color:var(--warn); }
+  .wf .dot { width:7px; height:7px; border-radius:999px; background:currentColor; display:inline-block; }
+  .wf .footbar { display:flex; justify-content:space-between; align-items:center; margin-top:16px; gap:10px; flex-wrap:wrap; }
+  .wf .btn { font-size:11px; padding:7px 13px; border-radius:8px; border:1px solid var(--borderStrong); color:var(--ink); background:var(--surface); font-weight:600; }
+  .wf .btn.primary { background:var(--persimmon); border-color:var(--persimmon); color:#fff; }
+  .wf .mvprow { display:flex; align-items:center; gap:8px; color:var(--muted); }
+  .wf .mvprow .pick { color:var(--ink); font-weight:600; box-shadow:inset 0 -1px 0 var(--persimmon); }
+</style>
+
+<h2>Súmula da partida — lançamento de resultado e estatística</h2>
+<p class="subtitle">A tela mais densa da feature. Placar por período (com prorrogação), box score editável por atleta, totais derivados, validação e MVP. Uma pergunta de layout no fim.</p>
+
+<div class="wf">
+  <div class="crumb">Partidas / Tigres FC × Leões da Serra · Fase de grupos</div>
+
+  <div class="scorehead">
+    <div class="side-team"><span class="crest"></span><div><div class="nm">Tigres FC</div><div class="vs">Casa</div></div></div>
+    <div class="scorebox">68</div>
+    <span class="vs">×</span>
+    <div class="scorebox">65</div>
+    <div class="side-team"><div style="text-align:right"><div class="nm">Leões da Serra</div><div class="vs">Visitante</div></div><span class="crest"></span></div>
+    <span class="chip live" style="margin-left:8px">Ao vivo</span>
+  </div>
+
+  <div class="section-label">Placar por período</div>
+  <div class="periods">
+    <table>
+      <thead><tr><th>Equipe</th><th>1Q</th><th>2Q</th><th>3Q</th><th>4Q</th><th>OT</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><th>Tigres FC</th><td><span class="cell">18</span></td><td><span class="cell">15</span></td><td><span class="cell">14</span></td><td><span class="cell">14</span></td><td><span class="cell">7</span></td><td class="tot">68</td></tr>
+        <tr><th>Leões da Serra</th><td><span class="cell">16</span></td><td><span class="cell">17</span></td><td><span class="cell">13</span></td><td><span class="cell">15</span></td><td><span class="cell">4</span></td><td class="tot">65</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <span class="addot">+ Adicionar prorrogação</span>
+
+  <div class="section-label">Box score</div>
+  <div class="teamtabs"><span class="on">Tigres FC</span><span>Leões da Serra</span></div>
+
+  <div class="tablewrap">
+    <table class="box">
+      <thead>
+        <tr>
+          <th></th><th class="name">Jogador</th><th>MIN</th><th>PTS</th><th>FGM</th><th>FGA</th><th>3PM</th><th>3PA</th><th>FTM</th><th>FTA</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TOV</th><th>PF</th><th>MVP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>7</td><td class="name">R. Albuquerque</td>
+          <td><span class="inp">28:14</span></td><td><span class="inp">22</span></td><td><span class="inp">8</span></td><td><span class="inp">15</span></td><td><span class="inp">3</span></td><td><span class="inp">7</span></td><td><span class="inp">3</span></td><td><span class="inp">4</span></td><td><span class="inp">6</span></td><td><span class="inp">5</span></td><td><span class="inp">2</span></td><td><span class="inp">1</span></td><td><span class="inp">3</span></td><td><span class="inp">2</span></td>
+          <td><span class="mvpstar on">★</span></td>
+        </tr>
+        <tr>
+          <td>11</td><td class="name">D. Okafor</td>
+          <td><span class="inp">31:02</span></td><td><span class="inp">16</span></td><td><span class="inp">6</span></td><td><span class="inp">12</span></td><td><span class="inp">1</span></td><td><span class="inp">4</span></td><td><span class="inp">3</span></td><td><span class="inp">3</span></td><td><span class="inp">9</span></td><td><span class="inp">4</span></td><td><span class="inp">1</span></td><td><span class="inp">2</span></td><td><span class="inp">2</span></td><td><span class="inp">4</span></td>
+          <td><span class="mvpstar">☆</span></td>
+        </tr>
+        <tr>
+          <td>4</td><td class="name">M. Villalba</td>
+          <td><span class="inp">24:47</span></td><td><span class="inp">9</span></td><td><span class="inp">4</span></td><td><span class="inp">9</span></td><td><span class="inp">1</span></td><td><span class="inp">3</span></td><td><span class="inp">0</span></td><td><span class="inp">0</span></td><td><span class="inp">3</span></td><td><span class="inp">7</span></td><td><span class="inp">3</span></td><td><span class="inp">0</span></td><td><span class="inp">1</span></td><td><span class="inp">1</span></td>
+          <td><span class="mvpstar">☆</span></td>
+        </tr>
+        <tr class="totals">
+          <td></td><td class="name">Totais da equipe</td>
+          <td>—</td><td>68</td><td>26</td><td>52</td><td>7</td><td>19</td><td>9</td><td>12</td><td>34</td><td>22</td><td>9</td><td>4</td><td>11</td><td>18</td><td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="validate"><span class="dot"></span> Soma dos pontos (68) confere com o placar final (68) e com os períodos.</div>
+  <div class="validate warn"><span class="dot"></span> FGM ≤ FGA, 3PM ≤ 3PA e FTM ≤ FTA validados por linha · alerta se algo não fechar.</div>
+
+  <div class="footbar">
+    <div class="mvprow">MVP da partida: <span class="pick">R. Albuquerque (Tigres FC)</span></div>
+    <div style="display:flex; gap:8px">
+      <button class="btn">Salvar rascunho</button>
+      <button class="btn primary">Finalizar partida</button>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:22px">Uma decisão de layout do box score</h3>
+<p class="subtitle">A tabela de estatística tem muitas colunas. Como mostrar as duas equipes? Clique na que preferir.</p>
+<div class="options">
+  <div class="option" data-choice="tabs" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Abas por equipe (recomendado)</h3><p>Uma equipe por vez (como acima). Foco, menos rolagem vertical, funciona melhor em telas estreitas. A tabela larga rola na horizontal dentro do próprio bloco.</p></div>
+  </div>
+  <div class="option" data-choice="stacked" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Duas tabelas empilhadas</h3><p>As duas equipes visíveis na mesma tela, uma abaixo da outra. Vê tudo de uma vez, porém dobra a rolagem e fica mais pesado no lançamento.</p></div>
+  </div>
+</div>

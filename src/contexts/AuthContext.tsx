@@ -8,6 +8,11 @@ async function fetchMe(): Promise<MePayload> {
   return data.data
 }
 
+async function fetchOrganizations(): Promise<OrgAffiliation[]> {
+  const { data } = await api.get<ApiResponse<OrgAffiliation[]>>('/auth/org')
+  return data.data
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [user, setUser] = useState<MePayload | null>(null)
@@ -84,6 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me)
   }, [])
 
+  const refreshOrganizations = useCallback(async () => {
+    const nextOrganizations = await fetchOrganizations()
+    setOrganizations(nextOrganizations)
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout')
@@ -96,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, logout }}>
+    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, refreshOrganizations, logout }}>
       {children}
     </AuthContext.Provider>
   )

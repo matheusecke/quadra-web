@@ -26,6 +26,9 @@
 }
 
 /* ── Nav ── */
+/* The navigation scrollbar is deliberately hidden: the sidebar is chrome, not content, and a
+   bar here would compete with the link list. Scrolling remains available by wheel, trackpad,
+   and keyboard. This is the documented exception from the interactive-controls guideline. */
 .nav {
   display: flex;
   flex-direction: column;

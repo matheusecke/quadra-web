@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
+import { getAthletes } from '../../../features/sports/mock-sports-data'
 import type { MatchDetail, PlayerMatchStats, Team } from '../../../features/sports/types'
 import { calculatePeriodTotal, getPeriodLabel } from '../../../features/sports/sportsUtils'
 import s from '../matches.module.css'
@@ -38,6 +39,8 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
   const periods = match.periodScores
   const homeTotal = match.homeScore ?? calculatePeriodTotal(periods, 'home')
   const awayTotal = match.awayScore ?? calculatePeriodTotal(periods, 'away')
+  const mvp = match.mvp
+  const mvpAthlete = mvp ? getAthletes().find((athlete) => athlete.id === mvp.athleteId) : null
 
   return (
     <>
@@ -87,6 +90,21 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {/* 2 ── Melhor em quadra (prêmio curado, não derivado) ──────────────── */}
+      {mvp && (
+        <section className={s.section}>
+          <div className={s.sectionHead}>
+            <h2 className={s.sectionTitle}>Melhor em quadra</h2>
+          </div>
+          <div className={s.mvpCard}>
+            <span className={s.mvpBadge}>MVP</span>
+            <Link to={`/athletes/${mvp.athleteId}`} className={s.mvpName}>
+              {mvpAthlete?.name ?? mvp.athleteId}
+            </Link>
           </div>
         </section>
       )}

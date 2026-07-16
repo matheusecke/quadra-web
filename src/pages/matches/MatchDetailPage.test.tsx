@@ -1,0 +1,34 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { describe, expect, it, vi } from 'vitest'
+import { MatchDetailPage } from './MatchDetailPage'
+
+vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+
+const renderDetail = (matchId: string) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/matches/${matchId}`]}>
+        <Routes>
+          <Route path="/matches/:matchId" element={<MatchDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('MatchDetailPage', () => {
+  it('explains an awarded score on a freshly loaded page, not just after submitting', async () => {
+    renderDetail('match-abandoned')
+    expect(await screen.findByText(/placar atribuído por abandono/i)).toBeInTheDocument()
+  })
+
+  it('marks a W.O. and does not show an empty súmula as if it were missing data', async () => {
+    renderDetail('match-forfeit')
+    expect(await screen.findByText(/vitória por w\.o\./i)).toBeInTheDocument()
+    expect(screen.queryByText(/placar por período/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/partida não disputada\. não há súmula/i)).toBeInTheDocument()
+  })
+})

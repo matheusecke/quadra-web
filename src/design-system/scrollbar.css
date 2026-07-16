@@ -1,0 +1,41 @@
+/*
+ * The Quadra scrollbar for surfaces with INTERNAL scrolling: lists, panels, dropdowns,
+ * tables, and bracket canvases. It lives here so no CSS Module declares its own
+ * ::-webkit-scrollbar again (interactive-controls guideline, rule 2).
+ *
+ * The DOCUMENT scrollbar is deliberately excluded: color-scheme in theme.css already makes
+ * it follow the theme, and narrowing the page's primary navigation scrollbar would hurt use.
+ */
+
+:where([class]) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-bold) transparent;
+}
+
+:where([class])::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:where([class])::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:where([class])::-webkit-scrollbar-thumb {
+  background: var(--border-bold);
+  border-radius: var(--radius-pill);
+}
+
+:where([class])::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-3);
+}
+
+:where([class])::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+:where([class])::-webkit-scrollbar-corner {
+  background: transparent;
+}

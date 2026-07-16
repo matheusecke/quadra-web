@@ -112,19 +112,8 @@
   color: var(--muted);
 }
 
-.filterSelect {
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: var(--accent);
+.filterControl {
+  width: 160px;
 }
 
 /* ── Body: header stays fixed, only list scrolls ── */
@@ -155,25 +144,6 @@
   border-radius: var(--radius);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-.tableWrap::-webkit-scrollbar {
-  width: 4px;
-}
-
-.tableWrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.tableWrap::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-
-.tableWrap::-webkit-scrollbar-thumb:hover {
-  background: var(--border-bold);
 }
 
 .table {

@@ -7,9 +7,9 @@
 import type {
   AthleteStatTotals,
   AthleteStatus,
-  Championship,
-  ChampionshipPhase,
-  ChampionshipStatus,
+  Tournament,
+  TournamentFormat,
+  TournamentStatus,
   LeaderStat,
   Match,
   MatchStatus,
@@ -19,51 +19,22 @@ import type {
   StatsStatus,
   Team,
 } from './types'
+import type { BracketRound, BracketSlot } from '../../services/sportsApi/store'
 
-// ── Standings calculations ──────────────────────────────────────────────────
+// ── Standings formatting ────────────────────────────────────────────────────
+// The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
+// Appendix D). Rows arrive ranked, with pointDiff and winPct already resolved —
+// recomputing them here would be the client re-deriving a server decision.
 
-/** Point differential (saldo de pontos). */
-export function pointDiff(row: StandingRow): number {
-  return row.pointsFor - row.pointsAgainst
-}
-
-/** Win percentage (aproveitamento) as 0–1; guards against 0 games. */
-export function winPct(row: StandingRow): number {
-  return row.played === 0 ? 0 : row.wins / row.played
-}
-
-/** Format a win percentage as a `.XXX` string, basketball convention. */
+/** Format a win percentage as a `.XXX` string, basketball convention. `—` when unmeasured. */
 export function formatPct(row: StandingRow): string {
-  if (row.played === 0) return '—'
-  return winPct(row).toFixed(3).replace(/^0/, '')
+  if (row.winPct === null) return '—'
+  return row.winPct.toFixed(3).replace(/^0/, '')
 }
 
 /** Format a signed point differential, e.g. `+42`, `-8`, `0`. */
 export function formatDiff(row: StandingRow): string {
-  const d = pointDiff(row)
-  return d > 0 ? `+${d}` : `${d}`
-}
-
-/**
- * Sort standings by championship tie-break order:
- * wins → point differential → points for.
- * Returns a new array with `position` reassigned.
- */
-export function rankStandings(rows: StandingRow[]): StandingRow[] {
-  return [...rows]
-    .sort(
-      (a, b) =>
-        b.wins - a.wins ||
-        pointDiff(b) - pointDiff(a) ||
-        b.pointsFor - a.pointsFor,
-    )
-    .map((row, i) => ({ ...row, position: i + 1 }))
-}
-
-/** Consolidated standings across all groups, re-ranked into a single table. */
-export function consolidatedStandings(championship: Championship): StandingRow[] {
-  const all = championship.groups.flatMap((g) => g.standings)
-  return rankStandings(all)
+  return row.pointDiff > 0 ? `+${row.pointDiff}` : `${row.pointDiff}`
 }
 
 // ── Match helpers ─────────────────────────────────────────────────────────────
@@ -77,6 +48,18 @@ export function isFinished(match: Match): boolean {
   return match.status === 'FINISHED'
 }
 
+export function hasKnockout(format: TournamentFormat): boolean {
+  return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
+}
+
+/** Phase label derived from the real links — never free text on the match. */
+export function matchPhaseName(
+  match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
+): string | null {
+  if (match.bracketRound) return match.bracketRound.label
+  return match.tournamentGroupId ? 'Fase de grupos' : null
+}
+
 // ── Team lookups ──────────────────────────────────────────────────────────────
 
 export function teamMap(teams: Team[]): Map<string, Team> {
@@ -85,21 +68,19 @@ export function teamMap(teams: Team[]): Map<string, Team> {
 
 // ── Labels (Portuguese) ────────────────────────────────────────────────────────
 
-export const CHAMPIONSHIP_STATUS_LABELS: Record<ChampionshipStatus, string> = {
-  SCHEDULED: 'Agendado',
+export const TOURNAMENT_STATUS_LABELS: Record<TournamentStatus, string> = {
+  DRAFT: 'Rascunho',
+  REGISTRATION: 'Inscrições',
   IN_PROGRESS: 'Em andamento',
-  PLAYOFFS: 'Playoffs',
-  FINISHED: 'Encerrado',
-  CANCELED: 'Cancelado',
+  COMPLETED: 'Encerrado',
+  CANCELLED: 'Cancelado',
 }
 
-export const PHASE_LABELS: Record<ChampionshipPhase, string> = {
-  GROUPS: 'Fase de grupos',
-  ROUNDS_OF_16: 'Oitavas de final',
-  QUARTERS: 'Quartas de final',
-  SEMIS: 'Semifinais',
-  FINAL: 'Final',
-  FINISHED: 'Encerrado',
+export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
+  LEAGUE: 'Pontos corridos',
+  GROUP_STAGE: 'Fase de grupos',
+  KNOCKOUT: 'Mata-mata',
+  GROUP_STAGE_KNOCKOUT: 'Grupos + mata-mata',
 }
 
 export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
@@ -107,6 +88,7 @@ export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   LIVE: 'Ao vivo',
   FINISHED: 'Finalizada',
   POSTPONED: 'Adiada',
+  CANCELLED: 'Cancelada',
 }
 
 export const STATS_STATUS_LABELS: Record<StatsStatus, string> = {
@@ -135,17 +117,17 @@ export const LEADER_STAT_ORDER: LeaderStat[] = ['ppg', 'rpg', 'apg', 'stg', 'bpg
 
 type BadgeVariant = 'default' | 'accent' | 'live' | 'success' | 'warning' | 'danger' | 'ghost'
 
-export function championshipStatusVariant(status: ChampionshipStatus): BadgeVariant {
+export function tournamentStatusVariant(status: TournamentStatus): BadgeVariant {
   switch (status) {
     case 'IN_PROGRESS':
       return 'accent'
-    case 'PLAYOFFS':
+    case 'REGISTRATION':
       return 'warning'
-    case 'FINISHED':
+    case 'COMPLETED':
       return 'success'
-    case 'CANCELED':
+    case 'CANCELLED':
       return 'danger'
-    case 'SCHEDULED':
+    case 'DRAFT':
     default:
       return 'ghost'
   }
@@ -159,6 +141,8 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
       return 'success'
     case 'POSTPONED':
       return 'warning'
+    case 'CANCELLED':
+      return 'danger'
     case 'SCHEDULED':
     default:
       return 'ghost'
@@ -214,12 +198,12 @@ export function formatRelative(iso: string): string {
 }
 
 /** `realizadas/total` progress string, e.g. `12/18`. */
-export function matchProgress(championship: Championship): string {
-  return `${championship.finishedMatchCount}/${championship.matchCount}`
+export function matchProgress(tournament: Tournament): string {
+  return `${tournament.finishedMatchCount}/${tournament.matchCount}`
 }
 
-export function formatPeriod(championship: Championship): string {
-  return `${formatDate(championship.startDate)} - ${formatDate(championship.endDate)}`
+export function formatPeriod(tournament: Tournament): string {
+  return `${formatDate(tournament.startDate)} - ${formatDate(tournament.endDate)}`
 }
 
 const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -347,4 +331,13 @@ export function matchDisplayStatus(status: MatchStatus, statsStatus: StatsStatus
 export function matchDisplayStatusVariant(status: MatchStatus, statsStatus: StatsStatus): BadgeVariant {
   if (status === 'FINISHED' && statsStatus === 'PENDING') return 'warning'
   return matchStatusVariant(status)
+}
+
+export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {
+  if (slot.label) return slot.label
+  return round.label ? `${round.label} ${slot.position}` : `Vaga ${slot.position}`
+}
+
+export function roundDisplayName(round: Pick<BracketRound, 'label' | 'number'>): string {
+  return round.label ?? `Rodada ${round.number}`
 }
