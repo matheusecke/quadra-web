@@ -47,6 +47,14 @@ export function isFinished(match: Match): boolean {
   return match.status === 'FINISHED'
 }
 
+/** Phase label derived from the real links — never free text on the match. */
+export function matchPhaseName(
+  match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
+): string | null {
+  if (match.bracketRound) return match.bracketRound.label
+  return match.tournamentGroupId ? 'Fase de grupos' : null
+}
+
 // ── Team lookups ──────────────────────────────────────────────────────────────
 
 export function teamMap(teams: Team[]): Map<string, Team> {

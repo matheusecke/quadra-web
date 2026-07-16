@@ -10,20 +10,22 @@ const teams = (...ids: string[]) => ids.map(team)
 
 let seq = 0
 const played = (homeTeamId: string, homeScore: number, awayTeamId: string, awayScore: number, over: Partial<Match> = {}): Match => ({
-  id: `m${seq++}`, tournamentId: 't', phase: '', date: '2026-02-01',
+  id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
   homeTeamId, awayTeamId, homeScore, awayScore,
   status: 'FINISHED', statsStatus: 'COMPLETE',
   homeLossType: homeScore < awayScore ? 'NORMAL' : null,
   awayLossType: awayScore < homeScore ? 'NORMAL' : null,
   scoreSource: 'PERIODS',
   tournamentGroupId: null,
+  bracketRound: null,
   ...over,
 })
 const scheduled = (homeTeamId: string, awayTeamId: string, over: Partial<Match> = {}): Match => ({
-  id: `m${seq++}`, tournamentId: 't', phase: '', date: '2026-02-01',
+  id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
   homeTeamId, awayTeamId, homeScore: null, awayScore: null,
   status: 'SCHEDULED', statsStatus: 'PENDING',
   homeLossType: null, awayLossType: null, scoreSource: null, tournamentGroupId: null,
+  bracketRound: null,
   ...over,
 })
 

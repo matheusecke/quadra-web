@@ -12,7 +12,6 @@ const teams = new Map<string, Team>([
 const finishedMatch: Match = {
   id: 'm1',
   tournamentId: 'c1',
-  phase: 'Oitavas de final',
   date: '2026-06-07T21:00:00.000Z',
   homeTeamId: 'abutres',
   awayTeamId: 'aguias',
@@ -21,6 +20,7 @@ const finishedMatch: Match = {
   status: 'FINISHED',
   statsStatus: 'COMPLETE',
   tournamentGroupId: null,
+  bracketRound: { id: 'round-oitavas', number: 1, label: 'Oitavas de final' },
   homeLossType: null,
   awayLossType: 'NORMAL',
   scoreSource: 'PERIODS',

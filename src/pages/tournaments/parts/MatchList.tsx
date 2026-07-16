@@ -4,6 +4,7 @@ import type { Match, Team } from '../../../features/sports/types'
 import {
   formatDateTime,
   MATCH_STATUS_LABELS,
+  matchPhaseName,
   matchStatusVariant,
 } from '../../../features/sports/sportsUtils'
 import s from '../tournaments.module.css'
@@ -47,7 +48,7 @@ export function MatchList({ matches, teams }: MatchListProps) {
                 </>
               )}
             </span>
-            <span className={s.matchPhase}>{m.phase}</span>
+            <span className={s.matchPhase}>{matchPhaseName(m) ?? ''}</span>
             <span className={s.matchStatusCell}>
               <Badge variant={matchStatusVariant(m.status)}>{MATCH_STATUS_LABELS[m.status]}</Badge>
               {isForfeit && <Badge variant="warning">W.O.</Badge>}

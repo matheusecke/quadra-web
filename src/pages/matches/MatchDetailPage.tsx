@@ -16,6 +16,7 @@ import {
   formatTime,
   matchDisplayStatus,
   matchDisplayStatusVariant,
+  matchPhaseName,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import { SummaryTab } from './tabs/SummaryTab'
@@ -132,7 +133,7 @@ export function MatchDetailPage() {
         <div className={s.detailContext}>
           {tournament && <span>{tournament.name}</span>}
           {tournament && <span className={s.detailContextSep}>·</span>}
-          <span>{match.phase}</span>
+          <span>{matchPhaseName(match) ?? ''}</span>
           <span className={s.detailContextSep}>·</span>
           <Badge variant={matchDisplayStatusVariant(match.status, match.statsStatus)}>
             {matchDisplayStatus(match.status, match.statsStatus)}
@@ -183,7 +184,7 @@ export function MatchDetailPage() {
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Fase</span>
-            <span className={s.infoValue}>{match.phase}</span>
+            <span className={s.infoValue}>{matchPhaseName(match) ?? '—'}</span>
           </div>
         </div>
 

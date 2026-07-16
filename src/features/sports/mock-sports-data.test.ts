@@ -30,7 +30,7 @@ describe('seeded group membership', () => {
   // is not enough on its own to call a match a group match.
   it('leaves a knockout game between two teams of the same group ungrouped', () => {
     const semifinal = seedMatches.find((m) => m.id === 'puc-inverno-m13')
-    expect(semifinal?.phase).toBe('Semifinais')
+    expect(semifinal?.bracketRound?.label).toBe('Semifinais')
     expect(semifinal?.tournamentGroupId).toBeNull()
   })
 })
@@ -65,7 +65,7 @@ describe('PUC sports mock data', () => {
   })
 
   it('Geral final is OT with consistent box score', () => {
-    const final = getMatchesByTournament('puc-geral-2026').find((m) => m.phase === 'Final')
+    const final = getMatchesByTournament('puc-geral-2026').find((m) => m.bracketRound?.label === 'Final')
     expect(final?.homeTeamId).toBe('puc-time-1')
     expect(final?.awayTeamId).toBe('puc-time-2')
     const detail = getMatchDetailById(final!.id)

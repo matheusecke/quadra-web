@@ -124,8 +124,6 @@ export type ScoreSource = 'PERIODS' | 'AWARDED' | null
 export interface Match {
   id: string
   tournamentId: string
-  /** Free-text phase label, e.g. 'Fase de grupos', 'Quartas de final'. */
-  phase: string
   date: string // ISO datetime
   homeTeamId: string
   awayTeamId: string
@@ -136,6 +134,11 @@ export interface Match {
   statsStatus: StatsStatus
   /** Set when the match belongs to a group stage; null for league and knockout games. */
   tournamentGroupId: string | null
+  /**
+   * Knockout round derived via match → bracket slot → round. Null outside the bracket.
+   * Mutually exclusive with tournamentGroupId by construction.
+   */
+  bracketRound: { id: string; number: number; label: string | null } | null
   /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
   homeLossType: LossType | null
   awayLossType: LossType | null

@@ -549,7 +549,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
       const match: Match = {
         id: nextId('match'),
         tournamentId: input.tournamentId,
-        phase: input.phaseLabel ?? '',
         date: input.scheduledAt,
         homeTeamId: input.homeTeamId,
         awayTeamId: input.awayTeamId,
@@ -562,6 +561,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         awayLossType: null,
         scoreSource: null,
         tournamentGroupId: input.groupId ?? null,
+        bracketRound: null,
       }
       matches.push(match)
       const tournament = tournaments.find((t) => t.id === input.tournamentId)

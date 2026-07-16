@@ -22,7 +22,6 @@ export function MatchFormPage() {
   const [groupId, setGroupId] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [venue, setVenue] = useState('')
-  const [phaseLabel, setPhaseLabel] = useState('')
   const [error, setError] = useState('')
 
   const selectedTournament = tournaments?.find((t) => t.id === tournamentId)
@@ -53,7 +52,6 @@ export function MatchFormPage() {
         awayTeamId,
         scheduledAt,
         venue: venue || undefined,
-        phaseLabel: phaseLabel || undefined,
         groupId: groupId || null,
       })
       navigate(`/matches/${created.id}`)
@@ -111,10 +109,6 @@ export function MatchFormPage() {
         <Field
           label="Local"
           inputProps={{ value: venue, onChange: (e) => setVenue(e.target.value), placeholder: 'Ginásio (opcional)' }}
-        />
-        <Field
-          label="Fase"
-          inputProps={{ value: phaseLabel, onChange: (e) => setPhaseLabel(e.target.value), placeholder: 'Fase de grupos (opcional)' }}
         />
 
         {error && <p className={s.error} role="alert">{error}</p>}

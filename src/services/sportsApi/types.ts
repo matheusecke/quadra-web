@@ -99,7 +99,6 @@ export interface ScheduleMatchInput {
   scheduledAt: string
   venue?: string
   groupId?: string | null
-  phaseLabel?: string
 }
 
 /** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */

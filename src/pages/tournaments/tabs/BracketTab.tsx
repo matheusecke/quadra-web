@@ -44,7 +44,7 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     const awayTeamId = teamIdOf(slot.awayTournamentTeamId)
     if (!homeTeamId || !awayTeamId) return
     try {
-      const match = await scheduleMatch.mutateAsync({ tournamentId: tournament.id, homeTeamId, awayTeamId, scheduledAt, phaseLabel: slot.label ?? undefined })
+      const match = await scheduleMatch.mutateAsync({ tournamentId: tournament.id, homeTeamId, awayTeamId, scheduledAt })
       await linkMatch.mutateAsync({ slotId, matchId: match.id })
       setErrorMessage('')
     } catch (error) { fail(error) }

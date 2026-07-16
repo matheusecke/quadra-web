@@ -15,6 +15,7 @@ import {
   formatDateTime,
   matchDisplayStatus,
   matchDisplayStatusVariant,
+  matchPhaseName,
   sortMatchesByDateDesc,
   teamMap,
 } from '../../features/sports/sportsUtils'
@@ -182,7 +183,7 @@ export function MatchesPage() {
                               : <span className={s.scorePending}>—</span>
                             }
                           </td>
-                          <td className={s.tdMuted}>{m.phase}</td>
+                          <td className={s.tdMuted}>{matchPhaseName(m) ?? ''}</td>
                           <td className={s.td}>
                             <Badge variant={matchDisplayStatusVariant(m.status, m.statsStatus)}>
                               {matchDisplayStatus(m.status, m.statsStatus)}

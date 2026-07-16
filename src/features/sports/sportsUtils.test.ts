@@ -4,6 +4,7 @@ import {
   TOURNAMENT_STATUS_LABELS,
   formatDiff,
   formatPct,
+  matchPhaseName,
   matchStatusVariant,
   tournamentStatusVariant,
 } from './sportsUtils'
@@ -68,5 +69,28 @@ describe('matchStatusVariant', () => {
   it('marks a cancelled match as danger, distinct from a postponed one', () => {
     expect(matchStatusVariant('CANCELLED')).toBe('danger')
     expect(matchStatusVariant('POSTPONED')).toBe('warning')
+  })
+})
+
+describe('matchPhaseName', () => {
+  it('returns the bracket round label when the match is linked to a round', () => {
+    expect(matchPhaseName({
+      bracketRound: { id: 'r1', number: 2, label: 'Semifinais' },
+      tournamentGroupId: null,
+    })).toBe('Semifinais')
+  })
+
+  it('returns Fase de grupos when the match belongs to a group and has no round', () => {
+    expect(matchPhaseName({
+      bracketRound: null,
+      tournamentGroupId: 'seed-group-a',
+    })).toBe('Fase de grupos')
+  })
+
+  it('returns null when the match has neither a round nor a group (league)', () => {
+    expect(matchPhaseName({
+      bracketRound: null,
+      tournamentGroupId: null,
+    })).toBeNull()
   })
 })

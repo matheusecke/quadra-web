@@ -8,6 +8,7 @@ import type { Tournament, Match, MatchStatus, Team } from '../../../features/spo
 import {
   formatDateTime,
   MATCH_STATUS_LABELS,
+  matchPhaseName,
   matchStatusVariant,
   sortMatchesByDateDesc,
 } from '../../../features/sports/sportsUtils'
@@ -20,6 +21,7 @@ interface MatchesTabProps {
 }
 
 const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED']
+const GROUP_PHASE_FILTER = '__group__'
 
 export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
   const [q, setQ] = useState('')
@@ -27,14 +29,29 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
   const [status, setStatus] = useState<MatchStatus | ''>('')
   const [phase, setPhase] = useState('')
 
-  const phases = useMemo(() => [...new Set(matches.map((m) => m.phase))], [matches])
+  const phases = useMemo(() => {
+    const options = new Map<string, string>()
+    for (const m of matches) {
+      if (m.bracketRound) {
+        const label = m.bracketRound.label ?? `Rodada ${m.bracketRound.number}`
+        options.set(m.bracketRound.id, label)
+      } else if (m.tournamentGroupId) {
+        options.set(GROUP_PHASE_FILTER, 'Fase de grupos')
+      }
+    }
+    return [...options.entries()].map(([value, label]) => ({ value, label }))
+  }, [matches])
 
   const filtered = useMemo(() => {
     const sorted = sortMatchesByDateDesc(matches)
     return sorted.filter((m) => {
       if (team && m.homeTeamId !== team && m.awayTeamId !== team) return false
       if (status && m.status !== status) return false
-      if (phase && m.phase !== phase) return false
+      if (phase === GROUP_PHASE_FILTER) {
+        if (!m.tournamentGroupId || m.bracketRound) return false
+      } else if (phase && m.bracketRound?.id !== phase) {
+        return false
+      }
       if (q) {
         const home = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
         const away = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
@@ -72,9 +89,11 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
         <div className={s.filterControl}>
           <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: MATCH_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as MatchStatus | '')} />
         </div>
-        <div className={s.filterControl}>
-          <Combobox aria-label="Filtrar por fase" options={[{ value: '', label: 'Fase' }, ...phases.map((value) => ({ value, label: value }))]} value={phase || null} onChange={setPhase} />
-        </div>
+        {phases.length > 0 && (
+          <div className={s.filterControl}>
+            <Combobox aria-label="Filtrar por fase" options={[{ value: '', label: 'Fase' }, ...phases]} value={phase || null} onChange={setPhase} />
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -125,7 +144,7 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
                         )}
                       </Link>
                     </td>
-                    <td className={`${s.tdMuted} ${s.matchesPhaseCol}`}>{m.phase}</td>
+                    <td className={`${s.tdMuted} ${s.matchesPhaseCol}`}>{matchPhaseName(m) ?? ''}</td>
                     <td className={`${s.td} ${s.matchesStatusCol}`}>
                       <Badge variant={matchStatusVariant(m.status)}>{MATCH_STATUS_LABELS[m.status]}</Badge>
                     </td>

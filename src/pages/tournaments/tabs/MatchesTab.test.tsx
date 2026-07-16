@@ -40,7 +40,6 @@ const matches: Match[] = [
   {
     id: 'm1',
     tournamentId: 'c1',
-    phase: 'Oitavas de final',
     date: '2026-06-07T21:00:00.000Z',
     homeTeamId: 'abutres',
     awayTeamId: 'aguias',
@@ -50,6 +49,7 @@ const matches: Match[] = [
     venue: 'Ginásio Central',
     statsStatus: 'COMPLETE',
     tournamentGroupId: null,
+    bracketRound: { id: 'round-oitavas', number: 1, label: 'Oitavas de final' },
     homeLossType: null,
     awayLossType: 'NORMAL',
     scoreSource: 'PERIODS',
@@ -57,7 +57,6 @@ const matches: Match[] = [
   {
     id: 'm2',
     tournamentId: 'c1',
-    phase: 'Semifinais',
     date: '2026-06-14T20:00:00.000Z',
     homeTeamId: 'linces',
     awayTeamId: 'lobos',
@@ -67,6 +66,7 @@ const matches: Match[] = [
     venue: 'Arena Metropolitana',
     statsStatus: 'PARTIAL',
     tournamentGroupId: null,
+    bracketRound: { id: 'round-semi', number: 2, label: 'Semifinais' },
     homeLossType: null,
     awayLossType: null,
     scoreSource: null,
