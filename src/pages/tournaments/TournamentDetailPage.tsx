@@ -23,6 +23,7 @@ import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
   formatPeriod,
+  hasKnockout,
   matchProgress,
   teamMap,
 } from '../../features/sports/sportsUtils'
@@ -205,13 +206,13 @@ export function TournamentDetailPage() {
 
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
-  const hasKnockout = tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
+  const isKnockout = hasKnockout(tournament.format)
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Visão geral' },
     { id: 'teams', label: 'Equipes' },
     ...(hasGroupStage ? [{ id: 'groups', label: 'Grupos' }] : []),
     { id: 'matches', label: 'Partidas' },
-    ...(hasKnockout ? [{ id: 'bracket', label: 'Chaveamento' }] : []),
+    ...(isKnockout ? [{ id: 'bracket', label: 'Chaveamento' }] : []),
     ...(tournament.format === 'LEAGUE' ? [{ id: 'standings', label: 'Classificação' }] : []),
     { id: 'stats', label: 'Estatísticas' },
   ]

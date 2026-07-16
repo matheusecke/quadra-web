@@ -48,6 +48,10 @@ export function isFinished(match: Match): boolean {
   return match.status === 'FINISHED'
 }
 
+export function hasKnockout(format: TournamentFormat): boolean {
+  return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
+}
+
 /** Phase label derived from the real links — never free text on the match. */
 export function matchPhaseName(
   match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
