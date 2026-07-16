@@ -3,16 +3,18 @@ import { EmptyState, ErrorState, Skeleton } from '../../../components/ui'
 import { BracketCanvas } from '../../../features/sports/components/BracketCanvas'
 import type { Tournament } from '../../../features/sports/types'
 import { getTeams } from '../../../features/sports/mock-sports-data'
-import { useBracketSlotsQuery, useCreateBracketSlot, useLinkSlotMatch, useMatchesQuery, useRemoveBracketSlot, useScheduleMatch, useSetSlotWinner, useTournamentTeamsQuery, useUpdateBracketSlot } from '../../../features/sports/queries'
+import { useBracketRoundsQuery, useBracketSlotsQuery, useCreateBracketRound, useCreateBracketSlot, useLinkSlotMatch, useMatchesQuery, useRemoveBracketSlot, useScheduleMatch, useSetSlotWinner, useTournamentTeamsQuery, useUpdateBracketSlot } from '../../../features/sports/queries'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import s from './BracketTab.module.css'
 
 export function BracketTab({ tournament }: { tournament: Tournament }) {
   const isOrgAdmin = useIsOrgAdmin()
   const slotsQuery = useBracketSlotsQuery(tournament.id)
+  const { data: rounds = [] } = useBracketRoundsQuery(tournament.id)
   const { data: matches = [] } = useMatchesQuery({ tournamentId: tournament.id })
   const { data: tournamentTeams = [] } = useTournamentTeamsQuery(tournament.id)
   const createSlot = useCreateBracketSlot()
+  const createRound = useCreateBracketRound()
   const updateSlot = useUpdateBracketSlot()
   const setWinner = useSetSlotWinner()
   const linkMatch = useLinkSlotMatch()
@@ -35,7 +37,8 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     const team = teamsById.get(entry.teamId)
     return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? entry.teamId }
   })
-  const views = slots.map((slot) => ({ ...slot, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null }))
+  const roundById = new Map(rounds.map((round) => [round.id, round]))
+  const views = slots.map((slot) => ({ ...slot, roundNumber: roundById.get(slot.roundId)?.number ?? 0, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null }))
   const teamIdOf = (tournamentTeamId: string) => tournamentTeams.find((entry) => entry.id === tournamentTeamId)?.teamId
   const handleSchedule = async (slotId: string, scheduledAt: string) => {
     const slot = slots.find((entry) => entry.id === slotId)
@@ -57,8 +60,8 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
       onSetWinner={async (slotId, winnerTournamentTeamId) => { try { await setWinner.mutateAsync({ slotId, winnerTournamentTeamId }); setErrorMessage('') } catch (error) { fail(error) } }}
       onRenameSlot={async (id, label) => { try { await updateSlot.mutateAsync({ id, input: { label } }) } catch (error) { fail(error) } }}
       onSchedule={handleSchedule}
-      onCreateSlot={async (roundNumber) => { try { await createSlot.mutateAsync({ tournamentId: tournament.id, roundNumber }) } catch (error) { fail(error) } }}
-      onCreateRound={async () => { try { await createSlot.mutateAsync({ tournamentId: tournament.id, roundNumber: Math.max(0, ...slots.map((slot) => slot.roundNumber)) + 1 }) } catch (error) { fail(error) } }}
+      onCreateSlot={async (roundNumber) => { const round = rounds.find((entry) => entry.number === roundNumber); if (!round) return; try { await createSlot.mutateAsync({ tournamentId: tournament.id, roundId: round.id }) } catch (error) { fail(error) } }}
+      onCreateRound={async () => { try { await createRound.mutateAsync({ tournamentId: tournament.id }) } catch (error) { fail(error) } }}
       onRemoveSlot={async (id) => { try { await removeSlot.mutateAsync(id); setErrorMessage('') } catch (error) { fail(error) } }} errorMessage={errorMessage} />
   </div>
 }

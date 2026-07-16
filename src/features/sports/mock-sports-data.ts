@@ -206,7 +206,7 @@ const geralMatches: Match[] = [
   mkMatch(GERAL, '2026-05-24T21:00:00', 'puc-time-2', 'puc-time-9', 86, 69, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m30'),
   mkMatch(GERAL, '2026-05-31T20:00:00', 'puc-time-1', 'puc-time-2', 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m31'),
 ]
-export const seedBracketRounds = [{ name:'Quartas de final',matches:[{id:'geral-qf1',matchId:'puc-geral-m25',homeTeamId:'puc-time-1',awayTeamId:'puc-time-5',winnerId:'puc-time-1'},{id:'geral-qf2',matchId:'puc-geral-m26',homeTeamId:'puc-time-6',awayTeamId:'puc-time-2',winnerId:'puc-time-2'},{id:'geral-qf3',matchId:'puc-geral-m27',homeTeamId:'puc-time-9',awayTeamId:'puc-time-14',winnerId:'puc-time-9'},{id:'geral-qf4',matchId:'puc-geral-m28',homeTeamId:'puc-time-13',awayTeamId:'puc-time-10',winnerId:'puc-time-13'}]},{name:'Semifinais',matches:[{id:'geral-sf1',matchId:'puc-geral-m29',homeTeamId:'puc-time-1',awayTeamId:'puc-time-13',winnerId:'puc-time-1'},{id:'geral-sf2',matchId:'puc-geral-m30',homeTeamId:'puc-time-2',awayTeamId:'puc-time-9',winnerId:'puc-time-2'}]},{name:'Final',matches:[{id:'geral-f1',matchId:'puc-geral-m31',homeTeamId:'puc-time-1',awayTeamId:'puc-time-2',winnerId:'puc-time-1'}]}]
+export const seedBracketRounds = [{ name:'Quartas de final',matches:[{id:'geral-qf1',matchId:'puc-geral-m25',homeTeamId:'puc-time-1',awayTeamId:'puc-time-5',winnerId:'puc-time-1'},{id:'geral-qf4',matchId:'puc-geral-m28',homeTeamId:'puc-time-13',awayTeamId:'puc-time-10',winnerId:'puc-time-13'},{id:'geral-qf2',matchId:'puc-geral-m26',homeTeamId:'puc-time-6',awayTeamId:'puc-time-2',winnerId:'puc-time-2'},{id:'geral-qf3',matchId:'puc-geral-m27',homeTeamId:'puc-time-9',awayTeamId:'puc-time-14',winnerId:'puc-time-9'}]},{name:'Semifinais',matches:[{id:'geral-sf1',matchId:'puc-geral-m29',homeTeamId:'puc-time-1',awayTeamId:'puc-time-13',winnerId:'puc-time-1'},{id:'geral-sf2',matchId:'puc-geral-m30',homeTeamId:'puc-time-2',awayTeamId:'puc-time-9',winnerId:'puc-time-2'}]},{name:'Final',matches:[{id:'geral-f1',matchId:'puc-geral-m31',homeTeamId:'puc-time-1',awayTeamId:'puc-time-2',winnerId:'puc-time-1'}]}]
 const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:'season-2025-26',categoryId:'cat-adulto-masc',format:'GROUP_STAGE_KNOCKOUT',status:'COMPLETED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',statsStatus:'COMPLETE',regulation:REGULATION,leaders:geralLeaders,championTournamentTeamId:'tournament-team-puc-geral-2026-puc-time-1'}
 const invernoMatches: Match[] = [
   mkMatch(INVERNO, '2026-07-03T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m01'),
@@ -251,22 +251,6 @@ const seedKnockoutMatchIds = new Set([
   'puc-inverno-m15',
 ])
 
-const seedBracketRoundOf = (matchId: string): Match['bracketRound'] => {
-  for (let i = 0; i < seedBracketRounds.length; i++) {
-    const round = seedBracketRounds[i]
-    if (round.matches.some((slot) => slot.matchId === matchId)) {
-      return { id: `seed-round-puc-geral-2026-${i + 1}`, number: i + 1, label: round.name }
-    }
-  }
-  if (matchId === 'puc-inverno-m13' || matchId === 'puc-inverno-m14') {
-    return { id: 'seed-round-puc-inverno-2026-1', number: 1, label: 'Semifinais' }
-  }
-  if (matchId === 'puc-inverno-m15') {
-    return { id: 'seed-round-puc-inverno-2026-2', number: 2, label: 'Final' }
-  }
-  return null
-}
-
 /** A match belongs to a group only when it is a group-stage game between two teams of the same
  *  group. Knockout ids exclude bracket games. The id shape is the one `sportsApi/index.ts`
  *  rebuilds for the store seed. */
@@ -288,7 +272,6 @@ export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaS
   .map((match) => ({
     ...match,
     tournamentGroupId: seedGroupIdOf(match),
-    bracketRound: seedBracketRoundOf(match.id),
   }))
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches

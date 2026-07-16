@@ -8,10 +8,11 @@ const knockout = () => {
   store.updateTournament(t.id, { status: 'IN_PROGRESS' })
   const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Alfa' })
   const beta = store.enrollTeam({ tournamentId: t.id, teamId: 'team-2', displayName: 'Beta' })
-  const final = store.createBracketSlot({ tournamentId: t.id, roundNumber: 1, label: 'Final' })
+  const round = store.createBracketRound({ tournamentId: t.id, label: 'Final' })
+  const final = store.createBracketSlot({ tournamentId: t.id, roundId: round.id, label: 'Final' })
   store.updateBracketSlot(final.id, { homeTournamentTeamId: alfa.id, awayTournamentTeamId: beta.id })
   store.setSlotWinner({ slotId: final.id, winnerTournamentTeamId: alfa.id })
-  return { store, tournamentId: t.id, alfaId: alfa.id, betaId: beta.id, finalId: final.id }
+  return { store, tournamentId: t.id, alfaId: alfa.id, betaId: beta.id, finalId: final.id, roundId: round.id }
 }
 
 describe('championSuggestion', () => {
@@ -20,8 +21,8 @@ describe('championSuggestion', () => {
     expect(store.championSuggestion(tournamentId)).toBe(alfaId)
   })
   it('suggests nothing when the last round is ambiguous — two slots are not a final', () => {
-    const { store, tournamentId } = knockout()
-    store.createBracketSlot({ tournamentId, roundNumber: 1, label: 'Disputa de 3º lugar' })
+    const { store, tournamentId, roundId } = knockout()
+    store.createBracketSlot({ tournamentId, roundId, label: 'Disputa de 3º lugar' })
     expect(store.championSuggestion(tournamentId)).toBeNull()
   })
 })
