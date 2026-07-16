@@ -165,10 +165,10 @@ const PUC_ATHLETES: Athlete[] = [
 const ATHLETES_BY_TEAM: Record<string, Athlete[]> = Object.fromEntries(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
 let matchSeq=0
 function mkMatch(tournamentId:string,phase:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{const isFinished=status==='FINISHED';return{id:id??`m${++matchSeq}`,tournamentId,phase,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus,tournamentGroupId:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
-function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,plusMinus:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:`mock-roster-${a.currentTeamId}-${a.id}`,athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,plusMinus,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
+function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:`mock-roster-${a.currentTeamId}-${a.id}`,athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
 function mkTeam(teamId:string,players:PlayerMatchStats[]):TeamMatchStats{return{teamId,players}}
-function buildBoxScore(homeScore:number,awayScore:number,homeTeamId:string,awayTeamId:string){function distribute(score:number,roster:Athlete[],teamId:string){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const tpm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-tpm);stats.push(mkPlayer(players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,pts>10?4:-2,1+(i%2),2+(i%3),fgm,fgm+3,tpm,tpm+2,ftm,ftm+1))}const sum=stats.reduce((s,p)=>s+p.pts,0);if(sum!==score&&stats.length)stats[stats.length-1].pts+=score-sum;return mkTeam(teamId,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM[homeTeamId]??[],homeTeamId),awayStats:distribute(awayScore,ATHLETES_BY_TEAM[awayTeamId]??[],awayTeamId)}}
+function buildBoxScore(homeScore:number,awayScore:number,homeTeamId:string,awayTeamId:string){function distribute(score:number,roster:Athlete[],teamId:string){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const tpm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-tpm);stats.push(mkPlayer(players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,tpm,tpm+2,ftm,ftm+1))}const sum=stats.reduce((s,p)=>s+p.pts,0);if(sum!==score&&stats.length)stats[stats.length-1].pts+=score-sum;return mkTeam(teamId,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM[homeTeamId]??[],homeTeamId),awayStats:distribute(awayScore,ATHLETES_BY_TEAM[awayTeamId]??[],awayTeamId)}}
 const REGULATION='Fase classificatória em grupos. As melhores equipes avançam para playoffs em mata-mata. Desempate: vitórias, saldo de pontos, confronto direto.'
 const GERAL='puc-geral-2026'; const INVERNO='puc-inverno-2026'
 
@@ -301,22 +301,22 @@ const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStat
   'puc-geral-m30': (() => { const b = buildBoxScore(86, 69, 'puc-time-2', 'puc-time-9'); return { periodScores: mkPeriods([21,17], [24,18], [21,19], [20,15]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
 }
 const FINAL_HOME = mkTeam('puc-time-1', [
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rafael.moura@quadra.com.br')!, 38, 24, 5, 6, 2, 0, 8, 2, 2, 9, 17, 2, 5, 4, 5),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'diego.santos@quadra.com.br')!, 36, 18, 4, 3, 1, 1, 6, 1, 3, 7, 14, 1, 4, 3, 4),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'felipe.oliveira@quadra.com.br')!, 34, 14, 8, 2, 0, 2, 4, 2, 3, 5, 10, 0, 1, 4, 5),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'gabriel.costa@quadra.com.br')!, 32, 12, 3, 5, 2, 0, 4, 1, 2, 4, 9, 2, 5, 2, 2),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'henrique.lima@quadra.com.br')!, 28, 10, 6, 1, 1, 0, 2, 1, 2, 4, 8, 0, 2, 2, 3),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'igor.martins@quadra.com.br')!, 22,  4, 4, 2, 0, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'joao.pereira@quadra.com.br')!, 20,  2, 3, 1, 0, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rafael.moura@quadra.com.br')!, 38, 24, 5, 6, 2, 0, 2, 2, 9, 17, 2, 5, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'diego.santos@quadra.com.br')!, 36, 18, 4, 3, 1, 1, 1, 3, 7, 14, 1, 4, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'felipe.oliveira@quadra.com.br')!, 34, 14, 8, 2, 0, 2, 2, 3, 5, 10, 0, 1, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'gabriel.costa@quadra.com.br')!, 32, 12, 3, 5, 2, 0, 1, 2, 4, 9, 2, 5, 2, 2),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'henrique.lima@quadra.com.br')!, 28, 10, 6, 1, 1, 0, 1, 2, 4, 8, 0, 2, 2, 3),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'igor.martins@quadra.com.br')!, 22,  4, 4, 2, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'joao.pereira@quadra.com.br')!, 20,  2, 3, 1, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
 const FINAL_AWAY = mkTeam('puc-time-2', [
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'nicolas.barbosa@quadra.com.br')!, 38, 22, 4, 4, 2, 0, -6, 3, 2, 8, 16, 2, 6, 4, 5),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'otavio.ribeiro@quadra.com.br')!, 36, 16, 5, 3, 1, 1, -4, 2, 3, 6, 12, 1, 4, 3, 4),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'paulo.carvalho@quadra.com.br')!, 34, 14, 7, 2, 0, 1, -2, 1, 2, 5, 10, 1, 3, 3, 4),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'pedro.gomes@quadra.com.br')!, 32, 12, 3, 5, 2, 0, -2, 2, 2, 4, 9, 2, 5, 2, 2),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'ricardo.araujo@quadra.com.br')!, 28, 10, 5, 1, 0, 0, -2, 1, 3, 4, 8, 0, 2, 2, 3),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'roberto.nunes@quadra.com.br')!, 24,  4, 4, 1, 0, 0,  0, 1, 1, 2, 5, 0, 1, 0, 0),
-  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rodrigo.melo@quadra.com.br')!, 18,  2, 2, 1, 0, 0,  0, 0, 1, 1, 3, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'nicolas.barbosa@quadra.com.br')!, 38, 22, 4, 4, 2, 0, 3, 2, 8, 16, 2, 6, 4, 5),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'otavio.ribeiro@quadra.com.br')!, 36, 16, 5, 3, 1, 1, 2, 3, 6, 12, 1, 4, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'paulo.carvalho@quadra.com.br')!, 34, 14, 7, 2, 0, 1, 1, 2, 5, 10, 1, 3, 3, 4),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'pedro.gomes@quadra.com.br')!, 32, 12, 3, 5, 2, 0, 2, 2, 4, 9, 2, 5, 2, 2),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'ricardo.araujo@quadra.com.br')!, 28, 10, 5, 1, 0, 0, 1, 3, 4, 8, 0, 2, 2, 3),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'roberto.nunes@quadra.com.br')!, 24,  4, 4, 1, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
+  mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rodrigo.melo@quadra.com.br')!, 18,  2, 2, 1, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
 MATCH_EXTRA['puc-geral-m31'] = { periodScores: mkPeriods([22,20],[18,22],[20,18],[16,16],[8,4]), homeStats: FINAL_HOME, awayStats: FINAL_AWAY }
 

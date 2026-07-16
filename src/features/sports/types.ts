@@ -203,7 +203,6 @@ export interface PlayerMatchStats {
   ast: number
   stl: number
   blk: number
-  plusMinus: number
   to: number
   pf: number
   fgm: number

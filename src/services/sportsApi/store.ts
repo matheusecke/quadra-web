@@ -166,7 +166,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         ast: line.ast,
         stl: line.stl,
         blk: line.blk,
-        plusMinus: 0,
         to: line.to,
         pf: line.pf,
         fgm: line.fgm,

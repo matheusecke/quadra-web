@@ -10,7 +10,7 @@ import type { PlayerMatchStats, PeriodScore } from './types'
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
   tournamentRosterId: 'roster-a', athleteId: 'a', athleteName: 'A', number: 1, min: 600, pts: 10, reb: 5, ast: 2,
-  stl: 1, blk: 0, plusMinus: 0, to: 1, pf: 2, fgm: 4, fga: 9, tpm: 1, tpa: 3, ftm: 1, fta: 2, ...over,
+  stl: 1, blk: 0, to: 1, pf: 2, fgm: 4, fga: 9, tpm: 1, tpa: 3, ftm: 1, fta: 2, ...over,
 })
 
 describe('sumPlayerStats', () => {
