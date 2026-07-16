@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { MatchStatus } from '../types'
-import { formatDate, formatTime } from '../sportsUtils'
+import { formatDate, formatTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 import { Button, Combobox, DateTimeField, Input } from '../../../components/ui'
 import { cn } from '../../../components/ui/cn'
+import type { BracketRound } from '../../../services/sportsApi/store'
 import s from './BracketCanvas.module.css'
 
 export interface BracketTeamOption {
@@ -14,7 +15,7 @@ export interface BracketTeamOption {
 
 export interface BracketSlotView {
   id: string
-  roundNumber: number
+  roundId: string
   position: number
   label: string | null
   homeTournamentTeamId: string | null
@@ -25,6 +26,7 @@ export interface BracketSlotView {
 }
 
 export interface BracketCanvasProps {
+  rounds: BracketRound[]
   slots: BracketSlotView[]
   teams: BracketTeamOption[]
   isOrgAdmin: boolean
@@ -32,26 +34,26 @@ export interface BracketCanvasProps {
   onSetWinner: (slotId: string, tournamentTeamId: string) => Promise<void>
   onRenameSlot: (slotId: string, label: string) => Promise<void>
   onSchedule: (slotId: string, scheduledAt: string) => Promise<void>
-  onCreateSlot: (roundNumber: number) => Promise<void>
+  onCreateSlot: (roundId: string) => Promise<void>
   onCreateRound: () => Promise<void>
   onRemoveSlot: (slotId: string) => Promise<void>
   errorMessage?: string
 }
 
-export function BracketCanvas({ slots, teams, isOrgAdmin, onFillSide, onSetWinner, onRenameSlot, onSchedule, onCreateSlot, onCreateRound, onRemoveSlot, errorMessage }: BracketCanvasProps) {
+export function BracketCanvas({ rounds, slots, teams, isOrgAdmin, onFillSide, onSetWinner, onRenameSlot, onSchedule, onCreateSlot, onCreateRound, onRemoveSlot, errorMessage }: BracketCanvasProps) {
   const [scheduleSlotId, setScheduleSlotId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null)
   const [labelDraft, setLabelDraft] = useState('')
-  const rounds = [...new Set(slots.map((slot) => slot.roundNumber))].sort((a, b) => a - b)
-  const slotsOf = (roundNumber: number) => slots.filter((slot) => slot.roundNumber === roundNumber).sort((a, b) => a.position - b.position)
+  const slotsOf = (roundId: string) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
   const nameOf = (id: string | null) => teams.find((team) => team.tournamentTeamId === id)?.name ?? null
+  const roundOf = (slot: BracketSlotView) => rounds.find((round) => round.id === slot.roundId) ?? { label: null }
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {
     const teamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
     const otherSide = side === 'home' ? slot.awayTournamentTeamId : slot.homeTournamentTeamId
     const score = slot.match ? (side === 'home' ? slot.match.homeScore : slot.match.awayScore) : null
-    const label = slot.label ?? `Vaga ${slot.position}`
+    const label = slotDisplayName(slot, roundOf(slot))
     if (!teamId) {
       if (!isOrgAdmin) return <span className={s.tbd}>{otherSide ? 'bye' : 'a definir'}</span>
       return <Combobox aria-label={`${label} — ${side === 'home' ? 'mandante' : 'visitante'}`} placeholder={otherSide ? '+ escolher equipe (bye)' : '+ escolher equipe'} options={teams.map((team) => ({ value: team.tournamentTeamId, label: team.name, secondary: team.shortName }))} value={null} onChange={(value) => { void onFillSide(slot.id, side, value || null) }} />
@@ -80,11 +82,11 @@ export function BracketCanvas({ slots, teams, isOrgAdmin, onFillSide, onSetWinne
   return <div>
     <div className={s.canvas}>
       {rounds.map((round) => {
-        const roundSlots = slotsOf(round)
-        return <div className={s.round} key={round}>
-          <h3>{roundSlots.length === 1 && roundSlots[0].label ? roundSlots[0].label : `Rodada ${round}`}</h3>
+        const roundSlots = slotsOf(round.id)
+        return <div className={s.round} key={round.id}>
+          <h3>{roundDisplayName(round)}</h3>
           {roundSlots.map((slot) => {
-            const label = slot.label ?? `Vaga ${slot.position}`
+            const label = slotDisplayName(slot, round)
             const editing = editingSlotId === slot.id
             return <article className={s.slot} key={slot.id}>
               <div className={s.slotHeader}>{editing ? <Input aria-label="Nome da vaga" value={labelDraft} onChange={(event) => setLabelDraft(event.target.value)} onBlur={() => { void onRenameSlot(slot.id, labelDraft); setEditingSlotId(null) }} autoFocus /> : <button type="button" className={s.slotTitle} onClick={() => { if (isOrgAdmin) { setEditingSlotId(slot.id); setLabelDraft(label) } }}>{label}</button>}{isOrgAdmin && <button type="button" className={s.remove} aria-label={`Remover ${label}`} onClick={() => { void onRemoveSlot(slot.id) }}>×</button>}</div>
@@ -93,7 +95,7 @@ export function BracketCanvas({ slots, teams, isOrgAdmin, onFillSide, onSetWinne
               {renderFooter(slot)}
             </article>
           })}
-          {isOrgAdmin && <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round) }}>+ Adicionar partida</button>}
+          {isOrgAdmin && <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round.id) }}>+ Adicionar partida</button>}
         </div>
       })}
       {isOrgAdmin && <button type="button" className={s.ghostRound} onClick={() => { void onCreateRound() }}>+ Nova rodada</button>}

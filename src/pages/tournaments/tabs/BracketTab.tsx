@@ -37,8 +37,7 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     const team = teamsById.get(entry.teamId)
     return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? entry.teamId }
   })
-  const roundById = new Map(rounds.map((round) => [round.id, round]))
-  const views = slots.map((slot) => ({ ...slot, roundNumber: roundById.get(slot.roundId)?.number ?? 0, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null }))
+  const views = slots.map((slot) => ({ ...slot, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null }))
   const teamIdOf = (tournamentTeamId: string) => tournamentTeams.find((entry) => entry.id === tournamentTeamId)?.teamId
   const handleSchedule = async (slotId: string, scheduledAt: string) => {
     const slot = slots.find((entry) => entry.id === slotId)
@@ -55,12 +54,12 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
 
   return <div className={s.tab}>
     {slots.length === 0 && <EmptyState title="Nenhuma vaga de chaveamento criada ainda." description="Crie a primeira rodada e monte o mata-mata." />}
-    <BracketCanvas slots={views} teams={options} isOrgAdmin={isOrgAdmin}
+    <BracketCanvas rounds={rounds} slots={views} teams={options} isOrgAdmin={isOrgAdmin}
       onFillSide={async (id, side, tournamentTeamId) => { try { await updateSlot.mutateAsync({ id, input: side === 'home' ? { homeTournamentTeamId: tournamentTeamId } : { awayTournamentTeamId: tournamentTeamId } }); setErrorMessage('') } catch (error) { fail(error) } }}
       onSetWinner={async (slotId, winnerTournamentTeamId) => { try { await setWinner.mutateAsync({ slotId, winnerTournamentTeamId }); setErrorMessage('') } catch (error) { fail(error) } }}
       onRenameSlot={async (id, label) => { try { await updateSlot.mutateAsync({ id, input: { label } }) } catch (error) { fail(error) } }}
       onSchedule={handleSchedule}
-      onCreateSlot={async (roundNumber) => { const round = rounds.find((entry) => entry.number === roundNumber); if (!round) return; try { await createSlot.mutateAsync({ tournamentId: tournament.id, roundId: round.id }) } catch (error) { fail(error) } }}
+      onCreateSlot={async (roundId) => { try { await createSlot.mutateAsync({ tournamentId: tournament.id, roundId }) } catch (error) { fail(error) } }}
       onCreateRound={async () => { try { await createRound.mutateAsync({ tournamentId: tournament.id }) } catch (error) { fail(error) } }}
       onRemoveSlot={async (id) => { try { await removeSlot.mutateAsync(id); setErrorMessage('') } catch (error) { fail(error) } }} errorMessage={errorMessage} />
   </div>
