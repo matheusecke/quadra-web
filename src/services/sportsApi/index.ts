@@ -16,11 +16,12 @@ import {
 } from '../../features/sports/mock-sports-data'
 import type { MatchDetail, StandingsEnvelope } from '../../features/sports/types'
 import { createSportsStore } from './store'
-import type { BracketSlot, RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
+import type { BracketRound, BracketSlot, RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
   CompleteTournamentInput,
+  CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
@@ -35,6 +36,7 @@ import type {
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateSeasonInput,
+  UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
   UpdateTournamentInput,
@@ -58,19 +60,37 @@ const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournamen
   })),
 )
 
+const seedBracketRoundRows: BracketRound[] = seedBracketRounds.map((round, roundIndex) => ({
+  id: `seed-bracket-round-${roundIndex + 1}`,
+  tournamentId: 'puc-geral-2026',
+  number: roundIndex + 1,
+  label: round.name,
+}))
+
+const seedInvernoBracketRounds: BracketRound[] = [
+  { id: 'seed-bracket-round-puc-inverno-2026-1', tournamentId: 'puc-inverno-2026', number: 1, label: 'Semifinais' },
+  { id: 'seed-bracket-round-puc-inverno-2026-2', tournamentId: 'puc-inverno-2026', number: 2, label: 'Final' },
+]
+
 const seedBracketSlots: BracketSlot[] = seedBracketRounds.flatMap((round, roundIndex) =>
-    round.matches.map((slot, position) => ({
-      id: `seed-bracket-${slot.id}`,
-      tournamentId: 'puc-geral-2026',
-      roundNumber: roundIndex + 1,
-      position: position + 1,
-      label: `${round.name} ${position + 1}`,
-      homeTournamentTeamId: slot.homeTeamId ? `tournament-team-puc-geral-2026-${slot.homeTeamId}` : null,
-      awayTournamentTeamId: slot.awayTeamId ? `tournament-team-puc-geral-2026-${slot.awayTeamId}` : null,
-      matchId: slot.matchId,
-      winnerTournamentTeamId: slot.winnerId ? `tournament-team-puc-geral-2026-${slot.winnerId}` : null,
-    })),
+  round.matches.map((slot, position) => ({
+    id: `seed-bracket-${slot.id}`,
+    tournamentId: 'puc-geral-2026',
+    roundId: `seed-bracket-round-${roundIndex + 1}`,
+    position: position + 1,
+    label: null,
+    homeTournamentTeamId: slot.homeTeamId ? `tournament-team-puc-geral-2026-${slot.homeTeamId}` : null,
+    awayTournamentTeamId: slot.awayTeamId ? `tournament-team-puc-geral-2026-${slot.awayTeamId}` : null,
+    matchId: slot.matchId,
+    winnerTournamentTeamId: slot.winnerId ? `tournament-team-puc-geral-2026-${slot.winnerId}` : null,
+  })),
 )
+
+const seedInvernoBracketSlots: BracketSlot[] = [
+  { id: 'seed-bracket-inverno-sf1', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-1', position: 1, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-1', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-4', matchId: 'puc-inverno-m13', winnerTournamentTeamId: null },
+  { id: 'seed-bracket-inverno-sf2', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-1', position: 2, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-5', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-8', matchId: 'puc-inverno-m14', winnerTournamentTeamId: null },
+  { id: 'seed-bracket-inverno-f1', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-2', position: 1, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-1', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-5', matchId: 'puc-inverno-m15', winnerTournamentTeamId: null },
+]
 
 const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
   getAthletes()
@@ -111,7 +131,8 @@ const store = createSportsStore({
   rosterEntries: seedRosterEntries,
   tournamentGroups: seedTournamentGroups,
   tournamentGroupTeams: seedTournamentGroupTeams,
-  bracketSlots: seedBracketSlots,
+  bracketRounds: [...seedBracketRoundRows, ...seedInvernoBracketRounds],
+  bracketSlots: [...seedBracketSlots, ...seedInvernoBracketSlots],
   matchDetails: seedMatchDetails,
 })
 
@@ -139,6 +160,10 @@ export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enro
 export const removeTournamentTeam = (id: string) => Promise.resolve(store.removeTournamentTeam(id))
 
 // ── Bracket ──────────────────────────────────────────────────────────────────
+export const getBracketRounds = (tournamentId: string): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))
+export const createBracketRound = (input: CreateBracketRoundInput) => Promise.resolve(store.createBracketRound(input))
+export const updateBracketRound = (id: string, input: UpdateBracketRoundInput) => Promise.resolve(store.updateBracketRound(id, input))
+export const removeBracketRound = (id: string) => Promise.resolve(store.removeBracketRound(id))
 export const getBracketSlots = (tournamentId: string): Promise<BracketSlot[]> => Promise.resolve(store.listBracketSlots(tournamentId))
 export const createBracketSlot = (input: CreateBracketSlotInput) => Promise.resolve(store.createBracketSlot(input))
 export const updateBracketSlot = (id: string, input: UpdateBracketSlotInput) => Promise.resolve(store.updateBracketSlot(id, input))

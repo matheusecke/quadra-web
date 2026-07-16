@@ -530,6 +530,23 @@
   color: var(--muted-3);
 }
 
+.sectionLink {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.sectionLink:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* ── Regulation ── */
 .regulation {
   border: 1px solid var(--border);
@@ -798,125 +815,6 @@
   margin: 8px 2px 0;
   font-size: 10px;
   color: var(--muted-3);
-}
-
-/* ── Playoff bracket ── */
-.bracket {
-  display: flex;
-  gap: var(--space-5);
-  overflow-x: auto;
-  padding-bottom: var(--space-2);
-}
-
-.bracketRound {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: var(--space-3);
-  min-width: 210px;
-}
-
-.bracketRoundLabel {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: var(--type-micro-tracking);
-  text-transform: uppercase;
-  color: var(--muted-2);
-  text-align: left;
-  padding-bottom: 2px;
-}
-
-.bracketMatch {
-  display: block;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  overflow: hidden;
-  text-decoration: none;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
-}
-
-.bracketMatch:hover {
-  border-color: var(--border-bold);
-  box-shadow: var(--shadow-1);
-}
-
-.bracketTeam {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 10px;
-  font-size: 12px;
-  color: var(--ink-2);
-}
-
-.bracketTeam + .bracketTeam {
-  border-top: 1px solid var(--border);
-}
-
-.bracketWinner {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.bracketWinner .bracketScore {
-  color: var(--accent-deep);
-}
-
-.bracketTeamName {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bracketTbd {
-  color: var(--muted-3);
-  font-style: italic;
-}
-
-.bracketScore {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-
-.bracketChampion {
-  position: relative;
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.bracketChampion .bracketTeam {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.bracketChampionInner {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  text-align: center;
-  padding: 0 10px;
-}
-
-.bracketChampionLabel {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: var(--type-micro-tracking);
-  text-transform: uppercase;
-  color: var(--accent-deep);
-}
-
-.bracketChampionName {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent-deep);
 }
 
 /* ── Match list (overview) ── */

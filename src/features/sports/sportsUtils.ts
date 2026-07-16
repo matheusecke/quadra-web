@@ -19,6 +19,7 @@ import type {
   StatsStatus,
   Team,
 } from './types'
+import type { BracketRound, BracketSlot } from '../../services/sportsApi/store'
 
 // ── Standings formatting ────────────────────────────────────────────────────
 // The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
@@ -45,6 +46,10 @@ export function sortMatchesByDateDesc(matches: Match[]): Match[] {
 
 export function isFinished(match: Match): boolean {
   return match.status === 'FINISHED'
+}
+
+export function hasKnockout(format: TournamentFormat): boolean {
+  return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
 /** Phase label derived from the real links — never free text on the match. */
@@ -326,4 +331,13 @@ export function matchDisplayStatus(status: MatchStatus, statsStatus: StatsStatus
 export function matchDisplayStatusVariant(status: MatchStatus, statsStatus: StatsStatus): BadgeVariant {
   if (status === 'FINISHED' && statsStatus === 'PENDING') return 'warning'
   return matchStatusVariant(status)
+}
+
+export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {
+  if (slot.label) return slot.label
+  return round.label ? `${round.label} ${slot.position}` : `Vaga ${slot.position}`
+}
+
+export function roundDisplayName(round: Pick<BracketRound, 'label' | 'number'>): string {
+  return round.label ?? `Rodada ${round.number}`
 }

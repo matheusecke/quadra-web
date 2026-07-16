@@ -28,8 +28,8 @@ describe('seeded group membership', () => {
 
   // Inverno's semifinal pairs two teams of the same group, so "same group on both sides"
   // is not enough on its own to call a match a group match.
-  it('leaves a knockout game between two teams of the same group ungrouped', () => {
-    const semifinal = seedMatches.find((m) => m.id === 'puc-inverno-m13')
+  it('leaves a knockout game between two teams of the same group ungrouped', async () => {
+    const semifinal = (await sportsApi.getMatches({ tournamentId: 'puc-inverno-2026' })).find((m) => m.id === 'puc-inverno-m13')
     expect(semifinal?.bracketRound?.label).toBe('Semifinais')
     expect(semifinal?.tournamentGroupId).toBeNull()
   })
@@ -50,13 +50,31 @@ describe('PUC sports mock data', () => {
     expect(matches.every((m) => m.status === 'FINISHED')).toBe(true)
   })
 
-  it('seeds the demo bracket as three rounds ending in a single slot', async () => {
+  it('seeds the demo bracket as three named rounds', async () => {
+    const rounds = await sportsApi.getBracketRounds('puc-geral-2026')
+    expect(rounds.map((round) => round.label)).toEqual(['Quartas de final', 'Semifinais', 'Final'])
+  })
+
+  it('seeds the demo bracket ending in a single slot won by the declared champion', async () => {
+    const rounds = await sportsApi.getBracketRounds('puc-geral-2026')
     const slots = await sportsApi.getBracketSlots('puc-geral-2026')
-    const lastRound = Math.max(...slots.map((slot) => slot.roundNumber))
-    const finalRoundSlots = slots.filter((slot) => slot.roundNumber === lastRound)
-    expect(lastRound).toBe(3)
-    expect(finalRoundSlots).toHaveLength(1)
-    expect(finalRoundSlots[0].winnerTournamentTeamId).toBe('tournament-team-puc-geral-2026-puc-time-1')
+    const finalSlots = slots.filter((slot) => slot.roundId === rounds[rounds.length - 1].id)
+    expect(finalSlots).toHaveLength(1)
+  })
+
+  it('leaves the phase name off the demo slots', async () => {
+    const slots = await sportsApi.getBracketSlots('puc-geral-2026')
+    expect(slots.every((slot) => slot.label === null)).toBe(true)
+  })
+
+  it('orders the demo quarter-final slots so adjacent winners meet in the semi they actually contest', async () => {
+    const rounds = await sportsApi.getBracketRounds('puc-geral-2026')
+    const slots = await sportsApi.getBracketSlots('puc-geral-2026')
+    const quarters = slots.filter((slot) => slot.roundId === rounds[0].id)
+    const semis = slots.filter((slot) => slot.roundId === rounds[1].id)
+    const semiOf = (winnerId: string | null) =>
+      semis.find((semi) => semi.homeTournamentTeamId === winnerId || semi.awayTournamentTeamId === winnerId)?.position
+    expect(quarters.map((slot) => semiOf(slot.winnerTournamentTeamId))).toEqual([1, 1, 2, 2])
   })
 
   it('keeps the declared champion on the completed demo tournament', async () => {
@@ -65,7 +83,7 @@ describe('PUC sports mock data', () => {
   })
 
   it('Geral final is OT with consistent box score', () => {
-    const final = getMatchesByTournament('puc-geral-2026').find((m) => m.bracketRound?.label === 'Final')
+    const final = getMatchesByTournament('puc-geral-2026').find((m) => m.id === 'puc-geral-m31')
     expect(final?.homeTeamId).toBe('puc-time-1')
     expect(final?.awayTeamId).toBe('puc-time-2')
     const detail = getMatchDetailById(final!.id)

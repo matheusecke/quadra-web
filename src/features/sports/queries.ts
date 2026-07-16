@@ -4,6 +4,7 @@ import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
   CompleteTournamentInput,
+  CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
@@ -18,6 +19,7 @@ import type {
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateTournamentInput,
+  UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
 } from '../../services/sportsApi/types'
@@ -173,6 +175,14 @@ export function useBracketSlotsQuery(tournamentId: string | undefined) {
   })
 }
 
+export function useBracketRoundsQuery(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: [...bracketKeys.list(tournamentId ?? ''), 'rounds'] as const,
+    queryFn: () => sportsApi.getBracketRounds(tournamentId!),
+    enabled: Boolean(tournamentId),
+  })
+}
+
 export function useChampionSuggestionQuery(tournamentId: string | undefined) {
   return useQuery({ queryKey: tournamentKeys.championSuggestion(tournamentId ?? ''), queryFn: () => sportsApi.getChampionSuggestion(tournamentId!), enabled: Boolean(tournamentId) })
 }
@@ -241,6 +251,30 @@ export function useCreateBracketSlot() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateBracketSlotInput) => sportsApi.createBracketSlot(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useCreateBracketRound() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateBracketRoundInput) => sportsApi.createBracketRound(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useUpdateBracketRound() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateBracketRoundInput }) => sportsApi.updateBracketRound(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
+  })
+}
+
+export function useRemoveBracketRound() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => sportsApi.removeBracketRound(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
   })
 }

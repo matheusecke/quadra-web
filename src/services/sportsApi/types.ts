@@ -35,9 +35,20 @@ export interface ReopenTournamentInput {
   tournamentId: string
 }
 
+export interface CreateBracketRoundInput {
+  tournamentId: string
+  /** Optional: defaults to the highest active number plus one. The UI never types it. */
+  number?: number
+  label?: string
+}
+
+export interface UpdateBracketRoundInput {
+  label?: string
+}
+
 export interface CreateBracketSlotInput {
   tournamentId: string
-  roundNumber: number
+  roundId: string
   /** Optional: defaults to the next free position in the round. The UI never types it. */
   position?: number
   label?: string
