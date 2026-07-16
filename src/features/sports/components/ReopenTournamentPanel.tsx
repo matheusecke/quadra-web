@@ -15,8 +15,8 @@ export function ReopenTournamentPanel({ championName, onConfirm, onCancel, loadi
       </p>
       {errorMessage && <p className={s.error} role="alert">{errorMessage}</p>}
       <div className={s.actions}>
-        <Button variant="danger" onClick={onConfirm} loading={loading}>Confirmar reabertura</Button>
-        <Button variant="ghost" onClick={onCancel} disabled={loading}>Cancelar</Button>
+        <Button variant="danger" size="sm" onClick={onConfirm} loading={loading}>Confirmar reabertura</Button>
+        <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>Cancelar</Button>
       </div>
     </div>
   )
