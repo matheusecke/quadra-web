@@ -33,7 +33,7 @@ export const MOCK_TEAMS: Team[] = [
 ]
 const PUC_ATHLETES: Athlete[] = [
   { id: 'rafael.moura@quadra.com.br', name: 'Rafael Moura', number: 4, position: 'PG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
-  { id: 'diego.santos@quadra.com.br', name: 'Diego Santos', number: 5, position: 'SG', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
+  { id: 'diego.santos@quadra.com.br', name: 'Diego Santos', number: 5, position: null, currentTeamId: 'puc-time-1', status: 'ACTIVE' },
   { id: 'felipe.oliveira@quadra.com.br', name: 'Felipe Oliveira', number: 6, position: 'SF', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
   { id: 'gabriel.costa@quadra.com.br', name: 'Gabriel Costa', number: 7, position: 'PF', currentTeamId: 'puc-time-1', status: 'ACTIVE' },
   { id: 'henrique.lima@quadra.com.br', name: 'Henrique Lima', number: 8, position: 'C', currentTeamId: 'puc-time-1', status: 'ACTIVE' },

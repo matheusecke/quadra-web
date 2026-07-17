@@ -377,7 +377,7 @@ export function AthleteDetailPage() {
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position} · {team?.name ?? athlete.currentTeamId}</span>
+              <span>{athlete.position ?? 'Não informada'} · {team?.name ?? athlete.currentTeamId}</span>
             </div>
           </div>
           <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>

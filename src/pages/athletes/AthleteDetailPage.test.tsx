@@ -38,6 +38,13 @@ describe('AthleteDetailPage', () => {
     expect(within(header).queryByText(/2026/i)).not.toBeInTheDocument()
   })
 
+  it('shows Não informada when the athlete position is absent', async () => {
+    renderAthletePage('diego.santos@quadra.com.br')
+
+    const header = await screen.findByTestId('athlete-header')
+    expect(within(header).getByText('Não informada · Time 1')).toBeInTheDocument()
+  })
+
   it('shows only Resumo, Partidas and Campeonatos tabs and no eFG metric', async () => {
     renderAthletePage()
 

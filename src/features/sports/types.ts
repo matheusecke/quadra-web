@@ -48,7 +48,7 @@ export interface Athlete {
   id: string
   name: string
   number: number
-  position: AthletePosition
+  position: AthletePosition | null
   currentTeamId: string
   status: AthleteStatus
 }
