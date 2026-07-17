@@ -45,4 +45,13 @@ describe('MatchDetailPage', () => {
     expect(row).not.toBeNull()
     expect(within(row as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
   })
+
+  it('labels box score turnovers as TOV', async () => {
+    const user = userEvent.setup()
+    renderDetail('puc-geral-m31')
+
+    await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
+
+    expect(await screen.findByRole('columnheader', { name: 'TOV', exact: true })).toBeInTheDocument()
+  })
 })

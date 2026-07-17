@@ -193,7 +193,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                     <th className={s.boxTh}>STL</th>
                     <th className={s.boxTh}>BLK</th>
                     {/* Controle */}
-                    <th className={`${s.boxTh} ${s.boxColGroup}`}>TO</th>
+                    <th className={`${s.boxTh} ${s.boxColGroup}`}>TOV</th>
                     <th className={s.boxTh}>PF</th>
                     {/* Aproveitamento */}
                     <th className={`${s.boxTh} ${s.boxColGroup}`}>FGM</th>

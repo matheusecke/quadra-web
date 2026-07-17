@@ -152,7 +152,7 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
             <th className={s.thNum}>AST</th>
             <th className={s.thNum}>STL</th>
             <th className={s.thNum}>BLK</th>
-            <th className={s.thNum}>TO</th>
+            <th className={s.thNum}>TOV</th>
             <th className={s.thNum}>PF</th>
             <th className={s.thNum}>FG</th>
             <th className={s.thNum}>3FG</th>

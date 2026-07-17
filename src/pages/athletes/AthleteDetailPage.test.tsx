@@ -79,6 +79,16 @@ describe('AthleteDetailPage', () => {
     expect(within(finalRow as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
   })
 
+  it('labels match turnovers as TOV', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(screen.getByRole('columnheader', { name: 'TOV', exact: true })).toBeInTheDocument()
+  })
+
   it('shows team context in Campeonatos and links rows to tournament details', async () => {
     const user = userEvent.setup()
     renderAthletePage()
