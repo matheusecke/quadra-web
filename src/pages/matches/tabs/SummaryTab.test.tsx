@@ -32,3 +32,23 @@ describe('SummaryTab — MVP', () => {
     expect(screen.queryByText(/melhor em quadra/i)).not.toBeInTheDocument()
   })
 })
+
+describe('SummaryTab — leaders', () => {
+  it('does not elect a leader when a category was never tracked', () => {
+    renderTab({
+      ...baseMatch,
+      homeStats: {
+        ...baseMatch.homeStats,
+        players: baseMatch.homeStats.players.map((player) => ({ ...player, reb: null })),
+      },
+      awayStats: {
+        ...baseMatch.awayStats,
+        players: baseMatch.awayStats.players.map((player) => ({ ...player, reb: null })),
+      },
+    })
+
+    const rebLeaderCard = screen.getByText('REB').closest('div')?.parentElement
+    expect(rebLeaderCard).not.toBeNull()
+    expect(rebLeaderCard).not.toHaveTextContent(/^[0-9]+$/)
+  })
+})

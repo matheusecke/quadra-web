@@ -29,11 +29,11 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
   // Per-category match leader
   const leaders = LEADER_CATS.map(({ key, label, full }) => {
     if (!hasStats) return { key, label, full, player: null }
-    const sorted = [...allPlayers].sort(
+    const sorted = [...allPlayers].filter((player) => player[key] !== null).sort(
       (a, b) => (b[key] as number) - (a[key] as number),
     )
     const top = sorted[0]
-    return { key, label, full, player: (top[key] as number) > 0 ? top : null }
+    return { key, label, full, player: top && (top[key] as number) > 0 ? top : null }
   })
 
   const periods = match.periodScores

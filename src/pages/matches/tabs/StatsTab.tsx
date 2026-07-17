@@ -98,7 +98,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                 { label: 'PF',  value: totals.pf  },
               ].map(({ label, value }) => (
                 <div key={label} className={s.statItem}>
-                  <span className={s.statValue}>{value}</span>
+                  <span className={s.statValue}>{value ?? 'N/A'}</span>
                   <span className={s.statLabel}>{label}</span>
                 </div>
               ))}
@@ -109,7 +109,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
               {[
                 {
                   label: 'FG',
-                  value: `${totals.fgm}/${totals.fga}`,
+                  value: `${totals.fgm ?? 'N/A'}/${totals.fga ?? 'N/A'}`,
                   sm: true,
                 },
                 {
@@ -119,7 +119,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                 },
                 {
                   label: '3FG',
-                  value: `${totals.threeFgm}/${totals.threeFga}`,
+                  value: `${totals.threeFgm ?? 'N/A'}/${totals.threeFga ?? 'N/A'}`,
                   sm: true,
                 },
                 {
@@ -129,7 +129,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                 },
                 {
                   label: 'FT',
-                  value: `${totals.ftm}/${totals.fta}`,
+                  value: `${totals.ftm ?? 'N/A'}/${totals.fta ?? 'N/A'}`,
                   sm: true,
                 },
                 {
@@ -239,30 +239,30 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                           </td>
                           <td className={s.boxTd}>{formatMinutesSeconds(p.minutesSeconds)}</td>
                           {/* Produção */}
-                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.pts}</td>
-                          <td className={s.boxTd}>{p.reb}</td>
-                          <td className={s.boxTd}>{p.ast}</td>
-                          <td className={s.boxTd}>{p.stl}</td>
-                          <td className={s.boxTd}>{p.blk}</td>
+                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.pts ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.reb ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.ast ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.stl ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.blk ?? 'N/A'}</td>
                           {/* Controle */}
-                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.tov}</td>
-                          <td className={s.boxTd}>{p.pf}</td>
+                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.tov ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.pf ?? 'N/A'}</td>
                           {/* Aproveitamento */}
-                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.fgm}</td>
-                          <td className={s.boxTd}>{p.fga}</td>
+                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.fgm ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.fga ?? 'N/A'}</td>
                           <td className={s.boxTd}>{fgPct}</td>
-                          <td className={s.boxTd}>{p.threeFgm}</td>
-                          <td className={s.boxTd}>{p.threeFga}</td>
+                          <td className={s.boxTd}>{p.threeFgm ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.threeFga ?? 'N/A'}</td>
                           <td className={s.boxTd}>{tpPct}</td>
-                          <td className={s.boxTd}>{p.ftm}</td>
-                          <td className={s.boxTd}>{p.fta}</td>
+                          <td className={s.boxTd}>{p.ftm ?? 'N/A'}</td>
+                          <td className={s.boxTd}>{p.fta ?? 'N/A'}</td>
                           <td className={s.boxTd}>{ftPct}</td>
                           {/* Eficiência */}
                           <td className={`${s.boxTd} ${s.boxColGroup}`}>{tsPct}</td>
                           <td className={s.boxTd}
-                            style={{ color: efi > 0 ? 'var(--status-ok)' : efi < 0 ? 'var(--status-live)' : undefined }}
+                            style={{ color: efi === null ? undefined : efi > 0 ? 'var(--status-ok)' : efi < 0 ? 'var(--status-live)' : undefined }}
                           >
-                            {efi > 0 ? `+${efi}` : efi}
+                            {efi === null ? 'N/A' : efi > 0 ? `+${efi}` : efi}
                           </td>
                         </tr>
                       )
