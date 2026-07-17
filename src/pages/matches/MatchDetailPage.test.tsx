@@ -52,6 +52,6 @@ describe('MatchDetailPage', () => {
 
     await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
 
-    expect(await screen.findByRole('columnheader', { name: 'TOV', exact: true })).toBeInTheDocument()
+    expect(await screen.findByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
   })
 })

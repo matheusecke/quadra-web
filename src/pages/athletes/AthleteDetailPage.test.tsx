@@ -86,7 +86,7 @@ describe('AthleteDetailPage', () => {
     await waitForAthletePage()
     await user.click(screen.getByRole('tab', { name: 'Partidas' }))
 
-    expect(screen.getByRole('columnheader', { name: 'TOV', exact: true })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
   })
 
   it('shows team context in Campeonatos and links rows to tournament details', async () => {
