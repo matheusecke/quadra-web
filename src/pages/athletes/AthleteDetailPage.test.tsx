@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
+import * as sportsApi from '../../services/sportsApi'
 
 const RAFAEL_ID = 'rafael.moura@quadra.com.br'
 
@@ -22,6 +23,8 @@ function renderAthletePage(athleteId = RAFAEL_ID) {
 async function waitForAthletePage() {
   await screen.findByRole('heading', { name: /rafael moura/i })
 }
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('AthleteDetailPage', () => {
   it('renders athlete header with jersey number, name, abbreviated position, current team and status only', async () => {
@@ -59,6 +62,24 @@ describe('AthleteDetailPage', () => {
     expect(screen.getByRole('heading', { name: 'Médias' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Aproveitamento' })).toBeInTheDocument()
     expect(screen.queryByText(/eFG/i)).not.toBeInTheDocument()
+  })
+
+  it('shows N/A for unmeasured totals and divides averages by measured games', async () => {
+    const summary = await sportsApi.getAthleteSummary(RAFAEL_ID)
+    vi.spyOn(sportsApi, 'getAthleteSummary').mockResolvedValue({
+      ...summary,
+      games: 5,
+      pts: 10,
+      reb: null,
+      measuredGames: { ...summary.measuredGames, pts: 2, reb: 0 },
+    })
+
+    renderAthletePage()
+
+    await waitForAthletePage()
+
+    expect(screen.getAllByText('N/A').length).toBeGreaterThan(1)
+    expect(screen.getByText('5.0')).toBeInTheDocument()
   })
 
   it('shows full matchup rows in Partidas and links rows to match details without an opponent column', async () => {

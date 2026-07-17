@@ -94,7 +94,7 @@ export interface StatLeader {
   athleteName: string
   teamId: string
   /** Per-game average for the category. */
-  value: number
+  value: number | null
   gamesPlayed: number
 }
 

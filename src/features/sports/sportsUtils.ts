@@ -287,7 +287,7 @@ export interface TeamStatTotals {
 export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
   return Object.fromEntries(
     STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
-  ) as TeamStatTotals
+  ) as Record<StatField, number | null>
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

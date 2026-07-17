@@ -16,7 +16,7 @@ import { StatColumnsConfig } from '../../features/sports/components/StatColumnsC
 import { boxScoreReducer, columnHasData, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
 import { getAthletes, getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTournamentTeamsQuery } from '../../features/sports/queries'
-import { isScoreConsistent, periodsSum, STAT_FIELDS } from '../../features/sports/statistics'
+import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
 import type { PlayerStatInput } from '../../features/sports/statistics'
 import { teamMap } from '../../features/sports/sportsUtils'
 import type { MatchDetail } from '../../features/sports/types'
@@ -112,7 +112,22 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
     () => Object.fromEntries(
       [...match.homeStats.players, ...match.awayStats.players].map((player) => [
         player.tournamentRosterId,
-        Object.fromEntries(STAT_FIELDS.map((field) => [field, player[field]])) as PlayerStatInput,
+        {
+          minutesSeconds: player.minutesSeconds,
+          pts: player.pts,
+          reb: player.reb,
+          ast: player.ast,
+          stl: player.stl,
+          blk: player.blk,
+          tov: player.tov,
+          pf: player.pf,
+          fgm: player.fgm,
+          fga: player.fga,
+          threeFgm: player.threeFgm,
+          threeFga: player.threeFga,
+          ftm: player.ftm,
+          fta: player.fta,
+        } satisfies PlayerStatInput,
       ]),
     ),
     [match.awayStats.players, match.homeStats.players],

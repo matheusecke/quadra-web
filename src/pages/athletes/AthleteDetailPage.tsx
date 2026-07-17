@@ -35,15 +35,17 @@ const TABS: TabItem[] = [
   { id: 'tournaments', label: 'Campeonatos' },
 ]
 
-function formatAvg(value: number): string {
-  return value.toFixed(1)
+function formatAvg(value: number | null): string {
+  return value === null ? 'N/A' : value.toFixed(1)
 }
 
-function formatEff(value: number): string {
+function formatEff(value: number | null): string {
+  if (value === null) return 'N/A'
   return value > 0 ? `+${value}` : `${value}`
 }
 
-function formatEffAvg(value: number): string {
+function formatEffAvg(value: number | null): string {
+  if (value === null) return 'N/A'
   return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)
 }
 
@@ -68,7 +70,6 @@ function StatStrip({ title, stats }: { title: string; stats: Array<{ label: stri
 }
 
 function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
-  const games = summary.games
   const eff = calcEffFromTotals(summary)
 
   return (
@@ -78,36 +79,36 @@ function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
         stats={[
           { label: 'J', value: summary.games },
           { label: 'MIN', value: formatMinutesSeconds(summary.minutesSeconds) },
-          { label: 'PTS', value: summary.pts },
-          { label: 'REB', value: summary.reb },
-          { label: 'AST', value: summary.ast },
-          { label: 'STL', value: summary.stl },
-          { label: 'BLK', value: summary.blk },
-          { label: 'TOV', value: summary.tov },
-          { label: 'PF', value: summary.pf },
+          { label: 'PTS', value: summary.pts ?? 'N/A' },
+          { label: 'REB', value: summary.reb ?? 'N/A' },
+          { label: 'AST', value: summary.ast ?? 'N/A' },
+          { label: 'STL', value: summary.stl ?? 'N/A' },
+          { label: 'BLK', value: summary.blk ?? 'N/A' },
+          { label: 'TOV', value: summary.tov ?? 'N/A' },
+          { label: 'PF', value: summary.pf ?? 'N/A' },
         ]}
       />
       <StatStrip
         title="Médias"
         stats={[
-          { label: 'MPG', value: formatMinutesSeconds(perGame(summary.minutesSeconds, games)) },
-          { label: 'PPG', value: formatAvg(perGame(summary.pts, games)) },
-          { label: 'RPG', value: formatAvg(perGame(summary.reb, games)) },
-          { label: 'APG', value: formatAvg(perGame(summary.ast, games)) },
-          { label: 'STG', value: formatAvg(perGame(summary.stl, games)) },
-          { label: 'BPG', value: formatAvg(perGame(summary.blk, games)) },
-          { label: 'TOV', value: formatAvg(perGame(summary.tov, games)) },
-          { label: 'PF', value: formatAvg(perGame(summary.pf, games)) },
+          { label: 'MPG', value: formatMinutesSeconds(perGame(summary.minutesSeconds, summary.measuredGames.minutesSeconds)) },
+          { label: 'PPG', value: formatAvg(perGame(summary.pts, summary.measuredGames.pts)) },
+          { label: 'RPG', value: formatAvg(perGame(summary.reb, summary.measuredGames.reb)) },
+          { label: 'APG', value: formatAvg(perGame(summary.ast, summary.measuredGames.ast)) },
+          { label: 'STG', value: formatAvg(perGame(summary.stl, summary.measuredGames.stl)) },
+          { label: 'BPG', value: formatAvg(perGame(summary.blk, summary.measuredGames.blk)) },
+          { label: 'TOV', value: formatAvg(perGame(summary.tov, summary.measuredGames.tov)) },
+          { label: 'PF', value: formatAvg(perGame(summary.pf, summary.measuredGames.pf)) },
         ]}
       />
       <StatStrip
         title="Aproveitamento"
         stats={[
-          { label: 'FG', value: `${summary.fgm}/${summary.fga}`, sm: true },
+          { label: 'FG', value: summary.fgm === null || summary.fga === null ? 'N/A' : `${summary.fgm}/${summary.fga}`, sm: true },
           { label: 'FG%', value: formatStatPct(summary.fgm, summary.fga), sm: true },
-          { label: '3FG', value: `${summary.threeFgm}/${summary.threeFga}`, sm: true },
+          { label: '3FG', value: summary.threeFgm === null || summary.threeFga === null ? 'N/A' : `${summary.threeFgm}/${summary.threeFga}`, sm: true },
           { label: '3FG%', value: formatStatPct(summary.threeFgm, summary.threeFga), sm: true },
-          { label: 'FT', value: `${summary.ftm}/${summary.fta}`, sm: true },
+          { label: 'FT', value: summary.ftm === null || summary.fta === null ? 'N/A' : `${summary.ftm}/${summary.fta}`, sm: true },
           { label: 'FT%', value: formatStatPct(summary.ftm, summary.fta), sm: true },
           { label: 'TS%', value: formatTsPct(summary.pts, summary.fga, summary.fta), sm: true },
           { label: 'EFF/EFI', value: formatEff(eff), sm: true },
@@ -118,9 +119,12 @@ function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
 }
 
 function shootingLine(stats: PlayerMatchStats, type: 'fg' | 'tp' | 'ft'): string {
-  if (type === 'fg') return `${stats.fgm}/${stats.fga}`
-  if (type === 'tp') return `${stats.threeFgm}/${stats.threeFga}`
-  return `${stats.ftm}/${stats.fta}`
+  const [made, attempted] = type === 'fg'
+    ? [stats.fgm, stats.fga]
+    : type === 'tp'
+      ? [stats.threeFgm, stats.threeFga]
+      : [stats.ftm, stats.fta]
+  return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
 }
 
 function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
@@ -187,13 +191,13 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
                 </td>
                 <td className={s.td}>{row.result}</td>
                 <td className={s.tdNum}>{formatMinutesSeconds(row.stats.minutesSeconds)}</td>
-                <td className={s.tdNum}>{row.stats.pts}</td>
-                <td className={s.tdNum}>{row.stats.reb}</td>
-                <td className={s.tdNum}>{row.stats.ast}</td>
-                <td className={s.tdNum}>{row.stats.stl}</td>
-                <td className={s.tdNum}>{row.stats.blk}</td>
-                <td className={s.tdNum}>{row.stats.tov}</td>
-                <td className={s.tdNum}>{row.stats.pf}</td>
+                <td className={s.tdNum}>{row.stats.pts ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.reb ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.ast ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.stl ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.blk ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.tov ?? 'N/A'}</td>
+                <td className={s.tdNum}>{row.stats.pf ?? 'N/A'}</td>
                 <td className={s.tdNum}>{shootingLine(row.stats, 'fg')}</td>
                 <td className={s.tdNum}>{shootingLine(row.stats, 'tp')}</td>
                 <td className={s.tdNum}>{shootingLine(row.stats, 'ft')}</td>
@@ -276,12 +280,12 @@ function TournamentsContent({
                 <td className={s.td}>{teams.get(row.teamId)?.name ?? row.teamId}</td>
                 <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
-                <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.reb, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.ast, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.stl, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.blk, games))}</td>
+                <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, row.totals.measuredGames.minutesSeconds))}</td>
+                <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, row.totals.measuredGames.pts))}</td>
+                <td className={s.tdNum}>{formatAvg(perGame(row.totals.reb, row.totals.measuredGames.reb))}</td>
+                <td className={s.tdNum}>{formatAvg(perGame(row.totals.ast, row.totals.measuredGames.ast))}</td>
+                <td className={s.tdNum}>{formatAvg(perGame(row.totals.stl, row.totals.measuredGames.stl))}</td>
+                <td className={s.tdNum}>{formatAvg(perGame(row.totals.blk, row.totals.measuredGames.blk))}</td>
                 <td className={s.tdNum}>{formatStatPct(row.totals.fgm, row.totals.fga)}</td>
                 <td className={s.tdNum}>{formatStatPct(row.totals.threeFgm, row.totals.threeFga)}</td>
                 <td className={s.tdNum}>{formatStatPct(row.totals.ftm, row.totals.fta)}</td>
