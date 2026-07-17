@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { NumberField } from '../../../components/ui/NumberField/NumberField'
-import type { PlayerStatInput } from '../statistics'
-import { validatePlayerStatLine } from '../statistics'
+import type { PlayerStatInput, StatField } from '../statistics'
+import { sumNullable, validatePlayerStatLine } from '../statistics'
 import { formatMinutesSeconds } from '../sportsUtils'
 import s from './BoxScoreTable.module.css'
 
@@ -14,10 +14,11 @@ export interface BoxScoreRosterEntry {
 export interface BoxScoreTableProps {
   roster: BoxScoreRosterEntry[]
   lines: Record<string, PlayerStatInput>
-  onStatChange: (tournamentRosterId: string, field: keyof PlayerStatInput, value: number) => void
+  disabledColumns: StatField[]
+  onStatChange: (tournamentRosterId: string, field: keyof PlayerStatInput, value: number | null) => void
 }
 
-const STAT_COLUMNS: { field: keyof PlayerStatInput; label: string }[] = [
+const STAT_COLUMNS: { field: StatField; label: string }[] = [
   { field: 'minutesSeconds', label: 'MIN' },
   { field: 'pts', label: 'PTS' },
   { field: 'fgm', label: 'FGM' },
@@ -34,14 +35,9 @@ const STAT_COLUMNS: { field: keyof PlayerStatInput; label: string }[] = [
   { field: 'pf', label: 'PF' },
 ]
 
-const emptyLine = (): PlayerStatInput => ({
-  pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0,
-  reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0,
-})
-
-export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, onStatChange }: BoxScoreTableProps) {
-  const columnTotal = (field: keyof PlayerStatInput) =>
-    roster.reduce((sum, entry) => sum + (lines[entry.tournamentRosterId]?.[field] ?? 0), 0)
+export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, disabledColumns, onStatChange }: BoxScoreTableProps) {
+  const columnTotal = (field: StatField) =>
+    sumNullable(roster.map((entry) => lines[entry.tournamentRosterId]?.[field] ?? null))
 
   return (
     <div className={s.scroll}>
@@ -50,15 +46,24 @@ export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, onStat
           <tr>
             <th className={s.playerCol}>#</th>
             <th className={s.playerCol}>Atleta</th>
-            {STAT_COLUMNS.map((column) => (
-              <th key={column.field} className={s.statHead}>{column.label}</th>
-            ))}
+            {STAT_COLUMNS.map((column) => {
+              const disabled = disabledColumns.includes(column.field)
+              return (
+                <th
+                  key={column.field}
+                  className={`${s.statHead} ${disabled ? s.headOff : ''}`}
+                  aria-label={disabled ? `${column.label} — não acompanhada` : undefined}
+                >
+                  <span className={disabled ? s.lblOff : undefined}>{column.label}</span>
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
           {roster.map((entry) => {
-            const line = lines[entry.tournamentRosterId] ?? emptyLine()
-            const errors = validatePlayerStatLine(line)
+            const line = lines[entry.tournamentRosterId]
+            const errors = line ? validatePlayerStatLine(line) : []
             return (
               <tr key={entry.tournamentRosterId}>
                 <td className={`${s.cell} ${s.mono}`}>{entry.number}</td>
@@ -74,16 +79,22 @@ export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, onStat
                 </td>
                 {STAT_COLUMNS.map((column) => {
                   const isPlayingTime = column.field === 'minutesSeconds'
+                  const disabled = disabledColumns.includes(column.field)
+                  const raw = line?.[column.field] ?? null
+                  if (disabled) {
+                    return <td key={column.field} className={`${s.cell} ${s.colOff}`}><span className={s.na}>N/A</span></td>
+                  }
+                  const value = raw === null ? '' : isPlayingTime ? raw / 60 : raw
                   return (
                     <td key={column.field} className={s.cell}>
                       <NumberField
                         dense
                         aria-label={`${entry.name} — ${column.label}`}
                         controlLabel={column.label}
-                        value={isPlayingTime ? line.minutesSeconds / 60 : line[column.field]}
+                        value={value}
                         onValueChange={(next) => {
-                          const value = next === '' ? 0 : next
-                          onStatChange(entry.tournamentRosterId, column.field, isPlayingTime ? value * 60 : value)
+                          const nextValue = next === '' ? null : isPlayingTime ? next * 60 : next
+                          onStatChange(entry.tournamentRosterId, column.field, nextValue)
                         }}
                         min={0}
                       />
@@ -98,11 +109,14 @@ export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, onStat
           <tr>
             <td className={s.cell} />
             <td className={`${s.cell} ${s.totalLabel}`}>Totais</td>
-            {STAT_COLUMNS.map((column) => (
-              <td key={column.field} className={`${s.cell} ${s.mono} ${s.totalValue}`}>
-                {column.field === 'minutesSeconds' ? formatMinutesSeconds(columnTotal(column.field)) : columnTotal(column.field)}
-              </td>
-            ))}
+            {STAT_COLUMNS.map((column) => {
+              const total = columnTotal(column.field)
+              return (
+                <td key={column.field} className={`${s.cell} ${s.mono} ${s.totalValue}`}>
+                  {total === null ? 'N/A' : column.field === 'minutesSeconds' ? formatMinutesSeconds(total) : total}
+                </td>
+              )
+            })}
           </tr>
         </tfoot>
       </table>
