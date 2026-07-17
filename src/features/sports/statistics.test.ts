@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
+  avgNullable,
   sumPlayerStats,
+  sumNullable,
+  SHOOTING_FIELDS,
   shootingPercentages,
+  STAT_TOGGLE_GROUPS,
   validatePlayerStatLine,
   periodsSum,
   isScoreConsistent,
@@ -65,5 +69,34 @@ describe('periodsSum', () => {
 describe('isScoreConsistent', () => {
   it('is true when player points total equals the final score', () => {
     expect(isScoreConsistent(68, 68)).toBe(true)
+  })
+})
+
+describe('sumNullable', () => {
+  it('returns null when every value is null', () => {
+    expect(sumNullable([null, null])).toBeNull()
+  })
+
+  it('sums only the measured values', () => {
+    expect(sumNullable([2, null, 3])).toBe(5)
+  })
+})
+
+describe('avgNullable', () => {
+  it('divides by measured games only', () => {
+    expect(avgNullable(10, 4)).toBe(2.5)
+  })
+
+  it('is null when nothing was measured', () => {
+    expect(avgNullable(null, 0)).toBeNull()
+    expect(avgNullable(10, 0)).toBeNull()
+  })
+})
+
+describe('STAT_TOGGLE_GROUPS', () => {
+  it('groups the six shooting counters into one toggle', () => {
+    const shooting = STAT_TOGGLE_GROUPS.find((group) => group.id === 'shooting')
+    expect(shooting?.fields).toEqual(SHOOTING_FIELDS)
+    expect(SHOOTING_FIELDS).toEqual(['fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta'])
   })
 })

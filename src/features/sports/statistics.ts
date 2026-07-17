@@ -1,5 +1,43 @@
 import type { AthleteStatTotals, PeriodScore, PlayerMatchStats } from './types'
 
+export const STAT_FIELDS = [
+  'minutesSeconds', 'pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf',
+  'fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta',
+] as const
+export type StatField = (typeof STAT_FIELDS)[number]
+
+export const SHOOTING_FIELDS: StatField[] = ['fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta']
+
+export interface StatToggleGroup { id: string; label: string; fields: StatField[] }
+
+export const STAT_TOGGLE_GROUPS: StatToggleGroup[] = [
+  { id: 'minutesSeconds', label: 'Minutos (MIN)', fields: ['minutesSeconds'] },
+  { id: 'pts', label: 'Pontos (PTS)', fields: ['pts'] },
+  { id: 'reb', label: 'Rebotes (REB)', fields: ['reb'] },
+  { id: 'ast', label: 'Assistências (AST)', fields: ['ast'] },
+  { id: 'stl', label: 'Roubos (STL)', fields: ['stl'] },
+  { id: 'blk', label: 'Tocos (BLK)', fields: ['blk'] },
+  { id: 'tov', label: 'Turnovers (TOV)', fields: ['tov'] },
+  { id: 'pf', label: 'Faltas (PF)', fields: ['pf'] },
+  { id: 'shooting', label: 'Arremessos (FG · 3P · FT)', fields: SHOOTING_FIELDS },
+]
+
+export function sumNullable(values: Array<number | null>): number | null {
+  let total = 0
+  let seen = false
+  for (const value of values) {
+    if (value !== null) {
+      total += value
+      seen = true
+    }
+  }
+  return seen ? total : null
+}
+
+export function avgNullable(total: number | null, measuredGames: number): number | null {
+  return total === null || measuredGames === 0 ? null : total / measuredGames
+}
+
 export interface PlayerStatInput {
   pts: number; fgm: number; fga: number; threeFgm: number; threeFga: number
   ftm: number; fta: number; reb: number; ast: number; stl: number
