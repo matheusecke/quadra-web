@@ -20,6 +20,7 @@ import type {
   StandingRow,
   Team,
 } from './types'
+import { STAT_FIELDS, sumNullable, type StatField } from './statistics'
 
 // ── Standings formatting ────────────────────────────────────────────────────
 // The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
@@ -212,19 +213,22 @@ export function calculatePeriodTotal(periods: PeriodScore[] | null, side: 'home'
 // ── Per-match stat helpers ─────────────────────────────────────────────────────
 
 /** Percentage with 1 decimal. Returns '—' when denominator is 0. */
-export function formatStatPct(made: number, attempted: number): string {
+export function formatStatPct(made: number | null, attempted: number | null): string {
+  if (made === null || attempted === null) return 'N/A'
   if (attempted === 0) return '—'
   return ((made / attempted) * 100).toFixed(1)
 }
 
 /** True-Shooting % string. */
-export function formatTsPct(pts: number, fga: number, fta: number): string {
+export function formatTsPct(pts: number | null, fga: number | null, fta: number | null): string {
+  if (pts === null || fga === null || fta === null) return 'N/A'
   const denom = 2 * (fga + 0.44 * fta)
   if (denom === 0) return '—'
   return ((pts / denom) * 100).toFixed(1)
 }
 
-export function formatMinutesSeconds(totalSeconds: number): string {
+export function formatMinutesSeconds(totalSeconds: number | null): string {
+  if (totalSeconds === null) return 'N/A'
   const roundedSeconds = Math.max(0, Math.round(totalSeconds))
   const minutes = Math.floor(roundedSeconds / 60)
   const seconds = String(roundedSeconds % 60).padStart(2, '0')
@@ -232,83 +236,58 @@ export function formatMinutesSeconds(totalSeconds: number): string {
 }
 
 /** EFF / EFI rating. */
-export function calcEff(p: PlayerMatchStats): number {
+export function calcEff(p: PlayerMatchStats): number | null {
+  const parts = [p.pts, p.reb, p.ast, p.stl, p.blk, p.fga, p.fgm, p.fta, p.ftm, p.tov]
+  if (parts.some((value) => value === null)) return null
   return (
-    p.pts + p.reb + p.ast + p.stl + p.blk
-    - (p.fga - p.fgm)
-    - (p.fta - p.ftm)
-    - p.tov
+    (p.pts as number) + (p.reb as number) + (p.ast as number) + (p.stl as number) + (p.blk as number)
+    - ((p.fga as number) - (p.fgm as number))
+    - ((p.fta as number) - (p.ftm as number))
+    - (p.tov as number)
   )
 }
 
-export function calcEffFromTotals(totals: AthleteStatTotals): number {
+export function calcEffFromTotals(totals: AthleteStatTotals): number | null {
+  const parts = [totals.pts, totals.reb, totals.ast, totals.stl, totals.blk, totals.fga, totals.fgm, totals.fta, totals.ftm, totals.tov]
+  if (parts.some((value) => value === null)) return null
   return (
-    totals.pts + totals.reb + totals.ast + totals.stl + totals.blk
-    - (totals.fga - totals.fgm)
-    - (totals.fta - totals.ftm)
-    - totals.tov
+    (totals.pts as number) + (totals.reb as number) + (totals.ast as number) + (totals.stl as number) + (totals.blk as number)
+    - ((totals.fga as number) - (totals.fgm as number))
+    - ((totals.fta as number) - (totals.ftm as number))
+    - (totals.tov as number)
   )
 }
 
 export function emptyAthleteTotals(): AthleteStatTotals {
-  return {
-    games: 0,
-    minutesSeconds: 0,
-    pts: 0,
-    reb: 0,
-    ast: 0,
-    stl: 0,
-    blk: 0,
-    tov: 0,
-    pf: 0,
-    fgm: 0,
-    fga: 0,
-    threeFgm: 0,
-    threeFga: 0,
-    ftm: 0,
-    fta: 0,
-  }
+  const measuredGames = Object.fromEntries(STAT_FIELDS.map((field) => [field, 0])) as Record<StatField, number>
+  const totals = Object.fromEntries(STAT_FIELDS.map((field) => [field, null])) as Pick<AthleteStatTotals, StatField>
+  return { games: 0, measuredGames, ...totals }
 }
 
 export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatTotals {
-  return players.reduce((acc, p) => ({
-    games: acc.games + 1,
-    minutesSeconds: acc.minutesSeconds + p.minutesSeconds,
-    pts: acc.pts + p.pts,
-    reb: acc.reb + p.reb,
-    ast: acc.ast + p.ast,
-    stl: acc.stl + p.stl,
-    blk: acc.blk + p.blk,
-    tov: acc.tov + p.tov,
-    pf: acc.pf + p.pf,
-    fgm: acc.fgm + p.fgm,
-    fga: acc.fga + p.fga,
-    threeFgm: acc.threeFgm + p.threeFgm,
-    threeFga: acc.threeFga + p.threeFga,
-    ftm: acc.ftm + p.ftm,
-    fta: acc.fta + p.fta,
-  }), emptyAthleteTotals())
+  const measuredGames = Object.fromEntries(
+    STAT_FIELDS.map((field) => [field, players.filter((player) => player[field] !== null).length]),
+  ) as Record<StatField, number>
+  const totals = Object.fromEntries(
+    STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
+  ) as Pick<AthleteStatTotals, StatField>
+  return { games: players.length, measuredGames, ...totals }
 }
 
-export function perGame(value: number, games: number): number {
-  return games === 0 ? 0 : value / games
+export function perGame(value: number | null, measuredGames: number): number | null {
+  return value === null || measuredGames === 0 ? null : value / measuredGames
 }
 
 export interface TeamStatTotals {
-  minutesSeconds: number; pts: number; reb: number; ast: number; stl: number; blk: number
-  tov: number; pf: number; fgm: number; fga: number; threeFgm: number; threeFga: number
-  ftm: number; fta: number
+  minutesSeconds: number | null; pts: number | null; reb: number | null; ast: number | null; stl: number | null; blk: number | null
+  tov: number | null; pf: number | null; fgm: number | null; fga: number | null; threeFgm: number | null; threeFga: number | null
+  ftm: number | null; fta: number | null
 }
 
 export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
-  const z: TeamStatTotals = { minutesSeconds:0,pts:0,reb:0,ast:0,stl:0,blk:0,tov:0,pf:0,fgm:0,fga:0,threeFgm:0,threeFga:0,ftm:0,fta:0 }
-  return players.reduce((acc, p) => ({
-    minutesSeconds: acc.minutesSeconds + p.minutesSeconds, pts: acc.pts + p.pts, reb: acc.reb + p.reb,
-    ast: acc.ast + p.ast, stl: acc.stl + p.stl, blk: acc.blk + p.blk,
-    tov:  acc.tov  + p.tov,  pf:  acc.pf  + p.pf,  fgm: acc.fgm + p.fgm,
-    fga: acc.fga + p.fga, threeFgm: acc.threeFgm + p.threeFgm, threeFga: acc.threeFga + p.threeFga,
-    ftm: acc.ftm + p.ftm, fta: acc.fta + p.fta,
-  }), z)
+  return Object.fromEntries(
+    STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
+  ) as TeamStatTotals
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

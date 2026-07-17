@@ -33,8 +33,8 @@ describe('shootingPercentages', () => {
   it('computes fg percentage as made over attempted', () => {
     expect(shootingPercentages({ fgm: 4, fga: 8, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0.5)
   })
-  it('returns zero when no attempts', () => {
-    expect(shootingPercentages({ fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0)
+  it('returns null when no attempts', () => {
+    expect(shootingPercentages({ fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBeNull()
   })
 })
 
@@ -98,5 +98,20 @@ describe('STAT_TOGGLE_GROUPS', () => {
     const shooting = STAT_TOGGLE_GROUPS.find((group) => group.id === 'shooting')
     expect(shooting?.fields).toEqual(SHOOTING_FIELDS)
     expect(SHOOTING_FIELDS).toEqual(['fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta'])
+  })
+})
+
+const base = {
+  pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0,
+  reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0,
+}
+
+describe('validatePlayerStatLine with null', () => {
+  it('ignores null metrics', () => {
+    expect(validatePlayerStatLine({ ...base, reb: null })).toEqual([])
+  })
+
+  it('only compares fgm/fga when both present', () => {
+    expect(validatePlayerStatLine({ ...base, fgm: 5, fga: null })).toEqual([])
   })
 })
