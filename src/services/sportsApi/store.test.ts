@@ -115,6 +115,30 @@ describe('submitMatchResult — NORMAL', () => {
     expect(match.awayLossType).toBe('NORMAL')
     expect(match.homeLossType).toBeNull()
   })
+
+  it('round-trips null metrics through submit → getMatchDetail', () => {
+    const { store, matchId } = scheduledMatch()
+    const tournamentId = store.listTournaments()[0].id
+    const homeEntry = store.addRosterEntry({
+      tournamentId, teamId: 'team-1', athleteId: 'ath-home', jerseyNumber: 7, role: 'ATHLETE',
+    })
+    const awayEntry = store.addRosterEntry({
+      tournamentId, teamId: 'team-2', athleteId: 'ath-away', jerseyNumber: 11, role: 'ATHLETE',
+    })
+
+    store.submitMatchResult({
+      matchId,
+      periods: [period(1, 0, 0)],
+      playerStats: [
+        { tournamentRosterId: homeEntry.id, pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, reb: null, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 },
+        { tournamentRosterId: awayEntry.id, pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, reb: null, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 },
+      ],
+    })
+
+    const detail = store.getMatchDetail(matchId)!
+    expect(detail.homeStats.players.every((player) => player.reb === null)).toBe(true)
+    expect(detail.awayStats.players.every((player) => player.reb === null)).toBe(true)
+  })
 })
 
 describe('submitMatchResult — MVP', () => {
