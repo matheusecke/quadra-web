@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test'
 
 const email = process.env.E2E_EMAIL
 const password = process.env.E2E_PASSWORD
-const apiUrl = process.env.E2E_API_URL ?? 'http://localhost:3001'
 
 test.skip(!email || !password, 'E2E credentials are required')
 
@@ -64,8 +63,12 @@ test('keeps one protected route across repeated reloads', async ({ page }) => {
 test('redirects to login only after a real refresh rejection', async ({ page }) => {
   await loginAndOpenTeams(page)
 
-  const logoutResponse = await page.request.post(`${apiUrl}/auth/logout`)
-  expect(logoutResponse.ok()).toBe(true)
+  const logoutStatus = await page.evaluate(async () => {
+    const { default: api } = await import('/src/services/api.ts')
+    return (await api.post('/auth/logout')).status
+  })
+  expect(logoutStatus).toBeGreaterThanOrEqual(200)
+  expect(logoutStatus).toBeLessThan(300)
 
   const visitedPaths: string[] = []
   page.on('framenavigated', (frame) => {
