@@ -18,7 +18,6 @@ const finishedMatch: Match = {
   homeScore: 77,
   awayScore: 74,
   status: 'FINISHED',
-  statsStatus: 'COMPLETE',
   tournamentGroupId: null,
   bracketRound: { id: 'round-oitavas', number: 1, label: 'Oitavas de final' },
   homeLossType: null,
@@ -39,5 +38,16 @@ describe('MatchList', () => {
     expect(screen.getByText('Finalizada')).toBeInTheDocument()
     expect(screen.queryByText(/stats ok/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/stats parciais/i)).not.toBeInTheDocument()
+  })
+
+  it('marks a W.O. as finished', () => {
+    render(
+      <MemoryRouter>
+        <MatchList matches={[{ ...finishedMatch, homeScore: 20, awayScore: 0, awayLossType: 'FORFEIT', scoreSource: 'AWARDED' }]} teams={teams} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Finalizada')).toBeInTheDocument()
+    expect(screen.getByText('W.O.')).toBeInTheDocument()
   })
 })

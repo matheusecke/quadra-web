@@ -18,7 +18,6 @@ import type {
   PlayerMatchStats,
   PeriodScore,
   StandingRow,
-  StatsStatus,
   Team,
 } from './types'
 
@@ -92,12 +91,6 @@ export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   CANCELLED: 'Cancelada',
 }
 
-export const STATS_STATUS_LABELS: Record<StatsStatus, string> = {
-  COMPLETE: 'Estatísticas completas',
-  PARTIAL: 'Estatísticas incompletas',
-  PENDING: 'Sem estatísticas',
-}
-
 export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   ACTIVE: 'Ativo',
   INACTIVE: 'Inativo',
@@ -147,18 +140,6 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
     case 'SCHEDULED':
     default:
       return 'ghost'
-  }
-}
-
-export function statsStatusVariant(status: StatsStatus): BadgeVariant {
-  switch (status) {
-    case 'COMPLETE':
-      return 'success'
-    case 'PARTIAL':
-      return 'warning'
-    case 'PENDING':
-    default:
-      return 'default'
   }
 }
 
@@ -321,17 +302,6 @@ export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals 
     fga: acc.fga + p.fga, tpm: acc.tpm + p.tpm, tpa: acc.tpa + p.tpa,
     ftm: acc.ftm + p.ftm, fta: acc.fta + p.fta,
   }), z)
-}
-
-/** Derived display status — surfaces 'Aguardando estatísticas' case. */
-export function matchDisplayStatus(status: MatchStatus, statsStatus: StatsStatus): string {
-  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'Aguardando estatísticas'
-  return MATCH_STATUS_LABELS[status]
-}
-
-export function matchDisplayStatusVariant(status: MatchStatus, statsStatus: StatsStatus): BadgeVariant {
-  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'warning'
-  return matchStatusVariant(status)
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

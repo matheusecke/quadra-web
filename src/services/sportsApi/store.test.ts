@@ -68,9 +68,15 @@ describe('submitMatchResult — W.O. (FORFEIT)', () => {
     })
     expect(match.homeScore).toBe(20)
     expect(match.awayScore).toBe(0)
+    expect(match.status).toBe('FINISHED')
+    expect(match).not.toHaveProperty(['stats', 'Status'].join(''))
     expect(match.awayLossType).toBe('FORFEIT')
     expect(match.scoreSource).toBe('AWARDED')
-    expect(store.getMatchDetail(matchId)!.periodScores).toEqual([])
+    const detail = store.getMatchDetail(matchId)!
+    expect(detail.periodScores).toEqual([])
+    expect(detail.homeStats.players).toEqual([])
+    expect(detail.awayStats.players).toEqual([])
+    expect(detail.mvp).toBeNull()
   })
 })
 

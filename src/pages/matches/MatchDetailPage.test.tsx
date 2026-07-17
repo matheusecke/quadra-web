@@ -28,6 +28,8 @@ describe('MatchDetailPage', () => {
   it('marks a W.O. and does not show an empty súmula as if it were missing data', async () => {
     renderDetail('match-forfeit')
     expect(await screen.findByText(/vitória por w\.o\./i)).toBeInTheDocument()
+    expect(await screen.findByText('Finalizada')).toBeInTheDocument()
+    expect(screen.queryByText(/aguardando estatísticas/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/placar por período/i)).not.toBeInTheDocument()
     expect(screen.getByText(/partida não disputada\. não há súmula/i)).toBeInTheDocument()
   })

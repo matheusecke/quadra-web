@@ -164,7 +164,7 @@ const PUC_ATHLETES: Athlete[] = [
 
 const ATHLETES_BY_TEAM: Record<string, Athlete[]> = Object.fromEntries(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
 let matchSeq=0
-function mkMatch(tournamentId:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,statsStatus:Match['statsStatus'],id?:string):Match{const isFinished=status==='FINISHED';return{id:id??`m${++matchSeq}`,tournamentId,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,statsStatus,tournamentGroupId:null,bracketRound:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
+function mkMatch(tournamentId:string,date:string,homeTeamId:string,awayTeamId:string,home:number|null,away:number|null,status:Match['status'],venue:string,id?:string):Match{const isFinished=status==='FINISHED';return{id:id??`m${++matchSeq}`,tournamentId,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,tournamentGroupId:null,bracketRound:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
 function mkPlayer(a:Athlete,min:number,pts:number,reb:number,ast:number,stl:number,blk:number,to:number,pf:number,fgm:number,fga:number,tpm:number,tpa:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:`mock-roster-${a.currentTeamId}-${a.id}`,athleteId:a.id,athleteName:a.name,number:a.number,min,pts,reb,ast,stl,blk,to,pf,fgm,fga,tpm,tpa,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
 function mkTeam(teamId:string,players:PlayerMatchStats[]):TeamMatchStats{return{teamId,players}}
@@ -174,58 +174,58 @@ const GERAL='puc-geral-2026'; const INVERNO='puc-inverno-2026'
 
 const geralLeaders: StatLeaders = { ppg: [{ athleteId: 'rafael.moura@quadra.com.br', athleteName: 'Rafael Moura', teamId: 'puc-time-1', value: 22.4, gamesPlayed: 6 }, { athleteId: 'nicolas.barbosa@quadra.com.br', athleteName: 'Nicolas Barbosa', teamId: 'puc-time-2', value: 21.1, gamesPlayed: 6 }, { athleteId: 'diego.santos@quadra.com.br', athleteName: 'Diego Santos', teamId: 'puc-time-1', value: 18.6, gamesPlayed: 6 }], rpg: [{ athleteId: 'felipe.oliveira@quadra.com.br', athleteName: 'Felipe Oliveira', teamId: 'puc-time-1', value: 10.2, gamesPlayed: 6 }, { athleteId: 'paulo.carvalho@quadra.com.br', athleteName: 'Paulo Carvalho', teamId: 'puc-time-2', value: 9.8, gamesPlayed: 6 }], apg: [{ athleteId: 'gabriel.costa@quadra.com.br', athleteName: 'Gabriel Costa', teamId: 'puc-time-1', value: 7.5, gamesPlayed: 6 }, { athleteId: 'pedro.gomes@quadra.com.br', athleteName: 'Pedro Gomes', teamId: 'puc-time-2', value: 6.9, gamesPlayed: 6 }], stg: [{ athleteId: 'rafael.moura@quadra.com.br', athleteName: 'Rafael Moura', teamId: 'puc-time-1', value: 2.1, gamesPlayed: 6 }, { athleteId: 'nicolas.barbosa@quadra.com.br', athleteName: 'Nicolas Barbosa', teamId: 'puc-time-2', value: 1.9, gamesPlayed: 6 }], bpg: [{ athleteId: 'henrique.lima@quadra.com.br', athleteName: 'Henrique Lima', teamId: 'puc-time-1', value: 1.4, gamesPlayed: 6 }, { athleteId: 'ricardo.araujo@quadra.com.br', athleteName: 'Ricardo Araujo', teamId: 'puc-time-2', value: 1.2, gamesPlayed: 6 }] }
 const geralMatches: Match[] = [
-  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-1', 'puc-time-2', 80, 89, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m01'),
-  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-1', 'puc-time-3', 87, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m02'),
-  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-1', 'puc-time-4', 94, 77, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m03'),
-  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-2', 'puc-time-3', 79, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m04'),
-  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-2', 'puc-time-4', 86, 77, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m05'),
-  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-3', 'puc-time-4', 91, 88, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m06'),
-  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-6', 'puc-time-5', 87, 91, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m07'),
-  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-6', 'puc-time-7', 94, 81, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m08'),
-  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-6', 'puc-time-8', 76, 75, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m09'),
-  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-5', 'puc-time-7', 80, 81, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m10'),
-  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-5', 'puc-time-8', 87, 75, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m11'),
-  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-7', 'puc-time-8', 90, 86, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m12'),
-  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-9', 'puc-time-10', 88, 90, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m13'),
-  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-9', 'puc-time-11', 70, 79, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m14'),
-  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-9', 'puc-time-12', 77, 73, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m15'),
-  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-10', 'puc-time-11', 87, 88, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m16'),
-  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-10', 'puc-time-12', 94, 73, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m17'),
-  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-11', 'puc-time-12', 89, 84, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m18'),
-  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-13', 'puc-time-14', 92, 96, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m19'),
-  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-13', 'puc-time-15', 74, 77, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m20'),
-  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-13', 'puc-time-16', 81, 71, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m21'),
-  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-14', 'puc-time-15', 91, 94, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m22'),
-  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-14', 'puc-time-16', 73, 71, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m23'),
-  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-15', 'puc-time-16', 83, 82, 'FINISHED', 'Arena Central PUC', 'COMPLETE', 'puc-geral-m24'),
-  mkMatch(GERAL, '2026-05-10T19:00:00', 'puc-time-1', 'puc-time-5', 86, 82, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m25'),
-  mkMatch(GERAL, '2026-05-10T21:00:00', 'puc-time-6', 'puc-time-2', 70, 78, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m26'),
-  mkMatch(GERAL, '2026-05-11T19:00:00', 'puc-time-9', 'puc-time-14', 86, 83, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m27'),
-  mkMatch(GERAL, '2026-05-11T21:00:00', 'puc-time-13', 'puc-time-10', 84, 81, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m28'),
-  mkMatch(GERAL, '2026-05-24T19:00:00', 'puc-time-1', 'puc-time-13', 82, 78, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m29'),
-  mkMatch(GERAL, '2026-05-24T21:00:00', 'puc-time-2', 'puc-time-9', 86, 69, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m30'),
-  mkMatch(GERAL, '2026-05-31T20:00:00', 'puc-time-1', 'puc-time-2', 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'puc-geral-m31'),
+  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-1', 'puc-time-2', 80, 89, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m01'),
+  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-1', 'puc-time-3', 87, 83, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m02'),
+  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-1', 'puc-time-4', 94, 77, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m03'),
+  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-2', 'puc-time-3', 79, 83, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m04'),
+  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-2', 'puc-time-4', 86, 77, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m05'),
+  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-3', 'puc-time-4', 91, 88, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m06'),
+  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-6', 'puc-time-5', 87, 91, 'FINISHED', 'Arena Central PUC', 'puc-geral-m07'),
+  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-6', 'puc-time-7', 94, 81, 'FINISHED', 'Arena Central PUC', 'puc-geral-m08'),
+  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-6', 'puc-time-8', 76, 75, 'FINISHED', 'Arena Central PUC', 'puc-geral-m09'),
+  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-5', 'puc-time-7', 80, 81, 'FINISHED', 'Arena Central PUC', 'puc-geral-m10'),
+  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-5', 'puc-time-8', 87, 75, 'FINISHED', 'Arena Central PUC', 'puc-geral-m11'),
+  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-7', 'puc-time-8', 90, 86, 'FINISHED', 'Arena Central PUC', 'puc-geral-m12'),
+  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-9', 'puc-time-10', 88, 90, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m13'),
+  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-9', 'puc-time-11', 70, 79, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m14'),
+  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-9', 'puc-time-12', 77, 73, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m15'),
+  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-10', 'puc-time-11', 87, 88, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m16'),
+  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-10', 'puc-time-12', 94, 73, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m17'),
+  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-11', 'puc-time-12', 89, 84, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m18'),
+  mkMatch(GERAL, '2026-03-07T19:00:00', 'puc-time-13', 'puc-time-14', 92, 96, 'FINISHED', 'Arena Central PUC', 'puc-geral-m19'),
+  mkMatch(GERAL, '2026-03-14T19:00:00', 'puc-time-13', 'puc-time-15', 74, 77, 'FINISHED', 'Arena Central PUC', 'puc-geral-m20'),
+  mkMatch(GERAL, '2026-03-21T19:00:00', 'puc-time-13', 'puc-time-16', 81, 71, 'FINISHED', 'Arena Central PUC', 'puc-geral-m21'),
+  mkMatch(GERAL, '2026-03-28T19:00:00', 'puc-time-14', 'puc-time-15', 91, 94, 'FINISHED', 'Arena Central PUC', 'puc-geral-m22'),
+  mkMatch(GERAL, '2026-04-04T19:00:00', 'puc-time-14', 'puc-time-16', 73, 71, 'FINISHED', 'Arena Central PUC', 'puc-geral-m23'),
+  mkMatch(GERAL, '2026-04-11T19:00:00', 'puc-time-15', 'puc-time-16', 83, 82, 'FINISHED', 'Arena Central PUC', 'puc-geral-m24'),
+  mkMatch(GERAL, '2026-05-10T19:00:00', 'puc-time-1', 'puc-time-5', 86, 82, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m25'),
+  mkMatch(GERAL, '2026-05-10T21:00:00', 'puc-time-6', 'puc-time-2', 70, 78, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m26'),
+  mkMatch(GERAL, '2026-05-11T19:00:00', 'puc-time-9', 'puc-time-14', 86, 83, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m27'),
+  mkMatch(GERAL, '2026-05-11T21:00:00', 'puc-time-13', 'puc-time-10', 84, 81, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m28'),
+  mkMatch(GERAL, '2026-05-24T19:00:00', 'puc-time-1', 'puc-time-13', 82, 78, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m29'),
+  mkMatch(GERAL, '2026-05-24T21:00:00', 'puc-time-2', 'puc-time-9', 86, 69, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m30'),
+  mkMatch(GERAL, '2026-05-31T20:00:00', 'puc-time-1', 'puc-time-2', 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 'puc-geral-m31'),
 ]
 export const seedBracketRounds = [{ name:'Quartas de final',matches:[{id:'geral-qf1',matchId:'puc-geral-m25',homeTeamId:'puc-time-1',awayTeamId:'puc-time-5',winnerId:'puc-time-1'},{id:'geral-qf4',matchId:'puc-geral-m28',homeTeamId:'puc-time-13',awayTeamId:'puc-time-10',winnerId:'puc-time-13'},{id:'geral-qf2',matchId:'puc-geral-m26',homeTeamId:'puc-time-6',awayTeamId:'puc-time-2',winnerId:'puc-time-2'},{id:'geral-qf3',matchId:'puc-geral-m27',homeTeamId:'puc-time-9',awayTeamId:'puc-time-14',winnerId:'puc-time-9'}]},{name:'Semifinais',matches:[{id:'geral-sf1',matchId:'puc-geral-m29',homeTeamId:'puc-time-1',awayTeamId:'puc-time-13',winnerId:'puc-time-1'},{id:'geral-sf2',matchId:'puc-geral-m30',homeTeamId:'puc-time-2',awayTeamId:'puc-time-9',winnerId:'puc-time-2'}]},{name:'Final',matches:[{id:'geral-f1',matchId:'puc-geral-m31',homeTeamId:'puc-time-1',awayTeamId:'puc-time-2',winnerId:'puc-time-1'}]}]
-const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:'season-2025-26',categoryId:'cat-adulto-masc',format:'GROUP_STAGE_KNOCKOUT',status:'COMPLETED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',statsStatus:'COMPLETE',regulation:REGULATION,leaders:geralLeaders,championTournamentTeamId:'tournament-team-puc-geral-2026-puc-time-1'}
+const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:'season-2025-26',categoryId:'cat-adulto-masc',format:'GROUP_STAGE_KNOCKOUT',status:'COMPLETED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',regulation:REGULATION,leaders:geralLeaders,championTournamentTeamId:'tournament-team-puc-geral-2026-puc-time-1'}
 const invernoMatches: Match[] = [
-  mkMatch(INVERNO, '2026-07-03T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m01'),
-  mkMatch(INVERNO, '2026-07-05T19:00:00', 'puc-time-1', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m02'),
-  mkMatch(INVERNO, '2026-07-07T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m03'),
-  mkMatch(INVERNO, '2026-07-09T19:00:00', 'puc-time-2', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m04'),
-  mkMatch(INVERNO, '2026-07-11T19:00:00', 'puc-time-2', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m05'),
-  mkMatch(INVERNO, '2026-07-13T19:00:00', 'puc-time-3', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m06'),
-  mkMatch(INVERNO, '2026-07-15T19:00:00', 'puc-time-5', 'puc-time-6', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m07'),
-  mkMatch(INVERNO, '2026-07-17T19:00:00', 'puc-time-5', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m08'),
-  mkMatch(INVERNO, '2026-07-19T19:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m09'),
-  mkMatch(INVERNO, '2026-07-21T19:00:00', 'puc-time-6', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m10'),
-  mkMatch(INVERNO, '2026-07-23T19:00:00', 'puc-time-6', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m11'),
-  mkMatch(INVERNO, '2026-07-25T19:00:00', 'puc-time-7', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m12'),
-  mkMatch(INVERNO, '2026-07-25T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m13'),
-  mkMatch(INVERNO, '2026-07-25T21:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'PENDING', 'puc-inverno-m14'),
-  mkMatch(INVERNO, '2026-07-31T20:00:00', 'puc-time-1', 'puc-time-5', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'puc-inverno-m15'),
+  mkMatch(INVERNO, '2026-07-03T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m01'),
+  mkMatch(INVERNO, '2026-07-05T19:00:00', 'puc-time-1', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m02'),
+  mkMatch(INVERNO, '2026-07-07T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m03'),
+  mkMatch(INVERNO, '2026-07-09T19:00:00', 'puc-time-2', 'puc-time-3', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m04'),
+  mkMatch(INVERNO, '2026-07-11T19:00:00', 'puc-time-2', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m05'),
+  mkMatch(INVERNO, '2026-07-13T19:00:00', 'puc-time-3', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m06'),
+  mkMatch(INVERNO, '2026-07-15T19:00:00', 'puc-time-5', 'puc-time-6', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m07'),
+  mkMatch(INVERNO, '2026-07-17T19:00:00', 'puc-time-5', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m08'),
+  mkMatch(INVERNO, '2026-07-19T19:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m09'),
+  mkMatch(INVERNO, '2026-07-21T19:00:00', 'puc-time-6', 'puc-time-7', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m10'),
+  mkMatch(INVERNO, '2026-07-23T19:00:00', 'puc-time-6', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m11'),
+  mkMatch(INVERNO, '2026-07-25T19:00:00', 'puc-time-7', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m12'),
+  mkMatch(INVERNO, '2026-07-25T19:00:00', 'puc-time-1', 'puc-time-4', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m13'),
+  mkMatch(INVERNO, '2026-07-25T21:00:00', 'puc-time-5', 'puc-time-8', null, null, 'SCHEDULED', 'Arena Central PUC', 'puc-inverno-m14'),
+  mkMatch(INVERNO, '2026-07-31T20:00:00', 'puc-time-1', 'puc-time-5', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'puc-inverno-m15'),
 ]
-const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'REGISTRATION', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', statsStatus: 'PENDING', regulation: REGULATION, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, championTournamentTeamId: null }
+const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 'season-2025-26', categoryId: 'cat-adulto-masc', format: 'GROUP_STAGE_KNOCKOUT', status: 'REGISTRATION', teamIds: ['puc-time-1','puc-time-2','puc-time-3','puc-time-4','puc-time-5','puc-time-6','puc-time-7','puc-time-8'], matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', regulation: REGULATION, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, championTournamentTeamId: null }
 export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
 
 /** Group membership of the demo tournaments, seeded into the store (UI spec §7.4). The
@@ -261,11 +261,11 @@ const seedGroupIdOf = (match: Match): string | null => {
   return home && home === away ? `seed-group-${match.tournamentId}-${home}` : null
 }
 // Stable scheduled match used to demo/record a súmula (two teams with rostered athletes).
-const sumulaSeedMatch = mkMatch(INVERNO, '2026-07-04T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'PENDING', 'match-1')
-const abandonedSeedMatch = mkMatch('read-model-fixtures', '2026-07-05T19:00:00', 'puc-time-3', 'puc-time-4', 2, 0, 'FINISHED', 'Ginásio PUC Campinas', 'COMPLETE', 'match-abandoned')
+const sumulaSeedMatch = mkMatch(INVERNO, '2026-07-04T19:00:00', 'puc-time-1', 'puc-time-2', null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 'match-1')
+const abandonedSeedMatch = mkMatch('read-model-fixtures', '2026-07-05T19:00:00', 'puc-time-3', 'puc-time-4', 2, 0, 'FINISHED', 'Ginásio PUC Campinas', 'match-abandoned')
 abandonedSeedMatch.awayLossType = 'DEFAULT'
 abandonedSeedMatch.scoreSource = 'AWARDED'
-const forfeitSeedMatch = mkMatch('read-model-fixtures', '2026-07-06T19:00:00', 'puc-time-3', 'puc-time-4', 20, 0, 'FINISHED', 'Ginásio PUC Campinas', 'PENDING', 'match-forfeit')
+const forfeitSeedMatch = mkMatch('read-model-fixtures', '2026-07-06T19:00:00', 'puc-time-3', 'puc-time-4', 20, 0, 'FINISHED', 'Ginásio PUC Campinas', 'match-forfeit')
 forfeitSeedMatch.awayLossType = 'FORFEIT'
 forfeitSeedMatch.scoreSource = 'AWARDED'
 export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaSeedMatch, abandonedSeedMatch, forfeitSeedMatch]

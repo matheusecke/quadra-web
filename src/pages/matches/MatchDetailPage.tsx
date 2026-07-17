@@ -14,9 +14,9 @@ import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
   formatTime,
-  matchDisplayStatus,
-  matchDisplayStatusVariant,
+  MATCH_STATUS_LABELS,
   matchPhaseName,
+  matchStatusVariant,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import { SummaryTab } from './tabs/SummaryTab'
@@ -135,8 +135,8 @@ export function MatchDetailPage() {
           {tournament && <span className={s.detailContextSep}>·</span>}
           <span>{matchPhaseName(match) ?? ''}</span>
           <span className={s.detailContextSep}>·</span>
-          <Badge variant={matchDisplayStatusVariant(match.status, match.statsStatus)}>
-            {matchDisplayStatus(match.status, match.statsStatus)}
+          <Badge variant={matchStatusVariant(match.status)}>
+            {MATCH_STATUS_LABELS[match.status]}
           </Badge>
         </div>
 

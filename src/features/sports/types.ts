@@ -27,12 +27,6 @@ export type MatchStatus =
   | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
   | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
-/** Completeness of the statistical record for a match / tournament. */
-export type StatsStatus =
-  | 'COMPLETE' // Estatísticas completas
-  | 'PARTIAL' // Estatísticas incompletas
-  | 'PENDING' // Sem estatísticas ainda
-
 /** The only per-leader stat categories allowed this round. */
 export type LeaderStat = 'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg'
 
@@ -131,7 +125,6 @@ export interface Match {
   awayScore: number | null
   status: MatchStatus
   venue?: string
-  statsStatus: StatsStatus
   /** Set when the match belongs to a group stage; null for league and knockout games. */
   tournamentGroupId: string | null
   /**
@@ -184,7 +177,6 @@ export interface Tournament {
   startDate: string // ISO date
   endDate: string // ISO date
   updatedAt: string // ISO datetime
-  statsStatus: StatsStatus
   /** Short regulation summary (mocked). */
   regulation: string
   leaders: StatLeaders

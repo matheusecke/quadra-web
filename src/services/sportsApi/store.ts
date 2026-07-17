@@ -261,7 +261,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         startDate: input.startDate,
         endDate: input.endDate,
         updatedAt: new Date().toISOString(),
-        statsStatus: 'PENDING',
         regulation: input.regulation ?? '',
         leaders: emptyLeaders(),
         championTournamentTeamId: null,
@@ -564,7 +563,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         awayScore: null,
         status: 'SCHEDULED',
         venue: input.venue,
-        statsStatus: 'PENDING',
         homeLossType: null,
         awayLossType: null,
         scoreSource: null,
@@ -587,7 +585,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         match.homeLossType = offenderIsHome ? 'FORFEIT' : null
         match.awayLossType = offenderIsHome ? null : 'FORFEIT'
         match.scoreSource = 'AWARDED'
-        match.statsStatus = 'PENDING'
         matchExtras.set(match.id, {
           periodScores: [],
           homeStats: emptyTeamStats(match.homeTeamId),
@@ -625,7 +622,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         match.awayLossType = court.away < court.home ? 'NORMAL' : null
       }
 
-      match.statsStatus = 'COMPLETE'
       matchExtras.set(match.id, {
         periodScores: input.periods,
         homeStats: toBoxScore(match.homeTeamId, input),
