@@ -1,10 +1,11 @@
 import type { PeriodScore } from './types'
-import type { PlayerStatInput, StatValidationError } from './statistics'
-import { validatePlayerStatLine } from './statistics'
+import type { PlayerStatInput, StatField, StatValidationError } from './statistics'
+import { STAT_FIELDS, sumNullable, validatePlayerStatLine } from './statistics'
 
 export interface BoxScoreState {
   periods: PeriodScore[]
   lines: Record<string, PlayerStatInput>
+  disabledColumns: StatField[]
   mvpTournamentRosterId: string | null
 }
 
@@ -12,7 +13,8 @@ export type BoxScoreAction =
   | { type: 'setPeriod'; index: number; side: 'home' | 'away'; value: number }
   | { type: 'addOvertime' }
   | { type: 'removeOvertime' }
-  | { type: 'setStat'; tournamentRosterId: string; field: keyof PlayerStatInput; value: number }
+  | { type: 'setStat'; tournamentRosterId: string; field: keyof PlayerStatInput; value: number | null }
+  | { type: 'setColumnEnabled'; fields: StatField[]; enabled: boolean }
   | { type: 'setMvp'; tournamentRosterId: string | null }
 
 const zeroLine = (): PlayerStatInput => ({
@@ -24,10 +26,12 @@ export function initBoxScoreState({
   tournamentRosterIds,
   regularPeriods,
   mvpTournamentRosterId = null,
+  initialLines,
 }: {
   tournamentRosterIds: string[]
   regularPeriods: number
   mvpTournamentRosterId?: string | null
+  initialLines?: Record<string, PlayerStatInput>
 }): BoxScoreState {
   const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, i) => ({
     periodNumber: i + 1,
@@ -37,8 +41,11 @@ export function initBoxScoreState({
     awayPoints: null,
   }))
   const lines: Record<string, PlayerStatInput> = {}
-  for (const id of tournamentRosterIds) lines[id] = zeroLine()
-  return { periods, lines, mvpTournamentRosterId }
+  for (const id of tournamentRosterIds) lines[id] = initialLines?.[id] ?? zeroLine()
+  const disabledColumns = tournamentRosterIds.length === 0
+    ? []
+    : STAT_FIELDS.filter((field) => tournamentRosterIds.every((id) => lines[id][field] === null))
+  return { periods, lines, disabledColumns, mvpTournamentRosterId }
 }
 
 export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): BoxScoreState {
@@ -71,8 +78,25 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
       const current = state.lines[action.tournamentRosterId] ?? zeroLine()
       return {
         ...state,
-        lines: { ...state.lines, [action.tournamentRosterId]: { ...current, [action.field]: Number(action.value) } },
+        lines: { ...state.lines, [action.tournamentRosterId]: { ...current, [action.field]: action.value } },
       }
+    }
+    case 'setColumnEnabled': {
+      const lines: Record<string, PlayerStatInput> = {}
+      for (const [id, line] of Object.entries(state.lines)) {
+        const next = { ...line }
+        for (const field of action.fields) {
+          if (!action.enabled) next[field] = null
+          else if (next[field] === null) next[field] = 0
+        }
+        lines[id] = next
+      }
+      const disabledColumns = new Set(state.disabledColumns)
+      for (const field of action.fields) {
+        if (action.enabled) disabledColumns.delete(field)
+        else disabledColumns.add(field)
+      }
+      return { ...state, lines, disabledColumns: [...disabledColumns] }
     }
     case 'setMvp':
       return { ...state, mvpTournamentRosterId: action.tournamentRosterId }
@@ -81,8 +105,13 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
   }
 }
 
-export function teamTotalPoints(state: BoxScoreState, tournamentRosterIds: string[]): number {
-  return tournamentRosterIds.reduce((sum, id) => sum + (state.lines[id]?.pts ?? 0), 0)
+export function teamTotalPoints(state: BoxScoreState, tournamentRosterIds: string[]): number | null {
+  const points = tournamentRosterIds.map((id) => state.lines[id]?.pts ?? null)
+  return points.some((value) => value === null) ? null : sumNullable(points)
+}
+
+export function columnHasData(state: BoxScoreState, fields: StatField[]): boolean {
+  return Object.values(state.lines).some((line) => fields.some((field) => line[field] !== null))
 }
 
 export function lineErrors(state: BoxScoreState, tournamentRosterId: string): StatValidationError[] {
