@@ -14,9 +14,17 @@ import {
   seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
-import type { MatchDetail, StandingsEnvelope } from '../../features/sports/types'
+import type {
+  BracketRound,
+  BracketSlot,
+  MatchDetail,
+  RosterEntry,
+  StandingsEnvelope,
+  TournamentGroup,
+  TournamentGroupTeam,
+  TournamentTeam,
+} from '../../features/sports/types'
 import { createSportsStore } from './store'
-import type { BracketRound, BracketSlot, RosterEntry, TournamentGroup, TournamentGroupTeam, TournamentTeam } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,

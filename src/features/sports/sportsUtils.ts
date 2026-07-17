@@ -7,6 +7,8 @@
 import type {
   AthleteStatTotals,
   AthleteStatus,
+  BracketRound,
+  BracketSlot,
   Tournament,
   TournamentFormat,
   TournamentStatus,
@@ -19,7 +21,6 @@ import type {
   StatsStatus,
   Team,
 } from './types'
-import type { BracketRound, BracketSlot } from '../../services/sportsApi/store'
 
 // ── Standings formatting ────────────────────────────────────────────────────
 // The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA

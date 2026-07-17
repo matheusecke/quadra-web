@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { formatDate, formatTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 import { Button, Combobox, DateTimeField, Input } from '../../../components/ui'
 import { cn } from '../../../components/ui/cn'
-import type { BracketRound } from '../../../services/sportsApi/store'
+import type { BracketRound } from '../types'
 import type { BracketSlotView, BracketTeamOption } from '../useBracketView'
 import s from './BracketCanvas.module.css'
 

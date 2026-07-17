@@ -5,7 +5,7 @@ import { cn } from '../../../components/ui/cn'
 import { bracketLayout } from '../bracketLayout'
 import { roundDisplayName, slotDisplayName } from '../sportsUtils'
 
-import type { BracketRound } from '../../../services/sportsApi/store'
+import type { BracketRound } from '../types'
 import type { BracketSlotView, BracketTeamOption } from '../useBracketView'
 import s from './BracketBoard.module.css'
 
