@@ -102,4 +102,24 @@ describe('refreshAccessToken', () => {
     await expect(Promise.all([first, second])).resolves.toHaveLength(2)
     expect(axiosMock.instance).toHaveBeenCalledTimes(2)
   })
+
+  it('shares a bootstrap refresh with an interceptor retry', async () => {
+    const pending = deferred<ReturnType<typeof refreshResponse>>()
+    axiosMock.instance.post.mockReturnValueOnce(pending.promise)
+    axiosMock.instance.mockResolvedValue({ data: { data: 'retried' } })
+
+    const bootstrap = refreshAccessToken()
+    const interceptorRetry = axiosMock.getResponseRejected()!({
+      isAxiosError: true,
+      response: { status: 401 },
+      config: { url: '/teams', headers: {} },
+    })
+
+    expect(axiosMock.instance.post).toHaveBeenCalledTimes(1)
+    pending.resolve(refreshResponse('shared-token'))
+    await expect(Promise.all([bootstrap, interceptorRetry])).resolves.toEqual([
+      'shared-token',
+      { data: { data: 'retried' } },
+    ])
+  })
 })
