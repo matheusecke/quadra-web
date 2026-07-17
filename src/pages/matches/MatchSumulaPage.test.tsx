@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { MatchSumulaPage } from './MatchSumulaPage'
+import * as sportsApi from '../../services/sportsApi'
 
 const renderSumula = (matchId: string) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -32,6 +33,22 @@ describe('MatchSumulaPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: /finalizar partida/i }))
     await userEvent.click(await screen.findByRole('button', { name: /confirmar/i }))
     await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
+  })
+
+  it('disables a column from the panel and submits null for it', async () => {
+    renderSumula('match-1')
+    await userEvent.click(await screen.findByRole('button', { name: /configurar estatísticas/i }))
+    await userEvent.click(screen.getByRole('switch', { name: /rebotes/i }))
+    await userEvent.click(screen.getByRole('button', { name: /descartar/i }))
+
+    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0)
+
+    await userEvent.click(screen.getByRole('button', { name: /finalizar partida/i }))
+    await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+    await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
+
+    const detail = await sportsApi.getMatchDetail('match-1')
+    expect([...detail!.homeStats.players, ...detail!.awayStats.players].every((player) => player.reb === null)).toBe(true)
   })
 })
 
