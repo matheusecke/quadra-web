@@ -3,6 +3,7 @@
  * Team slugs and athlete emails MUST match tcc-api/prisma/seeds/puc-dev-seed.sql
  */
 import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, Match, MatchDetail, PeriodScore, PlayerMatchStats, Season, StatLeaders, Team, TeamMatchStats, Tournament, TournamentCategory } from './types'
+import { SHOOTING_FIELDS, type StatField } from './statistics'
 import { aggregateAthleteStats } from './sportsUtils'
 
 export const seedSeasons: Season[] = [
@@ -168,6 +169,7 @@ function mkMatch(tournamentId:string,date:string,homeTeamId:string,awayTeamId:st
 function mkPlayer(a:Athlete,minutes:number,pts:number,reb:number,ast:number,stl:number,blk:number,tov:number,pf:number,fgm:number,fga:number,threeFgm:number,threeFga:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:`mock-roster-${a.currentTeamId}-${a.id}`,athleteId:a.id,athleteName:a.name,number:a.number,minutesSeconds:minutes*60,pts,reb,ast,stl,blk,tov,pf,fgm,fga,threeFgm,threeFga,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
 function mkTeam(teamId:string,players:PlayerMatchStats[]):TeamMatchStats{return{teamId,players}}
+function disableColumns(team:TeamMatchStats,fields:StatField[]):TeamMatchStats{return{...team,players:team.players.map((player)=>{const disabled=Object.fromEntries(fields.map((field)=>[field,null])) as Pick<PlayerMatchStats,StatField>;return{...player,...disabled}})}}
 function buildBoxScore(homeScore:number,awayScore:number,homeTeamId:string,awayTeamId:string){function distribute(score:number,roster:Athlete[],teamId:string){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const threeFgm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-threeFgm);stats.push(mkPlayer(players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,threeFgm,threeFgm+2,ftm,ftm+1))}return mkTeam(teamId,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM[homeTeamId]??[],homeTeamId),awayStats:distribute(awayScore,ATHLETES_BY_TEAM[awayTeamId]??[],awayTeamId)}}
 const REGULATION='Fase classificatória em grupos. As melhores equipes avançam para playoffs em mata-mata. Desempate: vitórias, saldo de pontos, confronto direto.'
 const GERAL='puc-geral-2026'; const INVERNO='puc-inverno-2026'
@@ -306,8 +308,8 @@ const MATCH_EXTRA: Record<string, { periodScores: PeriodScore[] | null; homeStat
   'puc-geral-m26': (() => { const b = buildBoxScore(70, 78, 'puc-time-6', 'puc-time-2'); return { periodScores: mkPeriods([17,19], [20,20], [17,21], [16,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
   'puc-geral-m27': (() => { const b = buildBoxScore(86, 83, 'puc-time-9', 'puc-time-14'); return { periodScores: mkPeriods([21,20], [24,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
   'puc-geral-m28': (() => { const b = buildBoxScore(84, 81, 'puc-time-13', 'puc-time-10'); return { periodScores: mkPeriods([21,20], [24,21], [20,22], [19,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
-  'puc-geral-m29': (() => { const b = buildBoxScore(82, 78, 'puc-time-1', 'puc-time-13'); return { periodScores: mkPeriods([20,19], [23,20], [20,21], [19,18]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
-  'puc-geral-m30': (() => { const b = buildBoxScore(86, 69, 'puc-time-2', 'puc-time-9'); return { periodScores: mkPeriods([21,17], [24,18], [21,19], [20,15]), homeStats: b.homeStats, awayStats: b.awayStats }; })(),
+  'puc-geral-m29': (() => { const b = buildBoxScore(82, 78, 'puc-time-1', 'puc-time-13'); return { periodScores: mkPeriods([20,19], [23,20], [20,21], [19,18]), homeStats: disableColumns(b.homeStats, ['blk']), awayStats: b.awayStats }; })(),
+  'puc-geral-m30': (() => { const b = buildBoxScore(86, 69, 'puc-time-2', 'puc-time-9'); return { periodScores: mkPeriods([21,17], [24,18], [21,19], [20,15]), homeStats: disableColumns(b.homeStats, SHOOTING_FIELDS), awayStats: b.awayStats }; })(),
 }
 const FINAL_HOME = mkTeam('puc-time-1', [
   mkPlayer(PUC_ATHLETES.find((a) => a.id === 'rafael.moura@quadra.com.br')!, 38, 24, 5, 6, 2, 0, 2, 2, 9, 17, 2, 5, 4, 5),
