@@ -21,19 +21,23 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Queue of requests that arrived while a token refresh was in flight
-let isRefreshing = false
-let failedQueue: Array<{
-  resolve: (token: string) => void
-  reject: (err: unknown) => void
-}> = []
+let refreshPromise: Promise<string> | null = null
 
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error)
-    else resolve(token!)
-  })
-  failedQueue = []
+export const refreshAccessToken = () => {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post<ApiResponse<TokenPayload>>('/auth/refresh')
+      .then(({ data }) => {
+        const token = data.data.accessToken
+        setAccessToken(token)
+        return token
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
 }
 
 // On 401: attempt one token refresh, then retry the original request.
@@ -54,34 +58,22 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (isRefreshing) {
-      // Another refresh is already in flight — queue this request
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject })
-      }).then((token) => {
-        if (original) original.headers!['Authorization'] = `Bearer ${token}`
-        return api(original!)
-      })
-    }
-
     original!._retry = true
-    isRefreshing = true
 
     try {
-      const { data } = await api.post<ApiResponse<TokenPayload>>('/auth/refresh')
-      const newToken = data.data.accessToken
-      setAccessToken(newToken)
-      processQueue(null, newToken)
-      original!.headers!['Authorization'] = `Bearer ${newToken}`
+      const token = await refreshAccessToken()
+      original!.headers!['Authorization'] = `Bearer ${token}`
       return api(original!)
     } catch (refreshError) {
-      processQueue(refreshError)
-      setAccessToken(null)
-      // Notify AuthContext that the session expired
-      window.dispatchEvent(new Event('auth:unauthenticated'))
+      if (
+        axios.isAxiosError(refreshError) &&
+        refreshError.response?.status === 401
+      ) {
+        setAccessToken(null)
+        // Notify AuthContext that the session expired
+        window.dispatchEvent(new Event('auth:unauthenticated'))
+      }
       return Promise.reject(refreshError)
-    } finally {
-      isRefreshing = false
     }
   },
 )

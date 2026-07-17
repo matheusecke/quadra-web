@@ -1,5 +1,6 @@
+import axios from 'axios'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import api, { setAccessToken } from '../services/api'
+import api, { refreshAccessToken, setAccessToken } from '../services/api'
 import { AuthContext, type AuthStatus } from './auth-context'
 import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterBody, RegisterInput, TokenPayload } from '../types/api'
 
@@ -13,22 +14,47 @@ async function fetchOrganizations(): Promise<OrgAffiliation[]> {
   return data.data
 }
 
+type RestoredSession = {
+  user: MePayload
+  organizations: OrgAffiliation[]
+}
+
+let restoreSessionPromise: Promise<RestoredSession> | null = null
+
+function restoreSessionSnapshot() {
+  if (!restoreSessionPromise) {
+    restoreSessionPromise = refreshAccessToken()
+      .then(() => Promise.all([fetchMe(), fetchOrganizations()]))
+      .then(([user, organizations]) => ({ user, organizations }))
+      .finally(() => {
+        restoreSessionPromise = null
+      })
+  }
+
+  return restoreSessionPromise
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [user, setUser] = useState<MePayload | null>(null)
   const [organizations, setOrganizations] = useState<OrgAffiliation[]>([])
 
   useEffect(() => {
-    api
-      .post<ApiResponse<TokenPayload>>('/auth/refresh')
-      .then(async ({ data }) => {
-        setAccessToken(data.data.accessToken)
-        const me = await fetchMe()
-        setUser(me)
+    restoreSessionSnapshot()
+      .then((session) => {
+        setUser(session.user)
+        setOrganizations(session.organizations)
         setStatus('authenticated')
       })
-      .catch(() => {
-        setStatus('unauthenticated')
+      .catch((error: unknown) => {
+        setAccessToken(null)
+        setUser(null)
+        setOrganizations([])
+        setStatus(
+          axios.isAxiosError(error) && error.response?.status === 401
+            ? 'unauthenticated'
+            : 'error',
+        )
       })
   }, [])
 
