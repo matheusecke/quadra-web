@@ -5,6 +5,7 @@ import type { MatchDetail, Team } from '../../../features/sports/types'
 import {
   aggregateTeamStats,
   calcEff,
+  formatMinutesSeconds,
   formatStatPct,
   formatTsPct,
 } from '../../../features/sports/sportsUtils'
@@ -93,7 +94,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                 { label: 'AST', value: totals.ast },
                 { label: 'STL', value: totals.stl },
                 { label: 'BLK', value: totals.blk },
-                { label: 'TO',  value: totals.to  },
+                { label: 'TOV', value: totals.tov },
                 { label: 'PF',  value: totals.pf  },
               ].map(({ label, value }) => (
                 <div key={label} className={s.statItem}>
@@ -118,12 +119,12 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                 },
                 {
                   label: '3FG',
-                  value: `${totals.tpm}/${totals.tpa}`,
+                  value: `${totals.threeFgm}/${totals.threeFga}`,
                   sm: true,
                 },
                 {
                   label: '3FG%',
-                  value: formatStatPct(totals.tpm, totals.tpa),
+                  value: formatStatPct(totals.threeFgm, totals.threeFga),
                   sm: true,
                 },
                 {
@@ -219,7 +220,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                   ) : (
                     filteredPlayers.map((p) => {
                       const fgPct = formatStatPct(p.fgm, p.fga)
-                      const tpPct = formatStatPct(p.tpm, p.tpa)
+                      const tpPct = formatStatPct(p.threeFgm, p.threeFga)
                       const ftPct = formatStatPct(p.ftm, p.fta)
                       const tsPct = formatTsPct(p.pts, p.fga, p.fta)
                       const efi   = calcEff(p)
@@ -236,7 +237,7 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                           <td className={s.boxTd}>
                             <span className={s.boxNum}>{p.number}</span>
                           </td>
-                          <td className={s.boxTd}>{p.min}</td>
+                          <td className={s.boxTd}>{formatMinutesSeconds(p.minutesSeconds)}</td>
                           {/* Produção */}
                           <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.pts}</td>
                           <td className={s.boxTd}>{p.reb}</td>
@@ -244,14 +245,14 @@ export function StatsTab({ match, teams }: StatsTabProps) {
                           <td className={s.boxTd}>{p.stl}</td>
                           <td className={s.boxTd}>{p.blk}</td>
                           {/* Controle */}
-                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.to}</td>
+                          <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.tov}</td>
                           <td className={s.boxTd}>{p.pf}</td>
                           {/* Aproveitamento */}
                           <td className={`${s.boxTd} ${s.boxColGroup}`}>{p.fgm}</td>
                           <td className={s.boxTd}>{p.fga}</td>
                           <td className={s.boxTd}>{fgPct}</td>
-                          <td className={s.boxTd}>{p.tpm}</td>
-                          <td className={s.boxTd}>{p.tpa}</td>
+                          <td className={s.boxTd}>{p.threeFgm}</td>
+                          <td className={s.boxTd}>{p.threeFga}</td>
                           <td className={s.boxTd}>{tpPct}</td>
                           <td className={s.boxTd}>{p.ftm}</td>
                           <td className={s.boxTd}>{p.fta}</td>

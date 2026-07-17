@@ -21,6 +21,7 @@ import {
   calcEff,
   calcEffFromTotals,
   formatDateShort,
+  formatMinutesSeconds,
   formatStatPct,
   formatTsPct,
   perGame,
@@ -76,26 +77,26 @@ function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
         title="Totais"
         stats={[
           { label: 'J', value: summary.games },
-          { label: 'MIN', value: summary.min },
+          { label: 'MIN', value: formatMinutesSeconds(summary.minutesSeconds) },
           { label: 'PTS', value: summary.pts },
           { label: 'REB', value: summary.reb },
           { label: 'AST', value: summary.ast },
           { label: 'STL', value: summary.stl },
           { label: 'BLK', value: summary.blk },
-          { label: 'TO', value: summary.to },
+          { label: 'TOV', value: summary.tov },
           { label: 'PF', value: summary.pf },
         ]}
       />
       <StatStrip
         title="Médias"
         stats={[
-          { label: 'MPG', value: formatAvg(perGame(summary.min, games)) },
+          { label: 'MPG', value: formatMinutesSeconds(perGame(summary.minutesSeconds, games)) },
           { label: 'PPG', value: formatAvg(perGame(summary.pts, games)) },
           { label: 'RPG', value: formatAvg(perGame(summary.reb, games)) },
           { label: 'APG', value: formatAvg(perGame(summary.ast, games)) },
           { label: 'STG', value: formatAvg(perGame(summary.stl, games)) },
           { label: 'BPG', value: formatAvg(perGame(summary.blk, games)) },
-          { label: 'TOV', value: formatAvg(perGame(summary.to, games)) },
+          { label: 'TOV', value: formatAvg(perGame(summary.tov, games)) },
           { label: 'PF', value: formatAvg(perGame(summary.pf, games)) },
         ]}
       />
@@ -104,8 +105,8 @@ function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
         stats={[
           { label: 'FG', value: `${summary.fgm}/${summary.fga}`, sm: true },
           { label: 'FG%', value: formatStatPct(summary.fgm, summary.fga), sm: true },
-          { label: '3FG', value: `${summary.tpm}/${summary.tpa}`, sm: true },
-          { label: '3FG%', value: formatStatPct(summary.tpm, summary.tpa), sm: true },
+          { label: '3FG', value: `${summary.threeFgm}/${summary.threeFga}`, sm: true },
+          { label: '3FG%', value: formatStatPct(summary.threeFgm, summary.threeFga), sm: true },
           { label: 'FT', value: `${summary.ftm}/${summary.fta}`, sm: true },
           { label: 'FT%', value: formatStatPct(summary.ftm, summary.fta), sm: true },
           { label: 'TS%', value: formatTsPct(summary.pts, summary.fga, summary.fta), sm: true },
@@ -118,7 +119,7 @@ function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
 
 function shootingLine(stats: PlayerMatchStats, type: 'fg' | 'tp' | 'ft'): string {
   if (type === 'fg') return `${stats.fgm}/${stats.fga}`
-  if (type === 'tp') return `${stats.tpm}/${stats.tpa}`
+  if (type === 'tp') return `${stats.threeFgm}/${stats.threeFga}`
   return `${stats.ftm}/${stats.fta}`
 }
 
@@ -185,13 +186,13 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
                   </Link>
                 </td>
                 <td className={s.td}>{row.result}</td>
-                <td className={s.tdNum}>{row.stats.min}</td>
+                <td className={s.tdNum}>{formatMinutesSeconds(row.stats.minutesSeconds)}</td>
                 <td className={s.tdNum}>{row.stats.pts}</td>
                 <td className={s.tdNum}>{row.stats.reb}</td>
                 <td className={s.tdNum}>{row.stats.ast}</td>
                 <td className={s.tdNum}>{row.stats.stl}</td>
                 <td className={s.tdNum}>{row.stats.blk}</td>
-                <td className={s.tdNum}>{row.stats.to}</td>
+                <td className={s.tdNum}>{row.stats.tov}</td>
                 <td className={s.tdNum}>{row.stats.pf}</td>
                 <td className={s.tdNum}>{shootingLine(row.stats, 'fg')}</td>
                 <td className={s.tdNum}>{shootingLine(row.stats, 'tp')}</td>
@@ -275,14 +276,14 @@ function TournamentsContent({
                 <td className={s.td}>{teams.get(row.teamId)?.name ?? row.teamId}</td>
                 <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.min, games))}</td>
+                <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.reb, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.ast, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.stl, games))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.blk, games))}</td>
                 <td className={s.tdNum}>{formatStatPct(row.totals.fgm, row.totals.fga)}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.tpm, row.totals.tpa)}</td>
+                <td className={s.tdNum}>{formatStatPct(row.totals.threeFgm, row.totals.threeFga)}</td>
                 <td className={s.tdNum}>{formatStatPct(row.totals.ftm, row.totals.fta)}</td>
                 <td className={s.tdNum}>{formatTsPct(row.totals.pts, row.totals.fga, row.totals.fta)}</td>
                 <td className={s.tdNum}>{formatEffAvg(efi)}</td>

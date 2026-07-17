@@ -36,6 +36,11 @@ describe('seeded group membership', () => {
 })
 
 describe('PUC sports mock data', () => {
+  it('stores seeded playing time in seconds', () => {
+    const final = getMatchDetailById('puc-geral-m31')
+    expect(final?.homeStats.players[0].minutesSeconds).toBe(38 * 60)
+  })
+
   it('exposes exactly 2 tournaments', () => {
     expect(getTournaments()).toHaveLength(2)
   })

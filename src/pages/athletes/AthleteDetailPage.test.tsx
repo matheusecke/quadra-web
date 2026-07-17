@@ -67,6 +67,9 @@ describe('AthleteDetailPage', () => {
       (link) => link.getAttribute('href') === '/matches/puc-geral-m31',
     )
     expect(finalLink).toBeDefined()
+    const finalRow = finalLink?.closest('tr')
+    expect(finalRow).not.toBeNull()
+    expect(within(finalRow as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
   })
 
   it('shows team context in Campeonatos and links rows to tournament details', async () => {

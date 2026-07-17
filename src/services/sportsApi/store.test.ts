@@ -128,7 +128,7 @@ describe('submitMatchResult — MVP', () => {
     store.submitMatchResult({
       matchId,
       periods: [period(1, 70, 60)],
-      playerStats: [{ tournamentRosterId: entry.id, pts: 20, fgm: 8, fga: 15, tpm: 2, tpa: 5, ftm: 2, fta: 2, reb: 5, ast: 3, stl: 1, blk: 0, to: 2, pf: 3, min: 30 }],
+      playerStats: [{ tournamentRosterId: entry.id, pts: 20, fgm: 8, fga: 15, threeFgm: 2, threeFga: 5, ftm: 2, fta: 2, reb: 5, ast: 3, stl: 1, blk: 0, tov: 2, pf: 3, minutesSeconds: 1800 }],
       mvpTournamentRosterId: entry.id,
     })
 
@@ -159,7 +159,7 @@ describe('submitMatchResult — MVP', () => {
       store.submitMatchResult({
         matchId,
         periods: [period(1, 70, 60)],
-        playerStats: [{ tournamentRosterId: entry.id, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 }],
+        playerStats: [{ tournamentRosterId: entry.id, pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 }],
         mvpTournamentRosterId: entry.id,
       }),
     ).toThrow(/MVP must be one of the players in the box score/i)

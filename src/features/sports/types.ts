@@ -254,18 +254,18 @@ export interface PlayerMatchStats {
   athleteId: string
   athleteName: string
   number: number
-  min: number
+  minutesSeconds: number
   pts: number
   reb: number
   ast: number
   stl: number
   blk: number
-  to: number
+  tov: number
   pf: number
   fgm: number
   fga: number
-  tpm: number  // 3-pointers made
-  tpa: number  // 3-pointers attempted
+  threeFgm: number  // 3-pointers made
+  threeFga: number  // 3-pointers attempted
   ftm: number
   fta: number
 }
@@ -282,18 +282,18 @@ export type TeamStats = TeamMatchStats
 
 export interface AthleteStatTotals {
   games: number
-  min: number
+  minutesSeconds: number
   pts: number
   reb: number
   ast: number
   stl: number
   blk: number
-  to: number
+  tov: number
   pf: number
   fgm: number
   fga: number
-  tpm: number
-  tpa: number
+  threeFgm: number
+  threeFga: number
   ftm: number
   fta: number
 }

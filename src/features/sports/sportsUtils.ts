@@ -224,13 +224,20 @@ export function formatTsPct(pts: number, fga: number, fta: number): string {
   return ((pts / denom) * 100).toFixed(1)
 }
 
+export function formatMinutesSeconds(totalSeconds: number): string {
+  const roundedSeconds = Math.max(0, Math.round(totalSeconds))
+  const minutes = Math.floor(roundedSeconds / 60)
+  const seconds = String(roundedSeconds % 60).padStart(2, '0')
+  return `${minutes}:${seconds}`
+}
+
 /** EFF / EFI rating. */
 export function calcEff(p: PlayerMatchStats): number {
   return (
     p.pts + p.reb + p.ast + p.stl + p.blk
     - (p.fga - p.fgm)
     - (p.fta - p.ftm)
-    - p.to
+    - p.tov
   )
 }
 
@@ -239,25 +246,25 @@ export function calcEffFromTotals(totals: AthleteStatTotals): number {
     totals.pts + totals.reb + totals.ast + totals.stl + totals.blk
     - (totals.fga - totals.fgm)
     - (totals.fta - totals.ftm)
-    - totals.to
+    - totals.tov
   )
 }
 
 export function emptyAthleteTotals(): AthleteStatTotals {
   return {
     games: 0,
-    min: 0,
+    minutesSeconds: 0,
     pts: 0,
     reb: 0,
     ast: 0,
     stl: 0,
     blk: 0,
-    to: 0,
+    tov: 0,
     pf: 0,
     fgm: 0,
     fga: 0,
-    tpm: 0,
-    tpa: 0,
+    threeFgm: 0,
+    threeFga: 0,
     ftm: 0,
     fta: 0,
   }
@@ -266,18 +273,18 @@ export function emptyAthleteTotals(): AthleteStatTotals {
 export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatTotals {
   return players.reduce((acc, p) => ({
     games: acc.games + 1,
-    min: acc.min + p.min,
+    minutesSeconds: acc.minutesSeconds + p.minutesSeconds,
     pts: acc.pts + p.pts,
     reb: acc.reb + p.reb,
     ast: acc.ast + p.ast,
     stl: acc.stl + p.stl,
     blk: acc.blk + p.blk,
-    to: acc.to + p.to,
+    tov: acc.tov + p.tov,
     pf: acc.pf + p.pf,
     fgm: acc.fgm + p.fgm,
     fga: acc.fga + p.fga,
-    tpm: acc.tpm + p.tpm,
-    tpa: acc.tpa + p.tpa,
+    threeFgm: acc.threeFgm + p.threeFgm,
+    threeFga: acc.threeFga + p.threeFga,
     ftm: acc.ftm + p.ftm,
     fta: acc.fta + p.fta,
   }), emptyAthleteTotals())
@@ -288,18 +295,18 @@ export function perGame(value: number, games: number): number {
 }
 
 export interface TeamStatTotals {
-  min: number; pts: number; reb: number; ast: number; stl: number; blk: number
-  to: number; pf: number; fgm: number; fga: number; tpm: number; tpa: number
+  minutesSeconds: number; pts: number; reb: number; ast: number; stl: number; blk: number
+  tov: number; pf: number; fgm: number; fga: number; threeFgm: number; threeFga: number
   ftm: number; fta: number
 }
 
 export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
-  const z: TeamStatTotals = { min:0,pts:0,reb:0,ast:0,stl:0,blk:0,to:0,pf:0,fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0 }
+  const z: TeamStatTotals = { minutesSeconds:0,pts:0,reb:0,ast:0,stl:0,blk:0,tov:0,pf:0,fgm:0,fga:0,threeFgm:0,threeFga:0,ftm:0,fta:0 }
   return players.reduce((acc, p) => ({
-    min: acc.min + p.min, pts: acc.pts + p.pts, reb: acc.reb + p.reb,
+    minutesSeconds: acc.minutesSeconds + p.minutesSeconds, pts: acc.pts + p.pts, reb: acc.reb + p.reb,
     ast: acc.ast + p.ast, stl: acc.stl + p.stl, blk: acc.blk + p.blk,
-    to:  acc.to  + p.to,  pf:  acc.pf  + p.pf,  fgm: acc.fgm + p.fgm,
-    fga: acc.fga + p.fga, tpm: acc.tpm + p.tpm, tpa: acc.tpa + p.tpa,
+    tov:  acc.tov  + p.tov,  pf:  acc.pf  + p.pf,  fgm: acc.fgm + p.fgm,
+    fga: acc.fga + p.fga, threeFgm: acc.threeFgm + p.threeFgm, threeFga: acc.threeFga + p.threeFga,
     ftm: acc.ftm + p.ftm, fta: acc.fta + p.fta,
   }), z)
 }

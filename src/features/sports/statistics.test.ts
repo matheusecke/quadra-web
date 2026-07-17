@@ -9,42 +9,46 @@ import {
 import type { PlayerMatchStats, PeriodScore } from './types'
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 'roster-a', athleteId: 'a', athleteName: 'A', number: 1, min: 600, pts: 10, reb: 5, ast: 2,
-  stl: 1, blk: 0, to: 1, pf: 2, fgm: 4, fga: 9, tpm: 1, tpa: 3, ftm: 1, fta: 2, ...over,
+  tournamentRosterId: 'roster-a', athleteId: 'a', athleteName: 'A', number: 1, minutesSeconds: 600, pts: 10, reb: 5, ast: 2,
+  stl: 1, blk: 0, tov: 1, pf: 2, fgm: 4, fga: 9, threeFgm: 1, threeFga: 3, ftm: 1, fta: 2, ...over,
 })
 
 describe('sumPlayerStats', () => {
   it('sums points across lines and counts games', () => {
-    const totals = sumPlayerStats([line({ pts: 10 }), line({ pts: 22 })])
+    const totals = sumPlayerStats([
+      line({ minutesSeconds: 600, pts: 10 }),
+      line({ minutesSeconds: 900, pts: 22 }),
+    ])
     expect(totals.pts).toBe(32)
     expect(totals.games).toBe(2)
+    expect(totals.minutesSeconds).toBe(1500)
   })
 })
 
 describe('shootingPercentages', () => {
   it('computes fg percentage as made over attempted', () => {
-    expect(shootingPercentages({ fgm: 4, fga: 8, tpm: 0, tpa: 0, ftm: 0, fta: 0 }).fg).toBe(0.5)
+    expect(shootingPercentages({ fgm: 4, fga: 8, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0.5)
   })
   it('returns zero when no attempts', () => {
-    expect(shootingPercentages({ fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0 }).fg).toBe(0)
+    expect(shootingPercentages({ fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0)
   })
 })
 
 describe('validatePlayerStatLine', () => {
   it('flags made greater than attempted', () => {
-    const errors = validatePlayerStatLine({ pts: 5, fgm: 9, fga: 4, tpm: 0, tpa: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
+    const errors = validatePlayerStatLine({ pts: 5, fgm: 9, fga: 4, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
     expect(errors.map((e) => e.field)).toContain('fgm')
   })
   it('flags three-point attempts greater than field-goal attempts', () => {
-    const errors = validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, tpm: 0, tpa: 5, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
-    expect(errors.map((e) => e.field)).toContain('tpa')
+    const errors = validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, threeFgm: 0, threeFga: 5, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
+    expect(errors.map((e) => e.field)).toContain('threeFga')
   })
   it('flags three-point makes greater than field-goal makes', () => {
-    const errors = validatePlayerStatLine({ pts: 9, fgm: 2, fga: 4, tpm: 3, tpa: 4, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, min: 0 })
-    expect(errors.map((e) => e.field)).toContain('tpm')
+    const errors = validatePlayerStatLine({ pts: 9, fgm: 2, fga: 4, threeFgm: 3, threeFga: 4, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
+    expect(errors.map((e) => e.field)).toContain('threeFgm')
   })
   it('returns no errors for a consistent line', () => {
-    expect(validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, tpm: 1, tpa: 2, ftm: 0, fta: 0, reb: 3, ast: 1, stl: 0, blk: 0, to: 1, pf: 2, min: 600 })).toEqual([])
+    expect(validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, threeFgm: 1, threeFga: 2, ftm: 0, fta: 0, reb: 3, ast: 1, stl: 0, blk: 0, tov: 1, pf: 2, minutesSeconds: 600 })).toEqual([])
   })
 })
 

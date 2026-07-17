@@ -3,6 +3,7 @@ import {
   MATCH_STATUS_LABELS,
   TOURNAMENT_STATUS_LABELS,
   formatDiff,
+  formatMinutesSeconds,
   formatPct,
   matchPhaseName,
   matchStatusVariant,
@@ -34,6 +35,13 @@ describe('formatDiff', () => {
 
   it('keeps the sign of a negative differential', () => {
     expect(formatDiff(row({ pointDiff: -8 }))).toBe('-8')
+  })
+})
+
+describe('formatMinutesSeconds', () => {
+  it('formats stored seconds as unbounded minutes and padded seconds', () => {
+    expect(formatMinutesSeconds(0)).toBe('0:00')
+    expect(formatMinutesSeconds(2285)).toBe('38:05')
   })
 })
 
