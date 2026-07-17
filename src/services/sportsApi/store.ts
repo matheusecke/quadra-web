@@ -4,12 +4,18 @@ import type {
   MatchMvp,
   PeriodScore,
   PlayerMatchStats,
+  BracketRound,
+  BracketSlot,
+  RosterEntry,
   Season,
   StandingsEnvelope,
   StatLeaders,
   TeamMatchStats,
   Tournament,
   TournamentCategory,
+  TournamentGroup,
+  TournamentGroupTeam,
+  TournamentTeam,
 } from '../../features/sports/types'
 import { periodsSum } from '../../features/sports/statistics'
 import { computeStandings } from './standings'
@@ -39,68 +45,6 @@ import type {
   UpdateRosterEntryInput,
   UpdateTournamentInput,
 } from './types'
-
-export interface TournamentTeam {
-  id: string
-  tournamentId: string
-  teamId: string
-  /** The team's name at enrollment. Survives a later rename (DB spec §5.3). */
-  displayNameSnapshot: string
-  seed: number | null
-  /** The recorded draw (FIBA's last criterion) and the block it was recorded for. §8.8 */
-  tiebreakOrder: number | null
-  tiebreakBlockKey: string | null
-  isDeleted?: boolean
-}
-
-export interface TournamentGroup {
-  id: string
-  tournamentId: string
-  name: string
-  sortOrder: number
-  isDeleted?: boolean
-}
-
-export interface TournamentGroupTeam {
-  id: string
-  tournamentId: string
-  groupId: string
-  teamId: string
-  isDeleted?: boolean
-}
-
-export interface RosterEntry {
-  id: string
-  tournamentId: string
-  teamId: string
-  athleteId: string
-  jerseyNumber: number
-  role: 'ATHLETE' | 'COACHING_STAFF'
-  isDeleted?: boolean
-}
-
-export interface BracketRound {
-  id: string
-  tournamentId: string
-  /** 1 = primeira rodada do mata-mata. Ordenação, não contagem. */
-  number: number
-  /** 'Quartas de final', 'Semifinais', 'Final'. Livre, escrito pelo admin. */
-  label: string | null
-  isDeleted?: boolean
-}
-
-export interface BracketSlot {
-  id: string
-  tournamentId: string
-  roundId: string
-  position: number
-  label: string | null
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  matchId: string | null
-  winnerTournamentTeamId: string | null
-  isDeleted?: boolean
-}
 
 export interface SportsStoreSeed {
   seasons: Season[]
@@ -180,18 +124,18 @@ export function createSportsStore(seed: SportsStoreSeed) {
         athleteId: rosterEntry.athleteId,
         athleteName: rosterEntry.athleteId,
         number: rosterEntry.jerseyNumber,
-        min: line.min,
+        minutesSeconds: line.minutesSeconds,
         pts: line.pts,
         reb: line.reb,
         ast: line.ast,
         stl: line.stl,
         blk: line.blk,
-        to: line.to,
+        tov: line.tov,
         pf: line.pf,
         fgm: line.fgm,
         fga: line.fga,
-        tpm: line.tpm,
-        tpa: line.tpa,
+        threeFgm: line.threeFgm,
+        threeFga: line.threeFga,
         ftm: line.ftm,
         fta: line.fta,
       }]
@@ -317,7 +261,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         startDate: input.startDate,
         endDate: input.endDate,
         updatedAt: new Date().toISOString(),
-        statsStatus: 'PENDING',
         regulation: input.regulation ?? '',
         leaders: emptyLeaders(),
         championTournamentTeamId: null,
@@ -620,7 +563,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         awayScore: null,
         status: 'SCHEDULED',
         venue: input.venue,
-        statsStatus: 'PENDING',
         homeLossType: null,
         awayLossType: null,
         scoreSource: null,
@@ -643,7 +585,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         match.homeLossType = offenderIsHome ? 'FORFEIT' : null
         match.awayLossType = offenderIsHome ? null : 'FORFEIT'
         match.scoreSource = 'AWARDED'
-        match.statsStatus = 'PENDING'
         matchExtras.set(match.id, {
           periodScores: [],
           homeStats: emptyTeamStats(match.homeTeamId),
@@ -681,7 +622,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         match.awayLossType = court.away < court.home ? 'NORMAL' : null
       }
 
-      match.statsStatus = 'COMPLETE'
       matchExtras.set(match.id, {
         periodScores: input.periods,
         homeStats: toBoxScore(match.homeTeamId, input),

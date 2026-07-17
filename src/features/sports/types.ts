@@ -27,12 +27,6 @@ export type MatchStatus =
   | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
   | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
-/** Completeness of the statistical record for a match / tournament. */
-export type StatsStatus =
-  | 'COMPLETE' // Estatísticas completas
-  | 'PARTIAL' // Estatísticas incompletas
-  | 'PENDING' // Sem estatísticas ainda
-
 /** The only per-leader stat categories allowed this round. */
 export type LeaderStat = 'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg'
 
@@ -54,7 +48,7 @@ export interface Athlete {
   id: string
   name: string
   number: number
-  position: AthletePosition
+  position: AthletePosition | null
   currentTeamId: string
   status: AthleteStatus
 }
@@ -131,7 +125,6 @@ export interface Match {
   awayScore: number | null
   status: MatchStatus
   venue?: string
-  statsStatus: StatsStatus
   /** Set when the match belongs to a group stage; null for league and knockout games. */
   tournamentGroupId: string | null
   /**
@@ -184,12 +177,73 @@ export interface Tournament {
   startDate: string // ISO date
   endDate: string // ISO date
   updatedAt: string // ISO datetime
-  statsStatus: StatsStatus
   /** Short regulation summary (mocked). */
   regulation: string
   leaders: StatLeaders
   /** Explicit declared tournament-team champion, null while no title is declared. */
   championTournamentTeamId: string | null
+}
+
+export interface TournamentTeam {
+  id: string
+  tournamentId: string
+  teamId: string
+  /** The team's name at enrollment. Survives a later rename (DB spec §5.3). */
+  displayNameSnapshot: string
+  seed: number | null
+  /** The recorded draw (FIBA's last criterion) and the block it was recorded for. §8.8 */
+  tiebreakOrder: number | null
+  tiebreakBlockKey: string | null
+  isDeleted?: boolean
+}
+
+export interface TournamentGroup {
+  id: string
+  tournamentId: string
+  name: string
+  sortOrder: number
+  isDeleted?: boolean
+}
+
+export interface TournamentGroupTeam {
+  id: string
+  tournamentId: string
+  groupId: string
+  teamId: string
+  isDeleted?: boolean
+}
+
+export interface RosterEntry {
+  id: string
+  tournamentId: string
+  teamId: string
+  athleteId: string
+  jerseyNumber: number
+  role: 'ATHLETE' | 'COACHING_STAFF'
+  isDeleted?: boolean
+}
+
+export interface BracketRound {
+  id: string
+  tournamentId: string
+  /** 1 = primeira rodada do mata-mata. Ordenação, não contagem. */
+  number: number
+  /** 'Quartas de final', 'Semifinais', 'Final'. Livre, escrito pelo admin. */
+  label: string | null
+  isDeleted?: boolean
+}
+
+export interface BracketSlot {
+  id: string
+  tournamentId: string
+  roundId: string
+  position: number
+  label: string | null
+  homeTournamentTeamId: string | null
+  awayTournamentTeamId: string | null
+  matchId: string | null
+  winnerTournamentTeamId: string | null
+  isDeleted?: boolean
 }
 
 // ── Match detail (with per-game box score) ────────────────────────────────────
@@ -200,18 +254,18 @@ export interface PlayerMatchStats {
   athleteId: string
   athleteName: string
   number: number
-  min: number
+  minutesSeconds: number
   pts: number
   reb: number
   ast: number
   stl: number
   blk: number
-  to: number
+  tov: number
   pf: number
   fgm: number
   fga: number
-  tpm: number  // 3-pointers made
-  tpa: number  // 3-pointers attempted
+  threeFgm: number  // 3-pointers made
+  threeFga: number  // 3-pointers attempted
   ftm: number
   fta: number
 }
@@ -228,18 +282,18 @@ export type TeamStats = TeamMatchStats
 
 export interface AthleteStatTotals {
   games: number
-  min: number
+  minutesSeconds: number
   pts: number
   reb: number
   ast: number
   stl: number
   blk: number
-  to: number
+  tov: number
   pf: number
   fgm: number
   fga: number
-  tpm: number
-  tpa: number
+  threeFgm: number
+  threeFga: number
   ftm: number
   fta: number
 }

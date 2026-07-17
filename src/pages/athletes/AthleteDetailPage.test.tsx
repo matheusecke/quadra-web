@@ -38,6 +38,13 @@ describe('AthleteDetailPage', () => {
     expect(within(header).queryByText(/2026/i)).not.toBeInTheDocument()
   })
 
+  it('shows Não informada when the athlete position is absent', async () => {
+    renderAthletePage('diego.santos@quadra.com.br')
+
+    const header = await screen.findByTestId('athlete-header')
+    expect(within(header).getByText('Não informada · Time 1')).toBeInTheDocument()
+  })
+
   it('shows only Resumo, Partidas and Campeonatos tabs and no eFG metric', async () => {
     renderAthletePage()
 
@@ -67,6 +74,19 @@ describe('AthleteDetailPage', () => {
       (link) => link.getAttribute('href') === '/matches/puc-geral-m31',
     )
     expect(finalLink).toBeDefined()
+    const finalRow = finalLink?.closest('tr')
+    expect(finalRow).not.toBeNull()
+    expect(within(finalRow as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
+  })
+
+  it('labels match turnovers as TOV', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(screen.getByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
   })
 
   it('shows team context in Campeonatos and links rows to tournament details', async () => {

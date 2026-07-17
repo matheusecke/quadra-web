@@ -1,9 +1,9 @@
 import type { AthleteStatTotals, PeriodScore, PlayerMatchStats } from './types'
 
 export interface PlayerStatInput {
-  pts: number; fgm: number; fga: number; tpm: number; tpa: number
+  pts: number; fgm: number; fga: number; threeFgm: number; threeFga: number
   ftm: number; fta: number; reb: number; ast: number; stl: number
-  blk: number; to: number; pf: number; min: number
+  blk: number; tov: number; pf: number; minutesSeconds: number
 }
 
 export interface StatValidationError { field: keyof PlayerStatInput; message: string }
@@ -13,14 +13,14 @@ const round3 = (n: number) => Math.round(n * 1000) / 1000
 
 export function sumPlayerStats(lines: PlayerMatchStats[]): AthleteStatTotals {
   const base: AthleteStatTotals = {
-    games: lines.length, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
-    to: 0, pf: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+    games: lines.length, minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
+    tov: 0, pf: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0,
   }
   return lines.reduce((acc, l) => ({
-    games: acc.games, min: acc.min + l.min, pts: acc.pts + l.pts, reb: acc.reb + l.reb,
-    ast: acc.ast + l.ast, stl: acc.stl + l.stl, blk: acc.blk + l.blk, to: acc.to + l.to,
-    pf: acc.pf + l.pf, fgm: acc.fgm + l.fgm, fga: acc.fga + l.fga, tpm: acc.tpm + l.tpm,
-    tpa: acc.tpa + l.tpa, ftm: acc.ftm + l.ftm, fta: acc.fta + l.fta,
+    games: acc.games, minutesSeconds: acc.minutesSeconds + l.minutesSeconds, pts: acc.pts + l.pts, reb: acc.reb + l.reb,
+    ast: acc.ast + l.ast, stl: acc.stl + l.stl, blk: acc.blk + l.blk, tov: acc.tov + l.tov,
+    pf: acc.pf + l.pf, fgm: acc.fgm + l.fgm, fga: acc.fga + l.fga, threeFgm: acc.threeFgm + l.threeFgm,
+    threeFga: acc.threeFga + l.threeFga, ftm: acc.ftm + l.ftm, fta: acc.fta + l.fta,
   }), base)
 }
 
@@ -30,21 +30,21 @@ export function averagePlayerStats(totals: AthleteStatTotals): PerGameAverages {
   return { pts: per(totals.pts), reb: per(totals.reb), ast: per(totals.ast), stl: per(totals.stl), blk: per(totals.blk) }
 }
 
-export function shootingPercentages(t: { fgm: number; fga: number; tpm: number; tpa: number; ftm: number; fta: number }) {
+export function shootingPercentages(t: { fgm: number; fga: number; threeFgm: number; threeFga: number; ftm: number; fta: number }) {
   const pct = (made: number, att: number) => (att === 0 ? 0 : round3(made / att))
-  return { fg: pct(t.fgm, t.fga), tp: pct(t.tpm, t.tpa), ft: pct(t.ftm, t.fta) }
+  return { fg: pct(t.fgm, t.fga), tp: pct(t.threeFgm, t.threeFga), ft: pct(t.ftm, t.fta) }
 }
 
 export function validatePlayerStatLine(line: PlayerStatInput): StatValidationError[] {
   const errors: StatValidationError[] = []
-  const nonNeg: (keyof PlayerStatInput)[] = ['pts', 'fgm', 'fga', 'tpm', 'tpa', 'ftm', 'fta', 'reb', 'ast', 'stl', 'blk', 'to', 'pf', 'min']
+  const nonNeg: (keyof PlayerStatInput)[] = ['pts', 'fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf', 'minutesSeconds']
   for (const field of nonNeg) {
     if (line[field] < 0) errors.push({ field, message: 'Não pode ser negativo' })
   }
   if (line.fgm > line.fga) errors.push({ field: 'fgm', message: 'FGM não pode exceder FGA' })
-  if (line.tpa > line.fga) errors.push({ field: 'tpa', message: '3PA não pode exceder FGA' })
-  if (line.tpm > line.tpa) errors.push({ field: 'tpm', message: '3PM não pode exceder 3PA' })
-  if (line.tpm > line.fgm) errors.push({ field: 'tpm', message: '3PM não pode exceder FGM' })
+  if (line.threeFga > line.fga) errors.push({ field: 'threeFga', message: '3PA não pode exceder FGA' })
+  if (line.threeFgm > line.threeFga) errors.push({ field: 'threeFgm', message: '3PM não pode exceder 3PA' })
+  if (line.threeFgm > line.fgm) errors.push({ field: 'threeFgm', message: '3PM não pode exceder FGM' })
   if (line.ftm > line.fta) errors.push({ field: 'ftm', message: 'FTM não pode exceder FTA' })
   return errors
 }

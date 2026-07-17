@@ -1,8 +1,7 @@
 import { getTeams } from './mock-sports-data'
 import { useBracketRoundsQuery, useBracketSlotsQuery, useMatchesQuery, useTournamentTeamsQuery } from './queries'
 
-import type { BracketRound } from '../../services/sportsApi/store'
-import type { MatchStatus } from './types'
+import type { BracketRound, MatchStatus } from './types'
 
 export interface BracketTeamOption {
   tournamentTeamId: string

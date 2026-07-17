@@ -36,6 +36,11 @@ describe('seeded group membership', () => {
 })
 
 describe('PUC sports mock data', () => {
+  it('stores seeded playing time in seconds', () => {
+    const final = getMatchDetailById('puc-geral-m31')
+    expect(final?.homeStats.players[0].minutesSeconds).toBe(38 * 60)
+  })
+
   it('exposes exactly 2 tournaments', () => {
     expect(getTournaments()).toHaveLength(2)
   })
@@ -91,11 +96,13 @@ describe('PUC sports mock data', () => {
     expect(calculatePeriodTotal(detail!.periodScores, 'home')).toBe(detail?.homeScore)
   })
 
-  it('Inverno has only scheduled matches with pending stats', () => {
+  it('seeds Inverno with scheduled matches and no finished-result fields', () => {
     const matches = getMatchesByTournament('puc-inverno-2026')
     expect(matches).toHaveLength(16)
     expect(matches.every((m) => m.status === 'SCHEDULED')).toBe(true)
-    expect(matches.every((m) => m.statsStatus === 'PENDING')).toBe(true)
+    expect(matches.every((m) => m.homeScore === null && m.awayScore === null)).toBe(true)
+    expect(matches.every((m) => m.scoreSource === null)).toBe(true)
+    expect(matches.every((m) => m.homeLossType === null && m.awayLossType === null)).toBe(true)
   })
 
   it('all team IDs in matches exist in MOCK_TEAMS', () => {

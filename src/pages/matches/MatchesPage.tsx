@@ -13,22 +13,22 @@ import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
-  matchDisplayStatus,
-  matchDisplayStatusVariant,
+  MATCH_STATUS_LABELS,
   matchPhaseName,
+  matchStatusVariant,
   sortMatchesByDateDesc,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import s from './matches.module.css'
 
-type StatusFilter = MatchStatus | 'WAITING_STATS' | ''
+type StatusFilter = MatchStatus | ''
 
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+const STATUS_OPTIONS: Array<{ value: MatchStatus; label: string }> = [
   { value: 'SCHEDULED',     label: 'Agendada' },
   { value: 'LIVE',          label: 'Ao vivo' },
   { value: 'FINISHED',      label: 'Finalizada' },
-  { value: 'WAITING_STATS', label: 'Aguardando estatísticas' },
   { value: 'POSTPONED',     label: 'Adiada' },
+  { value: 'CANCELLED',     label: 'Cancelada' },
 ]
 
 export function MatchesPage() {
@@ -58,11 +58,7 @@ export function MatchesPage() {
     const all = sortMatchesByDateDesc(matches ?? [])
     return all.filter((m) => {
       if (tournamentId && m.tournamentId !== tournamentId) return false
-      if (statusFilter === 'WAITING_STATS') {
-        if (!(m.status === 'FINISHED' && m.statsStatus === 'PENDING')) return false
-      } else if (statusFilter && m.status !== statusFilter) {
-        return false
-      }
+      if (statusFilter && m.status !== statusFilter) return false
       if (debouncedQ) {
         const home   = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
         const away   = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
@@ -185,8 +181,8 @@ export function MatchesPage() {
                           </td>
                           <td className={s.tdMuted}>{matchPhaseName(m) ?? ''}</td>
                           <td className={s.td}>
-                            <Badge variant={matchDisplayStatusVariant(m.status, m.statsStatus)}>
-                              {matchDisplayStatus(m.status, m.statsStatus)}
+                            <Badge variant={matchStatusVariant(m.status)}>
+                              {MATCH_STATUS_LABELS[m.status]}
                             </Badge>
                           </td>
                           <td className={s.tdMuted}>{m.venue ?? '—'}</td>

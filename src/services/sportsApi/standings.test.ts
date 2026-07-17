@@ -12,7 +12,7 @@ let seq = 0
 const played = (homeTeamId: string, homeScore: number, awayTeamId: string, awayScore: number, over: Partial<Match> = {}): Match => ({
   id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
   homeTeamId, awayTeamId, homeScore, awayScore,
-  status: 'FINISHED', statsStatus: 'COMPLETE',
+  status: 'FINISHED',
   homeLossType: homeScore < awayScore ? 'NORMAL' : null,
   awayLossType: awayScore < homeScore ? 'NORMAL' : null,
   scoreSource: 'PERIODS',
@@ -23,7 +23,7 @@ const played = (homeTeamId: string, homeScore: number, awayTeamId: string, awayS
 const scheduled = (homeTeamId: string, awayTeamId: string, over: Partial<Match> = {}): Match => ({
   id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
   homeTeamId, awayTeamId, homeScore: null, awayScore: null,
-  status: 'SCHEDULED', statsStatus: 'PENDING',
+  status: 'SCHEDULED',
   homeLossType: null, awayLossType: null, scoreSource: null, tournamentGroupId: null,
   bracketRound: null,
   ...over,

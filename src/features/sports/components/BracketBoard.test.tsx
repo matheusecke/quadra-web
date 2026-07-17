@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { BracketBoard } from './BracketBoard'
-import type { BracketRound } from '../../../services/sportsApi/store'
+import type { BracketRound } from '../types'
 import type { BracketSlotView } from '../useBracketView'
 
 const rounds: BracketRound[] = [

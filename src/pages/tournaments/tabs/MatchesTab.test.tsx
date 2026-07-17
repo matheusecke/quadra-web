@@ -24,7 +24,6 @@ const tournament: Tournament = {
   startDate: '2026-06-01',
   endDate: '2026-06-30',
   updatedAt: '2026-06-10T12:00:00.000Z',
-  statsStatus: 'PARTIAL',
   regulation: 'Todos contra todos.',
   leaders: {
     ppg: [],
@@ -47,7 +46,6 @@ const matches: Match[] = [
     awayScore: 74,
     status: 'FINISHED',
     venue: 'Ginásio Central',
-    statsStatus: 'COMPLETE',
     tournamentGroupId: null,
     bracketRound: { id: 'round-oitavas', number: 1, label: 'Oitavas de final' },
     homeLossType: null,
@@ -64,7 +62,6 @@ const matches: Match[] = [
     awayScore: null,
     status: 'SCHEDULED',
     venue: 'Arena Metropolitana',
-    statsStatus: 'PARTIAL',
     tournamentGroupId: null,
     bracketRound: { id: 'round-semi', number: 2, label: 'Semifinais' },
     homeLossType: null,
