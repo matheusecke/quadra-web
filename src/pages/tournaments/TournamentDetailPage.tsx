@@ -384,7 +384,7 @@ export function TournamentDetailPage() {
         )}
         {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
-          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
+          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} isOrgAdmin={isOrgAdmin} />
         )}
         {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}

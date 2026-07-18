@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge/Badge'
+import { Button } from '../../../components/ui/Button/Button'
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import type { Tournament, Match, MatchStatus, Team } from '../../../features/sports/types'
@@ -18,12 +19,14 @@ interface MatchesTabProps {
   tournament: Tournament
   matches: Match[]
   teams: Map<string, Team>
+  isOrgAdmin: boolean
 }
 
 const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED']
 const GROUP_PHASE_FILTER = '__group__'
 
-export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
+export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTabProps) {
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [team, setTeam] = useState('')
   const [status, setStatus] = useState<MatchStatus | ''>('')
@@ -64,6 +67,17 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
 
   return (
     <>
+      {isOrgAdmin && (
+        <div className={s.tabActions}>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => navigate(`/tournaments/${tournament.id}/matches/new`)}
+          >
+            Nova partida
+          </Button>
+        </div>
+      )}
       <div className={s.tabToolbar}>
         <div className={s.searchWrap}>
           <span className={s.searchIcon} aria-hidden="true">

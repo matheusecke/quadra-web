@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { MatchesTab } from './MatchesTab'
@@ -74,7 +75,7 @@ describe('MatchesTab', () => {
   it('renders matches with inline matchup scores and no statistics status labels', () => {
     render(
       <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
       </MemoryRouter>,
     )
 
@@ -104,7 +105,7 @@ describe('MatchesTab', () => {
   it('links each matchup to the match detail page', () => {
     render(
       <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
       </MemoryRouter>,
     )
 
@@ -113,5 +114,35 @@ describe('MatchesTab', () => {
       '/matches/m1',
     )
     expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/m2')
+  })
+})
+
+describe('MatchesTab creation action', () => {
+  it('opens the scheduling form for org admins with the championship locked in', async () => {
+    render(
+      <MemoryRouter initialEntries={['/tournaments/c1']}>
+        <Routes>
+          <Route
+            path="/tournaments/c1"
+            element={<MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin />}
+          />
+          <Route path="/tournaments/c1/matches/new" element={<div>formulário de nova partida</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nova partida' }))
+
+    expect(screen.getByText('formulário de nova partida')).toBeInTheDocument()
+  })
+
+  it('hides the creation action from non-admins', () => {
+    render(
+      <MemoryRouter>
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Nova partida' })).not.toBeInTheDocument()
   })
 })
