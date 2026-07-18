@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -51,7 +51,20 @@ export function TournamentDetailPage() {
   const completeTournament = useCompleteTournament()
   const reopenTournament = useReopenTournament()
   const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'overview')
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', tab)
+        return next
+      },
+      { replace: true },
+    )
+  }
   const [enrollError, setEnrollError] = useState('')
   const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
   const [rosterError, setRosterError] = useState('')
@@ -301,13 +314,13 @@ export function TournamentDetailPage() {
         )}
 
         <div className={s.tabsBar}>
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="line" />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} variant="line" />
         </div>
       </div>
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && (
-          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} onSeeBracket={() => setActiveTab('bracket')} />
+          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} onSeeBracket={() => handleTabChange('bracket')} />
         )}
         {activeTab === 'teams' && (
           <div className={s.teamsTab}>

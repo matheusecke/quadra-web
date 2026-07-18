@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { TournamentDetailPage } from './TournamentDetailPage'
 
@@ -16,6 +16,25 @@ const renderDetail = (id: string) => {
         <Routes>
           <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
         </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="loc">{location.search}</div>
+}
+
+const renderDetailAt = (path: string) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
+        </Routes>
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -197,5 +216,24 @@ describe('TournamentDetailPage admin region', () => {
     await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('button', { name: 'Confirmar reabertura' })).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage tab query param', () => {
+  it('opens the Partidas tab from the tab query param on first paint', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetailAt('/tournaments/puc-inverno-2026?tab=matches')
+
+    expect(await screen.findByRole('tab', { name: 'Partidas', selected: true })).toBeInTheDocument()
+  })
+
+  it('reflects the selected tab in the URL when switching tabs', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetailAt('/tournaments/puc-inverno-2026')
+    await screen.findByText('Copa de Inverno PUC')
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(screen.getByTestId('loc')).toHaveTextContent('tab=matches')
   })
 })
