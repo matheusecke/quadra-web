@@ -141,7 +141,11 @@ export function TournamentFormPage() {
         </Field>
 
         <div className={s.actions}>
-          <Button type="button" variant="ghost" onClick={() => navigate('/tournaments')}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate(isEdit && tournamentId ? `/tournaments/${tournamentId}` : '/tournaments')}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" loading={createTournament.isPending || updateTournament.isPending}>
