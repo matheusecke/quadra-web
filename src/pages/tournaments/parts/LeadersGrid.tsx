@@ -38,7 +38,7 @@ export function LeadersGrid({ leaders, teams, perCard = 3 }: LeadersGridProps) {
                       </Link>
                       <span className={s.leaderTeam}>{team?.shortName ?? '—'}</span>
                     </span>
-                    <span className={s.leaderValue}>{leader.value.toFixed(1)}</span>
+                    <span className={s.leaderValue}>{leader.value === null ? 'N/A' : leader.value.toFixed(1)}</span>
                   </div>
                 )
               })}

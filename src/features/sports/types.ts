@@ -11,6 +11,8 @@
  * `'ACTIVE'`); human-facing Portuguese labels live in `sportsUtils.ts`.
  */
 
+import type { StatField } from './statistics'
+
 // ── Status enums ────────────────────────────────────────────────────────────
 
 export type TournamentStatus =
@@ -92,7 +94,7 @@ export interface StatLeader {
   athleteName: string
   teamId: string
   /** Per-game average for the category. */
-  value: number
+  value: number | null
   gamesPlayed: number
 }
 
@@ -254,20 +256,20 @@ export interface PlayerMatchStats {
   athleteId: string
   athleteName: string
   number: number
-  minutesSeconds: number
-  pts: number
-  reb: number
-  ast: number
-  stl: number
-  blk: number
-  tov: number
-  pf: number
-  fgm: number
-  fga: number
-  threeFgm: number  // 3-pointers made
-  threeFga: number  // 3-pointers attempted
-  ftm: number
-  fta: number
+  minutesSeconds: number | null
+  pts: number | null
+  reb: number | null
+  ast: number | null
+  stl: number | null
+  blk: number | null
+  tov: number | null
+  pf: number | null
+  fgm: number | null
+  fga: number | null
+  threeFgm: number | null  // 3-pointers made
+  threeFga: number | null  // 3-pointers attempted
+  ftm: number | null
+  fta: number | null
 }
 
 export type PlayerBoxScore = PlayerMatchStats
@@ -282,20 +284,21 @@ export type TeamStats = TeamMatchStats
 
 export interface AthleteStatTotals {
   games: number
-  minutesSeconds: number
-  pts: number
-  reb: number
-  ast: number
-  stl: number
-  blk: number
-  tov: number
-  pf: number
-  fgm: number
-  fga: number
-  threeFgm: number
-  threeFga: number
-  ftm: number
-  fta: number
+  measuredGames: Record<StatField, number>
+  minutesSeconds: number | null
+  pts: number | null
+  reb: number | null
+  ast: number | null
+  stl: number | null
+  blk: number | null
+  tov: number | null
+  pf: number | null
+  fgm: number | null
+  fga: number | null
+  threeFgm: number | null
+  threeFga: number | null
+  ftm: number | null
+  fta: number | null
 }
 
 export interface AthleteMatchStatsRow {

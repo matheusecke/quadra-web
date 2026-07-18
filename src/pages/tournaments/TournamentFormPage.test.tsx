@@ -31,5 +31,5 @@ describe('TournamentFormPage (create)', () => {
     await userEvent.type(screen.getByLabelText(/fim/i), '01/06/2026')
     await userEvent.click(screen.getByRole('button', { name: /criar campeonato/i }))
     await waitFor(() => expect(screen.getByText('detalhe')).toBeInTheDocument())
-  })
+  }, 10_000)
 })

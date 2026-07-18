@@ -11,6 +11,7 @@ import {
 } from './mock-sports-data'
 import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
 import * as sportsApi from '../../services/sportsApi'
+import { SHOOTING_FIELDS } from './statistics'
 
 describe('seeded group membership', () => {
   it('puts every enrolled team of the demo tournaments in exactly one group', () => {
@@ -39,6 +40,16 @@ describe('PUC sports mock data', () => {
   it('stores seeded playing time in seconds', () => {
     const final = getMatchDetailById('puc-geral-m31')
     expect(final?.homeStats.players[0].minutesSeconds).toBe(38 * 60)
+  })
+
+  it('exposes matches with block and shooting columns not tracked', () => {
+    const blocksDisabled = getMatchDetailById('puc-geral-m29')!
+    const shootingDisabled = getMatchDetailById('puc-geral-m30')!
+
+    expect(blocksDisabled.homeStats.players.every((player) => player.blk === null)).toBe(true)
+    expect(shootingDisabled.homeStats.players.every((player) =>
+      SHOOTING_FIELDS.every((field) => player[field] === null),
+    )).toBe(true)
   })
 
   it('exposes exactly 2 tournaments', () => {

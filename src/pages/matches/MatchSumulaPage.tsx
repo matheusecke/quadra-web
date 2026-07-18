@@ -12,7 +12,8 @@ import { Tabs } from '../../components/ui/Tabs/Tabs'
 import { BoxScoreTable } from '../../features/sports/components/BoxScoreTable'
 import { MvpSelect } from '../../features/sports/components/MvpSelect'
 import { PeriodScoreEditor } from '../../features/sports/components/PeriodScoreEditor'
-import { boxScoreReducer, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
+import { StatColumnsConfig } from '../../features/sports/components/StatColumnsConfig'
+import { boxScoreReducer, columnHasData, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
 import { getAthletes, getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
@@ -107,6 +108,30 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
   const homeIds = useMemo(() => homeRoster.map((r) => r.tournamentRosterId), [homeRoster])
   const awayIds = useMemo(() => awayRoster.map((r) => r.tournamentRosterId), [awayRoster])
+  const initialLines = useMemo<Record<string, PlayerStatInput>>(
+    () => Object.fromEntries(
+      [...match.homeStats.players, ...match.awayStats.players].map((player) => [
+        player.tournamentRosterId,
+        {
+          minutesSeconds: player.minutesSeconds,
+          pts: player.pts,
+          reb: player.reb,
+          ast: player.ast,
+          stl: player.stl,
+          blk: player.blk,
+          tov: player.tov,
+          pf: player.pf,
+          fgm: player.fgm,
+          fga: player.fga,
+          threeFgm: player.threeFgm,
+          threeFga: player.threeFga,
+          ftm: player.ftm,
+          fta: player.fta,
+        } satisfies PlayerStatInput,
+      ]),
+    ),
+    [match.awayStats.players, match.homeStats.players],
+  )
 
   const [state, dispatch] = useReducer(
     boxScoreReducer,
@@ -114,6 +139,7 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
       tournamentRosterIds: [...homeIds, ...awayIds],
       regularPeriods: 4,
       mvpTournamentRosterId: match.mvp?.tournamentRosterId ?? null,
+      initialLines,
     },
     initBoxScoreState,
   )
@@ -121,7 +147,7 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
   const [confirming, setConfirming] = useState(false)
   const [resultType, setResultType] = useState<'NORMAL' | 'DEFAULT' | 'FORFEIT'>('NORMAL')
   const [offendingTeamId, setOffendingTeamId] = useState('')
-  const handleStatChange = useCallback((tournamentRosterId: string, field: keyof PlayerStatInput, value: number) => {
+  const handleStatChange = useCallback((tournamentRosterId: string, field: keyof PlayerStatInput, value: number | null) => {
     dispatch({ type: 'setStat', tournamentRosterId, field, value })
   }, [])
 
@@ -130,7 +156,7 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
   const totals = periodsSum(state.periods)
   const homePts = teamTotalPoints(state, homeIds)
   const awayPts = teamTotalPoints(state, awayIds)
-  const hasWarning = match.scoreSource !== 'AWARDED' && (
+  const hasWarning = match.scoreSource !== 'AWARDED' && homePts !== null && awayPts !== null && (
     !isScoreConsistent(homePts, totals.home) || !isScoreConsistent(awayPts, totals.away)
   )
 
@@ -231,9 +257,15 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
           onChange={setActiveTeam}
           variant="line"
         />
+        <StatColumnsConfig
+          disabledColumns={state.disabledColumns}
+          groupHasData={(fields) => columnHasData(state, fields)}
+          onToggle={(fields, enabled) => dispatch({ type: 'setColumnEnabled', fields, enabled })}
+        />
         <BoxScoreTable
           roster={activeRoster}
           lines={activeLines}
+          disabledColumns={state.disabledColumns}
           onStatChange={handleStatChange}
         />
       </section>}

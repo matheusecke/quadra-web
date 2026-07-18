@@ -3,13 +3,17 @@ import {
   MATCH_STATUS_LABELS,
   TOURNAMENT_STATUS_LABELS,
   formatDiff,
+  formatStatPct,
+  calcEff,
+  perGame,
   formatMinutesSeconds,
+  aggregateAthleteStats,
   formatPct,
   matchPhaseName,
   matchStatusVariant,
   tournamentStatusVariant,
 } from './sportsUtils'
-import type { StandingRow } from './types'
+import type { PlayerMatchStats, StandingRow } from './types'
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
   position: 1, tournamentTeamId: 'tt-1', teamId: 'team-1', teamName: 'Alfa',
@@ -100,5 +104,55 @@ describe('matchPhaseName', () => {
       bracketRound: null,
       tournamentGroupId: null,
     })).toBeNull()
+  })
+})
+
+const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
+  tournamentRosterId: 'r', athleteId: 'a', athleteName: 'A', number: 1,
+  minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
+  fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, ...over,
+})
+
+describe('formatStatPct', () => {
+  it('is N/A when a side was not tracked (null)', () => {
+    expect(formatStatPct(null, 10)).toBe('N/A')
+    expect(formatStatPct(4, null)).toBe('N/A')
+  })
+
+  it('is em dash when measured but zero attempts', () => {
+    expect(formatStatPct(0, 0)).toBe('—')
+  })
+
+  it('formats a real percentage', () => {
+    expect(formatStatPct(5, 10)).toBe('50.0')
+  })
+})
+
+describe('calcEff', () => {
+  it('is null when any input is null', () => {
+    expect(calcEff(line({ reb: null }))).toBeNull()
+  })
+})
+
+describe('perGame', () => {
+  it('divides by measured games and is null when none measured', () => {
+    expect(perGame(10, 4)).toBe(2.5)
+    expect(perGame(null, 0)).toBeNull()
+  })
+})
+
+describe('formatMinutesSeconds', () => {
+  it('is N/A for null', () => {
+    expect(formatMinutesSeconds(null)).toBe('N/A')
+  })
+})
+
+describe('aggregateAthleteStats', () => {
+  it('keeps a fully untracked metric null and counts measured games per field', () => {
+    const totals = aggregateAthleteStats([line({ reb: null, pts: 10 }), line({ reb: null, pts: 8 })])
+    expect(totals.reb).toBeNull()
+    expect(totals.pts).toBe(18)
+    expect(totals.measuredGames.reb).toBe(0)
+    expect(totals.measuredGames.pts).toBe(2)
   })
 })

@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
+  avgNullable,
   sumPlayerStats,
+  sumNullable,
+  SHOOTING_FIELDS,
   shootingPercentages,
+  STAT_TOGGLE_GROUPS,
   validatePlayerStatLine,
   periodsSum,
   isScoreConsistent,
@@ -29,8 +33,8 @@ describe('shootingPercentages', () => {
   it('computes fg percentage as made over attempted', () => {
     expect(shootingPercentages({ fgm: 4, fga: 8, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0.5)
   })
-  it('returns zero when no attempts', () => {
-    expect(shootingPercentages({ fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBe(0)
+  it('returns null when no attempts', () => {
+    expect(shootingPercentages({ fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0 }).fg).toBeNull()
   })
 })
 
@@ -65,5 +69,49 @@ describe('periodsSum', () => {
 describe('isScoreConsistent', () => {
   it('is true when player points total equals the final score', () => {
     expect(isScoreConsistent(68, 68)).toBe(true)
+  })
+})
+
+describe('sumNullable', () => {
+  it('returns null when every value is null', () => {
+    expect(sumNullable([null, null])).toBeNull()
+  })
+
+  it('sums only the measured values', () => {
+    expect(sumNullable([2, null, 3])).toBe(5)
+  })
+})
+
+describe('avgNullable', () => {
+  it('divides by measured games only', () => {
+    expect(avgNullable(10, 4)).toBe(2.5)
+  })
+
+  it('is null when nothing was measured', () => {
+    expect(avgNullable(null, 0)).toBeNull()
+    expect(avgNullable(10, 0)).toBeNull()
+  })
+})
+
+describe('STAT_TOGGLE_GROUPS', () => {
+  it('groups the six shooting counters into one toggle', () => {
+    const shooting = STAT_TOGGLE_GROUPS.find((group) => group.id === 'shooting')
+    expect(shooting?.fields).toEqual(SHOOTING_FIELDS)
+    expect(SHOOTING_FIELDS).toEqual(['fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta'])
+  })
+})
+
+const base = {
+  pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0,
+  reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0,
+}
+
+describe('validatePlayerStatLine with null', () => {
+  it('ignores null metrics', () => {
+    expect(validatePlayerStatLine({ ...base, reb: null })).toEqual([])
+  })
+
+  it('only compares fgm/fga when both present', () => {
+    expect(validatePlayerStatLine({ ...base, fgm: 5, fga: null })).toEqual([])
   })
 })
