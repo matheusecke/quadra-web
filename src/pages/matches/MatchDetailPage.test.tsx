@@ -54,4 +54,12 @@ describe('MatchDetailPage', () => {
 
     expect(await screen.findByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
   })
+
+  it('sends the back button to the championship matches list, not the global one', async () => {
+    renderDetail('puc-geral-m31')
+
+    await screen.findByText('Mandante')
+    const back = screen.getByRole('link', { name: 'Partidas' })
+    expect(back).toHaveAttribute('href', '/tournaments/puc-geral-2026?tab=matches')
+  })
 })

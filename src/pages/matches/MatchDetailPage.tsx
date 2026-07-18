@@ -113,7 +113,7 @@ export function MatchDetailPage() {
       <div className={s.detailHeader}>
         {/* ── Nav ── */}
         <div className={s.detailNav}>
-          <Link to="/matches" className={s.backLink}>
+          <Link to={`/tournaments/${match.tournamentId}?tab=matches`} className={s.backLink}>
             <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
           </Link>
           {tournament && (
