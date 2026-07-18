@@ -114,7 +114,13 @@ export function MatchFormPage() {
         {error && <p className={s.error} role="alert">{error}</p>}
 
         <div className={s.actions}>
-          <Button type="button" variant="ghost" onClick={() => navigate('/matches')}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() =>
+              navigate(lockedTournamentId ? `/tournaments/${lockedTournamentId}?tab=matches` : '/matches')
+            }
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" loading={scheduleMatch.isPending}>
