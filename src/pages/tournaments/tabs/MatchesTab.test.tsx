@@ -12,6 +12,13 @@ const teams = new Map<number, Team>([
   [4, { id: 4, name: 'Lobos do Norte', shortName: 'LOB' }],
 ])
 
+const tournamentTeams = new Map([
+  [1001, { name: 'Abutres', shortName: 'ABU' }],
+  [1002, { name: 'Águias Douradas', shortName: 'AGD' }],
+  [1003, { name: 'Linces', shortName: 'LIN' }],
+  [1004, { name: 'Lobos do Norte', shortName: 'LOB' }],
+])
+
 const tournament: Tournament = {
   id: 1,
   name: 'Supercopa Nacional',
@@ -19,7 +26,7 @@ const tournament: Tournament = {
   categoryId: 2,
   format: 'GROUP_STAGE_KNOCKOUT',
   status: 'IN_PROGRESS',
-  teamIds: [1, 2, 3, 4],
+  enrolledTeamCount: 4,
   matchCount: 2,
   finishedMatchCount: 1,
   startDate: '2026-06-01',
@@ -41,8 +48,8 @@ const matches: Match[] = [
     id: 101,
     tournamentId: 1,
     date: '2026-06-07T21:00:00.000Z',
-    homeTeamId: 1,
-    awayTeamId: 2,
+    homeTournamentTeamId: 1001,
+    awayTournamentTeamId: 1002,
     homeScore: 77,
     awayScore: 74,
     status: 'FINISHED',
@@ -57,8 +64,8 @@ const matches: Match[] = [
     id: 102,
     tournamentId: 1,
     date: '2026-06-14T20:00:00.000Z',
-    homeTeamId: 3,
-    awayTeamId: 4,
+    homeTournamentTeamId: 1003,
+    awayTournamentTeamId: 1004,
     homeScore: null,
     awayScore: null,
     status: 'SCHEDULED',
@@ -75,7 +82,7 @@ describe('MatchesTab', () => {
   it('renders matches with inline matchup scores and no statistics status labels', () => {
     render(
       <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
       </MemoryRouter>,
     )
 
@@ -102,10 +109,24 @@ describe('MatchesTab', () => {
     expect(screen.queryByText(/stats parciais/i)).not.toBeInTheDocument()
   })
 
+  it('filters matches by the enrolled team\'s own tournamentTeamId', async () => {
+    render(
+      <MemoryRouter>
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
+      </MemoryRouter>,
+    )
+
+    await userEvent.click(screen.getByLabelText('Filtrar por equipe'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Linces' }))
+
+    expect(screen.getByLabelText('Linces vs Lobos do Norte')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Abutres 77 - 74 Águias Douradas')).not.toBeInTheDocument()
+  })
+
   it('links each matchup to the match detail page', () => {
     render(
       <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
       </MemoryRouter>,
     )
 
@@ -124,7 +145,7 @@ describe('MatchesTab creation action', () => {
         <Routes>
           <Route
             path="/tournaments/1"
-            element={<MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin />}
+            element={<MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin />}
           />
           <Route path="/tournaments/1/matches/new" element={<div>formulário de nova partida</div>} />
         </Routes>
@@ -139,7 +160,7 @@ describe('MatchesTab creation action', () => {
   it('hides the creation action from non-admins', () => {
     render(
       <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin={false} />
+        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
       </MemoryRouter>,
     )
 

@@ -27,6 +27,7 @@ import {
   hasKnockout,
   matchProgress,
   teamMap,
+  tournamentTeamMap,
 } from '../../features/sports/sportsUtils'
 import { OverviewTab } from './tabs/OverviewTab'
 import { TeamsTab } from './tabs/TeamsTab'
@@ -92,6 +93,7 @@ export function TournamentDetailPage() {
   }
 
   const teams = teamMap(getTeams())
+  const enrolledTeamMap = tournamentTeamMap(enrolledJoins ?? [], teams)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
   const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
 
@@ -407,7 +409,7 @@ export function TournamentDetailPage() {
         )}
         {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
-          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} isOrgAdmin={isOrgAdmin} />
+          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} tournamentTeams={enrolledTeamMap} isOrgAdmin={isOrgAdmin} />
         )}
         {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}

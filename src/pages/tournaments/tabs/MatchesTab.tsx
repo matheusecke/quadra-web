@@ -20,13 +20,14 @@ interface MatchesTabProps {
   tournament: Tournament
   matches: Match[]
   teams: Map<number, Team>
+  tournamentTeams: Map<number, { name: string; shortName: string }>
   isOrgAdmin: boolean
 }
 
 const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED']
 const GROUP_PHASE_FILTER = '__group__'
 
-export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTabProps) {
+export function MatchesTab({ tournament, matches, tournamentTeams, isOrgAdmin }: MatchesTabProps) {
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [team, setTeam] = useState<number | null>(null)
@@ -49,7 +50,7 @@ export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTa
   const filtered = useMemo(() => {
     const sorted = sortMatchesByDateDesc(matches)
     return sorted.filter((m) => {
-      if (team != null && m.homeTeamId !== team && m.awayTeamId !== team) return false
+      if (team != null && m.homeTournamentTeamId !== team && m.awayTournamentTeamId !== team) return false
       if (status && m.status !== status) return false
       if (phase === GROUP_PHASE_FILTER) {
         if (!m.tournamentGroupId || m.bracketRound) return false
@@ -57,14 +58,14 @@ export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTa
         return false
       }
       if (q) {
-        const home = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
-        const away = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
+        const home = tournamentTeams.get(m.homeTournamentTeamId)?.name.toLowerCase() ?? ''
+        const away = tournamentTeams.get(m.awayTournamentTeamId)?.name.toLowerCase() ?? ''
         const needle = q.toLowerCase()
         if (!home.includes(needle) && !away.includes(needle)) return false
       }
       return true
     })
-  }, [matches, team, status, phase, q, teams])
+  }, [matches, team, status, phase, q, tournamentTeams])
 
   return (
     <>
@@ -99,7 +100,7 @@ export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTa
           )}
         </div>
         <div className={s.filterControl}>
-          <Combobox aria-label="Filtrar por equipe" options={[{ value: '', label: 'Equipe' }, ...tournament.teamIds.map((id) => ({ value: String(id), label: teams.get(id)?.name ?? String(id) }))]} value={team == null ? null : String(team)} onChange={(raw) => setTeam(parsePositiveId(raw))} />
+          <Combobox aria-label="Filtrar por equipe" options={[{ value: '', label: 'Equipe' }, ...[...tournamentTeams.entries()].map(([id, entry]) => ({ value: String(id), label: entry.name }))]} value={team == null ? null : String(team)} onChange={(raw) => setTeam(parsePositiveId(raw))} />
         </div>
         <div className={s.filterControl}>
           <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: MATCH_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as MatchStatus | '')} />
@@ -129,8 +130,8 @@ export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTa
             </thead>
             <tbody>
               {filtered.map((m) => {
-                const home = teams.get(m.homeTeamId)
-                const away = teams.get(m.awayTeamId)
+                const home = tournamentTeams.get(m.homeTournamentTeamId)
+                const away = tournamentTeams.get(m.awayTournamentTeamId)
                 const homeName = home?.name ?? 'A definir'
                 const awayName = away?.name ?? 'A definir'
                 const hasScore = m.homeScore !== null && m.awayScore !== null
