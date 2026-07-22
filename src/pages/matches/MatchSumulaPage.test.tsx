@@ -117,6 +117,20 @@ describe('MatchSumulaPage — W.O.', () => {
     expect(screen.queryByLabelText(/mvp da partida/i)).not.toBeInTheDocument()
     expect(screen.getByText('20')).toBeInTheDocument()
   }, 10_000)
+
+  it('posts the home side as forfeiting using its own tournamentTeamId, not a re-derived one', async () => {
+    renderSumula('216')
+    await userEvent.click(await screen.findByLabelText(/como a partida terminou/i))
+    await userEvent.click(screen.getByRole('option', { name: 'W.O.' }))
+    await userEvent.click(screen.getByLabelText(/equipe que não compareceu/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
+    await userEvent.click(screen.getByRole('button', { name: /finalizar partida/i }))
+    await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+    await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
+
+    const detail = await sportsApi.getMatchDetail(216)
+    expect(detail!.homeLossType).toBe('FORFEIT')
+  }, 10_000)
 })
 
 describe('MatchSumulaPage — abandonment', () => {
