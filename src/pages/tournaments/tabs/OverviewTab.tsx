@@ -15,6 +15,7 @@ interface OverviewTabProps {
   tournament: Tournament
   matches: Match[]
   teams: Map<number, Team>
+  tournamentTeams: Map<number, { name: string; shortName: string }>
   onSeeBracket: () => void
 }
 
@@ -22,7 +23,7 @@ interface OverviewTabProps {
  * Overview — the main reading surface. Fixed section order:
  * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
-export function OverviewTab({ tournament, matches, teams, onSeeBracket }: OverviewTabProps) {
+export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSeeBracket }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
   const hasLeaders = tournament.leaders.ppg.length > 0
   const bracket = useBracketView(tournament.id)
@@ -119,7 +120,7 @@ export function OverviewTab({ tournament, matches, teams, onSeeBracket }: Overvi
           <span className={s.sectionHint}>Mais recentes primeiro</span>
         </div>
         {recentMatches.length > 0 ? (
-          <MatchList matches={recentMatches} teams={teams} />
+          <MatchList matches={recentMatches} tournamentTeams={tournamentTeams} />
         ) : (
           <div className={s.tabEmpty}>
             <EmptyState title="Nenhuma partida cadastrada." />

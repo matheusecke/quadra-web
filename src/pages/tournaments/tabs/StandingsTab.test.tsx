@@ -16,10 +16,10 @@ describe('StandingsTab', () => {
       name: 'Liga', seasonId: 1, categoryId: null, format: 'LEAGUE',
       startDate: '2026-02-01', endDate: '2026-06-01',
     })
-    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Alfa' })
-    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Beta' })
+    const alfa = await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Alfa' })
+    const beta = await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Beta' })
     const match = await sportsApi.scheduleMatch({
-      tournamentId: tournament.id, homeTeamId: 2, awayTeamId: 1, scheduledAt: '2026-03-01T18:00',
+      tournamentId: tournament.id, homeTournamentTeamId: beta.id, awayTournamentTeamId: alfa.id, scheduledAt: '2026-03-01T18:00',
     })
     await sportsApi.submitMatchResult({
       matchId: match.id,

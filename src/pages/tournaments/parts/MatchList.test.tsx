@@ -1,20 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import type { Match, Team } from '../../../features/sports/types'
+import type { Match } from '../../../features/sports/types'
 import { MatchList } from './MatchList'
 
-const teams = new Map<number, Team>([
-  [1, { id: 1, name: 'Abutres', shortName: 'ABU' }],
-  [2, { id: 2, name: 'Águias Douradas', shortName: 'AGD' }],
+const tournamentTeams = new Map([
+  [1, { name: 'Abutres', shortName: 'ABU' }],
+  [2, { name: 'Águias Douradas', shortName: 'AGD' }],
 ])
 
 const finishedMatch: Match = {
   id: 101,
   tournamentId: 1,
   date: '2026-06-07T21:00:00.000Z',
-  homeTeamId: 1,
-  awayTeamId: 2,
+  homeTournamentTeamId: 1,
+  awayTournamentTeamId: 2,
   homeScore: 77,
   awayScore: 74,
   status: 'FINISHED',
@@ -29,7 +29,7 @@ describe('MatchList', () => {
   it('renders score inside the matchup and hides statistics status labels', () => {
     render(
       <MemoryRouter>
-        <MatchList matches={[finishedMatch]} teams={teams} />
+        <MatchList matches={[finishedMatch]} tournamentTeams={tournamentTeams} />
       </MemoryRouter>,
     )
 
@@ -43,7 +43,7 @@ describe('MatchList', () => {
   it('marks a W.O. as finished', () => {
     render(
       <MemoryRouter>
-        <MatchList matches={[{ ...finishedMatch, homeScore: 20, awayScore: 0, awayLossType: 'FORFEIT', scoreSource: 'AWARDED' }]} teams={teams} />
+        <MatchList matches={[{ ...finishedMatch, homeScore: 20, awayScore: 0, awayLossType: 'FORFEIT', scoreSource: 'AWARDED' }]} tournamentTeams={tournamentTeams} />
       </MemoryRouter>,
     )
 

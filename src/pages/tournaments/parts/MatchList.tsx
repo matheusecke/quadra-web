@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge/Badge'
-import type { Match, Team } from '../../../features/sports/types'
+import type { Match } from '../../../features/sports/types'
 import {
   formatDateTime,
   MATCH_STATUS_LABELS,
@@ -11,16 +11,16 @@ import s from '../tournaments.module.css'
 
 interface MatchListProps {
   matches: Match[]
-  teams: Map<number, Team>
+  tournamentTeams: Map<number, { name: string; shortName: string }>
 }
 
 /** Compact match list used on the overview tab. */
-export function MatchList({ matches, teams }: MatchListProps) {
+export function MatchList({ matches, tournamentTeams }: MatchListProps) {
   return (
     <div className={s.matchList}>
       {matches.map((m) => {
-        const home = teams.get(m.homeTeamId)
-        const away = teams.get(m.awayTeamId)
+        const home = tournamentTeams.get(m.homeTournamentTeamId)
+        const away = tournamentTeams.get(m.awayTournamentTeamId)
         const homeName = home?.name ?? 'A definir'
         const awayName = away?.name ?? 'A definir'
         const hasScore = m.homeScore !== null && m.awayScore !== null

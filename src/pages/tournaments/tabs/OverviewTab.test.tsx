@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getTournamentById, getMatchesByTournament, getTeams } from '../../../features/sports/mock-sports-data'
 import * as sportsApi from '../../../services/sportsApi'
+import { tournamentTeamMap } from '../../../features/sports/sportsUtils'
 import { OverviewTab } from './OverviewTab'
 
 const { isOrgAdmin } = vi.hoisted(() => ({ isOrgAdmin: { value: false } }))
@@ -18,7 +19,7 @@ const renderGeral = (tournament = getTournamentById(1)!, onSeeBracket = vi.fn())
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <OverviewTab tournament={tournament} matches={matches} teams={teams} onSeeBracket={onSeeBracket} />
+        <OverviewTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeamMap([], teams)} onSeeBracket={onSeeBracket} />
       </QueryClientProvider>
     </MemoryRouter>,
   )
