@@ -15,7 +15,6 @@ import type {
   AthleteMatchStatsRow,
   AthleteStatTotals,
   PlayerMatchStats,
-  Team,
 } from '../../features/sports/types'
 import {
   ATHLETE_STATUS_LABELS,
@@ -215,10 +214,8 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
 
 function TournamentsContent({
   rows,
-  teams,
 }: {
   rows: AthleteTournamentStatsRow[]
-  teams: Map<number, Team>
 }) {
   const navigate = useNavigate()
 
@@ -261,7 +258,7 @@ function TournamentsContent({
             const efi = perGame(calcEffFromTotals(row.totals), games)
             return (
               <tr
-                key={`${row.tournament.id}-${row.teamId}`}
+                key={`${row.tournament.id}-${row.tournamentTeamId}`}
                 className={s.tr}
                 tabIndex={0}
                 onClick={() => navigate(`/tournaments/${row.tournament.id}`)}
@@ -278,7 +275,7 @@ function TournamentsContent({
                     {row.tournament.name}
                   </Link>
                 </td>
-                <td className={s.td}>{teams.get(row.teamId)?.name ?? String(row.teamId)}</td>
+                <td className={s.td}>{row.teamName}</td>
                 <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
                 <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, row.totals.measuredGames.minutesSeconds))}</td>
@@ -415,7 +412,7 @@ export function AthleteDetailPage() {
         {activeTab === 'summary' && <SummaryContent summary={summary} />}
         {activeTab === 'matches' && <MatchesContent rows={matches ?? []} />}
         {activeTab === 'tournaments' && (
-          <TournamentsContent rows={tournamentStats ?? []} teams={teams} />
+          <TournamentsContent rows={tournamentStats ?? []} />
         )}
       </div>
     </div>

@@ -124,5 +124,20 @@ describe('AthleteDetailPage', () => {
       '/tournaments/1',
     )
   })
+
+  it('shows the enrollment snapshot team name in Campeonatos, not a live catalog lookup', async () => {
+    const user = userEvent.setup()
+    const rows = await sportsApi.getAthleteTournamentStats(RAFAEL_ID)
+    vi.spyOn(sportsApi, 'getAthleteTournamentStats').mockResolvedValue(
+      rows.map((row) => ({ ...row, tournamentTeamId: 9999, teamName: 'Snapshot FC' })),
+    )
+
+    renderAthletePage()
+
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(screen.getByText('Snapshot FC')).toBeInTheDocument()
+  })
 })
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
