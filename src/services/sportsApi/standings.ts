@@ -37,20 +37,20 @@ const diff = (t: Tally) => t.pointsFor - t.pointsAgainst
 
 /** A match belongs to this table only when both of its teams do — a team removed from the
  *  group leaves fixtures behind, and they are no longer games of this classification. */
-const isInScope = (m: Match, ids: Set<number>) => ids.has(m.homeTeamId) && ids.has(m.awayTeamId)
+const isInScope = (m: Match, ids: Set<number>) => ids.has(m.homeTournamentTeamId) && ids.has(m.awayTournamentTeamId)
 
 const isFinished = (m: Match, ids: Set<number>) =>
   m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null && isInScope(m, ids)
 
 /** Tallies only the finished matches played between the given teams. */
-function tally(teamIds: Set<number>, matches: Match[]): Map<number, Tally> {
-  const table = new Map<number, Tally>([...teamIds].map((id) => [id, emptyTally()]))
+function tally(tournamentTeamIds: Set<number>, matches: Match[]): Map<number, Tally> {
+  const table = new Map<number, Tally>([...tournamentTeamIds].map((id) => [id, emptyTally()]))
 
   for (const m of matches) {
-    if (!isFinished(m, teamIds)) continue
+    if (!isFinished(m, tournamentTeamIds)) continue
 
-    const home = table.get(m.homeTeamId)!
-    const away = table.get(m.awayTeamId)!
+    const home = table.get(m.homeTournamentTeamId)!
+    const away = table.get(m.awayTournamentTeamId)!
     home.played++
     away.played++
     home.pointsFor += m.homeScore!
@@ -87,7 +87,7 @@ export function computeStandings(
   matches: Match[],
   group: { id: number; name: string } | null = null,
 ): StandingsEnvelope {
-  const byId = new Map(teams.map((t) => [t.teamId, t]))
+  const byId = new Map(teams.map((t) => [t.tournamentTeamId, t]))
   const allIds = new Set(byId.keys())
 
   const pendingMatches = matches.filter((m) => PENDING_STATUSES.includes(m.status) && isInScope(m, allIds)).length
@@ -95,7 +95,7 @@ export function computeStandings(
   const standingsState = finishedCount === 0 ? 'EMPTY' : pendingMatches > 0 ? 'PARTIAL' : 'FINAL'
 
   const byName = (a: StandingTeamInput, b: StandingTeamInput) =>
-    a.name.localeCompare(b.name) || a.teamId - b.teamId
+    a.name.localeCompare(b.name) || a.tournamentTeamId - b.tournamentTeamId
 
   // EMPTY is not a classification — it is the list of teams, zeroed. Ranking it would put a
   // "1st place" on a team that has won nothing, and would mark every team as tied.
@@ -124,7 +124,7 @@ export function computeStandings(
   const unresolved = new Set<number>()
 
   /** The block's fingerprint: its tournamentTeamIds, sorted, joined. §8.8 */
-  const blockKeyOf = (ids: number[]) => ids.map((id) => byId.get(id)!.tournamentTeamId).sort((a, b) => a - b).join('-')
+  const blockKeyOf = (ids: number[]) => ids.sort((a, b) => a - b).join('-')
 
   /** D.1.3 + D.1.4 — restarted from the top for every block left tied. */
   function breakTie(tied: number[]): number[] {
@@ -171,13 +171,13 @@ export function computeStandings(
     block.length === 1 ? block : breakTie(block),
   )
 
-  const rows: StandingRow[] = ranked.map((teamId, i) => {
-    const t = overall.get(teamId)!
-    const team = byId.get(teamId)!
+  const rows: StandingRow[] = ranked.map((tournamentTeamId, i) => {
+    const t = overall.get(tournamentTeamId)!
+    const team = byId.get(tournamentTeamId)!
     return {
       position: i + 1,
-      tournamentTeamId: team.tournamentTeamId,
-      teamId,
+      tournamentTeamId,
+      teamId: team.teamId,
       teamName: team.name,
       played: t.played,
       wins: t.wins,
@@ -187,8 +187,8 @@ export function computeStandings(
       pointsAgainst: t.pointsAgainst,
       pointDiff: diff(t),
       winPct: t.played === 0 ? null : t.wins / t.played,
-      isTiedUnresolved: unresolved.has(teamId),
-      tieBlockKey: tieBlocks.get(teamId) ?? null,
+      isTiedUnresolved: unresolved.has(tournamentTeamId),
+      tieBlockKey: tieBlocks.get(tournamentTeamId) ?? null,
     }
   })
 

@@ -137,4 +137,18 @@ describe('computeStandings — FIBA Appendix D', () => {
     expect(envelope.standingsState).toBe('FINAL')
     expect(envelope.pendingMatches).toBe(0)
   })
+
+  it('keys rows by tournamentTeamId, not by the global teamId, so two enrollments of the same global team never collide', () => {
+    const a = { tournamentTeamId: 5001, teamId: 1, name: 'A', tiebreakOrder: null, tiebreakBlockKey: null }
+    const b = { tournamentTeamId: 5002, teamId: 1, name: 'B', tiebreakOrder: null, tiebreakBlockKey: null }
+    const match: Match = {
+      id: 1, tournamentId: 9, date: '2026-02-01',
+      homeTournamentTeamId: 5001, awayTournamentTeamId: 5002,
+      homeScore: 70, awayScore: 60, status: 'FINISHED',
+      homeLossType: null, awayLossType: 'NORMAL', scoreSource: 'PERIODS',
+      tournamentGroupId: null, bracketRound: null,
+    }
+    const { rows } = computeStandings([a, b], [match])
+    expect(rows.map((r) => r.tournamentTeamId)).toEqual([5001, 5002])
+  })
 })

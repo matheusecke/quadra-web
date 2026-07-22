@@ -66,7 +66,7 @@ describe('bracket store', () => {
     const round = store.createBracketRound({ tournamentId, label: 'Final' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
     store.updateBracketSlot(slot.id, { homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
 
     store.removeBracketSlot(slot.id)
@@ -80,7 +80,7 @@ describe('bracket store', () => {
     const round = store.createBracketRound({ tournamentId, label: 'Final' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
     store.updateBracketSlot(slot.id, { homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     store.submitMatchResult({ matchId: match.id, periods: [period(1, 80, 70)], playerStats: [] })
 
@@ -139,25 +139,25 @@ describe('bracket store', () => {
   })
 
   it('derives the round of a match from the slot it fills', () => {
-    const { store, tournamentId } = fresh()
+    const { store, tournamentId, alfaId, betaId } = fresh()
     const round = store.createBracketRound({ tournamentId, label: 'Semifinais' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound?.label).toBe('Semifinais')
   })
 
   it('gives no round to a match that fills no slot', () => {
-    const { store, tournamentId } = fresh()
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
+    const { store, tournamentId, alfaId, betaId } = fresh()
+    const match = store.scheduleMatch({ tournamentId, homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId, scheduledAt: '2026-03-01T18:00' })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound).toBeNull()
   })
 
   it('follows the round rename, because the match never copied the name', () => {
-    const { store, tournamentId } = fresh()
+    const { store, tournamentId, alfaId, betaId } = fresh()
     const round = store.createBracketRound({ tournamentId, label: 'Semis' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     store.updateBracketRound(round.id, { label: 'Semifinais' })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound?.label).toBe('Semifinais')

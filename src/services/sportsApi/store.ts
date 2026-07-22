@@ -109,16 +109,16 @@ export function createSportsStore(seed: SportsStoreSeed) {
     return found
   }
 
-  const emptyTeamStats = (teamId: number): TeamMatchStats => ({ teamId, players: [] })
+  const emptyTeamStats = (tournamentTeamId: number): TeamMatchStats => ({ tournamentTeamId, players: [] })
 
   const toBoxScore = (
-    teamId: number,
+    tournamentTeamId: number,
     input: Exclude<SubmitMatchResultInput, { resultType: 'FORFEIT' }>,
   ): TeamMatchStats => ({
-    teamId,
+    tournamentTeamId,
     players: input.playerStats.flatMap<PlayerMatchStats>((line) => {
       const rosterEntry = rosterEntries.find((entry) => entry.id === line.tournamentRosterId && isActive(entry))
-      if (!rosterEntry || rosterEntry.teamId !== teamId) return []
+      if (!rosterEntry || rosterEntry.tournamentTeamId !== tournamentTeamId) return []
       return [{
         tournamentRosterId: rosterEntry.id,
         athleteId: rosterEntry.athleteId,
@@ -156,9 +156,10 @@ export function createSportsStore(seed: SportsStoreSeed) {
   }
 
   const isHomeSide = (match: StoredMatch, tournamentTeamId: number): boolean => {
-    const tournamentTeam = tournamentTeams.find((entry) => entry.id === tournamentTeamId && isActive(entry))
-    if (!tournamentTeam) throw new Error(`Tournament team ${tournamentTeamId} not found`)
-    return tournamentTeam.teamId === match.homeTeamId
+    if (tournamentTeamId !== match.homeTournamentTeamId && tournamentTeamId !== match.awayTournamentTeamId) {
+      throw new Error(`Tournament team ${tournamentTeamId} not found on this match`)
+    }
+    return tournamentTeamId === match.homeTournamentTeamId
   }
 
   const bumpFinished = (match: StoredMatch) => {
@@ -201,12 +202,12 @@ export function createSportsStore(seed: SportsStoreSeed) {
       .sort((a, b) => a.sortOrder - b.sortOrder)
 
     return groups.map((group) => {
-      const memberTeamIds = new Set(
+      const memberTournamentTeamIds = new Set(
         tournamentGroupTeams
           .filter((gt) => isActive(gt) && gt.groupId === group.id)
-          .map((gt) => gt.teamId),
+          .map((gt) => gt.tournamentTeamId),
       )
-      const members = enrolled.filter((tt) => memberTeamIds.has(tt.teamId))
+      const members = enrolled.filter((tt) => memberTournamentTeamIds.has(tt.id))
       const groupMatches = tournamentMatches.filter((m) => m.tournamentGroupId === group.id)
       return computeStandings(members.map(toStandingTeam), groupMatches, { id: group.id, name: group.name })
     })
@@ -255,7 +256,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         categoryId: input.categoryId,
         format: input.format,
         status: 'DRAFT',
-        teamIds: [],
+        enrolledTeamCount: 0,
         matchCount: 0,
         finishedMatchCount: 0,
         startDate: input.startDate,
@@ -295,7 +296,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
       tournamentTeams.push(record)
       const tournament = requireTournament(input.tournamentId)
-      if (!tournament.teamIds.includes(input.teamId)) tournament.teamIds = [...tournament.teamIds, input.teamId]
+      tournament.enrolledTeamCount += 1
       return record
     },
     removeTournamentTeam(id: number): void {
@@ -303,7 +304,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       if (!record) return
       record.isDeleted = true
       const tournament = tournaments.find((t) => t.id === record.tournamentId)
-      if (tournament) tournament.teamIds = tournament.teamIds.filter((teamId) => teamId !== record.teamId)
+      if (tournament) tournament.enrolledTeamCount -= 1
     },
 
     // ── Bracket ────────────────────────────────────────────────────────────────
@@ -451,8 +452,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Roster ─────────────────────────────────────────────────────────────────
-    listRoster(tournamentId: number, teamId: number): RosterEntry[] {
-      return rosterEntries.filter((r) => isActive(r) && r.tournamentId === tournamentId && r.teamId === teamId)
+    listRoster(tournamentId: number, tournamentTeamId: number): RosterEntry[] {
+      return rosterEntries.filter((r) => isActive(r) && r.tournamentId === tournamentId && r.tournamentTeamId === tournamentTeamId)
     },
     addRosterEntry(input: RosterEntryInput): RosterEntry {
       if (input.role === 'ATHLETE') {
@@ -462,14 +463,14 @@ export function createSportsStore(seed: SportsStoreSeed) {
             r.tournamentId === input.tournamentId &&
             r.athleteId === input.athleteId &&
             r.role === 'ATHLETE' &&
-            r.teamId !== input.teamId,
+            r.tournamentTeamId !== input.tournamentTeamId,
         )
         if (conflict) throw new Error('Athlete already on a team in the same tournament')
       }
       const record: RosterEntry = {
         id: nextId(),
         tournamentId: input.tournamentId,
-        teamId: input.teamId,
+        tournamentTeamId: input.tournamentTeamId,
         athleteId: input.athleteId,
         jerseyNumber: input.jerseyNumber,
         role: input.role,
@@ -506,14 +507,14 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
     assignTeamToGroup(input: AssignGroupTeamInput): TournamentGroupTeam {
       const taken = tournamentGroupTeams.some(
-        (gt) => isActive(gt) && gt.tournamentId === input.tournamentId && gt.teamId === input.teamId,
+        (gt) => isActive(gt) && gt.tournamentId === input.tournamentId && gt.tournamentTeamId === input.tournamentTeamId,
       )
       if (taken) throw new Error('Team already assigned to a group in this tournament')
       const record: TournamentGroupTeam = {
         id: nextId(),
         tournamentId: input.tournamentId,
         groupId: input.groupId,
-        teamId: input.teamId,
+        tournamentTeamId: input.tournamentTeamId,
       }
       tournamentGroupTeams.push(record)
       return record
@@ -537,8 +538,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return {
         ...match,
         periodScores: extra?.periodScores ?? null,
-        homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] },
-        awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] },
+        homeStats: extra?.homeStats ?? { tournamentTeamId: match.homeTournamentTeamId, players: [] },
+        awayStats: extra?.awayStats ?? { tournamentTeamId: match.awayTournamentTeamId, players: [] },
         mvp: extra?.mvp ?? null,
       }
     },
@@ -546,9 +547,9 @@ export function createSportsStore(seed: SportsStoreSeed) {
       // A match filed into a group its two teams do not share would enter no classification
       // table at all — the ranking only counts a match when both sides are in the scope.
       if (input.groupId) {
-        const inGroup = (teamId: number) =>
-          tournamentGroupTeams.some((gt) => isActive(gt) && gt.groupId === input.groupId && gt.teamId === teamId)
-        if (!inGroup(input.homeTeamId) || !inGroup(input.awayTeamId)) {
+        const inGroup = (tournamentTeamId: number) =>
+          tournamentGroupTeams.some((gt) => isActive(gt) && gt.groupId === input.groupId && gt.tournamentTeamId === tournamentTeamId)
+        if (!inGroup(input.homeTournamentTeamId) || !inGroup(input.awayTournamentTeamId)) {
           throw new Error('Both teams must belong to the group of the match')
         }
       }
@@ -557,8 +558,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
         id: nextId(),
         tournamentId: input.tournamentId,
         date: input.scheduledAt,
-        homeTeamId: input.homeTeamId,
-        awayTeamId: input.awayTeamId,
+        homeTournamentTeamId: input.homeTournamentTeamId,
+        awayTournamentTeamId: input.awayTournamentTeamId,
         homeScore: null,
         awayScore: null,
         status: 'SCHEDULED',
@@ -587,8 +588,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
         match.scoreSource = 'AWARDED'
         matchExtras.set(match.id, {
           periodScores: [],
-          homeStats: emptyTeamStats(match.homeTeamId),
-          awayStats: emptyTeamStats(match.awayTeamId),
+          homeStats: emptyTeamStats(match.homeTournamentTeamId),
+          awayStats: emptyTeamStats(match.awayTournamentTeamId),
           mvp: null,
         })
         bumpFinished(match)
@@ -624,8 +625,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
 
       matchExtras.set(match.id, {
         periodScores: input.periods,
-        homeStats: toBoxScore(match.homeTeamId, input),
-        awayStats: toBoxScore(match.awayTeamId, input),
+        homeStats: toBoxScore(match.homeTournamentTeamId, input),
+        awayStats: toBoxScore(match.awayTournamentTeamId, input),
         mvp,
       })
       bumpFinished(match)
