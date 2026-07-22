@@ -16,7 +16,7 @@ import {
 import type { PlayerMatchStats, StandingRow } from './types'
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
-  position: 1, tournamentTeamId: 'tt-1', teamId: 'team-1', teamName: 'Alfa',
+  position: 1, tournamentTeamId: 1001, teamId: 1, teamName: 'Alfa',
   played: 4, wins: 3, losses: 1, classificationPoints: 7,
   pointsFor: 312, pointsAgainst: 288, pointDiff: 24, winPct: 0.75,
   isTiedUnresolved: false, tieBlockKey: null, ...over,
@@ -87,7 +87,7 @@ describe('matchStatusVariant', () => {
 describe('matchPhaseName', () => {
   it('returns the bracket round label when the match is linked to a round', () => {
     expect(matchPhaseName({
-      bracketRound: { id: 'r1', number: 2, label: 'Semifinais' },
+      bracketRound: { id: 1, number: 2, label: 'Semifinais' },
       tournamentGroupId: null,
     })).toBe('Semifinais')
   })
@@ -95,7 +95,7 @@ describe('matchPhaseName', () => {
   it('returns Fase de grupos when the match belongs to a group and has no round', () => {
     expect(matchPhaseName({
       bracketRound: null,
-      tournamentGroupId: 'seed-group-a',
+      tournamentGroupId: 1,
     })).toBe('Fase de grupos')
   })
 
@@ -108,7 +108,7 @@ describe('matchPhaseName', () => {
 })
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 'r', athleteId: 'a', athleteName: 'A', number: 1,
+  tournamentRosterId: 701001, athleteId: 101, athleteName: 'A', number: 1,
   minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
   fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, ...over,
 })

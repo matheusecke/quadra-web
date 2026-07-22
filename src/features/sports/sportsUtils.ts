@@ -63,7 +63,7 @@ export function matchPhaseName(
 
 // ── Team lookups ──────────────────────────────────────────────────────────────
 
-export function teamMap(teams: Team[]): Map<string, Team> {
+export function teamMap(teams: Team[]): Map<number, Team> {
   return new Map(teams.map((t) => [t.id, t]))
 }
 
