@@ -92,6 +92,8 @@ export interface StandingsEnvelope {
 export interface StatLeader {
   athleteId: number
   athleteName: string
+  tournamentTeamId: number
+  /** Global team id — legit catalog metadata, kept alongside the identity field. */
   teamId: number
   /** Per-game average for the category. */
   value: number | null
@@ -121,8 +123,8 @@ export interface Match {
   id: number
   tournamentId: number
   date: string // ISO datetime
-  homeTeamId: number
-  awayTeamId: number
+  homeTournamentTeamId: number
+  awayTournamentTeamId: number
   homeScore: number | null
   awayScore: number | null
   status: MatchStatus
@@ -173,7 +175,7 @@ export interface Tournament {
   categoryId: number | null
   format: TournamentFormat
   status: TournamentStatus
-  teamIds: number[]
+  enrolledTeamCount: number
   matchCount: number
   finishedMatchCount: number
   startDate: string // ISO date
@@ -211,14 +213,14 @@ export interface TournamentGroupTeam {
   id: number
   tournamentId: number
   groupId: number
-  teamId: number
+  tournamentTeamId: number
   isDeleted?: boolean
 }
 
 export interface RosterEntry {
   id: number
   tournamentId: number
-  teamId: number
+  tournamentTeamId: number
   athleteId: number
   jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
@@ -276,7 +278,7 @@ export type PlayerBoxScore = PlayerMatchStats
 
 /** Aggregated stats for one team in a match. */
 export interface TeamMatchStats {
-  teamId: number
+  tournamentTeamId: number
   players: PlayerMatchStats[]
 }
 
@@ -304,7 +306,9 @@ export interface AthleteStatTotals {
 export interface AthleteMatchStatsRow {
   match: Match
   tournament: Tournament
-  teamId: number
+  tournamentTeamId: number
+  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
+  teamName: string
   matchup: string
   result: string
   stats: PlayerMatchStats
@@ -312,7 +316,9 @@ export interface AthleteMatchStatsRow {
 
 export interface AthleteTournamentStatsRow {
   tournament: Tournament
-  teamId: number
+  tournamentTeamId: number
+  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
+  teamName: string
   totals: AthleteStatTotals
 }
 
@@ -337,6 +343,8 @@ export interface MatchLeader {
   value: number
   athleteId: number
   athleteName: string
+  tournamentTeamId: number
+  /** Global team id — legit catalog metadata, kept alongside the identity field. */
   teamId: number
 }
 

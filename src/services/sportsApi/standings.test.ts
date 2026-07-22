@@ -16,7 +16,9 @@ const teams = (...letters: (keyof typeof ID)[]) => letters.map(team)
 let seq = 0
 const played = (homeLetter: keyof typeof ID, homeScore: number, awayLetter: keyof typeof ID, awayScore: number, over: Partial<Match> = {}): Match => ({
   id: seq++, tournamentId: 1, date: '2026-02-01',
-  homeTeamId: ID[homeLetter], awayTeamId: ID[awayLetter], homeScore, awayScore,
+  homeTournamentTeamId: team(homeLetter).tournamentTeamId,
+  awayTournamentTeamId: team(awayLetter).tournamentTeamId,
+  homeScore, awayScore,
   status: 'FINISHED',
   homeLossType: homeScore < awayScore ? 'NORMAL' : null,
   awayLossType: awayScore < homeScore ? 'NORMAL' : null,
@@ -27,7 +29,9 @@ const played = (homeLetter: keyof typeof ID, homeScore: number, awayLetter: keyo
 })
 const scheduled = (homeLetter: keyof typeof ID, awayLetter: keyof typeof ID, over: Partial<Match> = {}): Match => ({
   id: seq++, tournamentId: 1, date: '2026-02-01',
-  homeTeamId: ID[homeLetter], awayTeamId: ID[awayLetter], homeScore: null, awayScore: null,
+  homeTournamentTeamId: team(homeLetter).tournamentTeamId,
+  awayTournamentTeamId: team(awayLetter).tournamentTeamId,
+  homeScore: null, awayScore: null,
   status: 'SCHEDULED',
   homeLossType: null, awayLossType: null, scoreSource: null, tournamentGroupId: null,
   bracketRound: null,

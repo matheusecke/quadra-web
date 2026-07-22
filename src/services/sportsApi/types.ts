@@ -87,12 +87,12 @@ export interface CreateGroupInput {
 export interface AssignGroupTeamInput {
   tournamentId: number
   groupId: number
-  teamId: number
+  tournamentTeamId: number
 }
 
 export interface RosterEntryInput {
   tournamentId: number
-  teamId: number
+  tournamentTeamId: number
   athleteId: number
   jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
@@ -105,8 +105,8 @@ export interface UpdateRosterEntryInput {
 
 export interface ScheduleMatchInput {
   tournamentId: number
-  homeTeamId: number
-  awayTeamId: number
+  homeTournamentTeamId: number
+  awayTournamentTeamId: number
   scheduledAt: string
   venue?: string
   groupId?: number | null
