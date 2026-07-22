@@ -3,7 +3,7 @@ import { EmptyState, ErrorState, Skeleton } from '../../../components/ui'
 import { BracketBoard } from '../../../features/sports/components/BracketBoard'
 import { BracketCanvas } from '../../../features/sports/components/BracketCanvas'
 import type { Tournament } from '../../../features/sports/types'
-import { useCreateBracketRound, useCreateBracketSlot, useLinkSlotMatch, useRemoveBracketSlot, useScheduleMatch, useSetSlotWinner, useTournamentTeamsQuery, useUpdateBracketSlot } from '../../../features/sports/queries'
+import { useCreateBracketRound, useCreateBracketSlot, useLinkSlotMatch, useRemoveBracketSlot, useScheduleMatch, useSetSlotWinner, useUpdateBracketSlot } from '../../../features/sports/queries'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import s from './BracketTab.module.css'
@@ -11,7 +11,6 @@ import s from './BracketTab.module.css'
 export function BracketTab({ tournament }: { tournament: Tournament }) {
   const isOrgAdmin = useIsOrgAdmin()
   const { rounds, slots, teams: options, isPending, isError, refetch } = useBracketView(tournament.id)
-  const { data: tournamentTeams = [] } = useTournamentTeamsQuery(tournament.id)
   const createSlot = useCreateBracketSlot()
   const createRound = useCreateBracketRound()
   const updateSlot = useUpdateBracketSlot()
@@ -34,15 +33,16 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     return <div className={s.tab}><BracketBoard rounds={rounds} slots={slots} teams={options} championTournamentTeamId={tournament.championTournamentTeamId} variant="full" /></div>
   }
 
-  const teamIdOf = (tournamentTeamId: number) => tournamentTeams.find((entry) => entry.id === tournamentTeamId)?.teamId
   const handleSchedule = async (slotId: number, scheduledAt: string) => {
     const slot = slots.find((entry) => entry.id === slotId)
     if (!slot?.homeTournamentTeamId || !slot.awayTournamentTeamId) return
-    const homeTeamId = teamIdOf(slot.homeTournamentTeamId)
-    const awayTeamId = teamIdOf(slot.awayTournamentTeamId)
-    if (!homeTeamId || !awayTeamId) return
     try {
-      const match = await scheduleMatch.mutateAsync({ tournamentId: tournament.id, homeTeamId, awayTeamId, scheduledAt })
+      const match = await scheduleMatch.mutateAsync({
+        tournamentId: tournament.id,
+        homeTournamentTeamId: slot.homeTournamentTeamId,
+        awayTournamentTeamId: slot.awayTournamentTeamId,
+        scheduledAt,
+      })
       await linkMatch.mutateAsync({ slotId, matchId: match.id })
       setErrorMessage('')
     } catch (error) { fail(error) }

@@ -32,17 +32,17 @@ export function BracketCanvas({ rounds, slots, teams, onFillSide, onSetWinner, o
   const roundOf = (slot: BracketSlotView) => rounds.find((round) => round.id === slot.roundId) ?? { label: null }
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {
-    const teamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
+    const tournamentTeamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
     const otherSide = side === 'home' ? slot.awayTournamentTeamId : slot.homeTournamentTeamId
     const score = slot.match ? (side === 'home' ? slot.match.homeScore : slot.match.awayScore) : null
     const label = slotDisplayName(slot, roundOf(slot))
-    if (!teamId) {
+    if (!tournamentTeamId) {
       return <Combobox aria-label={`${label} — ${side === 'home' ? 'mandante' : 'visitante'}`} placeholder={otherSide ? '+ escolher equipe (bye)' : '+ escolher equipe'} options={teams.map((team) => ({ value: String(team.tournamentTeamId), label: team.name, secondary: team.shortName }))} value={null} onChange={(raw) => { void onFillSide(slot.id, side, parsePositiveId(raw)) }} />
     }
-    const name = nameOf(teamId) ?? teamId
-    const isWinner = teamId === slot.winnerTournamentTeamId
+    const name = nameOf(tournamentTeamId) ?? tournamentTeamId
+    const isWinner = tournamentTeamId === slot.winnerTournamentTeamId
     return <div className={cn(s.side, isWinner && s.sideWinner)}>
-      <button type="button" className={s.sideName} aria-label={`Definir ${name} como vencedora`} onClick={() => { void onSetWinner(slot.id, teamId) }}>{name}</button>
+      <button type="button" className={s.sideName} aria-label={`Definir ${name} como vencedora`} onClick={() => { void onSetWinner(slot.id, tournamentTeamId) }}>{name}</button>
       {score !== null && <span className={s.sideScore}>{score}</span>}
       {isWinner && <span className={s.srOnly}>Vencedor</span>}
     </div>

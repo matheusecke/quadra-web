@@ -26,16 +26,16 @@ export function BracketBoard({ rounds, slots, teams, championTournamentTeamId = 
   const hasEdgeIn = (slotId: number) => edges.some((edge) => edge.toSlotId === slotId)
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {
-    const teamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
+    const tournamentTeamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
     const otherSide = side === 'home' ? slot.awayTournamentTeamId : slot.homeTournamentTeamId
-    if (!teamId) return <div className={s.side}><span className={s.empty}>{otherSide ? 'bye' : 'a definir'}</span></div>
-    const team = teamOf(teamId)
+    if (!tournamentTeamId) return <div className={s.side}><span className={s.empty}>{otherSide ? 'bye' : 'a definir'}</span></div>
+    const team = teamOf(tournamentTeamId)
     const score = slot.match ? (side === 'home' ? slot.match.homeScore : slot.match.awayScore) : null
-    const isWinner = teamId === slot.winnerTournamentTeamId
+    const isWinner = tournamentTeamId === slot.winnerTournamentTeamId
     return <div className={cn(s.side, isWinner && s.sideWinner)}>
       <span className={s.tag}>{team?.shortName ?? '—'}</span>
-      <span className={s.name}>{team?.name ?? teamId}</span>
-      {teamId === championTournamentTeamId && <><Trophy size={12} strokeWidth={1.8} className={s.trophy} aria-hidden="true" /><span className={s.srOnly}>Campeão</span></>}
+      <span className={s.name}>{team?.name ?? tournamentTeamId}</span>
+      {tournamentTeamId === championTournamentTeamId && <><Trophy size={12} strokeWidth={1.8} className={s.trophy} aria-hidden="true" /><span className={s.srOnly}>Campeão</span></>}
       {score !== null && <span className={s.score}>{score}</span>}
       {isWinner && <span className={s.srOnly}>Vencedor</span>}
     </div>

@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Tournament } from '../../../features/sports/types'
 import { describe, expect, it, vi } from 'vitest'
+import * as sportsApi from '../../../services/sportsApi'
+import { tournamentTeamId } from '../../../features/sports/seedIds'
 
 import { BracketTab } from './BracketTab'
 
@@ -43,5 +46,29 @@ describe('BracketTab', () => {
     isOrgAdmin.value = true
     renderTab(demo)
     await waitFor(() => expect(screen.getByRole('button', { name: /nova rodada/i })).toBeInTheDocument())
+  })
+
+  it('schedules a filled slot using its own tournamentTeamId directly, not a re-derived global id', async () => {
+    isOrgAdmin.value = true
+    renderTab(demo)
+
+    await userEvent.click(await screen.findByRole('button', { name: /nova rodada/i }))
+    const newRound = (await screen.findByRole('heading', { name: 'Rodada 4' })).closest('div') as HTMLElement
+    await userEvent.click(within(newRound).getByRole('button', { name: /adicionar partida/i }))
+
+    await userEvent.click(await screen.findByRole('button', { name: /mandante/i }))
+    await userEvent.click(await screen.findByRole('option', { name: /^Time 15/ }))
+    await userEvent.click(screen.getByRole('button', { name: /visitante/i }))
+    await userEvent.click(await screen.findByRole('option', { name: /^Time 16/ }))
+
+    await userEvent.click(await screen.findByRole('button', { name: /agendar/i }))
+    fireEvent.change(screen.getByLabelText(/data e hora/i), { target: { value: '12/08/2026 19:00' } })
+    await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+
+    const link = await screen.findByRole('link', { name: /lançar súmula/i })
+    const matchId = Number(link.getAttribute('href')?.match(/\/matches\/(\d+)/)?.[1])
+    const detail = await sportsApi.getMatchDetail(matchId)
+    expect(detail?.homeTournamentTeamId).toBe(tournamentTeamId(1, 15))
+    expect(detail?.awayTournamentTeamId).toBe(tournamentTeamId(1, 16))
   })
 })
