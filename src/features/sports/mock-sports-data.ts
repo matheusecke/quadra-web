@@ -168,16 +168,16 @@ const PUC_ATHLETES: Athlete[] = [
 
 const ATHLETES_BY_TEAM = new Map<number, Athlete[]>(MOCK_TEAMS.map((team) => [team.id, PUC_ATHLETES.filter((a) => a.currentTeamId === team.id)]))
 let matchSeq=9000
-function mkMatch(tournamentId:number,date:string,homeTeamId:number,awayTeamId:number,home:number|null,away:number|null,status:Match['status'],venue:string,id?:number):Match{const isFinished=status==='FINISHED';return{id:id??++matchSeq,tournamentId,date,homeTeamId,awayTeamId,homeScore:home,awayScore:away,status,venue,tournamentGroupId:null,bracketRound:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
+function mkMatch(tournamentId:number,date:string,homeTeamId:number,awayTeamId:number,home:number|null,away:number|null,status:Match['status'],venue:string,id?:number):Match{const isFinished=status==='FINISHED';return{id:id??++matchSeq,tournamentId,date,homeTournamentTeamId:tournamentTeamId(tournamentId,homeTeamId),awayTournamentTeamId:tournamentTeamId(tournamentId,awayTeamId),homeScore:home,awayScore:away,status,venue,tournamentGroupId:null,bracketRound:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
 function mkPlayer(tournamentId:number,a:Athlete,minutes:number,pts:number,reb:number,ast:number,stl:number,blk:number,tov:number,pf:number,fgm:number,fga:number,threeFgm:number,threeFga:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:seedRosterId(tournamentId,a.id),athleteId:a.id,athleteName:a.name,number:a.number,minutesSeconds:minutes*60,pts,reb,ast,stl,blk,tov,pf,fgm,fga,threeFgm,threeFga,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
-function mkTeam(teamId:number,players:PlayerMatchStats[]):TeamMatchStats{return{teamId,players}}
+function mkTeam(tournamentTeamId:number,players:PlayerMatchStats[]):TeamMatchStats{return{tournamentTeamId,players}}
 function disableColumns(team:TeamMatchStats,fields:StatField[]):TeamMatchStats{return{...team,players:team.players.map((player)=>{const disabled=Object.fromEntries(fields.map((field)=>[field,null])) as Pick<PlayerMatchStats,StatField>;return{...player,...disabled}})}}
-function buildBoxScore(tournamentId:number,homeScore:number,awayScore:number,homeTeamId:number,awayTeamId:number){function distribute(score:number,roster:Athlete[],teamId:number){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const threeFgm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-threeFgm);stats.push(mkPlayer(tournamentId,players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,threeFgm,threeFgm+2,ftm,ftm+1))}return mkTeam(teamId,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM.get(homeTeamId)??[],homeTeamId),awayStats:distribute(awayScore,ATHLETES_BY_TEAM.get(awayTeamId)??[],awayTeamId)}}
+function buildBoxScore(tournamentId:number,homeScore:number,awayScore:number,homeTeamId:number,awayTeamId:number){function distribute(score:number,roster:Athlete[],teamIdForBoxScore:number){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const threeFgm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-threeFgm);stats.push(mkPlayer(tournamentId,players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,threeFgm,threeFgm+2,ftm,ftm+1))}return mkTeam(teamIdForBoxScore,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM.get(homeTeamId)??[],tournamentTeamId(tournamentId,homeTeamId)),awayStats:distribute(awayScore,ATHLETES_BY_TEAM.get(awayTeamId)??[],tournamentTeamId(tournamentId,awayTeamId))}}
 const REGULATION='Fase classificatória em grupos. As melhores equipes avançam para playoffs em mata-mata. Desempate: vitórias, saldo de pontos, confronto direto.'
 const GERAL = SEED_TOURNAMENT.GERAL; const INVERNO = SEED_TOURNAMENT.INVERNO
 
-const geralLeaders: StatLeaders = { ppg: [{ athleteId: 101, athleteName: 'Rafael Moura', teamId: 1, value: 22.4, gamesPlayed: 6 }, { athleteId: 109, athleteName: 'Nicolas Barbosa', teamId: 2, value: 21.1, gamesPlayed: 6 }, { athleteId: 102, athleteName: 'Diego Santos', teamId: 1, value: 18.6, gamesPlayed: 6 }], rpg: [{ athleteId: 103, athleteName: 'Felipe Oliveira', teamId: 1, value: 10.2, gamesPlayed: 6 }, { athleteId: 111, athleteName: 'Paulo Carvalho', teamId: 2, value: 9.8, gamesPlayed: 6 }], apg: [{ athleteId: 104, athleteName: 'Gabriel Costa', teamId: 1, value: 7.5, gamesPlayed: 6 }, { athleteId: 112, athleteName: 'Pedro Gomes', teamId: 2, value: 6.9, gamesPlayed: 6 }], stg: [{ athleteId: 101, athleteName: 'Rafael Moura', teamId: 1, value: 2.1, gamesPlayed: 6 }, { athleteId: 109, athleteName: 'Nicolas Barbosa', teamId: 2, value: 1.9, gamesPlayed: 6 }], bpg: [{ athleteId: 105, athleteName: 'Henrique Lima', teamId: 1, value: 1.4, gamesPlayed: 6 }, { athleteId: 113, athleteName: 'Ricardo Araujo', teamId: 2, value: 1.2, gamesPlayed: 6 }] }
+const geralLeaders: StatLeaders = { ppg: [{ athleteId: 101, athleteName: 'Rafael Moura', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 22.4, gamesPlayed: 6 }, { athleteId: 109, athleteName: 'Nicolas Barbosa', tournamentTeamId: tournamentTeamId(GERAL, 2), teamId: 2, value: 21.1, gamesPlayed: 6 }, { athleteId: 102, athleteName: 'Diego Santos', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 18.6, gamesPlayed: 6 }], rpg: [{ athleteId: 103, athleteName: 'Felipe Oliveira', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 10.2, gamesPlayed: 6 }, { athleteId: 111, athleteName: 'Paulo Carvalho', tournamentTeamId: tournamentTeamId(GERAL, 2), teamId: 2, value: 9.8, gamesPlayed: 6 }], apg: [{ athleteId: 104, athleteName: 'Gabriel Costa', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 7.5, gamesPlayed: 6 }, { athleteId: 112, athleteName: 'Pedro Gomes', tournamentTeamId: tournamentTeamId(GERAL, 2), teamId: 2, value: 6.9, gamesPlayed: 6 }], stg: [{ athleteId: 101, athleteName: 'Rafael Moura', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 2.1, gamesPlayed: 6 }, { athleteId: 109, athleteName: 'Nicolas Barbosa', tournamentTeamId: tournamentTeamId(GERAL, 2), teamId: 2, value: 1.9, gamesPlayed: 6 }], bpg: [{ athleteId: 105, athleteName: 'Henrique Lima', tournamentTeamId: tournamentTeamId(GERAL, 1), teamId: 1, value: 1.4, gamesPlayed: 6 }, { athleteId: 113, athleteName: 'Ricardo Araujo', tournamentTeamId: tournamentTeamId(GERAL, 2), teamId: 2, value: 1.2, gamesPlayed: 6 }] }
 const geralMatches: Match[] = [
   mkMatch(GERAL, '2026-03-07T19:00:00', 1, 2, 80, 89, 'FINISHED', 'Ginásio PUC Campinas', 101),
   mkMatch(GERAL, '2026-03-14T19:00:00', 1, 3, 87, 83, 'FINISHED', 'Ginásio PUC Campinas', 102),
@@ -211,8 +211,22 @@ const geralMatches: Match[] = [
   mkMatch(GERAL, '2026-05-24T21:00:00', 2, 9, 86, 69, 'FINISHED', 'Ginásio PUC Campinas', 130),
   mkMatch(GERAL, '2026-05-31T20:00:00', 1, 2, 84, 80, 'FINISHED', 'Ginásio PUC Campinas', 131),
 ]
+/** Raw global-team roster per seed tournament — the source `services/sportsApi/index.ts` uses
+ *  to build `seedTournamentTeams`, and `enrolledTeamCount` below is derived from. */
+export const seedEnrollment = [
+  { tournamentId: GERAL, teamIds: MOCK_TEAMS.map((t) => t.id) },
+  { tournamentId: INVERNO, teamIds: [1, 2, 3, 4, 5, 6, 7, 8] },
+]
+
+/** Reverses tournamentTeamId → the raw global team id, via the enrollment table rather than
+ *  arithmetic on the synthetic id — keeps this file's reasoning independent of seedIds.ts's formula. */
+const teamIdOfEnrollment = (tournamentId: number, tournamentTeamIdValue: number): number | undefined =>
+  seedEnrollment
+    .find((e) => e.tournamentId === tournamentId)
+    ?.teamIds.find((id) => tournamentTeamId(tournamentId, id) === tournamentTeamIdValue)
+
 export const seedBracketRounds = [{ name:'Quartas de final',matches:[{id:'geral-qf1',matchId:125,homeTeamId:1,awayTeamId:5,winnerId:1},{id:'geral-qf4',matchId:128,homeTeamId:13,awayTeamId:10,winnerId:13},{id:'geral-qf2',matchId:126,homeTeamId:6,awayTeamId:2,winnerId:2},{id:'geral-qf3',matchId:127,homeTeamId:9,awayTeamId:14,winnerId:9}]},{name:'Semifinais',matches:[{id:'geral-sf1',matchId:129,homeTeamId:1,awayTeamId:13,winnerId:1},{id:'geral-sf2',matchId:130,homeTeamId:2,awayTeamId:9,winnerId:2}]},{name:'Final',matches:[{id:'geral-f1',matchId:131,homeTeamId:1,awayTeamId:2,winnerId:1}]}]
-const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:1,categoryId:2,format:'GROUP_STAGE_KNOCKOUT',status:'COMPLETED',teamIds:MOCK_TEAMS.map((t)=>t.id),matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',regulation:REGULATION,leaders:geralLeaders,championTournamentTeamId: tournamentTeamId(GERAL, 1)}
+const geralTournament: Tournament={id:GERAL,name:'Campeonato Geral da PUC 2026',seasonId:1,categoryId:2,format:'GROUP_STAGE_KNOCKOUT',status:'COMPLETED',enrolledTeamCount:seedEnrollment[0].teamIds.length,matchCount:31,finishedMatchCount:31,startDate:'2026-03-01',endDate:'2026-05-31',updatedAt:'2026-05-31T22:00:00',regulation:REGULATION,leaders:geralLeaders,championTournamentTeamId: tournamentTeamId(GERAL, 1)}
 const invernoMatches: Match[] = [
   mkMatch(INVERNO, '2026-07-03T19:00:00', 1, 2, null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 201),
   mkMatch(INVERNO, '2026-07-05T19:00:00', 1, 3, null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 202),
@@ -230,7 +244,7 @@ const invernoMatches: Match[] = [
   mkMatch(INVERNO, '2026-07-25T21:00:00', 5, 8, null, null, 'SCHEDULED', 'Arena Central PUC', 214),
   mkMatch(INVERNO, '2026-07-31T20:00:00', 1, 5, null, null, 'SCHEDULED', 'Ginásio PUC Campinas', 215),
 ]
-const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 1, categoryId: 2, format: 'GROUP_STAGE_KNOCKOUT', status: 'REGISTRATION', teamIds: [1,2,3,4,5,6,7,8], matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', regulation: REGULATION, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, championTournamentTeamId: null }
+const invernoTournament: Tournament = { id: INVERNO, name: 'Copa de Inverno PUC', seasonId: 1, categoryId: 2, format: 'GROUP_STAGE_KNOCKOUT', status: 'REGISTRATION', enrolledTeamCount: seedEnrollment[1].teamIds.length, matchCount: 16, finishedMatchCount: 0, startDate: '2026-07-01', endDate: '2026-07-31', updatedAt: '2026-07-01T10:00:00', regulation: REGULATION, leaders: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] }, championTournamentTeamId: null }
 export const seedTournaments: Tournament[] = [geralTournament, invernoTournament]
 
 /** Group membership of the demo tournaments, seeded into the store (UI spec §7.4). The
@@ -272,8 +286,11 @@ const seedKnockoutMatchIds = new Set([
  *  group. Knockout ids exclude bracket games. */
 const seedGroupIdOf = (match: Match): number | null => {
   if (seedKnockoutMatchIds.has(match.id)) return null
-  const home = seedGroupNameOf(match.tournamentId, match.homeTeamId)
-  const away = seedGroupNameOf(match.tournamentId, match.awayTeamId)
+  const homeTeamId = teamIdOfEnrollment(match.tournamentId, match.homeTournamentTeamId)
+  const awayTeamId = teamIdOfEnrollment(match.tournamentId, match.awayTournamentTeamId)
+  if (homeTeamId === undefined || awayTeamId === undefined) return null
+  const home = seedGroupNameOf(match.tournamentId, homeTeamId)
+  const away = seedGroupNameOf(match.tournamentId, awayTeamId)
   return home && home === away ? seedGroupId(match.tournamentId, home) : null
 }
 // Stable scheduled match used to demo/record a súmula (two teams with rostered athletes).
@@ -293,7 +310,7 @@ const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
 const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }>([
   [217, (() => { const b = buildBoxScore(SEED_TOURNAMENT.FIXTURES, 68, 71, 3, 4); return { periodScores: mkPeriods([17,18], [16,19], [18,17], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
-  [218, { periodScores: [], homeStats: { teamId: 3, players: [] }, awayStats: { teamId: 4, players: [] } }],
+  [218, { periodScores: [], homeStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 3), players: [] }, awayStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 4), players: [] } }],
   [101, (() => { const b = buildBoxScore(GERAL, 80, 89, 1, 2); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
   [102, (() => { const b = buildBoxScore(GERAL, 87, 83, 1, 3); return { periodScores: mkPeriods([21,20], [25,22], [21,22], [20,19]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
   [103, (() => { const b = buildBoxScore(GERAL, 94, 77, 1, 4); return { periodScores: mkPeriods([23,19], [26,20], [23,21], [22,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
@@ -326,7 +343,7 @@ const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeSt
   [130, (() => { const b = buildBoxScore(GERAL, 86, 69, 2, 9); return { periodScores: mkPeriods([21,17], [24,18], [21,19], [20,15]), homeStats: disableColumns(b.homeStats, SHOOTING_FIELDS), awayStats: b.awayStats }; })()],
 ])
 
-const FINAL_HOME = mkTeam(1, [
+const FINAL_HOME = mkTeam(tournamentTeamId(GERAL, 1), [
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 101)!, 38, 24, 5, 6, 2, 0, 2, 2, 9, 17, 2, 5, 4, 5),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 102)!, 36, 18, 4, 3, 1, 1, 1, 3, 7, 14, 1, 4, 3, 4),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 103)!, 34, 14, 8, 2, 0, 2, 2, 3, 5, 10, 0, 1, 4, 5),
@@ -335,7 +352,7 @@ const FINAL_HOME = mkTeam(1, [
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 106)!, 22,  4, 4, 2, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 107)!, 20,  2, 3, 1, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
-const FINAL_AWAY = mkTeam(2, [
+const FINAL_AWAY = mkTeam(tournamentTeamId(GERAL, 2), [
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 109)!, 38, 22, 4, 4, 2, 0, 3, 2, 8, 16, 2, 6, 4, 5),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 110)!, 36, 16, 5, 3, 1, 1, 2, 3, 6, 12, 1, 4, 3, 4),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 111)!, 34, 14, 7, 2, 0, 1, 1, 2, 5, 10, 1, 3, 3, 4),
@@ -355,11 +372,11 @@ export function getCategories(): TournamentCategory[] { return seedCategories }
 export function getSeasonLabel(seasonId: number): string { return seedSeasons.find((s) => s.id === seasonId)?.label ?? String(seasonId) }
 export function getCategoryName(categoryId: number | null): string { return categoryId ? (seedCategories.find((c) => c.id === categoryId)?.name ?? String(categoryId)) : '—' }
 export function getAllMatches(): Match[] { return MOCK_MATCHES }
-export function getMatchDetailById(id: number): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA.get(id); return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { teamId: match.homeTeamId, players: [] }, awayStats: extra?.awayStats ?? { teamId: match.awayTeamId, players: [] }, mvp: null } }
+export function getMatchDetailById(id: number): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA.get(id); return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { tournamentTeamId: match.homeTournamentTeamId, players: [] }, awayStats: extra?.awayStats ?? { tournamentTeamId: match.awayTournamentTeamId, players: [] }, mvp: null } }
 export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
 export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
 export function getAthleteById(athleteId: number): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }
-function getAthleteAppearances(athleteId?: number) { return [...MATCH_EXTRA.entries()].flatMap(([matchId, extra]) => { const match = MOCK_MATCHES.find((item) => item.id === matchId); if (!match) return []; const home = extra.homeStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.homeStats.teamId, match })); const away = extra.awayStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, teamId: extra.awayStats.teamId, match })); return [...home, ...away] }) }
-export function getAthleteMatches(athleteId: number): AthleteMatchStatsRow[] { return getAthleteAppearances(athleteId).map(({ player, teamId, match }) => { const tournament = getTournamentById(match.tournamentId); const homeTeam = MOCK_TEAMS.find((t) => t.id === match.homeTeamId); const awayTeam = MOCK_TEAMS.find((t) => t.id === match.awayTeamId); const athleteIsHome = teamId === match.homeTeamId; const athleteScore = athleteIsHome ? match.homeScore : match.awayScore; const opponentScore = athleteIsHome ? match.awayScore : match.homeScore; const scoreText = athleteScore === null || opponentScore === null ? '—' : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`; if (!tournament) return null; return { match, tournament, teamId, matchup: `${homeTeam?.name ?? match.homeTeamId} × ${awayTeam?.name ?? match.awayTeamId}`, result: scoreText, stats: player } }).filter((row): row is AthleteMatchStatsRow => Boolean(row)).sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date)) }
+function getAthleteAppearances(athleteId?: number) { return [...MATCH_EXTRA.entries()].flatMap(([matchId, extra]) => { const match = MOCK_MATCHES.find((item) => item.id === matchId); if (!match) return []; const home = extra.homeStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, tournamentTeamId: extra.homeStats.tournamentTeamId, match })); const away = extra.awayStats.players.filter((p) => !athleteId || p.athleteId === athleteId).map((p) => ({ player: p, tournamentTeamId: extra.awayStats.tournamentTeamId, match })); return [...home, ...away] }) }
+export function getAthleteMatches(athleteId: number): AthleteMatchStatsRow[] { return getAthleteAppearances(athleteId).map(({ player, tournamentTeamId: entryTournamentTeamId, match }) => { const tournament = getTournamentById(match.tournamentId); const homeTeamId = teamIdOfEnrollment(match.tournamentId, match.homeTournamentTeamId); const awayTeamId = teamIdOfEnrollment(match.tournamentId, match.awayTournamentTeamId); const homeTeam = homeTeamId !== undefined ? MOCK_TEAMS.find((t) => t.id === homeTeamId) : undefined; const awayTeam = awayTeamId !== undefined ? MOCK_TEAMS.find((t) => t.id === awayTeamId) : undefined; const athleteIsHome = entryTournamentTeamId === match.homeTournamentTeamId; const athleteScore = athleteIsHome ? match.homeScore : match.awayScore; const opponentScore = athleteIsHome ? match.awayScore : match.homeScore; const scoreText = athleteScore === null || opponentScore === null ? '—' : `${athleteScore > opponentScore ? 'V' : 'D'} ${athleteScore}-${opponentScore}`; if (!tournament) return null; const teamName = (athleteIsHome ? homeTeam : awayTeam)?.name ?? String(entryTournamentTeamId); return { match, tournament, tournamentTeamId: entryTournamentTeamId, teamName, matchup: `${homeTeam?.name ?? match.homeTournamentTeamId} × ${awayTeam?.name ?? match.awayTournamentTeamId}`, result: scoreText, stats: player } }).filter((row): row is AthleteMatchStatsRow => Boolean(row)).sort((a, b) => +new Date(b.match.date) - +new Date(a.match.date)) }
 export function getAthleteSummaryById(athleteId: number): AthleteStatTotals { return aggregateAthleteStats(getAthleteMatches(athleteId).map((row) => row.stats)) }
-export function getAthleteTournamentStats(athleteId: number): AthleteTournamentStatsRow[] { const grouped = new Map<string, AthleteMatchStatsRow[]>(); getAthleteMatches(athleteId).forEach((row) => { const key = `${row.tournament.id}:${row.teamId}`; grouped.set(key, [...(grouped.get(key) ?? []), row]) }); return [...grouped.values()].map((rows) => ({ tournament: rows[0].tournament, teamId: rows[0].teamId, totals: aggregateAthleteStats(rows.map((row) => row.stats)) })).sort((a, b) => +new Date(b.tournament.startDate) - +new Date(a.tournament.startDate)) }
+export function getAthleteTournamentStats(athleteId: number): AthleteTournamentStatsRow[] { const grouped = new Map<string, AthleteMatchStatsRow[]>(); getAthleteMatches(athleteId).forEach((row) => { const key = `${row.tournament.id}:${row.tournamentTeamId}`; grouped.set(key, [...(grouped.get(key) ?? []), row]) }); return [...grouped.values()].map((rows) => ({ tournament: rows[0].tournament, tournamentTeamId: rows[0].tournamentTeamId, teamName: rows[0].teamName, totals: aggregateAthleteStats(rows.map((row) => row.stats)) })).sort((a, b) => +new Date(b.tournament.startDate) - +new Date(a.tournament.startDate)) }

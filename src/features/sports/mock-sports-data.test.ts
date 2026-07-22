@@ -12,6 +12,7 @@ import {
 import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
 import * as sportsApi from '../../services/sportsApi'
 import { SHOOTING_FIELDS } from './statistics'
+import { SEED_TOURNAMENT, tournamentTeamId } from './seedIds'
 
 describe('seeded group membership', () => {
   it('puts every enrolled team of the demo tournaments in exactly one group', () => {
@@ -58,12 +59,29 @@ describe('PUC sports mock data', () => {
 
   it('Geral has 16 teams, 31 finished matches, Time 1 champion', () => {
     const c = getTournamentById(1)
-    expect(c?.teamIds).toHaveLength(16)
+    expect(c?.enrolledTeamCount).toBe(16)
     expect(c?.status).toBe('COMPLETED')
     expect(c?.championTournamentTeamId).toBe(1001)
     const matches = getMatchesByTournament(1)
     expect(matches).toHaveLength(31)
     expect(matches.every((m) => m.status === 'FINISHED')).toBe(true)
+  })
+
+  it('seeds matches with tournamentTeamId sides, not raw global team ids', () => {
+    const match = getMatchesByTournament(SEED_TOURNAMENT.GERAL).find((m) => m.id === 101)!
+    expect(match.homeTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 1))
+    expect(match.awayTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 2))
+  })
+
+  it('seeds a box score side keyed by tournamentTeamId', () => {
+    const detail = getMatchDetailById(101)!
+    expect(detail.homeStats.tournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 1))
+  })
+
+  it('reports tournament enrolledTeamCount instead of a teamIds array', () => {
+    const geral = getTournamentById(SEED_TOURNAMENT.GERAL)!
+    expect(geral.enrolledTeamCount).toBe(16)
+    expect('teamIds' in geral).toBe(false)
   })
 
   it('seeds the demo bracket as three named rounds', async () => {
@@ -100,8 +118,8 @@ describe('PUC sports mock data', () => {
 
   it('Geral final is OT with consistent box score', () => {
     const final = getMatchesByTournament(1).find((m) => m.id === 131)
-    expect(final?.homeTeamId).toBe(1)
-    expect(final?.awayTeamId).toBe(2)
+    expect(final?.homeTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 1))
+    expect(final?.awayTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 2))
     const detail = getMatchDetailById(final!.id)
     expect(detail?.periodScores?.map(getPeriodLabel)).toContain('OT')
     expect(calculatePeriodTotal(detail!.periodScores, 'home')).toBe(detail?.homeScore)
@@ -119,8 +137,8 @@ describe('PUC sports mock data', () => {
   it('all team IDs in matches exist in MOCK_TEAMS', () => {
     const teamIds = new Set(MOCK_TEAMS.map((t) => t.id))
     getAllMatches().forEach((m) => {
-      expect(teamIds.has(m.homeTeamId)).toBe(true)
-      expect(teamIds.has(m.awayTeamId)).toBe(true)
+      expect(teamIds.has(m.homeTournamentTeamId - 1000 * m.tournamentId)).toBe(true)
+      expect(teamIds.has(m.awayTournamentTeamId - 1000 * m.tournamentId)).toBe(true)
     })
   })
 })
