@@ -51,7 +51,7 @@ const renderEdit = (id: string) => {
 
 describe('TournamentFormPage cancel', () => {
   it('returns to the championship detail when cancelling an edit', async () => {
-    renderEdit('puc-inverno-2026')
+    renderEdit('2')
 
     await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
 

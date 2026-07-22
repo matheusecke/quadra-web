@@ -11,7 +11,7 @@ import s from '../tournaments.module.css'
 
 interface MatchListProps {
   matches: Match[]
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 /** Compact match list used on the overview tab. */

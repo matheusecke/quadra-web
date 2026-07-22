@@ -5,21 +5,21 @@ import { describe, expect, it } from 'vitest'
 import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { MatchesTab } from './MatchesTab'
 
-const teams = new Map<string, Team>([
-  ['abutres', { id: 'abutres', name: 'Abutres', shortName: 'ABU' }],
-  ['aguias', { id: 'aguias', name: 'Águias Douradas', shortName: 'AGD' }],
-  ['linces', { id: 'linces', name: 'Linces', shortName: 'LIN' }],
-  ['lobos', { id: 'lobos', name: 'Lobos do Norte', shortName: 'LOB' }],
+const teams = new Map<number, Team>([
+  [1, { id: 1, name: 'Abutres', shortName: 'ABU' }],
+  [2, { id: 2, name: 'Águias Douradas', shortName: 'AGD' }],
+  [3, { id: 3, name: 'Linces', shortName: 'LIN' }],
+  [4, { id: 4, name: 'Lobos do Norte', shortName: 'LOB' }],
 ])
 
 const tournament: Tournament = {
-  id: 'c1',
+  id: 1,
   name: 'Supercopa Nacional',
-  seasonId: 'season-2025-26',
-  categoryId: 'cat-adulto-masc',
+  seasonId: 1,
+  categoryId: 2,
   format: 'GROUP_STAGE_KNOCKOUT',
   status: 'IN_PROGRESS',
-  teamIds: ['abutres', 'aguias', 'linces', 'lobos'],
+  teamIds: [1, 2, 3, 4],
   matchCount: 2,
   finishedMatchCount: 1,
   startDate: '2026-06-01',
@@ -38,33 +38,33 @@ const tournament: Tournament = {
 
 const matches: Match[] = [
   {
-    id: 'm1',
-    tournamentId: 'c1',
+    id: 101,
+    tournamentId: 1,
     date: '2026-06-07T21:00:00.000Z',
-    homeTeamId: 'abutres',
-    awayTeamId: 'aguias',
+    homeTeamId: 1,
+    awayTeamId: 2,
     homeScore: 77,
     awayScore: 74,
     status: 'FINISHED',
     venue: 'Ginásio Central',
     tournamentGroupId: null,
-    bracketRound: { id: 'round-oitavas', number: 1, label: 'Oitavas de final' },
+    bracketRound: { id: 11, number: 1, label: 'Oitavas de final' },
     homeLossType: null,
     awayLossType: 'NORMAL',
     scoreSource: 'PERIODS',
   },
   {
-    id: 'm2',
-    tournamentId: 'c1',
+    id: 102,
+    tournamentId: 1,
     date: '2026-06-14T20:00:00.000Z',
-    homeTeamId: 'linces',
-    awayTeamId: 'lobos',
+    homeTeamId: 3,
+    awayTeamId: 4,
     homeScore: null,
     awayScore: null,
     status: 'SCHEDULED',
     venue: 'Arena Metropolitana',
     tournamentGroupId: null,
-    bracketRound: { id: 'round-semi', number: 2, label: 'Semifinais' },
+    bracketRound: { id: 12, number: 2, label: 'Semifinais' },
     homeLossType: null,
     awayLossType: null,
     scoreSource: null,
@@ -111,22 +111,22 @@ describe('MatchesTab', () => {
 
     expect(screen.getByRole('link', { name: 'Abutres 77 - 74 Águias Douradas' })).toHaveAttribute(
       'href',
-      '/matches/m1',
+      '/matches/101',
     )
-    expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/m2')
+    expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/102')
   })
 })
 
 describe('MatchesTab creation action', () => {
   it('opens the scheduling form for org admins with the championship locked in', async () => {
     render(
-      <MemoryRouter initialEntries={['/tournaments/c1']}>
+      <MemoryRouter initialEntries={['/tournaments/1']}>
         <Routes>
           <Route
-            path="/tournaments/c1"
+            path="/tournaments/1"
             element={<MatchesTab tournament={tournament} matches={matches} teams={teams} isOrgAdmin />}
           />
-          <Route path="/tournaments/c1/matches/new" element={<div>formulário de nova partida</div>} />
+          <Route path="/tournaments/1/matches/new" element={<div>formulário de nova partida</div>} />
         </Routes>
       </MemoryRouter>,
     )

@@ -26,7 +26,7 @@ import s from './GroupsTab.module.css'
 
 interface GroupsTabProps {
   tournament: Tournament
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 const TEAM_ALREADY_ASSIGNED = 'Team already assigned to a group in this tournament'
@@ -101,7 +101,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
     await createGroup.mutateAsync({ tournamentId: tournament.id, name })
   }
 
-  const handleAssign = async (groupId: string, teamId: string) => {
+  const handleAssign = async (groupId: number, teamId: number) => {
     try {
       await assignTeamToGroup.mutateAsync({ tournamentId: tournament.id, groupId, teamId })
       setPanelError('')
@@ -114,7 +114,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
     }
   }
 
-  const handleRemoveFromGroup = (groupTeamId: string) => {
+  const handleRemoveFromGroup = (groupTeamId: number) => {
     removeGroupTeam.mutate(groupTeamId)
   }
 
@@ -128,7 +128,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
     setCardError('Não foi possível registrar o sorteio. Tente novamente.')
   }
 
-  const handleSetTiebreakOrder = async (entries: { tournamentTeamId: string; order: number }[]) => {
+  const handleSetTiebreakOrder = async (entries: { tournamentTeamId: number; order: number }[]) => {
     try {
       await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, entries })
       setCardError('')
@@ -146,7 +146,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
     }
   }
 
-  const renderExtraRowAction = (groupId: string | undefined) => (row: StandingRow) => {
+  const renderExtraRowAction = (groupId: number | undefined) => (row: StandingRow) => {
     const join = groupTeams.find((groupTeam) => groupTeam.groupId === groupId && groupTeam.teamId === row.teamId)
     if (!join) return null
     return (

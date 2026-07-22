@@ -8,6 +8,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getTeams } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
@@ -36,7 +37,7 @@ export function MatchesPage() {
 
   const [q, setQ]                       = useState('')
   const [debouncedQ, setDebouncedQ]     = useState('')
-  const [tournamentId, setTournamentId] = useState('')
+  const [tournamentId, setTournamentId] = useState<number | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export function MatchesPage() {
   const items = useMemo(() => {
     const all = sortMatchesByDateDesc(matches ?? [])
     return all.filter((m) => {
-      if (tournamentId && m.tournamentId !== tournamentId) return false
+      if (tournamentId != null && m.tournamentId !== tournamentId) return false
       if (statusFilter && m.status !== statusFilter) return false
       if (debouncedQ) {
         const home   = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
@@ -70,7 +71,7 @@ export function MatchesPage() {
   }, [matches, tournamentId, statusFilter, debouncedQ, teams])
 
   const total      = matches?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || tournamentId || statusFilter)
+  const hasFilters = Boolean(debouncedQ || tournamentId != null || statusFilter)
 
   return (
     <div className={s.page}>
@@ -109,7 +110,7 @@ export function MatchesPage() {
           </div>
 
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: tournament.id, label: tournament.name }))]} value={tournamentId || null} onChange={setTournamentId} />
+            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: String(tournament.id), label: tournament.name }))]} value={tournamentId == null ? null : String(tournamentId)} onChange={(raw) => setTournamentId(parsePositiveId(raw))} />
           </div>
           <div className={s.filterControl}>
             <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS]} value={statusFilter || null} onChange={(value) => setStatusFilter(value as StatusFilter)} />

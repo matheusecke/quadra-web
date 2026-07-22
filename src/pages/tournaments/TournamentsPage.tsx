@@ -8,6 +8,7 @@ import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { TournamentStatus } from '../../features/sports/types'
@@ -34,7 +35,7 @@ export function TournamentsPage() {
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<TournamentStatus | ''>('')
-  const [season, setSeason] = useState('')
+  const [season, setSeason] = useState<number | null>(null)
 
   const { data, isPending: isLoading, isError, refetch } = useTournamentsQuery()
   const isOrgAdmin = useIsOrgAdmin()
@@ -50,13 +51,13 @@ export function TournamentsPage() {
     return all.filter((c) => {
       if (debouncedQ && !c.name.toLowerCase().includes(debouncedQ.toLowerCase())) return false
       if (status && c.status !== status) return false
-      if (season && c.seasonId !== season) return false
+      if (season != null && c.seasonId !== season) return false
       return true
     })
   }, [data, debouncedQ, status, season])
 
   const total = data?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || status || season)
+  const hasFilters = Boolean(debouncedQ || status || season != null)
 
   return (
     <div className={s.page}>
@@ -104,7 +105,7 @@ export function TournamentsPage() {
             )}
           </div>
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((season) => ({ value: season.id, label: season.label }))]} value={season || null} onChange={setSeason} />
+            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((opt) => ({ value: String(opt.id), label: opt.label }))]} value={season == null ? null : String(season)} onChange={(raw) => setSeason(parsePositiveId(raw))} />
           </div>
           <div className={s.filterControl}>
             <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />

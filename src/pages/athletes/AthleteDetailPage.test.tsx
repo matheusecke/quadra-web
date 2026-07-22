@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 
-const RAFAEL_ID = 'rafael.moura@quadra.com.br'
+const RAFAEL_ID = 101
 
 function renderAthletePage(athleteId = RAFAEL_ID) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -42,7 +42,7 @@ describe('AthleteDetailPage', () => {
   })
 
   it('shows Não informada when the athlete position is absent', async () => {
-    renderAthletePage('diego.santos@quadra.com.br')
+    renderAthletePage(102)
 
     const header = await screen.findByTestId('athlete-header')
     expect(within(header).getByText('Não informada · Time 1')).toBeInTheDocument()
@@ -92,7 +92,7 @@ describe('AthleteDetailPage', () => {
     expect(screen.queryByRole('columnheader', { name: /adversário/i })).not.toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: /partida/i })).toBeInTheDocument()
     const finalLink = screen.getAllByRole('link', { name: /time 1 × time 2/i }).find(
-      (link) => link.getAttribute('href') === '/matches/puc-geral-m31',
+      (link) => link.getAttribute('href') === '/matches/131',
     )
     expect(finalLink).toBeDefined()
     const finalRow = finalLink?.closest('tr')
@@ -121,7 +121,7 @@ describe('AthleteDetailPage', () => {
     expect(screen.getByText('Time 1')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /campeonato geral da puc 2026/i })).toHaveAttribute(
       'href',
-      '/tournaments/puc-geral-2026',
+      '/tournaments/1',
     )
   })
 })

@@ -43,7 +43,7 @@ describe('MatchFormPage cancel', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/tournaments/puc-inverno-2026/matches/new']}>
+        <MemoryRouter initialEntries={['/tournaments/2/matches/new']}>
           <Routes>
             <Route path="/tournaments/:tournamentId/matches/new" element={<MatchFormPage />} />
             <Route path="/tournaments/:tournamentId" element={<div>detalhe do campeonato</div>} />

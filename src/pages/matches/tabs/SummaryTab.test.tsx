@@ -6,7 +6,7 @@ import { getAthletes, getMatchDetailById, getTeams } from '../../../features/spo
 import { teamMap } from '../../../features/sports/sportsUtils'
 import type { MatchDetail } from '../../../features/sports/types'
 
-const baseMatch = getMatchDetailById('puc-geral-m31') as MatchDetail
+const baseMatch = getMatchDetailById(131) as MatchDetail
 const athlete = getAthletes().find((candidate) =>
   ![...baseMatch.homeStats.players, ...baseMatch.awayStats.players]
     .some((player) => player.athleteId === candidate.id),
@@ -21,7 +21,7 @@ const renderTab = (match: MatchDetail) =>
 
 describe('SummaryTab — MVP', () => {
   it('shows the curated MVP when the match has one', () => {
-    renderTab({ ...baseMatch, mvp: { tournamentRosterId: 'r1', athleteId: athlete.id } })
+    renderTab({ ...baseMatch, mvp: { tournamentRosterId: 1, athleteId: athlete.id } })
 
     expect(screen.getByText(athlete.name)).toBeInTheDocument()
   })

@@ -9,13 +9,13 @@ import s from '../tournaments.module.css'
 
 interface TeamsTabProps {
   tournament: Tournament
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 export function TeamsTab({ tournament, teams }: TeamsTabProps) {
   const { data: envelopes } = useStandingsQuery(tournament.id)
   const standingsByTeam = useMemo(() => {
-    const map = new Map<string, StandingRow>()
+    const map = new Map<number, StandingRow>()
     ;(envelopes ?? []).forEach((envelope) => envelope.rows.forEach((row) => map.set(row.teamId, row)))
     return map
   }, [envelopes])

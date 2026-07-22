@@ -9,8 +9,8 @@ import { BracketTab } from './BracketTab'
 const isOrgAdmin = vi.hoisted(() => ({ value: false }))
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => isOrgAdmin.value }))
 
-const empty = { id: 'tt-empty', name: 'Copa', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
-const demo = { id: 'puc-geral-2026', name: 'Geral', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
+const empty = { id: 999, name: 'Copa', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
+const demo = { id: 1, name: 'Geral', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
 
 const renderTab = (tournament: Tournament) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

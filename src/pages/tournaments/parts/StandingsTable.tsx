@@ -7,7 +7,7 @@ import s from '../tournaments.module.css'
 interface StandingsTableProps {
   /** Already ranked by the data layer (FIBA Appendix D). This component never sorts. */
   rows: StandingRow[]
-  teams: Map<string, Team>
+  teams: Map<number, Team>
   /** 'compact' (overview) hides PP/PC/% ; 'full' (standings tab) shows all. */
   variant?: 'compact' | 'full'
   /** Rendered in the row's action slot — used for the draw affordance. */

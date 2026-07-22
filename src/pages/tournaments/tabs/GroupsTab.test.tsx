@@ -11,7 +11,7 @@ import type { Tournament } from '../../../features/sports/types'
 // TournamentDetailPage.test.tsx does.
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
 
-const tournament = { id: 'tt', name: 'Copa', format: 'GROUP_STAGE', teamIds: [] } as unknown as Tournament
+const tournament = { id: 999, name: 'Copa', format: 'GROUP_STAGE', teamIds: [] } as unknown as Tournament
 
 const renderTab = () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -32,7 +32,7 @@ describe('GroupsTab', () => {
     const team = getTeams()[0]
     const tournament = await sportsApi.createTournament({
       name: 'Copa das Estrelas',
-      seasonId: 'season-2025-26',
+      seasonId: 1,
       categoryId: null,
       format: 'GROUP_STAGE',
       startDate: '2026-01-01',

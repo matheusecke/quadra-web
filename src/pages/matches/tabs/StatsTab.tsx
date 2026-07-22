@@ -13,7 +13,7 @@ import s from '../matches.module.css'
 
 interface StatsTabProps {
   match: MatchDetail
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 export function StatsTab({ match, teams }: StatsTabProps) {

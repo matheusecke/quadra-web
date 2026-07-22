@@ -10,6 +10,7 @@ import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { Collapse } from '../../components/ui/Collapse'
 import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
 import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
@@ -37,12 +38,13 @@ import { BracketTab } from './tabs/BracketTab'
 import s from './tournaments.module.css'
 
 export function TournamentDetailPage() {
-  const { tournamentId } = useParams<{ tournamentId: string }>()
+  const { tournamentId: rawTournamentId } = useParams<{ tournamentId: string }>()
+  const tournamentId = parsePositiveId(rawTournamentId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId)
-  const { data: matches } = useMatchesQuery({ tournamentId })
-  const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId)
+  const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId ?? undefined)
+  const { data: matches } = useMatchesQuery({ tournamentId: tournamentId ?? undefined })
+  const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId ?? undefined)
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
   const addRosterEntry = useAddRosterEntry()
@@ -50,7 +52,7 @@ export function TournamentDetailPage() {
   const removeRosterEntry = useRemoveRosterEntry()
   const completeTournament = useCompleteTournament()
   const reopenTournament = useReopenTournament()
-  const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId)
+  const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId ?? undefined)
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'overview')
 
@@ -66,14 +68,29 @@ export function TournamentDetailPage() {
     )
   }
   const [enrollError, setEnrollError] = useState('')
-  const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
+  const [rosterTeamId, setRosterTeamId] = useState<number | null>(null)
   const [rosterError, setRosterError] = useState('')
-  const [confirmingTeamId, setConfirmingTeamId] = useState<string | null>(null)
+  const [confirmingTeamId, setConfirmingTeamId] = useState<number | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState('')
   const [isReopening, setIsReopening] = useState(false)
   const [reopenError, setReopenError] = useState('')
-  const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
+  const { data: roster } = useRosterQuery(tournamentId ?? undefined, rosterTeamId ?? undefined)
+  const availableTeams = useMemo(() => {
+    const enrolled = new Set(tournament?.teamIds ?? [])
+    return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
+  }, [tournament])
+
+  if (tournamentId == null) {
+    return (
+      <div className={s.page}>
+        <div className={s.bodyFill}>
+          <ErrorState title="ID de campeonato inválido." />
+        </div>
+      </div>
+    )
+  }
+
   const teams = teamMap(getTeams())
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
   const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
@@ -81,7 +98,7 @@ export function TournamentDetailPage() {
   const rosterDisplay = (roster ?? []).map((entry) => ({
     id: entry.id,
     athleteId: entry.athleteId,
-    name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? entry.athleteId,
+    name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? String(entry.athleteId),
     jerseyNumber: entry.jerseyNumber,
     role: entry.role,
   }))
@@ -93,7 +110,7 @@ export function TournamentDetailPage() {
     : []
 
   const handleAddRoster = async (draft: RosterEntryDraft) => {
-    if (!tournamentId || !rosterTeamId) return
+    if (rosterTeamId == null) return
     try {
       await addRosterEntry.mutateAsync({ tournamentId, teamId: rosterTeamId, ...draft })
       setRosterError('')
@@ -102,33 +119,26 @@ export function TournamentDetailPage() {
     }
   }
 
-  const handleUpdateRoster = async (id: string, input: UpdateRosterEntryInput) => {
-    if (!tournamentId || !rosterTeamId) return
+  const handleUpdateRoster = async (id: number, input: UpdateRosterEntryInput) => {
+    if (rosterTeamId == null) return
     await updateRosterEntry.mutateAsync({ id, tournamentId, teamId: rosterTeamId, input })
   }
 
-  const handleRemoveRoster = (id: string) => {
-    if (!tournamentId || !rosterTeamId) return
+  const handleRemoveRoster = (id: number) => {
+    if (rosterTeamId == null) return
     removeRosterEntry.mutate({ id, tournamentId, teamId: rosterTeamId })
   }
 
-  const availableTeams = useMemo(() => {
-    const enrolled = new Set(tournament?.teamIds ?? [])
-    return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
-  }, [tournament])
-
-  const handleEnroll = async (teamId: string) => {
-    if (!tournamentId) return
+  const handleEnroll = async (teamId: number) => {
     try {
-      await enrollTeam.mutateAsync({ tournamentId, teamId, displayName: teams.get(teamId)?.name ?? teamId })
+      await enrollTeam.mutateAsync({ tournamentId, teamId, displayName: teams.get(teamId)?.name ?? String(teamId) })
       setEnrollError('')
     } catch {
       setEnrollError('Equipe já inscrita neste campeonato.')
     }
   }
 
-  const handleComplete = async (championTournamentTeamId: string | null) => {
-    if (!tournamentId) return
+  const handleComplete = async (championTournamentTeamId: number | null) => {
     try {
       await completeTournament.mutateAsync({ tournamentId, championTournamentTeamId })
       setCompletionError('')
@@ -139,7 +149,6 @@ export function TournamentDetailPage() {
   }
 
   const handleReopen = async () => {
-    if (!tournamentId) return
     try {
       await reopenTournament.mutateAsync({ tournamentId })
       setReopenError('')
@@ -293,7 +302,7 @@ export function TournamentDetailPage() {
             </div>
             {isCompleting && (
               <CompleteTournamentPanel
-                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? entry.teamId }))}
+                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? String(entry.teamId) }))}
                 suggestion={championSuggestion ?? null}
                 requiresChampion={tournament.format !== 'GROUP_STAGE'}
                 onComplete={handleComplete}
@@ -330,7 +339,7 @@ export function TournamentDetailPage() {
                 {enrolledJoins && enrolledJoins.length > 0 && (
                   <ul className={s.enrolledList} aria-label="Equipes inscritas">
                     {enrolledJoins.map((join) => {
-                      const teamName = teams.get(join.teamId)?.name ?? join.teamId
+                      const teamName = teams.get(join.teamId)?.name ?? String(join.teamId)
                       const isOpen = rosterTeamId === join.teamId
                       const isConfirming = confirmingTeamId === join.id
                       const panelId = `roster-panel-${join.teamId}`
