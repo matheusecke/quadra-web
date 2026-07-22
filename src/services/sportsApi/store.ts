@@ -280,6 +280,9 @@ export function createSportsStore(seed: SportsStoreSeed) {
     listTournamentTeams(tournamentId: number): TournamentTeam[] {
       return tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
     },
+    listAllTournamentTeams(): TournamentTeam[] {
+      return tournamentTeams.filter((tt) => isActive(tt))
+    },
     enrollTeam(input: EnrollTeamInput): TournamentTeam {
       const exists = tournamentTeams.some(
         (tt) => isActive(tt) && tt.tournamentId === input.tournamentId && tt.teamId === input.teamId,

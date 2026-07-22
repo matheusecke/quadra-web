@@ -32,4 +32,14 @@ describe('MatchesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Filtrar por status' }))
     expect(screen.queryByRole('option', { name: /aguardando estatísticas/i })).not.toBeInTheDocument()
   })
+
+  it('shows the enrolled teams\' own names, not "A definir", for a match with played teams', async () => {
+    renderMatchesPage()
+
+    const score = await screen.findByText('84 – 80')
+    const row = score.closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row as HTMLTableRowElement).getByText('Time 1')).toBeInTheDocument()
+    expect(within(row as HTMLTableRowElement).getByText('Time 2')).toBeInTheDocument()
+  })
 })

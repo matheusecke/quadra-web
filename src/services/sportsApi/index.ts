@@ -172,6 +172,7 @@ export const getChampionSuggestion = (tournamentId: number) => Promise.resolve(s
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))
+export const getAllTournamentTeams = () => Promise.resolve(store.listAllTournamentTeams())
 export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
 export const removeTournamentTeam = (id: number) => Promise.resolve(store.removeTournamentTeam(id))
 

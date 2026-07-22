@@ -9,7 +9,7 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useAllTournamentTeamsQuery, useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
@@ -19,6 +19,7 @@ import {
   matchStatusVariant,
   sortMatchesByDateDesc,
   teamMap,
+  tournamentTeamMap,
 } from '../../features/sports/sportsUtils'
 import s from './matches.module.css'
 
@@ -47,13 +48,17 @@ export function MatchesPage() {
 
   const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
   const { data: tournaments } = useTournamentsQuery()
+  const { data: allTournamentTeams } = useAllTournamentTeamsQuery()
   const isOrgAdmin = useIsOrgAdmin()
 
   const champMap = useMemo(
     () => new Map((tournaments ?? []).map((c) => [c.id, c])),
     [tournaments],
   )
-  const teams = useMemo(() => teamMap(getTeams()), [])
+  const tournamentTeams = useMemo(
+    () => tournamentTeamMap(allTournamentTeams ?? [], teamMap(getTeams())),
+    [allTournamentTeams],
+  )
 
   const items = useMemo(() => {
     const all = sortMatchesByDateDesc(matches ?? [])
@@ -61,14 +66,14 @@ export function MatchesPage() {
       if (tournamentId != null && m.tournamentId !== tournamentId) return false
       if (statusFilter && m.status !== statusFilter) return false
       if (debouncedQ) {
-        const home   = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
-        const away   = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
+        const home   = tournamentTeams.get(m.homeTournamentTeamId)?.name.toLowerCase() ?? ''
+        const away   = tournamentTeams.get(m.awayTournamentTeamId)?.name.toLowerCase() ?? ''
         const needle = debouncedQ.toLowerCase()
         if (!home.includes(needle) && !away.includes(needle)) return false
       }
       return true
     })
-  }, [matches, tournamentId, statusFilter, debouncedQ, teams])
+  }, [matches, tournamentId, statusFilter, debouncedQ, tournamentTeams])
 
   const total      = matches?.length ?? 0
   const hasFilters = Boolean(debouncedQ || tournamentId != null || statusFilter)
@@ -153,8 +158,8 @@ export function MatchesPage() {
                       </tr>
                     ))
                   : items.map((m) => {
-                      const home     = teams.get(m.homeTeamId)
-                      const away     = teams.get(m.awayTeamId)
+                      const home     = tournamentTeams.get(m.homeTournamentTeamId)
+                      const away     = tournamentTeams.get(m.awayTournamentTeamId)
                       const champ    = champMap.get(m.tournamentId)
                       const hasScore = m.homeScore !== null && m.awayScore !== null
                       return (

@@ -39,6 +39,7 @@ export const tournamentKeys = {
   list: () => [...tournamentKeys.all, 'list'] as const,
   detail: (id: number) => [...tournamentKeys.all, 'detail', id] as const,
   teams: (id: number) => [...tournamentKeys.all, 'teams', id] as const,
+  allTeams: () => [...tournamentKeys.all, 'teams', 'all'] as const,
   roster: (tournamentId: number, tournamentTeamId: number) => [...tournamentKeys.all, 'roster', tournamentId, tournamentTeamId] as const,
   championSuggestion: (id: number) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
 }
@@ -100,6 +101,14 @@ export function useTournamentTeamsQuery(tournamentId: number | undefined) {
     queryKey: tournamentKeys.teams(tournamentId ?? -1),
     queryFn: () => sportsApi.getTournamentTeams(tournamentId!),
     enabled: tournamentId != null,
+  })
+}
+
+/** Cross-tournament team names, e.g. for the all-tournaments matches list. */
+export function useAllTournamentTeamsQuery() {
+  return useQuery({
+    queryKey: tournamentKeys.allTeams(),
+    queryFn: () => sportsApi.getAllTournamentTeams(),
   })
 }
 
