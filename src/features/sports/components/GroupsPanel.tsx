@@ -22,7 +22,7 @@ export interface GroupsPanelProps {
   enrolledTeams: GroupsTeamOption[]
   assignedTeamIds: number[]
   onCreateGroup: (name: string) => Promise<void>
-  onAssign: (groupId: number, teamId: number) => Promise<void>
+  onAssign: (groupId: number, tournamentTeamId: number) => Promise<void>
   errorMessage?: string
 }
 
@@ -34,9 +34,8 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
 
-  // NOTE: `teamId` here is the enrolled-team identity (roadmap item 1 rename debt) — only retyped, not renamed.
   const [groupId, setGroupId] = useState<number | null>(null)
-  const [teamId, setTeamId] = useState<number | null>(null)
+  const [tournamentTeamId, setTournamentTeamId] = useState<number | null>(null)
   const [assigning, setAssigning] = useState(false)
 
   const unassigned = enrolledTeams.filter((team) => !assignedTeamIds.includes(team.id))
@@ -54,12 +53,12 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
   }
 
   const handleAssign = async () => {
-    if (groupId == null || teamId == null) return
+    if (groupId == null || tournamentTeamId == null) return
     setAssigning(true)
     try {
-      await onAssign(groupId, teamId)
+      await onAssign(groupId, tournamentTeamId)
       setGroupId(null)
-      setTeamId(null)
+      setTournamentTeamId(null)
     } finally {
       setAssigning(false)
     }
@@ -103,14 +102,14 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
             <Combobox
               id={teamFieldId}
               options={unassigned.map((team) => ({ value: String(team.id), label: team.name }))}
-              value={teamId == null ? null : String(teamId)}
-              onChange={(raw) => setTeamId(parsePositiveId(raw))}
+              value={tournamentTeamId == null ? null : String(tournamentTeamId)}
+              onChange={(raw) => setTournamentTeamId(parsePositiveId(raw))}
               placeholder="Selecione uma equipe…"
               disabled={unassigned.length === 0}
             />
           </Field>
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleAssign} loading={assigning} disabled={groupId == null || teamId == null}>
+        <Button type="button" variant="primary" size="sm" onClick={handleAssign} loading={assigning} disabled={groupId == null || tournamentTeamId == null}>
           Adicionar ao grupo
         </Button>
       </div>
