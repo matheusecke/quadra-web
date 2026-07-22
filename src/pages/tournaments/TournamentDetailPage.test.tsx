@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { TournamentDetailPage } from './TournamentDetailPage'
+import * as sportsApi from '../../services/sportsApi'
+import { SEED_TOURNAMENT, tournamentTeamId } from '../../features/sports/seedIds'
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
@@ -119,11 +121,37 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     expect(elenco('Time 1')).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('wires the Elenco control to its panel via aria-controls', async () => {
+  it('wires the Elenco control to its panel via aria-controls, keyed by the enrollment id', async () => {
     await openTeamsTab()
     await userEvent.click(elenco('Time 1'))
     await screen.findByRole('region', { name: 'Elenco Time 1' })
-    expect(elenco('Time 1')).toHaveAttribute('aria-controls', 'roster-panel-1')
+    expect(elenco('Time 1')).toHaveAttribute(
+      'aria-controls',
+      `roster-panel-${tournamentTeamId(SEED_TOURNAMENT.INVERNO, 1)}`,
+    )
+  })
+
+  it('adds a roster entry keyed by the enrollment\'s own tournamentTeamId, not the global team id', async () => {
+    await openTeamsTab()
+
+    await userEvent.click(screen.getByLabelText('Equipe'))
+    await userEvent.click(await screen.findByRole('option', { name: /^Time 9/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Inscrever' }))
+
+    const row = (await within(enrolledList()).findByText('Time 9')).closest('li') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: 'Elenco' }))
+    const region = await screen.findByRole('region', { name: 'Elenco Time 9' })
+
+    await userEvent.click(within(region).getByLabelText('Atleta'))
+    await userEvent.click(await screen.findByRole('option', { name: /^Claudio Barbosa/ }))
+    await userEvent.type(within(region).getByLabelText('Número'), '4')
+    await userEvent.click(within(region).getByRole('button', { name: 'Adicionar ao elenco' }))
+
+    const enrollment = (await sportsApi.getTournamentTeams(2)).find((entry) => entry.teamId === 9)
+    await waitFor(async () => {
+      const roster = await sportsApi.getRoster(2, enrollment!.id)
+      expect(roster.some((entry) => entry.athleteId === 165)).toBe(true)
+    })
   })
 
   it('requires inline confirmation before removing an enrolled team', async () => {

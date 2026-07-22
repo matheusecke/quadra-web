@@ -68,18 +68,18 @@ export function TournamentDetailPage() {
     )
   }
   const [enrollError, setEnrollError] = useState('')
-  const [rosterTeamId, setRosterTeamId] = useState<number | null>(null)
+  const [rosterTournamentTeamId, setRosterTournamentTeamId] = useState<number | null>(null)
   const [rosterError, setRosterError] = useState('')
   const [confirmingTeamId, setConfirmingTeamId] = useState<number | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState('')
   const [isReopening, setIsReopening] = useState(false)
   const [reopenError, setReopenError] = useState('')
-  const { data: roster } = useRosterQuery(tournamentId ?? undefined, rosterTeamId ?? undefined)
+  const { data: roster } = useRosterQuery(tournamentId ?? undefined, rosterTournamentTeamId ?? undefined)
   const availableTeams = useMemo(() => {
-    const enrolled = new Set(tournament?.teamIds ?? [])
+    const enrolled = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
     return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
-  }, [tournament])
+  }, [enrolledJoins])
 
   if (tournamentId == null) {
     return (
@@ -103,16 +103,17 @@ export function TournamentDetailPage() {
     role: entry.role,
   }))
 
-  const availableAthletes = rosterTeamId
+  const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === rosterTournamentTeamId)?.teamId
+  const availableAthletes = rosterTeamGlobalId
     ? getAthletes()
-        .filter((athlete) => athlete.currentTeamId === rosterTeamId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
+        .filter((athlete) => athlete.currentTeamId === rosterTeamGlobalId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
         .map((athlete) => ({ id: athlete.id, name: athlete.name }))
     : []
 
   const handleAddRoster = async (draft: RosterEntryDraft) => {
-    if (rosterTeamId == null) return
+    if (rosterTournamentTeamId == null) return
     try {
-      await addRosterEntry.mutateAsync({ tournamentId, teamId: rosterTeamId, ...draft })
+      await addRosterEntry.mutateAsync({ tournamentId, tournamentTeamId: rosterTournamentTeamId, ...draft })
       setRosterError('')
     } catch {
       setRosterError('Atleta já está em uma equipe no mesmo campeonato.')
@@ -120,13 +121,13 @@ export function TournamentDetailPage() {
   }
 
   const handleUpdateRoster = async (id: number, input: UpdateRosterEntryInput) => {
-    if (rosterTeamId == null) return
-    await updateRosterEntry.mutateAsync({ id, tournamentId, teamId: rosterTeamId, input })
+    if (rosterTournamentTeamId == null) return
+    await updateRosterEntry.mutateAsync({ id, tournamentId, tournamentTeamId: rosterTournamentTeamId, input })
   }
 
   const handleRemoveRoster = (id: number) => {
-    if (rosterTeamId == null) return
-    removeRosterEntry.mutate({ id, tournamentId, teamId: rosterTeamId })
+    if (rosterTournamentTeamId == null) return
+    removeRosterEntry.mutate({ id, tournamentId, tournamentTeamId: rosterTournamentTeamId })
   }
 
   const handleEnroll = async (teamId: number) => {
@@ -274,7 +275,7 @@ export function TournamentDetailPage() {
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Equipes</span>
-            <span className={s.infoValue}>{tournament.teamIds.length}</span>
+            <span className={s.infoValue}>{tournament.enrolledTeamCount}</span>
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Partidas</span>
@@ -340,9 +341,9 @@ export function TournamentDetailPage() {
                   <ul className={s.enrolledList} aria-label="Equipes inscritas">
                     {enrolledJoins.map((join) => {
                       const teamName = teams.get(join.teamId)?.name ?? String(join.teamId)
-                      const isOpen = rosterTeamId === join.teamId
+                      const isOpen = rosterTournamentTeamId === join.id
                       const isConfirming = confirmingTeamId === join.id
-                      const panelId = `roster-panel-${join.teamId}`
+                      const panelId = `roster-panel-${join.id}`
                       return (
                         <li key={join.id} className={s.enrolledItem}>
                           <div className={s.enrolledRow}>
@@ -366,7 +367,7 @@ export function TournamentDetailPage() {
                                     aria-expanded={isOpen}
                                     aria-controls={panelId}
                                     className={isOpen ? s.rosterToggleActive : undefined}
-                                    onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                                    onClick={() => setRosterTournamentTeamId((current) => (current === join.id ? null : join.id))}
                                   >
                                     Elenco
                                   </Button>
