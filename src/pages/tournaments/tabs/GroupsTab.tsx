@@ -91,19 +91,19 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   const teamNameById = teamMap(getTeams())
 
   const enrolledTeams = tournamentTeams.map((tournamentTeam) => ({
-    id: tournamentTeam.teamId,
+    id: tournamentTeam.id,
     name: teamNameById.get(tournamentTeam.teamId)?.name ?? tournamentTeam.displayNameSnapshot,
   }))
 
-  const assignedTeamIds = groupTeams.map((groupTeam) => groupTeam.teamId)
+  const assignedTeamIds = groupTeams.map((groupTeam) => groupTeam.tournamentTeamId)
 
   const handleCreateGroup = async (name: string) => {
     await createGroup.mutateAsync({ tournamentId: tournament.id, name })
   }
 
-  const handleAssign = async (groupId: number, teamId: number) => {
+  const handleAssign = async (groupId: number, tournamentTeamId: number) => {
     try {
-      await assignTeamToGroup.mutateAsync({ tournamentId: tournament.id, groupId, teamId })
+      await assignTeamToGroup.mutateAsync({ tournamentId: tournament.id, groupId, tournamentTeamId })
       setPanelError('')
     } catch (error) {
       if (error instanceof Error && error.message === TEAM_ALREADY_ASSIGNED) {
@@ -147,7 +147,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   }
 
   const renderExtraRowAction = (groupId: number | undefined) => (row: StandingRow) => {
-    const join = groupTeams.find((groupTeam) => groupTeam.groupId === groupId && groupTeam.teamId === row.teamId)
+    const join = groupTeams.find((groupTeam) => groupTeam.groupId === groupId && groupTeam.tournamentTeamId === row.tournamentTeamId)
     if (!join) return null
     return (
       <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveFromGroup(join.id)}>

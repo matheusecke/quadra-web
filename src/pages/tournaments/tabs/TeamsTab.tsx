@@ -4,7 +4,7 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { cn } from '../../../components/ui/cn'
 import type { Tournament, StandingRow, Team } from '../../../features/sports/types'
 import { formatDiff } from '../../../features/sports/sportsUtils'
-import { useStandingsQuery } from '../../../features/sports/queries'
+import { useStandingsQuery, useTournamentTeamsQuery } from '../../../features/sports/queries'
 import s from '../tournaments.module.css'
 
 interface TeamsTabProps {
@@ -14,13 +14,14 @@ interface TeamsTabProps {
 
 export function TeamsTab({ tournament, teams }: TeamsTabProps) {
   const { data: envelopes } = useStandingsQuery(tournament.id)
+  const { data: tournamentTeams } = useTournamentTeamsQuery(tournament.id)
   const standingsByTeam = useMemo(() => {
     const map = new Map<number, StandingRow>()
-    ;(envelopes ?? []).forEach((envelope) => envelope.rows.forEach((row) => map.set(row.teamId, row)))
+    ;(envelopes ?? []).forEach((envelope) => envelope.rows.forEach((row) => map.set(row.tournamentTeamId, row)))
     return map
   }, [envelopes])
 
-  if (tournament.teamIds.length === 0) {
+  if ((tournamentTeams ?? []).length === 0) {
     return (
       <div className={s.tabEmpty}>
         <EmptyState title="Nenhuma equipe participante." />
@@ -44,12 +45,12 @@ export function TeamsTab({ tournament, teams }: TeamsTabProps) {
           </tr>
         </thead>
         <tbody>
-          {tournament.teamIds.map((teamId) => {
-            const team = teams.get(teamId)
-            const row = standingsByTeam.get(teamId)
+          {(tournamentTeams ?? []).map((entry) => {
+            const team = teams.get(entry.teamId)
+            const row = standingsByTeam.get(entry.id)
             const diff = row?.pointDiff ?? 0
             return (
-              <tr key={teamId} className={s.tr} style={{ cursor: 'default' }}>
+              <tr key={entry.id} className={s.tr} style={{ cursor: 'default' }}>
                 <td className={s.td}>
                   <span className={s.cName}>{team?.name ?? '—'}</span>
                   <span className={s.standTeamTag}>{team?.shortName}</span>

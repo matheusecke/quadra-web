@@ -38,9 +38,9 @@ describe('GroupsTab', () => {
       startDate: '2026-01-01',
       endDate: '2026-02-01',
     })
-    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: team.id, displayName: team.name })
+    const enrollment = await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: team.id, displayName: team.name })
     const group = await sportsApi.createGroup({ tournamentId: tournament.id, name: 'Grupo A' })
-    await sportsApi.assignTeamToGroup({ tournamentId: tournament.id, groupId: group.id, teamId: team.id })
+    await sportsApi.assignTeamToGroup({ tournamentId: tournament.id, groupId: group.id, tournamentTeamId: enrollment.id })
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
