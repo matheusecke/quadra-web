@@ -10,8 +10,8 @@ import type { Match, MatchStatus, StandingRow, StandingsEnvelope } from '../../f
  */
 
 export interface StandingTeamInput {
-  tournamentTeamId: string
-  teamId: string
+  tournamentTeamId: number
+  teamId: number
   /** display_name_snapshot. Also the stable A→Z fallback when a tie has no recorded draw. */
   name: string
   /** The draw the org admin recorded — FIBA's last criterion. Never computed. */
@@ -37,14 +37,14 @@ const diff = (t: Tally) => t.pointsFor - t.pointsAgainst
 
 /** A match belongs to this table only when both of its teams do — a team removed from the
  *  group leaves fixtures behind, and they are no longer games of this classification. */
-const isInScope = (m: Match, ids: Set<string>) => ids.has(m.homeTeamId) && ids.has(m.awayTeamId)
+const isInScope = (m: Match, ids: Set<number>) => ids.has(m.homeTeamId) && ids.has(m.awayTeamId)
 
-const isFinished = (m: Match, ids: Set<string>) =>
+const isFinished = (m: Match, ids: Set<number>) =>
   m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null && isInScope(m, ids)
 
 /** Tallies only the finished matches played between the given teams. */
-function tally(teamIds: Set<string>, matches: Match[]): Map<string, Tally> {
-  const table = new Map<string, Tally>([...teamIds].map((id) => [id, emptyTally()]))
+function tally(teamIds: Set<number>, matches: Match[]): Map<number, Tally> {
+  const table = new Map<number, Tally>([...teamIds].map((id) => [id, emptyTally()]))
 
   for (const m of matches) {
     if (!isFinished(m, teamIds)) continue
@@ -72,8 +72,8 @@ function tally(teamIds: Set<string>, matches: Match[]): Map<string, Tally> {
 }
 
 /** Splits ids into blocks of equal key, highest key first. */
-function partition(ids: string[], key: (id: string) => number): string[][] {
-  const blocks: string[][] = []
+function partition(ids: number[], key: (id: number) => number): number[][] {
+  const blocks: number[][] = []
   for (const id of [...ids].sort((a, b) => key(b) - key(a))) {
     const last = blocks.at(-1)
     if (last && key(last[0]) === key(id)) last.push(id)
@@ -85,7 +85,7 @@ function partition(ids: string[], key: (id: string) => number): string[][] {
 export function computeStandings(
   teams: StandingTeamInput[],
   matches: Match[],
-  group: { id: string; name: string } | null = null,
+  group: { id: number; name: string } | null = null,
 ): StandingsEnvelope {
   const byId = new Map(teams.map((t) => [t.teamId, t]))
   const allIds = new Set(byId.keys())
@@ -95,7 +95,7 @@ export function computeStandings(
   const standingsState = finishedCount === 0 ? 'EMPTY' : pendingMatches > 0 ? 'PARTIAL' : 'FINAL'
 
   const byName = (a: StandingTeamInput, b: StandingTeamInput) =>
-    a.name.localeCompare(b.name) || a.teamId.localeCompare(b.teamId)
+    a.name.localeCompare(b.name) || a.teamId - b.teamId
 
   // EMPTY is not a classification — it is the list of teams, zeroed. Ranking it would put a
   // "1st place" on a team that has won nothing, and would mark every team as tied.
@@ -120,17 +120,17 @@ export function computeStandings(
   }
 
   const overall = tally(allIds, matches)
-  const tieBlocks = new Map<string, string>() // teamId → block key (resolved or not)
-  const unresolved = new Set<string>()
+  const tieBlocks = new Map<number, string>() // teamId → block key (resolved or not)
+  const unresolved = new Set<number>()
 
   /** The block's fingerprint: its tournamentTeamIds, sorted, joined. §8.8 */
-  const blockKeyOf = (ids: string[]) => ids.map((id) => byId.get(id)!.tournamentTeamId).sort().join('-')
+  const blockKeyOf = (ids: number[]) => ids.map((id) => byId.get(id)!.tournamentTeamId).sort((a, b) => a - b).join('-')
 
   /** D.1.3 + D.1.4 — restarted from the top for every block left tied. */
-  function breakTie(tied: string[]): string[] {
+  function breakTie(tied: number[]): number[] {
     const headToHead = tally(new Set(tied), matches)
 
-    const criteria: ((id: string) => number)[] = [
+    const criteria: ((id: number) => number)[] = [
       (id) => headToHead.get(id)!.classificationPoints, // games between them
       (id) => diff(headToHead.get(id)!),
       (id) => headToHead.get(id)!.pointsFor,

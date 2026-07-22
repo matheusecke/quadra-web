@@ -12,10 +12,10 @@ function scheduledMatch() {
   const tournament = store.createTournament({
     name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
   })
-  const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-1', displayName: 'Tigres' })
-  const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 'team-2', displayName: 'Albatrozes' })
+  const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Tigres' })
+  const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Albatrozes' })
   const match = store.scheduleMatch({
-    tournamentId: tournament.id, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T20:00:00Z',
+    tournamentId: tournament.id, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T20:00:00Z',
   })
   return { store, matchId: match.id, homeTournamentTeamId: homeTournamentTeam.id, awayTournamentTeamId: awayTournamentTeam.id }
 }
@@ -32,18 +32,18 @@ describe('createSportsStore', () => {
     const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
     const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
     const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })
-    expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })).toThrow(/already enrolled/i)
+    store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
+    expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })).toThrow(/already enrolled/i)
   })
 
   it('rejects an athlete on two teams in the same tournament', () => {
     const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
     const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
     const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Tigres' })
-    store.enrollTeam({ tournamentId: t.id, teamId: 'team-2', displayName: 'Albatrozes' })
-    store.addRosterEntry({ tournamentId: t.id, teamId: 'team-1', athleteId: 'ath-1', jerseyNumber: 7, role: 'ATHLETE' })
-    expect(() => store.addRosterEntry({ tournamentId: t.id, teamId: 'team-2', athleteId: 'ath-1', jerseyNumber: 9, role: 'ATHLETE' }))
+    store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
+    store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
+    store.addRosterEntry({ tournamentId: t.id, teamId: 1, athleteId: 101, jerseyNumber: 7, role: 'ATHLETE' })
+    expect(() => store.addRosterEntry({ tournamentId: t.id, teamId: 2, athleteId: 101, jerseyNumber: 9, role: 'ATHLETE' }))
       .toThrow(/same tournament/i)
   })
 })
@@ -120,10 +120,10 @@ describe('submitMatchResult — NORMAL', () => {
     const { store, matchId } = scheduledMatch()
     const tournamentId = store.listTournaments()[0].id
     const homeEntry = store.addRosterEntry({
-      tournamentId, teamId: 'team-1', athleteId: 'ath-home', jerseyNumber: 7, role: 'ATHLETE',
+      tournamentId, teamId: 1, athleteId: 101, jerseyNumber: 7, role: 'ATHLETE',
     })
     const awayEntry = store.addRosterEntry({
-      tournamentId, teamId: 'team-2', athleteId: 'ath-away', jerseyNumber: 11, role: 'ATHLETE',
+      tournamentId, teamId: 2, athleteId: 102, jerseyNumber: 11, role: 'ATHLETE',
     })
 
     store.submitMatchResult({
@@ -145,8 +145,8 @@ describe('submitMatchResult — MVP', () => {
   it('persists the MVP and returns it on the match detail', () => {
     const { store, matchId } = scheduledMatch()
     const entry = store.addRosterEntry({
-      tournamentId: store.listTournaments()[0].id, teamId: 'team-1',
-      athleteId: 'ath-1', jerseyNumber: 7, role: 'ATHLETE',
+      tournamentId: store.listTournaments()[0].id, teamId: 1,
+      athleteId: 101, jerseyNumber: 7, role: 'ATHLETE',
     })
 
     store.submitMatchResult({
@@ -156,7 +156,7 @@ describe('submitMatchResult — MVP', () => {
       mvpTournamentRosterId: entry.id,
     })
 
-    expect(store.getMatchDetail(matchId)?.mvp).toEqual({ tournamentRosterId: entry.id, athleteId: 'ath-1' })
+    expect(store.getMatchDetail(matchId)?.mvp).toEqual({ tournamentRosterId: entry.id, athleteId: 101 })
   })
 
   it('rejects an MVP with no line in the box score', () => {
@@ -167,7 +167,7 @@ describe('submitMatchResult — MVP', () => {
         matchId,
         periods: [period(1, 70, 60)],
         playerStats: [],
-        mvpTournamentRosterId: 'roster-does-not-exist',
+        mvpTournamentRosterId: 999999,
       }),
     ).toThrow(/MVP must be one of the players in the box score/i)
   })
@@ -175,8 +175,8 @@ describe('submitMatchResult — MVP', () => {
   it('rejects a coaching staff member as MVP even with a box-score line', () => {
     const { store, matchId } = scheduledMatch()
     const entry = store.addRosterEntry({
-      tournamentId: store.listTournaments()[0].id, teamId: 'team-1',
-      athleteId: 'staff-1', jerseyNumber: 7, role: 'COACHING_STAFF',
+      tournamentId: store.listTournaments()[0].id, teamId: 1,
+      athleteId: 201, jerseyNumber: 7, role: 'COACHING_STAFF',
     })
 
     expect(() =>

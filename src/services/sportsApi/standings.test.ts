@@ -3,15 +3,20 @@ import { computeStandings } from './standings'
 import type { StandingTeamInput } from './standings'
 import type { Match } from '../../features/sports/types'
 
-const team = (teamId: string): StandingTeamInput => ({
-  tournamentTeamId: `tt-${teamId}`, teamId, name: teamId, tiebreakOrder: null, tiebreakBlockKey: null,
-})
-const teams = (...ids: string[]) => ids.map(team)
+/** Local fixture IDs — letters kept only as names for readable assertions. A=1 … F=6, Z=99. */
+const NAME: Record<number, string> = { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 99: 'Z' }
+const ID: Record<string, number> = { A: 1, B: 2, C: 3, D: 4, E: 5, F: 6, Z: 99 }
+
+const team = (letter: keyof typeof ID): StandingTeamInput => {
+  const teamId = ID[letter]
+  return { tournamentTeamId: 1000 + teamId, teamId, name: NAME[teamId], tiebreakOrder: null, tiebreakBlockKey: null }
+}
+const teams = (...letters: (keyof typeof ID)[]) => letters.map(team)
 
 let seq = 0
-const played = (homeTeamId: string, homeScore: number, awayTeamId: string, awayScore: number, over: Partial<Match> = {}): Match => ({
-  id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
-  homeTeamId, awayTeamId, homeScore, awayScore,
+const played = (homeLetter: keyof typeof ID, homeScore: number, awayLetter: keyof typeof ID, awayScore: number, over: Partial<Match> = {}): Match => ({
+  id: seq++, tournamentId: 1, date: '2026-02-01',
+  homeTeamId: ID[homeLetter], awayTeamId: ID[awayLetter], homeScore, awayScore,
   status: 'FINISHED',
   homeLossType: homeScore < awayScore ? 'NORMAL' : null,
   awayLossType: awayScore < homeScore ? 'NORMAL' : null,
@@ -20,16 +25,16 @@ const played = (homeTeamId: string, homeScore: number, awayTeamId: string, awayS
   bracketRound: null,
   ...over,
 })
-const scheduled = (homeTeamId: string, awayTeamId: string, over: Partial<Match> = {}): Match => ({
-  id: `m${seq++}`, tournamentId: 't', date: '2026-02-01',
-  homeTeamId, awayTeamId, homeScore: null, awayScore: null,
+const scheduled = (homeLetter: keyof typeof ID, awayLetter: keyof typeof ID, over: Partial<Match> = {}): Match => ({
+  id: seq++, tournamentId: 1, date: '2026-02-01',
+  homeTeamId: ID[homeLetter], awayTeamId: ID[awayLetter], homeScore: null, awayScore: null,
   status: 'SCHEDULED',
   homeLossType: null, awayLossType: null, scoreSource: null, tournamentGroupId: null,
   bracketRound: null,
   ...over,
 })
 
-const order = (rows: { teamId: string }[]) => rows.map((r) => r.teamId)
+const order = (rows: { teamId: number }[]) => rows.map((r) => NAME[r.teamId])
 
 describe('computeStandings — FIBA Appendix D', () => {
   it('awards 2 points for a win and 1 for a loss (D.1.1)', () => {
@@ -40,7 +45,7 @@ describe('computeStandings — FIBA Appendix D', () => {
   it('awards 0 points for a loss by forfeit (D.1.1)', () => {
     const wo = played('A', 20, 'B', 0, { awayLossType: 'FORFEIT', scoreSource: 'AWARDED' })
     const { rows } = computeStandings(teams('A', 'B'), [wo])
-    expect(rows.find((r) => r.teamId === 'B')!.classificationPoints).toBe(0)
+    expect(rows.find((r) => r.teamId === ID.B)!.classificationPoints).toBe(0)
   })
 
   // The decisive case: B has a far better overall differential, but A won the
@@ -72,13 +77,13 @@ describe('computeStandings — FIBA Appendix D', () => {
     const { rows } = computeStandings(teams('A', 'B'), [played('A', 80, 'B', 70), played('B', 80, 'A', 70)])
     expect(rows.every((r) => r.isTiedUnresolved)).toBe(true)
     expect(rows[0].tieBlockKey).toBe(rows[1].tieBlockKey)
-    expect(rows[0].tieBlockKey).toBe('tt-A-tt-B')
+    expect(rows[0].tieBlockKey).toBe('1001-1002')
   })
 
   it('honours a recorded draw whose block key still matches', () => {
     const withDraw: StandingTeamInput[] = [
-      { ...team('A'), tiebreakOrder: 2, tiebreakBlockKey: 'tt-A-tt-B' },
-      { ...team('B'), tiebreakOrder: 1, tiebreakBlockKey: 'tt-A-tt-B' },
+      { ...team('A'), tiebreakOrder: 2, tiebreakBlockKey: '1001-1002' },
+      { ...team('B'), tiebreakOrder: 1, tiebreakBlockKey: '1001-1002' },
     ]
     const { rows } = computeStandings(withDraw, [played('A', 80, 'B', 70), played('B', 80, 'A', 70)])
     expect(order(rows)).toEqual(['B', 'A'])
@@ -87,8 +92,8 @@ describe('computeStandings — FIBA Appendix D', () => {
 
   it('ignores a recorded draw whose block no longer exists — it never leaks into a different tie', () => {
     const stale: StandingTeamInput[] = [
-      { ...team('A'), tiebreakOrder: 2, tiebreakBlockKey: 'tt-A-tt-B-tt-C' },
-      { ...team('B'), tiebreakOrder: 1, tiebreakBlockKey: 'tt-A-tt-B-tt-C' },
+      { ...team('A'), tiebreakOrder: 2, tiebreakBlockKey: '1001-1002-1003' },
+      { ...team('B'), tiebreakOrder: 1, tiebreakBlockKey: '1001-1002-1003' },
     ]
     const { rows } = computeStandings(stale, [played('A', 80, 'B', 70), played('B', 80, 'A', 70)])
     expect(order(rows)).toEqual(['A', 'B'])          // stable fallback: name A→Z

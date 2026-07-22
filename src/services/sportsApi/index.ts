@@ -8,12 +8,14 @@ import {
   getMatchDetailById,
   getTeams,
   seedCategories,
+  seedGroupId,
   seedGroupMembership,
   seedMatches,
   seedBracketRounds,
   seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
+import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
 import type {
   BracketRound,
   BracketSlot,
@@ -58,10 +60,10 @@ const teamNameById = new Map(getTeams().map((team) => [team.id, team.name]))
 
 const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournament) =>
   tournament.teamIds.map((teamId) => ({
-    id: `tournament-team-${tournament.id}-${teamId}`,
+    id: tournamentTeamId(tournament.id, teamId),
     tournamentId: tournament.id,
     teamId,
-    displayNameSnapshot: teamNameById.get(teamId) ?? teamId,
+    displayNameSnapshot: teamNameById.get(teamId) ?? String(teamId),
     seed: null,
     tiebreakOrder: null,
     tiebreakBlockKey: null,
@@ -69,42 +71,44 @@ const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournamen
 )
 
 const seedBracketRoundRows: BracketRound[] = seedBracketRounds.map((round, roundIndex) => ({
-  id: `seed-bracket-round-${roundIndex + 1}`,
-  tournamentId: 'puc-geral-2026',
+  id: roundIndex + 1,
+  tournamentId: SEED_TOURNAMENT.GERAL,
   number: roundIndex + 1,
   label: round.name,
 }))
 
 const seedInvernoBracketRounds: BracketRound[] = [
-  { id: 'seed-bracket-round-puc-inverno-2026-1', tournamentId: 'puc-inverno-2026', number: 1, label: 'Semifinais' },
-  { id: 'seed-bracket-round-puc-inverno-2026-2', tournamentId: 'puc-inverno-2026', number: 2, label: 'Final' },
+  { id: seedBracketRoundRows.length + 1, tournamentId: SEED_TOURNAMENT.INVERNO, number: 1, label: 'Semifinais' },
+  { id: seedBracketRoundRows.length + 2, tournamentId: SEED_TOURNAMENT.INVERNO, number: 2, label: 'Final' },
 ]
+
+let nextBracketSlotId = 5000
 
 const seedBracketSlots: BracketSlot[] = seedBracketRounds.flatMap((round, roundIndex) =>
   round.matches.map((slot, position) => ({
-    id: `seed-bracket-${slot.id}`,
-    tournamentId: 'puc-geral-2026',
-    roundId: `seed-bracket-round-${roundIndex + 1}`,
+    id: ++nextBracketSlotId,
+    tournamentId: SEED_TOURNAMENT.GERAL,
+    roundId: seedBracketRoundRows[roundIndex].id,
     position: position + 1,
     label: null,
-    homeTournamentTeamId: slot.homeTeamId ? `tournament-team-puc-geral-2026-${slot.homeTeamId}` : null,
-    awayTournamentTeamId: slot.awayTeamId ? `tournament-team-puc-geral-2026-${slot.awayTeamId}` : null,
+    homeTournamentTeamId: slot.homeTeamId ? tournamentTeamId(SEED_TOURNAMENT.GERAL, slot.homeTeamId) : null,
+    awayTournamentTeamId: slot.awayTeamId ? tournamentTeamId(SEED_TOURNAMENT.GERAL, slot.awayTeamId) : null,
     matchId: slot.matchId,
-    winnerTournamentTeamId: slot.winnerId ? `tournament-team-puc-geral-2026-${slot.winnerId}` : null,
+    winnerTournamentTeamId: slot.winnerId ? tournamentTeamId(SEED_TOURNAMENT.GERAL, slot.winnerId) : null,
   })),
 )
 
 const seedInvernoBracketSlots: BracketSlot[] = [
-  { id: 'seed-bracket-inverno-sf1', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-1', position: 1, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-1', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-4', matchId: 'puc-inverno-m13', winnerTournamentTeamId: null },
-  { id: 'seed-bracket-inverno-sf2', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-1', position: 2, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-5', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-8', matchId: 'puc-inverno-m14', winnerTournamentTeamId: null },
-  { id: 'seed-bracket-inverno-f1', tournamentId: 'puc-inverno-2026', roundId: 'seed-bracket-round-puc-inverno-2026-2', position: 1, label: null, homeTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-1', awayTournamentTeamId: 'tournament-team-puc-inverno-2026-puc-time-5', matchId: 'puc-inverno-m15', winnerTournamentTeamId: null },
+  { id: ++nextBracketSlotId, tournamentId: SEED_TOURNAMENT.INVERNO, roundId: seedInvernoBracketRounds[0].id, position: 1, label: null, homeTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 1), awayTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 4), matchId: 213, winnerTournamentTeamId: null },
+  { id: ++nextBracketSlotId, tournamentId: SEED_TOURNAMENT.INVERNO, roundId: seedInvernoBracketRounds[0].id, position: 2, label: null, homeTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 5), awayTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 8), matchId: 214, winnerTournamentTeamId: null },
+  { id: ++nextBracketSlotId, tournamentId: SEED_TOURNAMENT.INVERNO, roundId: seedInvernoBracketRounds[1].id, position: 1, label: null, homeTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 1), awayTournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 5), matchId: 215, winnerTournamentTeamId: null },
 ]
 
 const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
   getAthletes()
     .filter((athlete) => athlete.currentTeamId === tournamentTeam.teamId)
     .map((athlete) => ({
-      id: `tournament-roster-${tournamentTeam.tournamentId}-${tournamentTeam.teamId}-${athlete.id}`,
+      id: seedRosterId(tournamentTeam.tournamentId, athlete.id),
       tournamentId: tournamentTeam.tournamentId,
       teamId: tournamentTeam.teamId,
       athleteId: athlete.id,
@@ -113,19 +117,22 @@ const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournament
     })),
 )
 
-/** Same id shape the mock stamps on its group matches — the two sides agree without a lookup table. */
+/** Same numeric id `seedGroupId` derives for the mock's group-stage matches — the two sides
+ *  agree without a lookup table. */
 const seedTournamentGroups: TournamentGroup[] = seedGroupMembership.map((g) => ({
-  id: `seed-group-${g.tournamentId}-${g.groupName}`,
+  id: seedGroupId(g.tournamentId, g.groupName),
   tournamentId: g.tournamentId,
   name: g.groupName,
   sortOrder: g.groupName.charCodeAt(g.groupName.length - 1),
 }))
 
+let nextGroupTeamId = 3000
+
 const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flatMap((g) =>
   g.teamIds.map((teamId) => ({
-    id: `seed-group-team-${g.tournamentId}-${g.groupName}-${teamId}`,
+    id: ++nextGroupTeamId,
     tournamentId: g.tournamentId,
-    groupId: `seed-group-${g.tournamentId}-${g.groupName}`,
+    groupId: seedGroupId(g.tournamentId, g.groupName),
     teamId,
   })),
 )
@@ -147,7 +154,7 @@ const store = createSportsStore({
 // ── Seasons ──────────────────────────────────────────────────────────────────
 export const getSeasons = () => Promise.resolve(store.listSeasons())
 export const createSeason = (input: CreateSeasonInput) => Promise.resolve(store.createSeason(input))
-export const updateSeason = (id: string, input: UpdateSeasonInput) => Promise.resolve(store.updateSeason(id, input))
+export const updateSeason = (id: number, input: UpdateSeasonInput) => Promise.resolve(store.updateSeason(id, input))
 
 // ── Categories ─────────────────────────────────────────────────────────────────
 export const getCategories = () => Promise.resolve(store.listCategories())
@@ -155,59 +162,59 @@ export const createCategory = (input: CreateCategoryInput) => Promise.resolve(st
 
 // ── Tournaments ──────────────────────────────────────────────────────────────────
 export const getTournaments = () => Promise.resolve(store.listTournaments())
-export const getTournament = (id: string) => Promise.resolve(store.getTournament(id))
+export const getTournament = (id: number) => Promise.resolve(store.getTournament(id))
 export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
-export const updateTournament = (id: string, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
+export const updateTournament = (id: number, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
 export const completeTournament = (input: CompleteTournamentInput) => Promise.resolve(store.completeTournament(input))
 export const reopenTournament = (input: ReopenTournamentInput) => Promise.resolve(store.reopenTournament(input))
-export const getChampionSuggestion = (tournamentId: string) => Promise.resolve(store.championSuggestion(tournamentId))
+export const getChampionSuggestion = (tournamentId: number) => Promise.resolve(store.championSuggestion(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
-export const getTournamentTeams = (tournamentId: string) => Promise.resolve(store.listTournamentTeams(tournamentId))
+export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))
 export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
-export const removeTournamentTeam = (id: string) => Promise.resolve(store.removeTournamentTeam(id))
+export const removeTournamentTeam = (id: number) => Promise.resolve(store.removeTournamentTeam(id))
 
 // ── Bracket ──────────────────────────────────────────────────────────────────
-export const getBracketRounds = (tournamentId: string): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))
+export const getBracketRounds = (tournamentId: number): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))
 export const createBracketRound = (input: CreateBracketRoundInput) => Promise.resolve(store.createBracketRound(input))
-export const updateBracketRound = (id: string, input: UpdateBracketRoundInput) => Promise.resolve(store.updateBracketRound(id, input))
-export const removeBracketRound = (id: string) => Promise.resolve(store.removeBracketRound(id))
-export const getBracketSlots = (tournamentId: string): Promise<BracketSlot[]> => Promise.resolve(store.listBracketSlots(tournamentId))
+export const updateBracketRound = (id: number, input: UpdateBracketRoundInput) => Promise.resolve(store.updateBracketRound(id, input))
+export const removeBracketRound = (id: number) => Promise.resolve(store.removeBracketRound(id))
+export const getBracketSlots = (tournamentId: number): Promise<BracketSlot[]> => Promise.resolve(store.listBracketSlots(tournamentId))
 export const createBracketSlot = (input: CreateBracketSlotInput) => Promise.resolve(store.createBracketSlot(input))
-export const updateBracketSlot = (id: string, input: UpdateBracketSlotInput) => Promise.resolve(store.updateBracketSlot(id, input))
+export const updateBracketSlot = (id: number, input: UpdateBracketSlotInput) => Promise.resolve(store.updateBracketSlot(id, input))
 export const linkSlotMatch = (input: LinkSlotMatchInput) => Promise.resolve(store.linkSlotMatch(input))
 export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(store.setSlotWinner(input))
-export const removeBracketSlot = (id: string) => Promise.resolve(store.removeBracketSlot(id))
+export const removeBracketSlot = (id: number) => Promise.resolve(store.removeBracketSlot(id))
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
-export const getRoster = (tournamentId: string, teamId: string) => Promise.resolve(store.listRoster(tournamentId, teamId))
+export const getRoster = (tournamentId: number, teamId: number) => Promise.resolve(store.listRoster(tournamentId, teamId))
 export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
-export const updateRosterEntry = (id: string, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
-export const removeRosterEntry = (id: string) => Promise.resolve(store.removeRosterEntry(id))
+export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
+export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
-export const getAthlete = (id: string) => Promise.resolve(getAthleteById(id))
-export const getAthleteSummary = (id: string) => Promise.resolve(getAthleteSummaryById(id))
-export const getAthleteMatches = (id: string) => Promise.resolve(getMockAthleteMatches(id))
-export const getAthleteTournamentStats = (id: string) => Promise.resolve(getMockAthleteTournamentStats(id))
+export const getAthlete = (id: number) => Promise.resolve(getAthleteById(id))
+export const getAthleteSummary = (id: number) => Promise.resolve(getAthleteSummaryById(id))
+export const getAthleteMatches = (id: number) => Promise.resolve(getMockAthleteMatches(id))
+export const getAthleteTournamentStats = (id: number) => Promise.resolve(getMockAthleteTournamentStats(id))
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
-export const getMatches = (filter?: { tournamentId?: string }) => Promise.resolve(store.listMatches(filter))
-export const getMatchDetail = (id: string) => Promise.resolve(store.getMatchDetail(id))
+export const getMatches = (filter?: { tournamentId?: number }) => Promise.resolve(store.listMatches(filter))
+export const getMatchDetail = (id: number) => Promise.resolve(store.getMatchDetail(id))
 export const scheduleMatch = (input: ScheduleMatchInput) => Promise.resolve(store.scheduleMatch(input))
 export const submitMatchResult = (input: SubmitMatchResultInput) => Promise.resolve(store.submitMatchResult(input))
 
 // ── Groups ───────────────────────────────────────────────────────────────────
-export const getGroups = (tournamentId: string) => Promise.resolve(store.listGroups(tournamentId))
+export const getGroups = (tournamentId: number) => Promise.resolve(store.listGroups(tournamentId))
 export const createGroup = (input: CreateGroupInput) => Promise.resolve(store.createGroup(input))
-export const getGroupTeams = (tournamentId: string) => Promise.resolve(store.listGroupTeams(tournamentId))
+export const getGroupTeams = (tournamentId: number) => Promise.resolve(store.listGroupTeams(tournamentId))
 export const assignTeamToGroup = (input: AssignGroupTeamInput) => Promise.resolve(store.assignTeamToGroup(input))
-export const removeGroupTeam = (id: string) => Promise.resolve(store.removeGroupTeam(id))
+export const removeGroupTeam = (id: number) => Promise.resolve(store.removeGroupTeam(id))
 
 // ── Standings & tiebreaks ────────────────────────────────────────────────────
-export function listStandings(tournamentId: string): Promise<StandingsEnvelope[]>
-export function listStandings(tournamentId: string, groupId: string): Promise<StandingsEnvelope>
-export function listStandings(tournamentId: string, groupId?: string) {
+export function listStandings(tournamentId: number): Promise<StandingsEnvelope[]>
+export function listStandings(tournamentId: number, groupId: number): Promise<StandingsEnvelope>
+export function listStandings(tournamentId: number, groupId?: number) {
   const envelopes = store.listStandings(tournamentId, groupId)
   return Promise.resolve(groupId ? envelopes[0] : envelopes)
 }

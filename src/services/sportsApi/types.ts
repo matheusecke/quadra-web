@@ -16,8 +16,8 @@ export interface CreateCategoryInput {
 
 export interface CreateTournamentInput {
   name: string
-  seasonId: string
-  categoryId: string | null
+  seasonId: number
+  categoryId: number | null
   format: TournamentFormat
   startDate: string
   endDate: string
@@ -27,16 +27,16 @@ export interface CreateTournamentInput {
 export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: Exclude<TournamentStatus, 'COMPLETED'> }
 
 export interface CompleteTournamentInput {
-  tournamentId: string
-  championTournamentTeamId: string | null
+  tournamentId: number
+  championTournamentTeamId: number | null
 }
 
 export interface ReopenTournamentInput {
-  tournamentId: string
+  tournamentId: number
 }
 
 export interface CreateBracketRoundInput {
-  tournamentId: string
+  tournamentId: number
   /** Optional: defaults to the highest active number plus one. The UI never types it. */
   number?: number
   label?: string
@@ -47,53 +47,53 @@ export interface UpdateBracketRoundInput {
 }
 
 export interface CreateBracketSlotInput {
-  tournamentId: string
-  roundId: string
+  tournamentId: number
+  roundId: number
   /** Optional: defaults to the next free position in the round. The UI never types it. */
   position?: number
   label?: string
 }
 
 export interface UpdateBracketSlotInput {
-  homeTournamentTeamId?: string | null
-  awayTournamentTeamId?: string | null
+  homeTournamentTeamId?: number | null
+  awayTournamentTeamId?: number | null
   label?: string
 }
 
 export interface SetSlotWinnerInput {
-  slotId: string
-  winnerTournamentTeamId: string
+  slotId: number
+  winnerTournamentTeamId: number
 }
 
 export interface LinkSlotMatchInput {
-  slotId: string
-  matchId: string
+  slotId: number
+  matchId: number
 }
 
 export interface EnrollTeamInput {
-  tournamentId: string
-  teamId: string
+  tournamentId: number
+  teamId: number
   /** display_name_snapshot — the team's name at enrollment (DB spec §5.3). */
   displayName: string
   seed?: number
 }
 
 export interface CreateGroupInput {
-  tournamentId: string
+  tournamentId: number
   name: string
   sortOrder?: number
 }
 
 export interface AssignGroupTeamInput {
-  tournamentId: string
-  groupId: string
-  teamId: string
+  tournamentId: number
+  groupId: number
+  teamId: number
 }
 
 export interface RosterEntryInput {
-  tournamentId: string
-  teamId: string
-  athleteId: string
+  tournamentId: number
+  teamId: number
+  athleteId: number
   jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
 }
@@ -104,32 +104,32 @@ export interface UpdateRosterEntryInput {
 }
 
 export interface ScheduleMatchInput {
-  tournamentId: string
-  homeTeamId: string
-  awayTeamId: string
+  tournamentId: number
+  homeTeamId: number
+  awayTeamId: number
   scheduledAt: string
   venue?: string
-  groupId?: string | null
+  groupId?: number | null
 }
 
 /** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
-export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: string }
+export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: number }
 
 export interface SetTiebreakOrderInput {
-  tournamentId: string
-  entries: { tournamentTeamId: string; order: number }[]
+  tournamentId: number
+  entries: { tournamentTeamId: number; order: number }[]
 }
 
 export interface ClearTiebreakOrderInput {
-  tournamentId: string
+  tournamentId: number
   blockKey: string
 }
 
 interface PlayedResultInput {
-  matchId: string
+  matchId: number
   periods: PeriodScore[]
   playerStats: PlayerBoxScoreInput[]
-  mvpTournamentRosterId?: string | null
+  mvpTournamentRosterId?: number | null
 }
 
 /**
@@ -138,10 +138,10 @@ interface PlayedResultInput {
  */
 export type SubmitMatchResultInput =
   | ({ resultType?: 'NORMAL' } & PlayedResultInput)
-  | ({ resultType: 'DEFAULT'; offendingTournamentTeamId: string } & PlayedResultInput)
+  | ({ resultType: 'DEFAULT'; offendingTournamentTeamId: number } & PlayedResultInput)
   | {
       // A W.O. has no game: no periods, no box score, no MVP. Not optional — forbidden.
       resultType: 'FORFEIT'
-      matchId: string
-      offendingTournamentTeamId: string
+      matchId: number
+      offendingTournamentTeamId: number
     }
