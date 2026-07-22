@@ -170,7 +170,7 @@ export function TournamentsPage() {
                             {TOURNAMENT_STATUS_LABELS[c.status]}
                           </Badge>
                         </td>
-                        <td className={`${s.td} ${s.tdNum} ${s.mono}`}>{c.teamIds.length}</td>
+                        <td className={`${s.td} ${s.tdNum} ${s.mono}`}>{c.enrolledTeamCount}</td>
                         <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
                           {matchProgress(c)}
                           <span className={s.numSub}>fin./total</span>
