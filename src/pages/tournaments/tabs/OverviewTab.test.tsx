@@ -9,10 +9,10 @@ import { OverviewTab } from './OverviewTab'
 const { isOrgAdmin } = vi.hoisted(() => ({ isOrgAdmin: { value: false } }))
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => isOrgAdmin.value }))
 
-const renderGeral = (tournament = getTournamentById('puc-geral-2026')!, onSeeBracket = vi.fn()) => {
+const renderGeral = (tournament = getTournamentById(1)!, onSeeBracket = vi.fn()) => {
 
   const teams = new Map(getTeams().map((team) => [team.id, team]))
-  const matches = getMatchesByTournament('puc-geral-2026')
+  const matches = getMatchesByTournament(1)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
@@ -42,32 +42,32 @@ describe('OverviewTab', () => {
   })
 
   it('shows the bracket section in a knockout', async () => {
-    renderGeral({ ...getTournamentById('puc-geral-2026')!, format: 'KNOCKOUT' })
+    renderGeral({ ...getTournamentById(1)!, format: 'KNOCKOUT' })
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Chaveamento' })).toBeInTheDocument())
   })
 
   it('shows the bracket section in a group stage followed by a knockout', async () => {
-    renderGeral({ ...getTournamentById('puc-geral-2026')!, format: 'GROUP_STAGE_KNOCKOUT' })
+    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE_KNOCKOUT' })
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Chaveamento' })).toBeInTheDocument())
   })
 
   it('hides the bracket section in a league', () => {
-    renderGeral({ ...getTournamentById('puc-geral-2026')!, format: 'LEAGUE' })
+    renderGeral({ ...getTournamentById(1)!, format: 'LEAGUE' })
 
     expect(screen.queryByRole('heading', { name: 'Chaveamento' })).not.toBeInTheDocument()
   })
 
   it('hides the bracket section in a group stage with no knockout', () => {
-    renderGeral({ ...getTournamentById('puc-geral-2026')!, format: 'GROUP_STAGE' })
+    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE' })
 
     expect(screen.queryByRole('heading', { name: 'Chaveamento' })).not.toBeInTheDocument()
   })
 
   it('renders no bracket control that writes, even for an org admin', async () => {
     isOrgAdmin.value = true
-    renderGeral({ ...getTournamentById('puc-geral-2026')!, format: 'KNOCKOUT' })
+    renderGeral({ ...getTournamentById(1)!, format: 'KNOCKOUT' })
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Chaveamento' })).toBeInTheDocument())
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()

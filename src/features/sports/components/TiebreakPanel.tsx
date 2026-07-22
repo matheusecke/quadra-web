@@ -11,14 +11,14 @@ export interface TiebreakPanelProps {
   rows: StandingRow[]
   standingsState: StandingsState
   isResolved: boolean
-  onSave: (entries: { tournamentTeamId: string; order: number }[]) => Promise<void>
+  onSave: (entries: { tournamentTeamId: number; order: number }[]) => Promise<void>
   onClear: () => Promise<void>
   onCancel: () => void
   errorMessage?: string
 }
 
 export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClear, onCancel, errorMessage }: TiebreakPanelProps) {
-  const [orders, setOrders] = useState<Record<string, number>>(
+  const [orders, setOrders] = useState<Record<number, number>>(
     Object.fromEntries(rows.map((row, i) => [row.tournamentTeamId, i + 1])),
   )
   const [busy, setBusy] = useState(false)

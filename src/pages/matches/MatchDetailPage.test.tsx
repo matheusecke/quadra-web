@@ -22,12 +22,12 @@ const renderDetail = (matchId: string) => {
 
 describe('MatchDetailPage', () => {
   it('explains an awarded score on a freshly loaded page, not just after submitting', async () => {
-    renderDetail('match-abandoned')
+    renderDetail('217')
     expect(await screen.findByText(/placar atribuído por abandono/i)).toBeInTheDocument()
   })
 
   it('marks a W.O. and does not show an empty súmula as if it were missing data', async () => {
-    renderDetail('match-forfeit')
+    renderDetail('218')
     expect(await screen.findByText(/vitória por w\.o\./i)).toBeInTheDocument()
     expect(await screen.findByText('Finalizada')).toBeInTheDocument()
     expect(screen.queryByText(/aguardando estatísticas/i)).not.toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('MatchDetailPage', () => {
 
   it('renders stored playing time as MM:SS in the stats tab', async () => {
     const user = userEvent.setup()
-    renderDetail('puc-geral-m31')
+    renderDetail('131')
 
     await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
     const player = await screen.findByRole('link', { name: 'Rafael Moura' })
@@ -48,10 +48,18 @@ describe('MatchDetailPage', () => {
 
   it('labels box score turnovers as TOV', async () => {
     const user = userEvent.setup()
-    renderDetail('puc-geral-m31')
+    renderDetail('131')
 
     await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
 
     expect(await screen.findByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
+  })
+
+  it('sends the back button to the championship matches list, not the global one', async () => {
+    renderDetail('131')
+
+    await screen.findByText('Mandante')
+    const back = screen.getByRole('link', { name: 'Partidas' })
+    expect(back).toHaveAttribute('href', '/tournaments/1?tab=matches')
   })
 })

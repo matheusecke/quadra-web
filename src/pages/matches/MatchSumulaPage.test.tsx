@@ -22,21 +22,21 @@ const renderSumula = (matchId: string) => {
 
 describe('MatchSumulaPage', () => {
   it('warns when total points do not match the final score', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     const anyPts = await screen.findAllByLabelText(/pts/i)
     await userEvent.type(anyPts[0], '5')
     await waitFor(() => expect(screen.getByText(/não confere com o placar/i)).toBeInTheDocument())
   }, 10_000)
 
   it('submits the result and returns to the match detail', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByRole('button', { name: /finalizar partida/i }))
     await userEvent.click(await screen.findByRole('button', { name: /confirmar/i }))
     await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
   }, 10_000)
 
   it('disables a column from the panel and submits null for it', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByRole('button', { name: /configurar estatísticas/i }))
     await userEvent.click(screen.getByRole('switch', { name: /rebotes/i }))
     await userEvent.click(screen.getByRole('button', { name: /descartar/i }))
@@ -47,12 +47,12 @@ describe('MatchSumulaPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
     await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
 
-    const detail = await sportsApi.getMatchDetail('match-1')
+    const detail = await sportsApi.getMatchDetail(216)
     expect([...detail!.homeStats.players, ...detail!.awayStats.players].every((player) => player.reb === null)).toBe(true)
   }, 10_000)
 
   it('reopens disabled columns as N/A, re-enables them, and confirms point data loss', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByRole('button', { name: /configurar estatísticas/i }))
     await userEvent.click(screen.getByRole('switch', { name: /tocos/i }))
     await userEvent.click(screen.getByRole('button', { name: /descartar e desabilitar/i }))
@@ -61,7 +61,7 @@ describe('MatchSumulaPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
     await waitFor(() => expect(screen.getByText('detalhe da partida')).toBeInTheDocument())
 
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByRole('button', { name: /configurar estatísticas/i }))
     const blocksToggle = screen.getByRole('switch', { name: /tocos/i })
     expect(blocksToggle).toHaveAttribute('aria-checked', 'false')
@@ -88,7 +88,7 @@ describe('MatchSumulaPage', () => {
   }, 10_000)
 
   it('keeps the statistic controls keyboard-accessible switches', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     const configButton = await screen.findByRole('button', { name: /configurar estatísticas/i })
     expect(configButton).toHaveAttribute('aria-expanded', 'false')
 
@@ -108,7 +108,7 @@ describe('MatchSumulaPage', () => {
 
 describe('MatchSumulaPage — W.O.', () => {
   it('hides the súmula entirely when the match is a W.O.', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByLabelText(/como a partida terminou/i))
     await userEvent.click(screen.getByRole('option', { name: 'W.O.' }))
     await userEvent.click(screen.getByLabelText(/equipe que não compareceu/i))
@@ -121,7 +121,7 @@ describe('MatchSumulaPage — W.O.', () => {
 
 describe('MatchSumulaPage — abandonment', () => {
   it('warns that the official score will be assigned by the rules', async () => {
-    renderSumula('match-1')
+    renderSumula('216')
     await userEvent.click(await screen.findByLabelText(/como a partida terminou/i))
     await userEvent.click(screen.getByRole('option', { name: 'Abandono' }))
     await userEvent.click(screen.getByLabelText(/equipe que abandonou/i))

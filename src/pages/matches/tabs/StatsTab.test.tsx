@@ -6,7 +6,7 @@ import { getMatchDetailById, getTeams } from '../../../features/sports/mock-spor
 import { teamMap } from '../../../features/sports/sportsUtils'
 import type { MatchDetail } from '../../../features/sports/types'
 
-const baseMatch = getMatchDetailById('puc-geral-m31') as MatchDetail
+const baseMatch = getMatchDetailById(131) as MatchDetail
 
 describe('StatsTab', () => {
   it('shows N/A for untracked player, efficiency, and team-total stats', () => {

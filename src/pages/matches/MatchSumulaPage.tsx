@@ -16,6 +16,7 @@ import { StatColumnsConfig } from '../../features/sports/components/StatColumnsC
 import { boxScoreReducer, columnHasData, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
 import { getAthletes, getTeams } from '../../features/sports/mock-sports-data'
 import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTournamentTeamsQuery } from '../../features/sports/queries'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
 import type { PlayerStatInput } from '../../features/sports/statistics'
 import { teamMap } from '../../features/sports/sportsUtils'
@@ -24,9 +25,17 @@ import type { PlayerBoxScoreInput, SubmitMatchResultInput } from '../../services
 import s from './MatchSumulaPage.module.css'
 
 export function MatchSumulaPage() {
-  const { matchId } = useParams<{ matchId: string }>()
-  const { data: match, isPending, isError, refetch } = useMatchDetailQuery(matchId)
+  const { matchId: rawMatchId } = useParams<{ matchId: string }>()
+  const matchId = parsePositiveId(rawMatchId)
+  const { data: match, isPending, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
 
+  if (matchId == null) {
+    return (
+      <div className={s.page}>
+        <ErrorState title="ID de partida inválido." />
+      </div>
+    )
+  }
   if (isPending) {
     return (
       <div className={s.page}>
@@ -88,7 +97,7 @@ function SumulaEditor({ match }: { match: MatchDetail }) {
 }
 
 interface SumulaRosterEntry {
-  tournamentRosterId: string
+  tournamentRosterId: number
   name: string
   number: number
 }
@@ -97,8 +106,8 @@ interface SumulaFormProps {
   match: MatchDetail
   homeRoster: SumulaRosterEntry[]
   awayRoster: SumulaRosterEntry[]
-  homeTournamentTeamId: string
-  awayTournamentTeamId: string
+  homeTournamentTeamId: number
+  awayTournamentTeamId: number
 }
 
 function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayTournamentTeamId }: SumulaFormProps) {
@@ -108,7 +117,7 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
   const homeIds = useMemo(() => homeRoster.map((r) => r.tournamentRosterId), [homeRoster])
   const awayIds = useMemo(() => awayRoster.map((r) => r.tournamentRosterId), [awayRoster])
-  const initialLines = useMemo<Record<string, PlayerStatInput>>(
+  const initialLines = useMemo<Record<number, PlayerStatInput>>(
     () => Object.fromEntries(
       [...match.homeStats.players, ...match.awayStats.players].map((player) => [
         player.tournamentRosterId,
@@ -143,11 +152,11 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
     },
     initBoxScoreState,
   )
-  const [activeTeam, setActiveTeam] = useState(match.homeTeamId)
+  const [activeTeam, setActiveTeam] = useState<number>(match.homeTeamId)
   const [confirming, setConfirming] = useState(false)
   const [resultType, setResultType] = useState<'NORMAL' | 'DEFAULT' | 'FORFEIT'>('NORMAL')
-  const [offendingTeamId, setOffendingTeamId] = useState('')
-  const handleStatChange = useCallback((tournamentRosterId: string, field: keyof PlayerStatInput, value: number | null) => {
+  const [offendingTeamId, setOffendingTeamId] = useState<number | null>(null)
+  const handleStatChange = useCallback((tournamentRosterId: number, field: keyof PlayerStatInput, value: number | null) => {
     dispatch({ type: 'setStat', tournamentRosterId, field, value })
   }, [])
 
@@ -226,11 +235,11 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
 
       <section className={s.section}>
         <Field label="Como a partida terminou?" id="result-type">
-          <Combobox id="result-type" options={[{ value: 'NORMAL', label: 'Normal' }, { value: 'DEFAULT', label: 'Abandono' }, { value: 'FORFEIT', label: 'W.O.' }]} value={resultType} onChange={(value) => { setResultType(value as typeof resultType); setOffendingTeamId(''); setConfirming(false) }} />
+          <Combobox id="result-type" options={[{ value: 'NORMAL', label: 'Normal' }, { value: 'DEFAULT', label: 'Abandono' }, { value: 'FORFEIT', label: 'W.O.' }]} value={resultType} onChange={(value) => { setResultType(value as typeof resultType); setOffendingTeamId(null); setConfirming(false) }} />
         </Field>
         {resultType !== 'NORMAL' && (
           <Field label={isForfeit ? 'Equipe que não compareceu' : 'Equipe que abandonou'} id="offending-team">
-            <Combobox id="offending-team" options={[{ value: '', label: '— selecione —' }, { value: match.homeTeamId, label: homeName }, { value: match.awayTeamId, label: awayName }]} value={offendingTeamId || null} onChange={setOffendingTeamId} />
+            <Combobox id="offending-team" options={[{ value: '', label: '— selecione —' }, { value: String(match.homeTeamId), label: homeName }, { value: String(match.awayTeamId), label: awayName }]} value={offendingTeamId == null ? null : String(offendingTeamId)} onChange={(raw) => setOffendingTeamId(parsePositiveId(raw))} />
           </Field>
         )}
         {isForfeit && <Badge variant="warning">Vitória atribuída por W.O. (FIBA D.3.1)</Badge>}
@@ -252,9 +261,9 @@ function SumulaForm({ match, homeRoster, awayRoster, homeTournamentTeamId, awayT
       {!isForfeit && <section className={s.section}>
         <h2 className={s.sectionTitle}>Súmula</h2>
         <Tabs
-          tabs={[{ id: match.homeTeamId, label: homeName }, { id: match.awayTeamId, label: awayName }]}
-          activeTab={activeTeam}
-          onChange={setActiveTeam}
+          tabs={[{ id: String(match.homeTeamId), label: homeName }, { id: String(match.awayTeamId), label: awayName }]}
+          activeTab={String(activeTeam)}
+          onChange={(raw) => { const id = parsePositiveId(raw); if (id != null) setActiveTeam(id) }}
           variant="line"
         />
         <StatColumnsConfig

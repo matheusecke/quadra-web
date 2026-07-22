@@ -33,3 +33,46 @@ describe('TournamentFormPage (create)', () => {
     await waitFor(() => expect(screen.getByText('detalhe')).toBeInTheDocument())
   }, 10_000)
 })
+
+const renderEdit = (id: string) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/tournaments/${id}/edit`]}>
+        <Routes>
+          <Route path="/tournaments/:tournamentId/edit" element={<TournamentFormPage />} />
+          <Route path="/tournaments/:tournamentId" element={<div>detalhe do campeonato</div>} />
+          <Route path="/tournaments" element={<div>lista de campeonatos</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('TournamentFormPage cancel', () => {
+  it('returns to the championship detail when cancelling an edit', async () => {
+    renderEdit('2')
+
+    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+
+    expect(screen.getByText('detalhe do campeonato')).toBeInTheDocument()
+  })
+
+  it('returns to the championship list when cancelling creation', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/tournaments/new']}>
+          <Routes>
+            <Route path="/tournaments/new" element={<TournamentFormPage />} />
+            <Route path="/tournaments" element={<div>lista de campeonatos</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+
+    expect(screen.getByText('lista de campeonatos')).toBeInTheDocument()
+  })
+})

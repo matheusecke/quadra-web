@@ -2,8 +2,8 @@ import type { TournamentFormat } from '../../features/sports/types'
 
 export interface TournamentFormState {
   name: string
-  seasonId: string | null
-  categoryId: string | null
+  seasonId: number | null
+  categoryId: number | null
   format: TournamentFormat
   startDate: string
   endDate: string

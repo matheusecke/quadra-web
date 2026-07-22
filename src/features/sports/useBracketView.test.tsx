@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: ReactNode }) => {
 }
 
 const demoView = async () => {
-  const { result } = renderHook(() => useBracketView('puc-geral-2026'), { wrapper })
+  const { result } = renderHook(() => useBracketView(1), { wrapper })
   await waitFor(() => expect(result.current.isPending).toBe(false))
   return result.current
 }

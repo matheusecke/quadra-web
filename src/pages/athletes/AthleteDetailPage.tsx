@@ -8,6 +8,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { useAthleteMatchesQuery, useAthleteQuery, useAthleteSummaryQuery, useAthleteTournamentStatsQuery } from '../../features/sports/queries'
 import type {
   AthleteTournamentStatsRow,
@@ -217,7 +218,7 @@ function TournamentsContent({
   teams,
 }: {
   rows: AthleteTournamentStatsRow[]
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }) {
   const navigate = useNavigate()
 
@@ -277,7 +278,7 @@ function TournamentsContent({
                     {row.tournament.name}
                   </Link>
                 </td>
-                <td className={s.td}>{teams.get(row.teamId)?.name ?? row.teamId}</td>
+                <td className={s.td}>{teams.get(row.teamId)?.name ?? String(row.teamId)}</td>
                 <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
                 <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, row.totals.measuredGames.minutesSeconds))}</td>
@@ -301,21 +302,37 @@ function TournamentsContent({
 }
 
 export function AthleteDetailPage() {
-  const { athleteId } = useParams<{ athleteId: string }>()
+  const { athleteId: rawAthleteId } = useParams<{ athleteId: string }>()
+  const athleteId = parsePositiveId(rawAthleteId)
   const navigate = useNavigate()
-  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch } = useAthleteQuery(athleteId)
-  const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId)
-  const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId)
+  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch } = useAthleteQuery(athleteId ?? undefined)
+  const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId ?? undefined)
+  const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId ?? undefined)
   const {
     data: tournamentStats,
     isPending: tournamentLoading,
     isError: tournamentError,
-  } = useAthleteTournamentStatsQuery(athleteId)
+  } = useAthleteTournamentStatsQuery(athleteId ?? undefined)
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams = teamMap(getTeams())
   const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading
   const isError = athleteError || summaryError || matchesError || tournamentError
+
+  if (athleteId == null) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <button type="button" className={s.backLink} onClick={() => navigate(-1)}>
+            <ArrowLeft size={12} strokeWidth={1.7} /> Voltar
+          </button>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="ID de atleta inválido." />
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -381,7 +398,7 @@ export function AthleteDetailPage() {
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position ?? 'Não informada'} · {team?.name ?? athlete.currentTeamId}</span>
+              <span>{athlete.position ?? 'Não informada'} · {team?.name ?? String(athlete.currentTeamId)}</span>
             </div>
           </div>
           <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>

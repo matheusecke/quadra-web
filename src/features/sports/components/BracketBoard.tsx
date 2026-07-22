@@ -13,17 +13,17 @@ export interface BracketBoardProps {
   rounds: BracketRound[]
   slots: BracketSlotView[]
   teams: BracketTeamOption[]
-  championTournamentTeamId?: string | null
+  championTournamentTeamId?: number | null
   variant?: 'compact' | 'full'
 }
 
 export function BracketBoard({ rounds, slots, teams, championTournamentTeamId = null, variant = 'compact' }: BracketBoardProps) {
   const ordered = [...rounds].sort((a, b) => a.number - b.number)
   const { mode, edges } = bracketLayout(ordered, slots)
-  const slotsOf = (roundId: string) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
-  const teamOf = (id: string | null) => teams.find((team) => team.tournamentTeamId === id) ?? null
-  const edgeOut = (slotId: string) => edges.find((edge) => edge.fromSlotId === slotId) ?? null
-  const hasEdgeIn = (slotId: string) => edges.some((edge) => edge.toSlotId === slotId)
+  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
+  const teamOf = (id: number | null) => teams.find((team) => team.tournamentTeamId === id) ?? null
+  const edgeOut = (slotId: number) => edges.find((edge) => edge.fromSlotId === slotId) ?? null
+  const hasEdgeIn = (slotId: number) => edges.some((edge) => edge.toSlotId === slotId)
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {
     const teamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId

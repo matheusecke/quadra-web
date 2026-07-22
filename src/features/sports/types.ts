@@ -35,7 +35,7 @@ export type LeaderStat = 'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg'
 // ── Core entities ───────────────────────────────────────────────────────────
 
 export interface Team {
-  id: string
+  id: number
   name: string
   /** Short tag (3 letters) used in dense tables and bracket cells. */
   shortName: string
@@ -47,11 +47,11 @@ export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
 export type AthleteStatus = 'ACTIVE' | 'INACTIVE'
 
 export interface Athlete {
-  id: string
+  id: number
   name: string
   number: number
   position: AthletePosition | null
-  currentTeamId: string
+  currentTeamId: number
   status: AthleteStatus
 }
 
@@ -61,8 +61,8 @@ export type StandingsState = 'EMPTY' | 'PARTIAL' | 'FINAL'
 export interface StandingRow {
   /** null if and only if standingsState === 'EMPTY'. */
   position: number | null
-  tournamentTeamId: string
-  teamId: string
+  tournamentTeamId: number
+  teamId: number
   /** display_name_snapshot — the name at enrollment time. */
   teamName: string
   played: number
@@ -83,16 +83,16 @@ export interface StandingRow {
 
 /** One classification table: a group, or the whole tournament in LEAGUE. §8.7 */
 export interface StandingsEnvelope {
-  group: { id: string; name: string } | null
+  group: { id: number; name: string } | null
   standingsState: StandingsState
   pendingMatches: number
   rows: StandingRow[]
 }
 
 export interface StatLeader {
-  athleteId: string
+  athleteId: number
   athleteName: string
-  teamId: string
+  teamId: number
   /** Per-game average for the category. */
   value: number | null
   gamesPlayed: number
@@ -118,22 +118,22 @@ export type LossType = 'NORMAL' | 'DEFAULT' | 'FORFEIT'
 export type ScoreSource = 'PERIODS' | 'AWARDED' | null
 
 export interface Match {
-  id: string
-  tournamentId: string
+  id: number
+  tournamentId: number
   date: string // ISO datetime
-  homeTeamId: string
-  awayTeamId: string
+  homeTeamId: number
+  awayTeamId: number
   homeScore: number | null
   awayScore: number | null
   status: MatchStatus
   venue?: string
   /** Set when the match belongs to a group stage; null for league and knockout games. */
-  tournamentGroupId: string | null
+  tournamentGroupId: number | null
   /**
    * Knockout round derived via match → bracket slot → round. Null outside the bracket.
    * Mutually exclusive with tournamentGroupId by construction.
    */
-  bracketRound: { id: string; number: number; label: string | null } | null
+  bracketRound: { id: number; number: number; label: string | null } | null
   /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
   homeLossType: LossType | null
   awayLossType: LossType | null
@@ -151,7 +151,7 @@ export type SeasonStatus = 'ACTIVE' | 'ARCHIVED'
 
 /** Time-bounded grouping of tournaments within an organization. */
 export interface Season {
-  id: string
+  id: number
   /** Free display label: '2025/26' or 'Temporada 2026'. */
   label: string
   startDate: string // ISO date
@@ -161,19 +161,19 @@ export interface Season {
 
 /** Controlled division vocabulary per organization (Sub-19, Adulto…). */
 export interface TournamentCategory {
-  id: string
+  id: number
   name: string
   sortOrder: number
 }
 
 export interface Tournament {
-  id: string
+  id: number
   name: string
-  seasonId: string
-  categoryId: string | null
+  seasonId: number
+  categoryId: number | null
   format: TournamentFormat
   status: TournamentStatus
-  teamIds: string[]
+  teamIds: number[]
   matchCount: number
   finishedMatchCount: number
   startDate: string // ISO date
@@ -183,13 +183,13 @@ export interface Tournament {
   regulation: string
   leaders: StatLeaders
   /** Explicit declared tournament-team champion, null while no title is declared. */
-  championTournamentTeamId: string | null
+  championTournamentTeamId: number | null
 }
 
 export interface TournamentTeam {
-  id: string
-  tournamentId: string
-  teamId: string
+  id: number
+  tournamentId: number
+  teamId: number
   /** The team's name at enrollment. Survives a later rename (DB spec §5.3). */
   displayNameSnapshot: string
   seed: number | null
@@ -200,34 +200,34 @@ export interface TournamentTeam {
 }
 
 export interface TournamentGroup {
-  id: string
-  tournamentId: string
+  id: number
+  tournamentId: number
   name: string
   sortOrder: number
   isDeleted?: boolean
 }
 
 export interface TournamentGroupTeam {
-  id: string
-  tournamentId: string
-  groupId: string
-  teamId: string
+  id: number
+  tournamentId: number
+  groupId: number
+  teamId: number
   isDeleted?: boolean
 }
 
 export interface RosterEntry {
-  id: string
-  tournamentId: string
-  teamId: string
-  athleteId: string
+  id: number
+  tournamentId: number
+  teamId: number
+  athleteId: number
   jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
   isDeleted?: boolean
 }
 
 export interface BracketRound {
-  id: string
-  tournamentId: string
+  id: number
+  tournamentId: number
   /** 1 = primeira rodada do mata-mata. Ordenação, não contagem. */
   number: number
   /** 'Quartas de final', 'Semifinais', 'Final'. Livre, escrito pelo admin. */
@@ -236,15 +236,15 @@ export interface BracketRound {
 }
 
 export interface BracketSlot {
-  id: string
-  tournamentId: string
-  roundId: string
+  id: number
+  tournamentId: number
+  roundId: number
   position: number
   label: string | null
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  matchId: string | null
-  winnerTournamentTeamId: string | null
+  homeTournamentTeamId: number | null
+  awayTournamentTeamId: number | null
+  matchId: number | null
+  winnerTournamentTeamId: number | null
   isDeleted?: boolean
 }
 
@@ -252,8 +252,8 @@ export interface BracketSlot {
 
 /** Individual player box-score line for a single match. */
 export interface PlayerMatchStats {
-  tournamentRosterId: string
-  athleteId: string
+  tournamentRosterId: number
+  athleteId: number
   athleteName: string
   number: number
   minutesSeconds: number | null
@@ -276,7 +276,7 @@ export type PlayerBoxScore = PlayerMatchStats
 
 /** Aggregated stats for one team in a match. */
 export interface TeamMatchStats {
-  teamId: string
+  teamId: number
   players: PlayerMatchStats[]
 }
 
@@ -304,7 +304,7 @@ export interface AthleteStatTotals {
 export interface AthleteMatchStatsRow {
   match: Match
   tournament: Tournament
-  teamId: string
+  teamId: number
   matchup: string
   result: string
   stats: PlayerMatchStats
@@ -312,7 +312,7 @@ export interface AthleteMatchStatsRow {
 
 export interface AthleteTournamentStatsRow {
   tournament: Tournament
-  teamId: string
+  teamId: number
   totals: AthleteStatTotals
 }
 
@@ -335,15 +335,15 @@ export interface MatchLeader {
   metric: 'PTS' | 'REB' | 'AST' | 'STL' | 'BLK'
   label: string
   value: number
-  athleteId: string
+  athleteId: number
   athleteName: string
-  teamId: string
+  teamId: number
 }
 
 /** Curated award, chosen by the ORG_ADMIN — not derived from statistics. DB spec §8.10. */
 export interface MatchMvp {
-  tournamentRosterId: string
-  athleteId: string
+  tournamentRosterId: number
+  athleteId: number
 }
 
 /** Match with full box score data. */

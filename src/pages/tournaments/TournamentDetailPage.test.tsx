@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { TournamentDetailPage } from './TournamentDetailPage'
 
@@ -21,10 +21,29 @@ const renderDetail = (id: string) => {
   )
 }
 
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="loc">{location.search}</div>
+}
+
+const renderDetailAt = (path: string) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/tournaments/:tournamentId" element={<TournamentDetailPage />} />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
 describe('TournamentDetailPage info strip', () => {
   it('does not show a current phase — the phase left the screen by decision (DB spec §6.3)', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
 
     await waitFor(() => expect(screen.getByText(/campeonato geral/i)).toBeInTheDocument())
 
@@ -41,7 +60,7 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
 
   const openTeamsTab = async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-inverno-2026')
+    renderDetail('2')
     await screen.findByText('Copa de Inverno PUC')
     await userEvent.click(screen.getByRole('tab', { name: 'Equipes' }))
     await screen.findByRole('list', { name: 'Equipes inscritas' })
@@ -104,7 +123,7 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     await openTeamsTab()
     await userEvent.click(elenco('Time 1'))
     await screen.findByRole('region', { name: 'Elenco Time 1' })
-    expect(elenco('Time 1')).toHaveAttribute('aria-controls', 'roster-panel-puc-time-1')
+    expect(elenco('Time 1')).toHaveAttribute('aria-controls', 'roster-panel-1')
   })
 
   it('requires inline confirmation before removing an enrolled team', async () => {
@@ -131,20 +150,20 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
 describe('TournamentDetailPage champion band', () => {
   it('labels the champion to a non-admin on a completed tournament', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     expect(await screen.findByText('Campeão')).toBeInTheDocument()
   })
 
   it('shows the champion team name on a completed tournament', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     const championLabel = await screen.findByText('Campeão')
     expect(within(championLabel.parentElement!).getByText('Time 1')).toBeInTheDocument()
   })
 
   it('shows no champion on a tournament that is not completed', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    renderDetail('puc-inverno-2026')
+    renderDetail('2')
     await screen.findByText('Copa de Inverno PUC')
     expect(screen.queryByText('Campeão')).not.toBeInTheDocument()
   })
@@ -155,28 +174,28 @@ describe('TournamentDetailPage admin region', () => {
 
   it('offers reopen on a completed tournament', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     await screen.findByText('Campeonato Geral da PUC 2026')
     expect(within(region()).getByRole('button', { name: 'Reabrir campeonato' })).toBeInTheDocument()
   })
 
   it('does not offer complete on a completed tournament', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     await screen.findByText('Campeonato Geral da PUC 2026')
     expect(within(region()).queryByRole('button', { name: 'Encerrar campeonato' })).not.toBeInTheDocument()
   })
 
   it('offers only edit on a tournament that is neither in progress nor completed', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-inverno-2026')
+    renderDetail('2')
     await screen.findByText('Copa de Inverno PUC')
     expect(within(region()).queryByRole('button', { name: 'Reabrir campeonato' })).not.toBeInTheDocument()
   })
 
   it('reveals the reopen confirmation when reopen is clicked', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     await screen.findByText('Campeonato Geral da PUC 2026')
     await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
     expect(screen.getByRole('button', { name: 'Confirmar reabertura' })).toBeInTheDocument()
@@ -184,7 +203,7 @@ describe('TournamentDetailPage admin region', () => {
 
   it('keeps the tournament completed until reopen is confirmed', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     await screen.findByText('Campeonato Geral da PUC 2026')
     await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
     expect(screen.getByText('Encerrado')).toBeInTheDocument()
@@ -192,10 +211,29 @@ describe('TournamentDetailPage admin region', () => {
 
   it('hides the reopen confirmation on cancel', async () => {
     mockIsOrgAdmin.mockReturnValue(true)
-    renderDetail('puc-geral-2026')
+    renderDetail('1')
     await screen.findByText('Campeonato Geral da PUC 2026')
     await userEvent.click(within(region()).getByRole('button', { name: 'Reabrir campeonato' }))
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('button', { name: 'Confirmar reabertura' })).not.toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage tab query param', () => {
+  it('opens the Partidas tab from the tab query param on first paint', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetailAt('/tournaments/2?tab=matches')
+
+    expect(await screen.findByRole('tab', { name: 'Partidas', selected: true })).toBeInTheDocument()
+  })
+
+  it('reflects the selected tab in the URL when switching tabs', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetailAt('/tournaments/2')
+    await screen.findByText('Copa de Inverno PUC')
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(screen.getByTestId('loc')).toHaveTextContent('tab=matches')
   })
 })

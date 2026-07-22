@@ -37,40 +37,40 @@ export const categoryKeys = {
 export const tournamentKeys = {
   all: ['tournaments'] as const,
   list: () => [...tournamentKeys.all, 'list'] as const,
-  detail: (id: string) => [...tournamentKeys.all, 'detail', id] as const,
-  teams: (id: string) => [...tournamentKeys.all, 'teams', id] as const,
-  roster: (tournamentId: string, teamId: string) => [...tournamentKeys.all, 'roster', tournamentId, teamId] as const,
-  championSuggestion: (id: string) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
+  detail: (id: number) => [...tournamentKeys.all, 'detail', id] as const,
+  teams: (id: number) => [...tournamentKeys.all, 'teams', id] as const,
+  roster: (tournamentId: number, teamId: number) => [...tournamentKeys.all, 'roster', tournamentId, teamId] as const,
+  championSuggestion: (id: number) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
 }
 
 export const matchKeys = {
   all: ['matches'] as const,
-  list: (tournamentId?: string) => [...matchKeys.all, 'list', tournamentId ?? 'all'] as const,
-  detail: (id: string) => [...matchKeys.all, 'detail', id] as const,
+  list: (tournamentId?: number) => [...matchKeys.all, 'list', tournamentId ?? 'all'] as const,
+  detail: (id: number) => [...matchKeys.all, 'detail', id] as const,
 }
 
 export const athleteKeys = {
   all: ['athletes'] as const,
-  detail: (id: string) => [...athleteKeys.all, 'detail', id] as const,
-  summary: (id: string) => [...athleteKeys.all, 'summary', id] as const,
-  matches: (id: string) => [...athleteKeys.all, 'matches', id] as const,
-  tournaments: (id: string) => [...athleteKeys.all, 'tournaments', id] as const,
+  detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
+  summary: (id: number) => [...athleteKeys.all, 'summary', id] as const,
+  matches: (id: number) => [...athleteKeys.all, 'matches', id] as const,
+  tournaments: (id: number) => [...athleteKeys.all, 'tournaments', id] as const,
 }
 
 export const groupKeys = {
   all: ['groups'] as const,
-  list: (tournamentId: string) => ['groups', tournamentId] as const,
-  teams: (tournamentId: string) => ['groups', tournamentId, 'teams'] as const,
+  list: (tournamentId: number) => ['groups', tournamentId] as const,
+  teams: (tournamentId: number) => ['groups', tournamentId, 'teams'] as const,
 }
 
 export const standingsKeys = {
   all: ['standings'] as const,
-  list: (tournamentId: string) => ['standings', tournamentId] as const,
+  list: (tournamentId: number) => ['standings', tournamentId] as const,
 }
 
 export const bracketKeys = {
   all: ['bracket'] as const,
-  list: (tournamentId: string) => ['bracket', tournamentId] as const,
+  list: (tournamentId: number) => ['bracket', tournamentId] as const,
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -87,104 +87,104 @@ export function useTournamentsQuery() {
   return useQuery({ queryKey: tournamentKeys.list(), queryFn: () => sportsApi.getTournaments() })
 }
 
-export function useTournamentQuery(id: string | undefined) {
+export function useTournamentQuery(id: number | undefined) {
   return useQuery({
-    queryKey: tournamentKeys.detail(id ?? ''),
-    queryFn: () => sportsApi.getTournament(id as string),
-    enabled: Boolean(id),
+    queryKey: tournamentKeys.detail(id ?? -1),
+    queryFn: () => sportsApi.getTournament(id!),
+    enabled: id != null,
   })
 }
 
-export function useTournamentTeamsQuery(tournamentId: string | undefined) {
+export function useTournamentTeamsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: tournamentKeys.teams(tournamentId ?? ''),
-    queryFn: () => sportsApi.getTournamentTeams(tournamentId as string),
-    enabled: Boolean(tournamentId),
+    queryKey: tournamentKeys.teams(tournamentId ?? -1),
+    queryFn: () => sportsApi.getTournamentTeams(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
-export function useRosterQuery(tournamentId: string | undefined, teamId: string | undefined) {
+export function useRosterQuery(tournamentId: number | undefined, teamId: number | undefined) {
   return useQuery({
-    queryKey: tournamentKeys.roster(tournamentId ?? '', teamId ?? ''),
-    queryFn: () => sportsApi.getRoster(tournamentId as string, teamId as string),
-    enabled: Boolean(tournamentId && teamId),
+    queryKey: tournamentKeys.roster(tournamentId ?? -1, teamId ?? -1),
+    queryFn: () => sportsApi.getRoster(tournamentId!, teamId!),
+    enabled: tournamentId != null && teamId != null,
   })
 }
 
-export function useMatchesQuery(filter?: { tournamentId?: string }) {
+export function useMatchesQuery(filter?: { tournamentId?: number }) {
   return useQuery({
     queryKey: matchKeys.list(filter?.tournamentId),
     queryFn: () => sportsApi.getMatches(filter),
   })
 }
 
-export function useMatchDetailQuery(id: string | undefined) {
+export function useMatchDetailQuery(id: number | undefined) {
   return useQuery({
-    queryKey: matchKeys.detail(id ?? ''),
-    queryFn: () => sportsApi.getMatchDetail(id as string),
-    enabled: Boolean(id),
+    queryKey: matchKeys.detail(id ?? -1),
+    queryFn: () => sportsApi.getMatchDetail(id!),
+    enabled: id != null,
   })
 }
 
-export function useAthleteQuery(id: string | undefined) {
-  return useQuery({ queryKey: athleteKeys.detail(id ?? ''), queryFn: () => sportsApi.getAthlete(id as string), enabled: Boolean(id) })
+export function useAthleteQuery(id: number | undefined) {
+  return useQuery({ queryKey: athleteKeys.detail(id ?? -1), queryFn: () => sportsApi.getAthlete(id!), enabled: id != null })
 }
 
-export function useAthleteSummaryQuery(id: string | undefined) {
-  return useQuery({ queryKey: athleteKeys.summary(id ?? ''), queryFn: () => sportsApi.getAthleteSummary(id as string), enabled: Boolean(id) })
+export function useAthleteSummaryQuery(id: number | undefined) {
+  return useQuery({ queryKey: athleteKeys.summary(id ?? -1), queryFn: () => sportsApi.getAthleteSummary(id!), enabled: id != null })
 }
 
-export function useAthleteMatchesQuery(id: string | undefined) {
-  return useQuery({ queryKey: athleteKeys.matches(id ?? ''), queryFn: () => sportsApi.getAthleteMatches(id as string), enabled: Boolean(id) })
+export function useAthleteMatchesQuery(id: number | undefined) {
+  return useQuery({ queryKey: athleteKeys.matches(id ?? -1), queryFn: () => sportsApi.getAthleteMatches(id!), enabled: id != null })
 }
 
-export function useAthleteTournamentStatsQuery(id: string | undefined) {
-  return useQuery({ queryKey: athleteKeys.tournaments(id ?? ''), queryFn: () => sportsApi.getAthleteTournamentStats(id as string), enabled: Boolean(id) })
+export function useAthleteTournamentStatsQuery(id: number | undefined) {
+  return useQuery({ queryKey: athleteKeys.tournaments(id ?? -1), queryFn: () => sportsApi.getAthleteTournamentStats(id!), enabled: id != null })
 }
 
-export function useGroupsQuery(tournamentId: string | undefined) {
+export function useGroupsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: groupKeys.list(tournamentId ?? ''),
-    queryFn: () => sportsApi.getGroups(tournamentId as string),
-    enabled: Boolean(tournamentId),
+    queryKey: groupKeys.list(tournamentId ?? -1),
+    queryFn: () => sportsApi.getGroups(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
-export function useGroupTeamsQuery(tournamentId: string | undefined) {
+export function useGroupTeamsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: groupKeys.teams(tournamentId ?? ''),
-    queryFn: () => sportsApi.getGroupTeams(tournamentId as string),
-    enabled: Boolean(tournamentId),
+    queryKey: groupKeys.teams(tournamentId ?? -1),
+    queryFn: () => sportsApi.getGroupTeams(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
 /** One request, N tables. The rows arrive ranked — nothing here sorts. */
-export function useStandingsQuery(tournamentId: string | undefined) {
+export function useStandingsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: standingsKeys.list(tournamentId ?? ''),
-    queryFn: () => sportsApi.listStandings(tournamentId as string),
-    enabled: Boolean(tournamentId),
+    queryKey: standingsKeys.list(tournamentId ?? -1),
+    queryFn: () => sportsApi.listStandings(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
-export function useBracketSlotsQuery(tournamentId: string | undefined) {
+export function useBracketSlotsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: bracketKeys.list(tournamentId ?? ''),
+    queryKey: bracketKeys.list(tournamentId ?? -1),
     queryFn: () => sportsApi.getBracketSlots(tournamentId!),
-    enabled: Boolean(tournamentId),
+    enabled: tournamentId != null,
   })
 }
 
-export function useBracketRoundsQuery(tournamentId: string | undefined) {
+export function useBracketRoundsQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: [...bracketKeys.list(tournamentId ?? ''), 'rounds'] as const,
+    queryKey: [...bracketKeys.list(tournamentId ?? -1), 'rounds'] as const,
     queryFn: () => sportsApi.getBracketRounds(tournamentId!),
-    enabled: Boolean(tournamentId),
+    enabled: tournamentId != null,
   })
 }
 
-export function useChampionSuggestionQuery(tournamentId: string | undefined) {
-  return useQuery({ queryKey: tournamentKeys.championSuggestion(tournamentId ?? ''), queryFn: () => sportsApi.getChampionSuggestion(tournamentId!), enabled: Boolean(tournamentId) })
+export function useChampionSuggestionQuery(tournamentId: number | undefined) {
+  return useQuery({ queryKey: tournamentKeys.championSuggestion(tournamentId ?? -1), queryFn: () => sportsApi.getChampionSuggestion(tournamentId!), enabled: tournamentId != null })
 }
 
 // ── Mutations ────────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ export function useCreateTournament() {
 export function useUpdateTournament() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateTournamentInput }) => sportsApi.updateTournament(id, input),
+    mutationFn: ({ id, input }: { id: number; input: UpdateTournamentInput }) => sportsApi.updateTournament(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
   })
 }
@@ -242,7 +242,7 @@ export function useEnrollTeam() {
 export function useRemoveTournamentTeam() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => sportsApi.removeTournamentTeam(id),
+    mutationFn: (id: number) => sportsApi.removeTournamentTeam(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tournamentKeys.all }),
   })
 }
@@ -266,7 +266,7 @@ export function useCreateBracketRound() {
 export function useUpdateBracketRound() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateBracketRoundInput }) => sportsApi.updateBracketRound(id, input),
+    mutationFn: ({ id, input }: { id: number; input: UpdateBracketRoundInput }) => sportsApi.updateBracketRound(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
   })
 }
@@ -274,7 +274,7 @@ export function useUpdateBracketRound() {
 export function useRemoveBracketRound() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => sportsApi.removeBracketRound(id),
+    mutationFn: (id: number) => sportsApi.removeBracketRound(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
   })
 }
@@ -282,7 +282,7 @@ export function useRemoveBracketRound() {
 export function useUpdateBracketSlot() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateBracketSlotInput }) => sportsApi.updateBracketSlot(id, input),
+    mutationFn: ({ id, input }: { id: number; input: UpdateBracketSlotInput }) => sportsApi.updateBracketSlot(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
   })
 }
@@ -309,7 +309,7 @@ export function useSetSlotWinner() {
 export function useRemoveBracketSlot() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => sportsApi.removeBracketSlot(id),
+    mutationFn: (id: number) => sportsApi.removeBracketSlot(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bracketKeys.all })
       queryClient.invalidateQueries({ queryKey: matchKeys.all })
@@ -329,7 +329,7 @@ export function useAddRosterEntry() {
 export function useUpdateRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; tournamentId: string; teamId: string; input: UpdateRosterEntryInput }) =>
+    mutationFn: ({ id, input }: { id: number; tournamentId: number; teamId: number; input: UpdateRosterEntryInput }) =>
       sportsApi.updateRosterEntry(id, input),
     onSuccess: (_data, variables) =>
       queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.teamId) }),
@@ -339,7 +339,7 @@ export function useUpdateRosterEntry() {
 export function useRemoveRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id }: { id: string; tournamentId: string; teamId: string }) => sportsApi.removeRosterEntry(id),
+    mutationFn: ({ id }: { id: number; tournamentId: number; teamId: number }) => sportsApi.removeRosterEntry(id),
     onSuccess: (_data, variables) =>
       queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.teamId) }),
   })
@@ -392,7 +392,7 @@ export function useAssignTeamToGroup() {
 export function useRemoveGroupTeam() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => sportsApi.removeGroupTeam(id),
+    mutationFn: (id: number) => sportsApi.removeGroupTeam(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.all })
       queryClient.invalidateQueries({ queryKey: standingsKeys.all })

@@ -34,8 +34,8 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     return <div className={s.tab}><BracketBoard rounds={rounds} slots={slots} teams={options} championTournamentTeamId={tournament.championTournamentTeamId} variant="full" /></div>
   }
 
-  const teamIdOf = (tournamentTeamId: string) => tournamentTeams.find((entry) => entry.id === tournamentTeamId)?.teamId
-  const handleSchedule = async (slotId: string, scheduledAt: string) => {
+  const teamIdOf = (tournamentTeamId: number) => tournamentTeams.find((entry) => entry.id === tournamentTeamId)?.teamId
+  const handleSchedule = async (slotId: number, scheduledAt: string) => {
     const slot = slots.find((entry) => entry.id === slotId)
     if (!slot?.homeTournamentTeamId || !slot.awayTournamentTeamId) return
     const homeTeamId = teamIdOf(slot.homeTournamentTeamId)

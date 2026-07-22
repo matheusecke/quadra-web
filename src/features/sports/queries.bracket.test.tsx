@@ -12,7 +12,7 @@ const wrapper = ({ children }: { children: ReactNode }) => {
 describe('bracket queries', () => {
   it('creates a slot and lists it', async () => {
     const create = renderHook(() => useCreateTournament(), { wrapper })
-    const t = await create.result.current.mutateAsync({ name: 'Copa K', seasonId: 'season-2025-26', categoryId: null, format: 'KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const t = await create.result.current.mutateAsync({ name: 'Copa K', seasonId: 1, categoryId: null, format: 'KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
     const round = renderHook(() => useCreateBracketRound(), { wrapper })
     const createdRound = await round.result.current.mutateAsync({ tournamentId: t.id, label: 'Final' })
     const slot = renderHook(() => useCreateBracketSlot(), { wrapper })

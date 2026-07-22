@@ -7,7 +7,7 @@ import s from '../matches.module.css'
 
 interface SummaryTabProps {
   match: MatchDetail
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 const LEADER_CATS: { key: keyof PlayerMatchStats; label: string; full: string }[] = [

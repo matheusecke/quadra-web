@@ -10,8 +10,8 @@ const fresh = () => {
   const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
   const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
   const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
-  const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 'team-1', displayName: 'Alfa' })
-  const beta = store.enrollTeam({ tournamentId: t.id, teamId: 'team-2', displayName: 'Beta' })
+  const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
+  const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })
   return { store, tournamentId: t.id, alfaId: alfa.id, betaId: beta.id }
 }
 
@@ -48,7 +48,7 @@ describe('bracket store', () => {
     const round = store.createBracketRound({ tournamentId, label: 'Final' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
     store.updateBracketSlot(slot.id, { homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId })
-    expect(() => store.setSlotWinner({ slotId: slot.id, winnerTournamentTeamId: 'tt-nobody' })).toThrow(/one of the slot sides/i)
+    expect(() => store.setSlotWinner({ slotId: slot.id, winnerTournamentTeamId: 999999 })).toThrow(/one of the slot sides/i)
     expect(store.setSlotWinner({ slotId: slot.id, winnerTournamentTeamId: alfaId }).winnerTournamentTeamId).toBe(alfaId)
   })
 
@@ -66,7 +66,7 @@ describe('bracket store', () => {
     const round = store.createBracketRound({ tournamentId, label: 'Final' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
     store.updateBracketSlot(slot.id, { homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
 
     store.removeBracketSlot(slot.id)
@@ -80,7 +80,7 @@ describe('bracket store', () => {
     const round = store.createBracketRound({ tournamentId, label: 'Final' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
     store.updateBracketSlot(slot.id, { homeTournamentTeamId: alfaId, awayTournamentTeamId: betaId })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     store.submitMatchResult({ matchId: match.id, periods: [period(1, 80, 70)], playerStats: [] })
 
@@ -142,14 +142,14 @@ describe('bracket store', () => {
     const { store, tournamentId } = fresh()
     const round = store.createBracketRound({ tournamentId, label: 'Semifinais' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound?.label).toBe('Semifinais')
   })
 
   it('gives no round to a match that fills no slot', () => {
     const { store, tournamentId } = fresh()
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound).toBeNull()
   })
 
@@ -157,7 +157,7 @@ describe('bracket store', () => {
     const { store, tournamentId } = fresh()
     const round = store.createBracketRound({ tournamentId, label: 'Semis' })
     const slot = store.createBracketSlot({ tournamentId, roundId: round.id })
-    const match = store.scheduleMatch({ tournamentId, homeTeamId: 'team-1', awayTeamId: 'team-2', scheduledAt: '2026-03-01T18:00' })
+    const match = store.scheduleMatch({ tournamentId, homeTeamId: 1, awayTeamId: 2, scheduledAt: '2026-03-01T18:00' })
     store.linkSlotMatch({ slotId: slot.id, matchId: match.id })
     store.updateBracketRound(round.id, { label: 'Semifinais' })
     expect(store.listMatches({ tournamentId }).find((m) => m.id === match.id)?.bracketRound?.label).toBe('Semifinais')

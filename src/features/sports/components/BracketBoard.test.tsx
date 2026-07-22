@@ -7,15 +7,15 @@ import type { BracketRound } from '../types'
 import type { BracketSlotView } from '../useBracketView'
 
 const rounds: BracketRound[] = [
-  { id: 'r1', tournamentId: 't1', number: 1, label: 'Semifinais' },
-  { id: 'r2', tournamentId: 't1', number: 2, label: 'Final' },
+  { id: 1, tournamentId: 1, number: 1, label: 'Semifinais' },
+  { id: 2, tournamentId: 1, number: 2, label: 'Final' },
 ]
 
 const teams = [
-  { tournamentTeamId: 'tt-A', name: 'Alfa', shortName: 'T01' },
-  { tournamentTeamId: 'tt-B', name: 'Beta', shortName: 'T02' },
-  { tournamentTeamId: 'tt-C', name: 'Gama', shortName: 'T03' },
-  { tournamentTeamId: 'tt-D', name: 'Delta', shortName: 'T04' },
+  { tournamentTeamId: 1, name: 'Alfa', shortName: 'T01' },
+  { tournamentTeamId: 2, name: 'Beta', shortName: 'T02' },
+  { tournamentTeamId: 3, name: 'Gama', shortName: 'T03' },
+  { tournamentTeamId: 4, name: 'Delta', shortName: 'T04' },
 ]
 
 const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'roundId' | 'position'>): BracketSlotView => ({
@@ -29,9 +29,9 @@ const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'rou
 })
 
 const tree = (): BracketSlotView[] => [
-  slot({ id: 's1', roundId: 'r1', position: 1, homeTournamentTeamId: 'tt-A', awayTournamentTeamId: 'tt-B', winnerTournamentTeamId: 'tt-A' }),
-  slot({ id: 's2', roundId: 'r1', position: 2, homeTournamentTeamId: 'tt-C', awayTournamentTeamId: 'tt-D', winnerTournamentTeamId: 'tt-C' }),
-  slot({ id: 'f1', roundId: 'r2', position: 1, homeTournamentTeamId: 'tt-A', awayTournamentTeamId: 'tt-C', winnerTournamentTeamId: 'tt-A' }),
+  slot({ id: 11, roundId: 1, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 2, winnerTournamentTeamId: 1 }),
+  slot({ id: 12, roundId: 1, position: 2, homeTournamentTeamId: 3, awayTournamentTeamId: 4, winnerTournamentTeamId: 3 }),
+  slot({ id: 13, roundId: 2, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 3, winnerTournamentTeamId: 1 }),
 ]
 
 const renderBoard = (props: Partial<Parameters<typeof BracketBoard>[0]> = {}) =>
@@ -48,7 +48,7 @@ describe('BracketBoard', () => {
   })
 
   it('falls back to the round number when the round has no label', () => {
-    renderBoard({ rounds: [{ id: 'r1', tournamentId: 't1', number: 1, label: null }], slots: [slot({ id: 's1', roundId: 'r1', position: 1 })] })
+    renderBoard({ rounds: [{ id: 1, tournamentId: 1, number: 1, label: null }], slots: [slot({ id: 11, roundId: 1, position: 1 })] })
     expect(screen.getByText('Rodada 1')).toBeInTheDocument()
   })
 
@@ -58,7 +58,7 @@ describe('BracketBoard', () => {
   })
 
   it('renders every card in column mode too', () => {
-    renderBoard({ slots: [...tree(), slot({ id: 'f2', roundId: 'r2', position: 2 })] })
+    renderBoard({ slots: [...tree(), slot({ id: 14, roundId: 2, position: 2 })] })
     expect(screen.getAllByRole('article')).toHaveLength(4)
   })
 
@@ -80,18 +80,18 @@ describe('BracketBoard', () => {
   })
 
   it('calls an empty side a bye when the other side is filled', () => {
-    renderBoard({ slots: [slot({ id: 's1', roundId: 'r1', position: 1, homeTournamentTeamId: 'tt-A' })] })
+    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, homeTournamentTeamId: 1 })] })
     expect(screen.getByText('bye')).toBeInTheDocument()
   })
 
   it('calls an empty side undefined when neither side is filled', () => {
-    renderBoard({ slots: [slot({ id: 's1', roundId: 'r1', position: 1 })] })
+    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1 })] })
     expect(screen.getAllByText('a definir')).toHaveLength(2)
   })
 
   it('links a card that has a match to the match page', () => {
-    renderBoard({ slots: [slot({ id: 's1', roundId: 'r1', position: 1, matchId: 'm1', match: { id: 'm1', status: 'FINISHED', date: '2026-05-01T20:00:00.000Z', homeScore: 80, awayScore: 70 } })] })
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/matches/m1')
+    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, matchId: 101, match: { id: 101, status: 'FINISHED', date: '2026-05-01T20:00:00.000Z', homeScore: 80, awayScore: 70 } })] })
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/matches/101')
   })
 
   it('does not link a card without a match', () => {
@@ -100,11 +100,11 @@ describe('BracketBoard', () => {
   })
 
   it('marks the declared champion', () => {
-    renderBoard({ championTournamentTeamId: 'tt-A' })
+    renderBoard({ championTournamentTeamId: 1 })
     expect(screen.getAllByText('Campeão')).toHaveLength(2)
   })
 
-  // tree() has tt-A winning the final. No declaration, no trophy — the mark
+  // tree() has team 1 winning the final. No declaration, no trophy — the mark
   // comes from championTournamentTeamId, never from the last round (DB spec §5.4).
   it('marks no champion when none is declared, even for the winner of the last round', () => {
     renderBoard()

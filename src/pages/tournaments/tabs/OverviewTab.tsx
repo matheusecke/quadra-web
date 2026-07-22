@@ -14,7 +14,7 @@ import s from '../tournaments.module.css'
 interface OverviewTabProps {
   tournament: Tournament
   matches: Match[]
-  teams: Map<string, Team>
+  teams: Map<number, Team>
   onSeeBracket: () => void
 }
 

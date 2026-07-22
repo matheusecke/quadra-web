@@ -4,24 +4,25 @@ import { Button } from '../../../components/ui/Button/Button'
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Field } from '../../../components/ui/Field/Field'
 import { Input } from '../../../components/ui/Input/Input'
+import { parsePositiveId } from '../parsePositiveId'
 import s from './GroupsPanel.module.css'
 
 export interface GroupOption {
-  id: string
+  id: number
   name: string
 }
 
 export interface GroupsTeamOption {
-  id: string
+  id: number
   name: string
 }
 
 export interface GroupsPanelProps {
   groups: GroupOption[]
   enrolledTeams: GroupsTeamOption[]
-  assignedTeamIds: string[]
+  assignedTeamIds: number[]
   onCreateGroup: (name: string) => Promise<void>
-  onAssign: (groupId: string, teamId: string) => Promise<void>
+  onAssign: (groupId: number, teamId: number) => Promise<void>
   errorMessage?: string
 }
 
@@ -33,8 +34,9 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const [groupId, setGroupId] = useState('')
-  const [teamId, setTeamId] = useState('')
+  // NOTE: `teamId` here is the enrolled-team identity (roadmap item 1 rename debt) — only retyped, not renamed.
+  const [groupId, setGroupId] = useState<number | null>(null)
+  const [teamId, setTeamId] = useState<number | null>(null)
   const [assigning, setAssigning] = useState(false)
 
   const unassigned = enrolledTeams.filter((team) => !assignedTeamIds.includes(team.id))
@@ -52,12 +54,12 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
   }
 
   const handleAssign = async () => {
-    if (!groupId || !teamId) return
+    if (groupId == null || teamId == null) return
     setAssigning(true)
     try {
       await onAssign(groupId, teamId)
-      setGroupId('')
-      setTeamId('')
+      setGroupId(null)
+      setTeamId(null)
     } finally {
       setAssigning(false)
     }
@@ -88,9 +90,9 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
           <Field label="Grupo" id={groupFieldId}>
             <Combobox
               id={groupFieldId}
-              options={groups.map((group) => ({ value: group.id, label: group.name }))}
-              value={groupId || null}
-              onChange={setGroupId}
+              options={groups.map((group) => ({ value: String(group.id), label: group.name }))}
+              value={groupId == null ? null : String(groupId)}
+              onChange={(raw) => setGroupId(parsePositiveId(raw))}
               placeholder="Selecione um grupo…"
               disabled={groups.length === 0}
             />
@@ -100,15 +102,15 @@ export function GroupsPanel({ groups, enrolledTeams, assignedTeamIds, onCreateGr
           <Field label="Equipe" id={teamFieldId}>
             <Combobox
               id={teamFieldId}
-              options={unassigned.map((team) => ({ value: team.id, label: team.name }))}
-              value={teamId || null}
-              onChange={setTeamId}
+              options={unassigned.map((team) => ({ value: String(team.id), label: team.name }))}
+              value={teamId == null ? null : String(teamId)}
+              onChange={(raw) => setTeamId(parsePositiveId(raw))}
               placeholder="Selecione uma equipe…"
               disabled={unassigned.length === 0}
             />
           </Field>
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleAssign} loading={assigning} disabled={!groupId || !teamId}>
+        <Button type="button" variant="primary" size="sm" onClick={handleAssign} loading={assigning} disabled={groupId == null || teamId == null}>
           Adicionar ao grupo
         </Button>
       </div>

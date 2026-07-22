@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { Badge } from '../../../components/ui/Badge/Badge'
+import { Button } from '../../../components/ui/Button/Button'
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
+import { parsePositiveId } from '../../../features/sports/parsePositiveId'
 import type { Tournament, Match, MatchStatus, Team } from '../../../features/sports/types'
 import {
   formatDateTime,
@@ -17,15 +19,17 @@ import s from '../tournaments.module.css'
 interface MatchesTabProps {
   tournament: Tournament
   matches: Match[]
-  teams: Map<string, Team>
+  teams: Map<number, Team>
+  isOrgAdmin: boolean
 }
 
 const STATUS_OPTIONS: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED']
 const GROUP_PHASE_FILTER = '__group__'
 
-export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
+export function MatchesTab({ tournament, matches, teams, isOrgAdmin }: MatchesTabProps) {
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
-  const [team, setTeam] = useState('')
+  const [team, setTeam] = useState<number | null>(null)
   const [status, setStatus] = useState<MatchStatus | ''>('')
   const [phase, setPhase] = useState('')
 
@@ -34,7 +38,7 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
     for (const m of matches) {
       if (m.bracketRound) {
         const label = m.bracketRound.label ?? `Rodada ${m.bracketRound.number}`
-        options.set(m.bracketRound.id, label)
+        options.set(String(m.bracketRound.id), label)
       } else if (m.tournamentGroupId) {
         options.set(GROUP_PHASE_FILTER, 'Fase de grupos')
       }
@@ -45,11 +49,11 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
   const filtered = useMemo(() => {
     const sorted = sortMatchesByDateDesc(matches)
     return sorted.filter((m) => {
-      if (team && m.homeTeamId !== team && m.awayTeamId !== team) return false
+      if (team != null && m.homeTeamId !== team && m.awayTeamId !== team) return false
       if (status && m.status !== status) return false
       if (phase === GROUP_PHASE_FILTER) {
         if (!m.tournamentGroupId || m.bracketRound) return false
-      } else if (phase && m.bracketRound?.id !== phase) {
+      } else if (phase && String(m.bracketRound?.id) !== phase) {
         return false
       }
       if (q) {
@@ -64,6 +68,17 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
 
   return (
     <>
+      {isOrgAdmin && (
+        <div className={s.tabActions}>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => navigate(`/tournaments/${tournament.id}/matches/new`)}
+          >
+            Nova partida
+          </Button>
+        </div>
+      )}
       <div className={s.tabToolbar}>
         <div className={s.searchWrap}>
           <span className={s.searchIcon} aria-hidden="true">
@@ -84,7 +99,7 @@ export function MatchesTab({ tournament, matches, teams }: MatchesTabProps) {
           )}
         </div>
         <div className={s.filterControl}>
-          <Combobox aria-label="Filtrar por equipe" options={[{ value: '', label: 'Equipe' }, ...tournament.teamIds.map((id) => ({ value: id, label: teams.get(id)?.name ?? id }))]} value={team || null} onChange={setTeam} />
+          <Combobox aria-label="Filtrar por equipe" options={[{ value: '', label: 'Equipe' }, ...tournament.teamIds.map((id) => ({ value: String(id), label: teams.get(id)?.name ?? String(id) }))]} value={team == null ? null : String(team)} onChange={(raw) => setTeam(parsePositiveId(raw))} />
         </div>
         <div className={s.filterControl}>
           <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: MATCH_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as MatchStatus | '')} />

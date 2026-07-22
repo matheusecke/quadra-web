@@ -89,7 +89,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
   const bracketRounds: BracketRound[] = seed.bracketRounds?.map((round) => ({ ...round })) ?? []
   const bracketSlots: BracketSlot[] = seed.bracketSlots?.map((slot) => ({ ...slot })) ?? []
-  const matchExtras = new Map<string, MatchExtra>()
+  const matchExtras = new Map<number, MatchExtra>()
 
   for (const detail of seed.matchDetails ?? []) {
     matchExtras.set(detail.id, {
@@ -100,19 +100,19 @@ export function createSportsStore(seed: SportsStoreSeed) {
     })
   }
 
-  const counters: Record<string, number> = {}
-  const nextId = (prefix: string) => `${prefix}-${(counters[prefix] = (counters[prefix] ?? 0) + 1)}`
+  let nextNumericId = 10_000
+  const nextId = () => nextNumericId++
 
-  const requireTournament = (id: string): Tournament => {
+  const requireTournament = (id: number): Tournament => {
     const found = tournaments.find((t) => t.id === id)
     if (!found) throw new Error(`Tournament ${id} not found`)
     return found
   }
 
-  const emptyTeamStats = (teamId: string): TeamMatchStats => ({ teamId, players: [] })
+  const emptyTeamStats = (teamId: number): TeamMatchStats => ({ teamId, players: [] })
 
   const toBoxScore = (
-    teamId: string,
+    teamId: number,
     input: Exclude<SubmitMatchResultInput, { resultType: 'FORFEIT' }>,
   ): TeamMatchStats => ({
     teamId,
@@ -122,7 +122,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return [{
         tournamentRosterId: rosterEntry.id,
         athleteId: rosterEntry.athleteId,
-        athleteName: rosterEntry.athleteId,
+        athleteName: String(rosterEntry.athleteId),
         number: rosterEntry.jerseyNumber,
         minutesSeconds: line.minutesSeconds,
         pts: line.pts,
@@ -143,7 +143,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   })
 
   const resolveMvp = (
-    mvpTournamentRosterId: string | null | undefined,
+    mvpTournamentRosterId: number | null | undefined,
     playerStats: PlayerBoxScoreInput[],
   ): MatchMvp | null => {
     if (!mvpTournamentRosterId) return null
@@ -155,7 +155,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     return { tournamentRosterId: rosterEntry.id, athleteId: rosterEntry.athleteId }
   }
 
-  const isHomeSide = (match: StoredMatch, tournamentTeamId: string): boolean => {
+  const isHomeSide = (match: StoredMatch, tournamentTeamId: number): boolean => {
     const tournamentTeam = tournamentTeams.find((entry) => entry.id === tournamentTeamId && isActive(entry))
     if (!tournamentTeam) throw new Error(`Tournament team ${tournamentTeamId} not found`)
     return tournamentTeam.teamId === match.homeTeamId
@@ -174,7 +174,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     tiebreakBlockKey: tt.tiebreakBlockKey,
   })
 
-  const bracketRoundOf = (matchId: string): Match['bracketRound'] => {
+  const bracketRoundOf = (matchId: number): Match['bracketRound'] => {
     const slot = bracketSlots.find((entry) => isActive(entry) && entry.matchId === matchId)
     if (!slot) return null
     const round = bracketRounds.find((entry) => entry.id === slot.roundId && isActive(entry))
@@ -184,7 +184,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const toMatch = (match: StoredMatch): Match => ({ ...match, bracketRound: bracketRoundOf(match.id) })
 
   /** GET /tournaments/:id/standings — §8.7. The ranking rule lives here, not in the UI. */
-  const buildStandings = (tournamentId: string, groupId?: string | null): StandingsEnvelope[] => {
+  const buildStandings = (tournamentId: number, groupId?: number | null): StandingsEnvelope[] => {
     const tournament = requireTournament(tournamentId)
     const enrolled = tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
     const tournamentMatches = matches.filter((m) => m.tournamentId === tournamentId).map(toMatch)
@@ -218,11 +218,11 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return [...seasons]
     },
     createSeason(input: CreateSeasonInput): Season {
-      const season: Season = { id: nextId('season'), label: input.label, startDate: input.startDate, endDate: input.endDate, status: 'ACTIVE' }
+      const season: Season = { id: nextId(), label: input.label, startDate: input.startDate, endDate: input.endDate, status: 'ACTIVE' }
       seasons.push(season)
       return season
     },
-    updateSeason(id: string, input: UpdateSeasonInput): Season {
+    updateSeason(id: number, input: UpdateSeasonInput): Season {
       const season = seasons.find((s) => s.id === id)
       if (!season) throw new Error(`Season ${id} not found`)
       Object.assign(season, input)
@@ -235,7 +235,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
     createCategory(input: CreateCategoryInput): TournamentCategory {
       const sortOrder = input.sortOrder ?? categories.reduce((max, c) => Math.max(max, c.sortOrder), 0) + 1
-      const category: TournamentCategory = { id: nextId('cat'), name: input.name, sortOrder }
+      const category: TournamentCategory = { id: nextId(), name: input.name, sortOrder }
       categories.push(category)
       return category
     },
@@ -244,12 +244,12 @@ export function createSportsStore(seed: SportsStoreSeed) {
     listTournaments(): Tournament[] {
       return [...tournaments]
     },
-    getTournament(id: string): Tournament | undefined {
+    getTournament(id: number): Tournament | undefined {
       return tournaments.find((t) => t.id === id)
     },
     createTournament(input: CreateTournamentInput): Tournament {
       const tournament: Tournament = {
-        id: nextId('tournament'),
+        id: nextId(),
         name: input.name,
         seasonId: input.seasonId,
         categoryId: input.categoryId,
@@ -268,7 +268,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       tournaments.push(tournament)
       return tournament
     },
-    updateTournament(id: string, input: UpdateTournamentInput): Tournament {
+    updateTournament(id: number, input: UpdateTournamentInput): Tournament {
       const tournament = requireTournament(id)
       Object.assign(tournament, input)
       tournament.updatedAt = new Date().toISOString()
@@ -276,7 +276,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Tournament teams (enrollment) ──────────────────────────────────────────
-    listTournamentTeams(tournamentId: string): TournamentTeam[] {
+    listTournamentTeams(tournamentId: number): TournamentTeam[] {
       return tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
     },
     enrollTeam(input: EnrollTeamInput): TournamentTeam {
@@ -285,7 +285,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       )
       if (exists) throw new Error('Team already enrolled in this tournament')
       const record: TournamentTeam = {
-        id: nextId('tournament-team'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         teamId: input.teamId,
         displayNameSnapshot: input.displayName,
@@ -298,7 +298,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       if (!tournament.teamIds.includes(input.teamId)) tournament.teamIds = [...tournament.teamIds, input.teamId]
       return record
     },
-    removeTournamentTeam(id: string): void {
+    removeTournamentTeam(id: number): void {
       const record = tournamentTeams.find((tt) => tt.id === id)
       if (!record) return
       record.isDeleted = true
@@ -307,7 +307,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Bracket ────────────────────────────────────────────────────────────────
-    listBracketRounds(tournamentId: string): BracketRound[] {
+    listBracketRounds(tournamentId: number): BracketRound[] {
       return bracketRounds
         .filter((round) => isActive(round) && round.tournamentId === tournamentId)
         .sort((a, b) => a.number - b.number)
@@ -315,7 +315,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     createBracketRound(input: CreateBracketRoundInput): BracketRound {
       const existing = bracketRounds.filter((round) => isActive(round) && round.tournamentId === input.tournamentId)
       const round: BracketRound = {
-        id: nextId('bracket-round'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         number: input.number ?? existing.reduce((max, entry) => Math.max(max, entry.number), 0) + 1,
         label: input.label ?? null,
@@ -323,13 +323,13 @@ export function createSportsStore(seed: SportsStoreSeed) {
       bracketRounds.push(round)
       return round
     },
-    updateBracketRound(id: string, input: UpdateBracketRoundInput): BracketRound {
+    updateBracketRound(id: number, input: UpdateBracketRoundInput): BracketRound {
       const round = bracketRounds.find((entry) => entry.id === id && isActive(entry))
       if (!round) throw new Error(`Bracket round ${id} not found`)
       if (input.label !== undefined) round.label = input.label
       return round
     },
-    removeBracketRound(id: string): void {
+    removeBracketRound(id: number): void {
       const round = bracketRounds.find((entry) => entry.id === id && isActive(entry))
       if (!round) return
       if (bracketSlots.some((slot) => isActive(slot) && slot.roundId === id)) {
@@ -337,8 +337,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
       round.isDeleted = true
     },
-    listBracketSlots(tournamentId: string): BracketSlot[] {
-      const numberOf = (roundId: string) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
+    listBracketSlots(tournamentId: number): BracketSlot[] {
+      const numberOf = (roundId: number) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
       return bracketSlots
         .filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
         .sort((a, b) => numberOf(a.roundId) - numberOf(b.roundId) || a.position - b.position)
@@ -349,7 +349,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       const inRound = bracketSlots.filter((slot) => isActive(slot) && slot.roundId === input.roundId)
       const position = input.position ?? inRound.reduce((max, slot) => Math.max(max, slot.position), 0) + 1
       const slot: BracketSlot = {
-        id: nextId('bracket-slot'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         roundId: input.roundId,
         position,
@@ -362,7 +362,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       bracketSlots.push(slot)
       return slot
     },
-    updateBracketSlot(id: string, input: UpdateBracketSlotInput): BracketSlot {
+    updateBracketSlot(id: number, input: UpdateBracketSlotInput): BracketSlot {
       const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
       if (!slot) throw new Error(`Bracket slot ${id} not found`)
       if (input.homeTournamentTeamId !== undefined) slot.homeTournamentTeamId = input.homeTournamentTeamId
@@ -398,7 +398,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return slot
     },
 
-    championSuggestion(tournamentId: string): string | null {
+    championSuggestion(tournamentId: number): number | null {
       const tournament = requireTournament(tournamentId)
       if (tournament.format === 'GROUP_STAGE') return null
       if (tournament.format === 'LEAGUE') {
@@ -407,7 +407,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
       const slots = bracketSlots.filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
       if (slots.length === 0) return null
-      const numberOf = (roundId: string) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
+      const numberOf = (roundId: number) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
       const lastNumber = Math.max(...slots.map((slot) => numberOf(slot.roundId)))
       const finalSlots = slots.filter((slot) => numberOf(slot.roundId) === lastNumber)
       return finalSlots.length === 1 ? finalSlots[0].winnerTournamentTeamId : null
@@ -439,7 +439,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       tournament.updatedAt = new Date().toISOString()
       return tournament
     },
-    removeBracketSlot(id: string): void {
+    removeBracketSlot(id: number): void {
       const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
       if (!slot) return
       if (slot.matchId) {
@@ -451,7 +451,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Roster ─────────────────────────────────────────────────────────────────
-    listRoster(tournamentId: string, teamId: string): RosterEntry[] {
+    listRoster(tournamentId: number, teamId: number): RosterEntry[] {
       return rosterEntries.filter((r) => isActive(r) && r.tournamentId === tournamentId && r.teamId === teamId)
     },
     addRosterEntry(input: RosterEntryInput): RosterEntry {
@@ -467,7 +467,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
         if (conflict) throw new Error('Athlete already on a team in the same tournament')
       }
       const record: RosterEntry = {
-        id: nextId('roster'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         teamId: input.teamId,
         athleteId: input.athleteId,
@@ -477,19 +477,19 @@ export function createSportsStore(seed: SportsStoreSeed) {
       rosterEntries.push(record)
       return record
     },
-    updateRosterEntry(id: string, input: UpdateRosterEntryInput): RosterEntry {
+    updateRosterEntry(id: number, input: UpdateRosterEntryInput): RosterEntry {
       const entry = rosterEntries.find((record) => record.id === id)
       if (!entry) throw new Error('Roster entry not found')
       Object.assign(entry, input)
       return entry
     },
-    removeRosterEntry(id: string): void {
+    removeRosterEntry(id: number): void {
       const entry = rosterEntries.find((record) => record.id === id)
       if (entry) entry.isDeleted = true
     },
 
     // ── Groups ─────────────────────────────────────────────────────────────────
-    listGroups(tournamentId: string): TournamentGroup[] {
+    listGroups(tournamentId: number): TournamentGroup[] {
       return tournamentGroups
         .filter((g) => isActive(g) && g.tournamentId === tournamentId)
         .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -497,11 +497,11 @@ export function createSportsStore(seed: SportsStoreSeed) {
     createGroup(input: CreateGroupInput): TournamentGroup {
       const existing = tournamentGroups.filter((g) => isActive(g) && g.tournamentId === input.tournamentId)
       const sortOrder = input.sortOrder ?? existing.reduce((max, g) => Math.max(max, g.sortOrder), 0) + 1
-      const group: TournamentGroup = { id: nextId('group'), tournamentId: input.tournamentId, name: input.name, sortOrder }
+      const group: TournamentGroup = { id: nextId(), tournamentId: input.tournamentId, name: input.name, sortOrder }
       tournamentGroups.push(group)
       return group
     },
-    listGroupTeams(tournamentId: string): TournamentGroupTeam[] {
+    listGroupTeams(tournamentId: number): TournamentGroupTeam[] {
       return tournamentGroupTeams.filter((gt) => isActive(gt) && gt.tournamentId === tournamentId)
     },
     assignTeamToGroup(input: AssignGroupTeamInput): TournamentGroupTeam {
@@ -510,7 +510,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       )
       if (taken) throw new Error('Team already assigned to a group in this tournament')
       const record: TournamentGroupTeam = {
-        id: nextId('group-team'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         groupId: input.groupId,
         teamId: input.teamId,
@@ -518,18 +518,18 @@ export function createSportsStore(seed: SportsStoreSeed) {
       tournamentGroupTeams.push(record)
       return record
     },
-    removeGroupTeam(id: string): void {
+    removeGroupTeam(id: number): void {
       const record = tournamentGroupTeams.find((gt) => gt.id === id)
       if (record) record.isDeleted = true
     },
 
     // ── Matches ────────────────────────────────────────────────────────────────
-    listMatches(filter?: { tournamentId?: string }): Match[] {
+    listMatches(filter?: { tournamentId?: number }): Match[] {
       return matches
         .filter((m) => !filter?.tournamentId || m.tournamentId === filter.tournamentId)
         .map(toMatch)
     },
-    getMatchDetail(id: string): MatchDetail | undefined {
+    getMatchDetail(id: number): MatchDetail | undefined {
       const storedMatch = matches.find((m) => m.id === id)
       if (!storedMatch) return undefined
       const match = toMatch(storedMatch)
@@ -546,7 +546,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       // A match filed into a group its two teams do not share would enter no classification
       // table at all — the ranking only counts a match when both sides are in the scope.
       if (input.groupId) {
-        const inGroup = (teamId: string) =>
+        const inGroup = (teamId: number) =>
           tournamentGroupTeams.some((gt) => isActive(gt) && gt.groupId === input.groupId && gt.teamId === teamId)
         if (!inGroup(input.homeTeamId) || !inGroup(input.awayTeamId)) {
           throw new Error('Both teams must belong to the group of the match')
@@ -554,7 +554,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       }
 
       const match: StoredMatch = {
-        id: nextId('match'),
+        id: nextId(),
         tournamentId: input.tournamentId,
         date: input.scheduledAt,
         homeTeamId: input.homeTeamId,
@@ -633,7 +633,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Standings ──────────────────────────────────────────────────────────────
-    listStandings(tournamentId: string, groupId?: string | null): StandingsEnvelope[] {
+    listStandings(tournamentId: number, groupId?: number | null): StandingsEnvelope[] {
       return buildStandings(tournamentId, groupId)
     },
     setTiebreakOrder(input: SetTiebreakOrderInput): void {

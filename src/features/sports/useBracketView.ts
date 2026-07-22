@@ -4,21 +4,21 @@ import { useBracketRoundsQuery, useBracketSlotsQuery, useMatchesQuery, useTourna
 import type { BracketRound, MatchStatus } from './types'
 
 export interface BracketTeamOption {
-  tournamentTeamId: string
+  tournamentTeamId: number
   name: string
   shortName: string
 }
 
 export interface BracketSlotView {
-  id: string
-  roundId: string
+  id: number
+  roundId: number
   position: number
   label: string | null
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  matchId: string | null
-  winnerTournamentTeamId: string | null
-  match: { id: string; status: MatchStatus; date: string; homeScore: number | null; awayScore: number | null } | null
+  homeTournamentTeamId: number | null
+  awayTournamentTeamId: number | null
+  matchId: number | null
+  winnerTournamentTeamId: number | null
+  match: { id: number; status: MatchStatus; date: string; homeScore: number | null; awayScore: number | null } | null
 }
 
 export interface BracketView {
@@ -30,7 +30,7 @@ export interface BracketView {
   refetch: () => void
 }
 
-export function useBracketView(tournamentId: string): BracketView {
+export function useBracketView(tournamentId: number): BracketView {
   const roundsQuery = useBracketRoundsQuery(tournamentId)
   const slotsQuery = useBracketSlotsQuery(tournamentId)
   const { data: matches = [] } = useMatchesQuery({ tournamentId })
@@ -44,7 +44,7 @@ export function useBracketView(tournamentId: string): BracketView {
     slots: (slotsQuery.data ?? []).map((slot) => ({ ...slot, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null })),
     teams: tournamentTeams.map((entry) => {
       const team = teamsById.get(entry.teamId)
-      return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? entry.teamId }
+      return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? String(entry.teamId) }
     }),
     isPending: roundsQuery.isPending || slotsQuery.isPending,
     isError: roundsQuery.isError || slotsQuery.isError,

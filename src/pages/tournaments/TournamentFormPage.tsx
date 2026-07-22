@@ -4,8 +4,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button/Button'
 import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { DateTimeField } from '../../components/ui/DateTimeField/DateTimeField'
+import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Field } from '../../components/ui/Field/Field'
 import { InlineCreateField } from '../../features/sports/components/InlineCreateField'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useCategoriesQuery,
   useCreateCategory,
@@ -28,14 +30,15 @@ const FORMAT_OPTIONS = Object.keys(TOURNAMENT_FORMAT_LABELS) as TournamentFormat
 
 export function TournamentFormPage() {
   const navigate = useNavigate()
-  const { tournamentId } = useParams<{ tournamentId: string }>()
+  const { tournamentId: rawTournamentId } = useParams<{ tournamentId: string }>()
+  const tournamentId = parsePositiveId(rawTournamentId)
   const isEdit = Boolean(tournamentId)
 
   const [state, dispatch] = useReducer(tournamentFormReducer, undefined, initialTournamentFormState)
 
   const { data: seasons } = useSeasonsQuery()
   const { data: categories } = useCategoriesQuery()
-  const { data: existing } = useTournamentQuery(tournamentId)
+  const { data: existing } = useTournamentQuery(tournamentId ?? undefined)
   const createSeason = useCreateSeason()
   const createCategory = useCreateCategory()
   const createTournament = useCreateTournament()
@@ -57,6 +60,10 @@ export function TournamentFormPage() {
     })
   }, [existing])
 
+  if (rawTournamentId != null && tournamentId == null) {
+    return <ErrorState title="ID de campeonato inválido." />
+  }
+
   const errors = validateTournamentForm(state)
 
   const handleSubmit = async (event: FormEvent) => {
@@ -64,7 +71,7 @@ export function TournamentFormPage() {
     if (errors.name || errors.seasonId || errors.dateRange) return
     const input = {
       name: state.name.trim(),
-      seasonId: state.seasonId as string,
+      seasonId: state.seasonId!,
       categoryId: state.categoryId,
       format: state.format,
       startDate: state.startDate,
@@ -141,7 +148,11 @@ export function TournamentFormPage() {
         </Field>
 
         <div className={s.actions}>
-          <Button type="button" variant="ghost" onClick={() => navigate('/tournaments')}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate(isEdit && tournamentId ? `/tournaments/${tournamentId}` : '/tournaments')}
+          >
             Cancelar
           </Button>
           <Button type="submit" variant="primary" loading={createTournament.isPending || updateTournament.isPending}>

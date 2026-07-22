@@ -10,7 +10,7 @@ import s from '../tournaments.module.css'
 
 interface StandingsTabProps {
   tournament: Tournament
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
 /**

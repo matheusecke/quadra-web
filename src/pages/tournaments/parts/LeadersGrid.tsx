@@ -5,7 +5,7 @@ import s from '../tournaments.module.css'
 
 interface LeadersGridProps {
   leaders: StatLeaders
-  teams: Map<string, Team>
+  teams: Map<number, Team>
   /** Max leaders shown per category. Overview uses 3; Stats tab uses 5. */
   perCard?: number
 }

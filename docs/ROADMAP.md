@@ -43,3 +43,19 @@ No dedicated team detail screen exists today. Routing only exposes the team list
 ### Pending consumer
 
 - The champion highlight (tournament detail, `COMPLETED` status) is shipping as a non-interactive result element for now, because there is no team destination to link to. It becomes clickable once the team detail page above exists. See `docs/superpowers/specs/*-tournament-header-actions-design.md`.
+
+## Tab Navigation via Nested Routes
+
+Detail pages with tabs (`TournamentDetailPage`, `MatchDetailPage`, `AthleteDetailPage`, `AdminAffiliationsPage`) currently hold the active tab in local `useState`, so a tab is not addressable, shareable, or refresh-safe. As a first step, tournament detail seeds and syncs its active tab through a `?tab=` query param (see `docs/superpowers/specs/*-tournament-match-creation-and-edit-return-design.md`).
+
+### Planned
+
+- Standardize tab navigation across these pages onto **nested routes** (`/tournaments/:id/matches`, `/tournaments/:id/teams`, …) with `<Outlet>` layouts, replacing both local state and the interim query param.
+- Migration from the query-param seam is mechanical: swap `searchParams.get('tab')` for the route segment and change return links from `?tab=matches` to `/matches`.
+
+### Known friction
+
+- `TournamentDetailPage` is the bulk of the effort: its tabs are **conditional on tournament format**, and the page owns heavy shared admin state (enroll, roster, complete, reopen). That state must move to an `<Outlet context>`, context provider, or route loader, and the tab `.test.tsx` suites need reworking.
+- Conditional tabs conflict with static route config: an invalid path like `/tournaments/:id/bracket` for a league needs a guard/redirect, whereas the query param falls back to `overview` for free.
+- `MatchSumulaPage` and `OrgSelectionPage` use `Tabs` for team/context switching, not navigation — they stay out of scope.
+- This is a dedicated refactor project and should get its own spec, not be folded into feature work.

@@ -4,18 +4,18 @@ import { STAT_FIELDS, sumNullable, validatePlayerStatLine } from './statistics'
 
 export interface BoxScoreState {
   periods: PeriodScore[]
-  lines: Record<string, PlayerStatInput>
+  lines: Record<number, PlayerStatInput>
   disabledColumns: StatField[]
-  mvpTournamentRosterId: string | null
+  mvpTournamentRosterId: number | null
 }
 
 export type BoxScoreAction =
   | { type: 'setPeriod'; index: number; side: 'home' | 'away'; value: number }
   | { type: 'addOvertime' }
   | { type: 'removeOvertime' }
-  | { type: 'setStat'; tournamentRosterId: string; field: keyof PlayerStatInput; value: number | null }
+  | { type: 'setStat'; tournamentRosterId: number; field: keyof PlayerStatInput; value: number | null }
   | { type: 'setColumnEnabled'; fields: StatField[]; enabled: boolean }
-  | { type: 'setMvp'; tournamentRosterId: string | null }
+  | { type: 'setMvp'; tournamentRosterId: number | null }
 
 const zeroLine = (): PlayerStatInput => ({
   pts: 0, fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0,
@@ -28,10 +28,10 @@ export function initBoxScoreState({
   mvpTournamentRosterId = null,
   initialLines,
 }: {
-  tournamentRosterIds: string[]
+  tournamentRosterIds: number[]
   regularPeriods: number
-  mvpTournamentRosterId?: string | null
-  initialLines?: Record<string, PlayerStatInput>
+  mvpTournamentRosterId?: number | null
+  initialLines?: Record<number, PlayerStatInput>
 }): BoxScoreState {
   const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, i) => ({
     periodNumber: i + 1,
@@ -40,7 +40,7 @@ export function initBoxScoreState({
     homePoints: null,
     awayPoints: null,
   }))
-  const lines: Record<string, PlayerStatInput> = {}
+  const lines: Record<number, PlayerStatInput> = {}
   for (const id of tournamentRosterIds) lines[id] = initialLines?.[id] ?? zeroLine()
   const disabledColumns = tournamentRosterIds.length === 0
     ? []
@@ -82,14 +82,14 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
       }
     }
     case 'setColumnEnabled': {
-      const lines: Record<string, PlayerStatInput> = {}
+      const lines: Record<number, PlayerStatInput> = {}
       for (const [id, line] of Object.entries(state.lines)) {
         const next = { ...line }
         for (const field of action.fields) {
           if (!action.enabled) next[field] = null
           else if (next[field] === null) next[field] = 0
         }
-        lines[id] = next
+        lines[Number(id)] = next
       }
       const disabledColumns = new Set(state.disabledColumns)
       for (const field of action.fields) {
@@ -105,7 +105,7 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
   }
 }
 
-export function teamTotalPoints(state: BoxScoreState, tournamentRosterIds: string[]): number | null {
+export function teamTotalPoints(state: BoxScoreState, tournamentRosterIds: number[]): number | null {
   const points = tournamentRosterIds.map((id) => state.lines[id]?.pts ?? null)
   return points.some((value) => value === null) ? null : sumNullable(points)
 }
@@ -114,7 +114,7 @@ export function columnHasData(state: BoxScoreState, fields: StatField[]): boolea
   return Object.values(state.lines).some((line) => fields.some((field) => line[field] !== null))
 }
 
-export function lineErrors(state: BoxScoreState, tournamentRosterId: string): StatValidationError[] {
+export function lineErrors(state: BoxScoreState, tournamentRosterId: number): StatValidationError[] {
   const line = state.lines[tournamentRosterId]
   return line ? validatePlayerStatLine(line) : []
 }

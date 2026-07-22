@@ -9,6 +9,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getTeams } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { useMatchDetailQuery, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
@@ -29,15 +30,34 @@ const TABS: TabItem[] = [
 ]
 
 export function MatchDetailPage() {
-  const { matchId } = useParams<{ matchId: string }>()
+  const { matchId: rawMatchId } = useParams<{ matchId: string }>()
+  const matchId = parsePositiveId(rawMatchId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId)
+  const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
   const { data: tournaments } = useTournamentsQuery()
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams        = teamMap(getTeams())
   const tournament = tournaments?.find((c) => c.id === match?.tournamentId)
+
+  // ── Invalid route param ────────────────────────────────────────────────────
+  if (matchId == null) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <div className={s.detailNav}>
+            <Link to="/matches" className={s.backLink}>
+              <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
+            </Link>
+          </div>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="ID de partida inválido." />
+        </div>
+      </div>
+    )
+  }
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -113,7 +133,7 @@ export function MatchDetailPage() {
       <div className={s.detailHeader}>
         {/* ── Nav ── */}
         <div className={s.detailNav}>
-          <Link to="/matches" className={s.backLink}>
+          <Link to={`/tournaments/${match.tournamentId}?tab=matches`} className={s.backLink}>
             <ArrowLeft size={12} strokeWidth={1.7} /> Partidas
           </Link>
           {tournament && (

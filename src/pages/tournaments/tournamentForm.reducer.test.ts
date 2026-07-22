@@ -10,11 +10,11 @@ describe('tournamentFormReducer', () => {
 
 describe('validateTournamentForm', () => {
   it('returns a date-range error when start is after end', () => {
-    const state = { ...initialTournamentFormState(), name: 'Copa', seasonId: 's1', startDate: '2026-06-01', endDate: '2026-02-01' }
+    const state = { ...initialTournamentFormState(), name: 'Copa', seasonId: 1, startDate: '2026-06-01', endDate: '2026-02-01' }
     expect(validateTournamentForm(state).dateRange).toBeTruthy()
   })
   it('returns no errors for a valid range', () => {
-    const state = { ...initialTournamentFormState(), name: 'Copa', seasonId: 's1', startDate: '2026-02-01', endDate: '2026-06-01' }
+    const state = { ...initialTournamentFormState(), name: 'Copa', seasonId: 1, startDate: '2026-02-01', endDate: '2026-06-01' }
     expect(validateTournamentForm(state)).toEqual({})
   })
 })

@@ -1003,3 +1003,9 @@
     grid-column: 1 / -1;
   }
 }
+
+.tabActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3);
+}

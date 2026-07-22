@@ -1,20 +1,20 @@
 export interface LayoutRound {
-  id: string
+  id: number
   number: number
 }
 
 export interface LayoutSlot {
-  id: string
-  roundId: string
+  id: number
+  roundId: number
   position: number
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  winnerTournamentTeamId: string | null
+  homeTournamentTeamId: number | null
+  awayTournamentTeamId: number | null
+  winnerTournamentTeamId: number | null
 }
 
 export interface BracketEdge {
-  fromSlotId: string
-  toSlotId: string
+  fromSlotId: number
+  toSlotId: number
   /** Toward the midline of the sibling pair: the odd position goes down, the even goes up. */
   direction: 'up' | 'down'
 }
@@ -36,7 +36,7 @@ export function bracketLayout(rounds: LayoutRound[], slots: LayoutSlot[]): Brack
   const ordered = [...rounds].sort((a, b) => a.number - b.number)
   if (ordered.length === 0) return { mode: 'column', edges: [] }
 
-  const slotsOf = (roundId: string) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
+  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
   const isPowerChain = ordered.every((round, index) => slotsOf(round.id).length === 2 ** (ordered.length - 1 - index))
 
   const edges: BracketEdge[] = []

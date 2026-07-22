@@ -13,13 +13,13 @@ vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => 
 describe('StandingsTab', () => {
   it('ranks the winner of a finished league match first', async () => {
     const tournament = await sportsApi.createTournament({
-      name: 'Liga', seasonId: 'season-2025-26', categoryId: null, format: 'LEAGUE',
+      name: 'Liga', seasonId: 1, categoryId: null, format: 'LEAGUE',
       startDate: '2026-02-01', endDate: '2026-06-01',
     })
-    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 'puc-time-1', displayName: 'Alfa' })
-    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 'puc-time-2', displayName: 'Beta' })
+    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Alfa' })
+    await sportsApi.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Beta' })
     const match = await sportsApi.scheduleMatch({
-      tournamentId: tournament.id, homeTeamId: 'puc-time-2', awayTeamId: 'puc-time-1', scheduledAt: '2026-03-01T18:00',
+      tournamentId: tournament.id, homeTeamId: 2, awayTeamId: 1, scheduledAt: '2026-03-01T18:00',
     })
     await sportsApi.submitMatchResult({
       matchId: match.id,
