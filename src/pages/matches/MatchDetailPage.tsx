@@ -10,7 +10,7 @@ import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useMatchDetailQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useMatchDetailQuery, useTournamentsQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
@@ -19,6 +19,7 @@ import {
   matchPhaseName,
   matchStatusVariant,
   teamMap,
+  tournamentTeamMap,
 } from '../../features/sports/sportsUtils'
 import { SummaryTab } from './tabs/SummaryTab'
 import { StatsTab } from './tabs/StatsTab'
@@ -36,9 +37,11 @@ export function MatchDetailPage() {
   const isOrgAdmin = useIsOrgAdmin()
   const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
   const { data: tournaments } = useTournamentsQuery()
+  const { data: tournamentTeamsData } = useTournamentTeamsQuery(match?.tournamentId)
   const [activeTab, setActiveTab] = useState('summary')
 
   const teams        = teamMap(getTeams())
+  const tournamentTeams = tournamentTeamMap(tournamentTeamsData ?? [], teams)
   const tournament = tournaments?.find((c) => c.id === match?.tournamentId)
 
   // ── Invalid route param ────────────────────────────────────────────────────
@@ -119,8 +122,8 @@ export function MatchDetailPage() {
     )
   }
 
-  const homeTeam = teams.get(match.homeTeamId)
-  const awayTeam = teams.get(match.awayTeamId)
+  const homeTeam = tournamentTeams.get(match.homeTournamentTeamId)
+  const awayTeam = tournamentTeams.get(match.awayTournamentTeamId)
   const hasScore = match.homeScore !== null && match.awayScore !== null
   const isForfeit = match.homeLossType === 'FORFEIT' || match.awayLossType === 'FORFEIT'
   const isAwardedScore = match.scoreSource === 'AWARDED'
@@ -220,10 +223,10 @@ export function MatchDetailPage() {
             description="A vitória foi atribuída por W.O. conforme a FIBA D.3.1."
           />
         ) : activeTab === 'summary' && (
-          <SummaryTab match={match} teams={teams} />
+          <SummaryTab match={match} tournamentTeams={tournamentTeams} />
         )}
         {!isForfeit && activeTab === 'stats' && (
-          <StatsTab match={match} teams={teams} />
+          <StatsTab match={match} tournamentTeams={tournamentTeams} />
         )}
       </div>
     </div>

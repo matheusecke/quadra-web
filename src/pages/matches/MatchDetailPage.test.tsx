@@ -4,8 +4,26 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { MatchDetailPage } from './MatchDetailPage'
+import type { TournamentTeam } from '../../features/sports/types'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+
+// GERAL tournament (id 1) enrollment snapshot naming Time 1 "Titans FC" — proves the score hero
+// resolves via the enrollment snapshot, not a live re-lookup in the global team catalog.
+vi.mock('../../features/sports/queries', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/sports/queries')>()
+  const renamedGeralTeams: TournamentTeam[] = [
+    { id: 1001, tournamentId: 1, teamId: 1, displayNameSnapshot: 'Titans FC', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+    { id: 1002, tournamentId: 1, teamId: 2, displayNameSnapshot: 'Time 2', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+  ]
+  return {
+    ...actual,
+    useTournamentTeamsQuery: (tournamentId: number | undefined) => {
+      const real = actual.useTournamentTeamsQuery(tournamentId)
+      return tournamentId === 1 ? { ...real, data: renamedGeralTeams } : real
+    },
+  }
+})
 
 const renderDetail = (matchId: string) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -61,5 +79,11 @@ describe('MatchDetailPage', () => {
     await screen.findByText('Mandante')
     const back = screen.getByRole('link', { name: 'Partidas' })
     expect(back).toHaveAttribute('href', '/tournaments/1?tab=matches')
+  })
+
+  it('shows the enrollment snapshot name in the score hero, not the live global team name', async () => {
+    renderDetail('131')
+
+    expect((await screen.findAllByText('Titans FC')).length).toBeGreaterThan(0)
   })
 })

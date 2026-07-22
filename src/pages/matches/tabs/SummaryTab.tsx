@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { getAthletes } from '../../../features/sports/mock-sports-data'
-import type { MatchDetail, PlayerMatchStats, Team } from '../../../features/sports/types'
+import type { MatchDetail, PlayerMatchStats } from '../../../features/sports/types'
 import { calculatePeriodTotal, getPeriodLabel } from '../../../features/sports/sportsUtils'
 import s from '../matches.module.css'
 
 interface SummaryTabProps {
   match: MatchDetail
-  teams: Map<number, Team>
+  tournamentTeams: Map<number, { name: string; shortName: string }>
 }
 
 const LEADER_CATS: { key: keyof PlayerMatchStats; label: string; full: string }[] = [
@@ -18,10 +18,10 @@ const LEADER_CATS: { key: keyof PlayerMatchStats; label: string; full: string }[
   { key: 'blk', label: 'BLK', full: 'Tocos' },
 ]
 
-export function SummaryTab({ match, teams }: SummaryTabProps) {
+export function SummaryTab({ match, tournamentTeams }: SummaryTabProps) {
   const allPlayers = [
-    ...match.homeStats.players.map((player) => ({ ...player, teamId: match.homeTeamId })),
-    ...match.awayStats.players.map((player) => ({ ...player, teamId: match.awayTeamId })),
+    ...match.homeStats.players.map((player) => ({ ...player, tournamentTeamId: match.homeTournamentTeamId })),
+    ...match.awayStats.players.map((player) => ({ ...player, tournamentTeamId: match.awayTournamentTeamId })),
   ]
 
   const hasStats = allPlayers.length > 0
@@ -64,7 +64,7 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
               <tbody>
                 {/* Home */}
                 <tr>
-                  <td>{teams.get(match.homeTeamId)?.name ?? '—'}</td>
+                  <td>{tournamentTeams.get(match.homeTournamentTeamId)?.name ?? '—'}</td>
                   {periods.map((p) => (
                     <td
                       key={p.periodNumber}
@@ -77,7 +77,7 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
                 </tr>
                 {/* Away */}
                 <tr>
-                  <td>{teams.get(match.awayTeamId)?.name ?? '—'}</td>
+                  <td>{tournamentTeams.get(match.awayTournamentTeamId)?.name ?? '—'}</td>
                   {periods.map((p) => (
                     <td
                       key={p.periodNumber}
@@ -146,7 +146,7 @@ export function SummaryTab({ match, teams }: SummaryTabProps) {
                         {player.athleteName}
                       </Link>
                       <span className={s.leaderTeam}>
-                        {teams.get(player.teamId)?.shortName ?? player.teamId}
+                        {tournamentTeams.get(player.tournamentTeamId)?.shortName ?? player.tournamentTeamId}
                       </span>
                     </>
                   ) : (

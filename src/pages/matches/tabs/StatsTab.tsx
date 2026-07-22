@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import type { MatchDetail, Team } from '../../../features/sports/types'
+import type { MatchDetail } from '../../../features/sports/types'
 import {
   aggregateTeamStats,
   calcEff,
@@ -13,18 +13,18 @@ import s from '../matches.module.css'
 
 interface StatsTabProps {
   match: MatchDetail
-  teams: Map<number, Team>
+  tournamentTeams: Map<number, { name: string; shortName: string }>
 }
 
-export function StatsTab({ match, teams }: StatsTabProps) {
-  const [selectedTeamId, setSelectedTeamId] = useState(match.homeTeamId)
+export function StatsTab({ match, tournamentTeams }: StatsTabProps) {
+  const [selectedTeamId, setSelectedTeamId] = useState(match.homeTournamentTeamId)
   const [q, setQ] = useState('')
 
   const hasAnyStats =
     match.homeStats.players.length > 0 || match.awayStats.players.length > 0
 
   const selectedStats =
-    selectedTeamId === match.homeTeamId ? match.homeStats : match.awayStats
+    selectedTeamId === match.homeTournamentTeamId ? match.homeStats : match.awayStats
 
   const totals = useMemo(
     () => aggregateTeamStats(selectedStats.players),
@@ -39,8 +39,8 @@ export function StatsTab({ match, teams }: StatsTabProps) {
     [selectedStats, q],
   )
 
-  const homeTeam = teams.get(match.homeTeamId)
-  const awayTeam = teams.get(match.awayTeamId)
+  const homeTeam = tournamentTeams.get(match.homeTournamentTeamId)
+  const awayTeam = tournamentTeams.get(match.awayTournamentTeamId)
 
   return (
     <div className={s.statsShell}>
@@ -49,8 +49,8 @@ export function StatsTab({ match, teams }: StatsTabProps) {
         {/* Mandante */}
         <button
           type="button"
-          className={`${s.teamBtn} ${selectedTeamId === match.homeTeamId ? s.teamBtnActive : ''}`}
-          onClick={() => setSelectedTeamId(match.homeTeamId)}
+          className={`${s.teamBtn} ${selectedTeamId === match.homeTournamentTeamId ? s.teamBtnActive : ''}`}
+          onClick={() => setSelectedTeamId(match.homeTournamentTeamId)}
         >
           <span className={s.teamBtnLabel}>Mandante</span>
           <span className={s.teamBtnName}>{homeTeam?.name ?? '—'}</span>
@@ -61,8 +61,8 @@ export function StatsTab({ match, teams }: StatsTabProps) {
         {/* Visitante */}
         <button
           type="button"
-          className={`${s.teamBtn} ${selectedTeamId === match.awayTeamId ? s.teamBtnActive : ''}`}
-          onClick={() => setSelectedTeamId(match.awayTeamId)}
+          className={`${s.teamBtn} ${selectedTeamId === match.awayTournamentTeamId ? s.teamBtnActive : ''}`}
+          onClick={() => setSelectedTeamId(match.awayTournamentTeamId)}
         >
           <span className={s.teamBtnLabel}>Visitante</span>
           <span className={s.teamBtnName}>{awayTeam?.name ?? '—'}</span>
