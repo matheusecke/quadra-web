@@ -26,25 +26,25 @@ describe('roster mutation hooks', () => {
       startDate: '2026-02-01',
       endDate: '2026-06-01',
     })
-    await renderHook(() => useEnrollTeam(), { wrapper }).result.current.mutateAsync({
+    const enrollment = await renderHook(() => useEnrollTeam(), { wrapper }).result.current.mutateAsync({
       tournamentId: tournament.id,
       teamId: 1,
       displayName: 'Tigres',
     })
     const entry = await renderHook(() => useAddRosterEntry(), { wrapper }).result.current.mutateAsync({
       tournamentId: tournament.id,
-      teamId: 1,
+      tournamentTeamId: enrollment.id,
       athleteId: 109,
       jerseyNumber: 7,
       role: 'ATHLETE',
     })
-    const list = renderHook(() => useRosterQuery(tournament.id, 1), { wrapper })
+    const list = renderHook(() => useRosterQuery(tournament.id, enrollment.id), { wrapper })
     await waitFor(() => expect(list.result.current.data?.[0]?.jerseyNumber).toBe(7))
 
     await renderHook(() => useUpdateRosterEntry(), { wrapper }).result.current.mutateAsync({
       id: entry.id,
       tournamentId: tournament.id,
-      teamId: 1,
+      tournamentTeamId: enrollment.id,
       input: { jerseyNumber: 23 },
     })
     await waitFor(() => expect(list.result.current.data?.[0]?.jerseyNumber).toBe(23))
@@ -52,7 +52,7 @@ describe('roster mutation hooks', () => {
     await renderHook(() => useRemoveRosterEntry(), { wrapper }).result.current.mutateAsync({
       id: entry.id,
       tournamentId: tournament.id,
-      teamId: 1,
+      tournamentTeamId: enrollment.id,
     })
     await waitFor(() => expect(list.result.current.data?.length).toBe(0))
   })

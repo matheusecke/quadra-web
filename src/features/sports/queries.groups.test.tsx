@@ -22,9 +22,9 @@ describe('group queries', () => {
   it('returns one standings envelope per group, EMPTY before any result', async () => {
     const create = renderHook(() => useCreateTournament(), { wrapper })
     const t = await create.result.current.mutateAsync({ name: 'Copa H', seasonId: 1, categoryId: null, format: 'GROUP_STAGE', startDate: '2026-02-01', endDate: '2026-06-01' })
-    await renderHook(() => useEnrollTeam(), { wrapper }).result.current.mutateAsync({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
+    const enrollment = await renderHook(() => useEnrollTeam(), { wrapper }).result.current.mutateAsync({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
     const group = await renderHook(() => useCreateGroup(), { wrapper }).result.current.mutateAsync({ tournamentId: t.id, name: 'Grupo A' })
-    await renderHook(() => useAssignTeamToGroup(), { wrapper }).result.current.mutateAsync({ tournamentId: t.id, groupId: group.id, teamId: 1 })
+    await renderHook(() => useAssignTeamToGroup(), { wrapper }).result.current.mutateAsync({ tournamentId: t.id, groupId: group.id, tournamentTeamId: enrollment.id })
 
     const standings = renderHook(() => useStandingsQuery(t.id), { wrapper })
     await waitFor(() => expect(standings.result.current.data?.[0]?.standingsState).toBe('EMPTY'))
