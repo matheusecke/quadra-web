@@ -8,6 +8,7 @@ import {
   getMatchDetailById,
   getTeams,
   seedCategories,
+  seedEnrollment,
   seedGroupId,
   seedGroupMembership,
   seedMatches,
@@ -58,10 +59,10 @@ const seedMatchDetails = seedMatches
 
 const teamNameById = new Map(getTeams().map((team) => [team.id, team.name]))
 
-const seedTournamentTeams: TournamentTeam[] = seedTournaments.flatMap((tournament) =>
-  tournament.teamIds.map((teamId) => ({
-    id: tournamentTeamId(tournament.id, teamId),
-    tournamentId: tournament.id,
+const seedTournamentTeams: TournamentTeam[] = seedEnrollment.flatMap((enrollment) =>
+  enrollment.teamIds.map((teamId) => ({
+    id: tournamentTeamId(enrollment.tournamentId, teamId),
+    tournamentId: enrollment.tournamentId,
     teamId,
     displayNameSnapshot: teamNameById.get(teamId) ?? String(teamId),
     seed: null,
@@ -110,7 +111,7 @@ const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournament
     .map((athlete) => ({
       id: seedRosterId(tournamentTeam.tournamentId, athlete.id),
       tournamentId: tournamentTeam.tournamentId,
-      teamId: tournamentTeam.teamId,
+      tournamentTeamId: tournamentTeam.id,
       athleteId: athlete.id,
       jerseyNumber: athlete.number,
       role: 'ATHLETE' as const,
@@ -133,7 +134,7 @@ const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flat
     id: ++nextGroupTeamId,
     tournamentId: g.tournamentId,
     groupId: seedGroupId(g.tournamentId, g.groupName),
-    teamId,
+    tournamentTeamId: tournamentTeamId(g.tournamentId, teamId),
   })),
 )
 
@@ -187,7 +188,7 @@ export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(stor
 export const removeBracketSlot = (id: number) => Promise.resolve(store.removeBracketSlot(id))
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
-export const getRoster = (tournamentId: number, teamId: number) => Promise.resolve(store.listRoster(tournamentId, teamId))
+export const getRoster = (tournamentId: number, tournamentTeamId: number) => Promise.resolve(store.listRoster(tournamentId, tournamentTeamId))
 export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
 export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
 export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
