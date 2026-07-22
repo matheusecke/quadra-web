@@ -19,6 +19,7 @@ import type {
   PeriodScore,
   StandingRow,
   Team,
+  TournamentTeam,
 } from './types'
 import { STAT_FIELDS, sumNullable, type StatField } from './statistics'
 
@@ -65,6 +66,18 @@ export function matchPhaseName(
 
 export function teamMap(teams: Team[]): Map<number, Team> {
   return new Map(teams.map((t) => [t.id, t]))
+}
+
+export function tournamentTeamMap(
+  tournamentTeams: TournamentTeam[],
+  teams: Map<number, Team>,
+): Map<number, { name: string; shortName: string }> {
+  return new Map(
+    tournamentTeams.map((entry) => [
+      entry.id,
+      { name: entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? '' },
+    ]),
+  )
 }
 
 // ── Labels (Portuguese) ────────────────────────────────────────────────────────

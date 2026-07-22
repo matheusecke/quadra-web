@@ -12,8 +12,10 @@ import {
   matchPhaseName,
   matchStatusVariant,
   tournamentStatusVariant,
+  teamMap,
+  tournamentTeamMap,
 } from './sportsUtils'
-import type { PlayerMatchStats, StandingRow } from './types'
+import type { PlayerMatchStats, StandingRow, TournamentTeam } from './types'
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
   position: 1, tournamentTeamId: 1001, teamId: 1, teamName: 'Alfa',
@@ -154,5 +156,24 @@ describe('aggregateAthleteStats', () => {
     expect(totals.pts).toBe(18)
     expect(totals.measuredGames.reb).toBe(0)
     expect(totals.measuredGames.pts).toBe(2)
+  })
+})
+
+describe('tournamentTeamMap', () => {
+  it('resolves a tournament team entry by its tournamentTeamId, using the enrollment snapshot name', () => {
+    const teams = teamMap([{ id: 1, name: 'Time 1 (current)', shortName: 'T01', city: 'Campinas' }])
+    const tournamentTeams: TournamentTeam[] = [
+      { id: 1001, tournamentId: 1, teamId: 1, displayNameSnapshot: 'Time 1', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+    ]
+    const map = tournamentTeamMap(tournamentTeams, teams)
+    expect(map.get(1001)).toEqual({ name: 'Time 1', shortName: 'T01' })
+  })
+
+  it('omits an unresolved global team rather than throwing', () => {
+    const tournamentTeams: TournamentTeam[] = [
+      { id: 1001, tournamentId: 1, teamId: 999, displayNameSnapshot: 'Time Fantasma', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+    ]
+    const map = tournamentTeamMap(tournamentTeams, new Map())
+    expect(map.get(1001)).toEqual({ name: 'Time Fantasma', shortName: '' })
   })
 })
