@@ -4,6 +4,7 @@ import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../../../components/ui/Table/Table'
+import { parsePositiveId } from '../parsePositiveId'
 import s from './TournamentRosterPanel.module.css'
 
 export type RosterRole = 'ATHLETE' | 'COACHING_STAFF'
@@ -14,20 +15,20 @@ const ROLE_LABELS: Record<RosterRole, string> = {
 }
 
 export interface RosterAthleteOption {
-  id: string
+  id: number
   name: string
 }
 
 export interface RosterDisplayEntry {
-  id: string
-  athleteId: string
+  id: number
+  athleteId: number
   name: string
   jerseyNumber: number
   role: RosterRole
 }
 
 export interface RosterEntryDraft {
-  athleteId: string
+  athleteId: number
   jerseyNumber: number
   role: RosterRole
 }
@@ -36,8 +37,8 @@ export interface TournamentRosterPanelProps {
   roster: RosterDisplayEntry[]
   availableAthletes: RosterAthleteOption[]
   onAdd: (entry: RosterEntryDraft) => Promise<void> | void
-  onRemove: (id: string) => void
-  onUpdate: (id: string, input: { jerseyNumber?: number; role?: RosterRole }) => Promise<void>
+  onRemove: (id: number) => void
+  onUpdate: (id: number, input: { jerseyNumber?: number; role?: RosterRole }) => Promise<void>
   errorMessage?: string
 }
 
@@ -46,21 +47,21 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
   const jerseyId = useId()
   const roleId = useId()
   const editRoleId = useId()
-  const [selectedAthlete, setSelectedAthlete] = useState('')
+  const [selectedAthlete, setSelectedAthlete] = useState<number | null>(null)
   const [jerseyNumber, setJerseyNumber] = useState<number | ''>('')
   const [role, setRole] = useState<RosterRole>('ATHLETE')
   const [busy, setBusy] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
   const [draftNumber, setDraftNumber] = useState<number | ''>('')
   const [draftRole, setDraftRole] = useState<RosterRole>('ATHLETE')
 
   const handleAdd = async () => {
-    if (!selectedAthlete || jerseyNumber === '') return
+    if (selectedAthlete == null || jerseyNumber === '') return
     setBusy(true)
     try {
       await onAdd({ athleteId: selectedAthlete, jerseyNumber, role })
-      setSelectedAthlete('')
+      setSelectedAthlete(null)
       setJerseyNumber('')
       setRole('ATHLETE')
     } finally {
@@ -163,9 +164,9 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
           <label className={s.label} htmlFor={athleteId}>Atleta</label>
           <Combobox
             id={athleteId}
-            options={availableAthletes.map((athlete) => ({ value: athlete.id, label: athlete.name }))}
-            value={selectedAthlete || null}
-            onChange={setSelectedAthlete}
+            options={availableAthletes.map((athlete) => ({ value: String(athlete.id), label: athlete.name }))}
+            value={selectedAthlete == null ? null : String(selectedAthlete)}
+            onChange={(raw) => setSelectedAthlete(parsePositiveId(raw))}
             placeholder="Selecione um atleta…"
             disabled={availableAthletes.length === 0}
           />
@@ -193,7 +194,7 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
             onChange={(next) => setRole(next as RosterRole)}
           />
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={!selectedAthlete || jerseyNumber === ''}>
+        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={selectedAthlete == null || jerseyNumber === ''}>
           Adicionar ao elenco
         </Button>
       </div>

@@ -6,16 +6,16 @@ import { formatMinutesSeconds } from '../sportsUtils'
 import s from './BoxScoreTable.module.css'
 
 export interface BoxScoreRosterEntry {
-  tournamentRosterId: string
+  tournamentRosterId: number
   name: string
   number: number
 }
 
 export interface BoxScoreTableProps {
   roster: BoxScoreRosterEntry[]
-  lines: Record<string, PlayerStatInput>
+  lines: Record<number, PlayerStatInput>
   disabledColumns: StatField[]
-  onStatChange: (tournamentRosterId: string, field: keyof PlayerStatInput, value: number | null) => void
+  onStatChange: (tournamentRosterId: number, field: keyof PlayerStatInput, value: number | null) => void
 }
 
 const STAT_COLUMNS: { field: StatField; label: string }[] = [

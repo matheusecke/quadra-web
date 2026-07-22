@@ -24,7 +24,7 @@ const zero: PlayerStatInput = {
 }
 
 function ControlledBoxScore({ onStatChange }: Pick<BoxScoreTableProps, 'onStatChange'>) {
-  const [lines, setLines] = useState<Record<string, PlayerStatInput>>({ 'roster-1': zero })
+  const [lines, setLines] = useState<Record<number, PlayerStatInput>>({ 1: zero })
   const handleStatChange: BoxScoreTableProps['onStatChange'] = (rosterId, field, value) => {
     onStatChange(rosterId, field, value)
     setLines((current) => ({
@@ -35,7 +35,7 @@ function ControlledBoxScore({ onStatChange }: Pick<BoxScoreTableProps, 'onStatCh
 
   return (
     <BoxScoreTable
-      roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]}
+      roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]}
       lines={lines}
       disabledColumns={[]}
       onStatChange={handleStatChange}
@@ -46,13 +46,13 @@ function ControlledBoxScore({ onStatChange }: Pick<BoxScoreTableProps, 'onStatCh
 describe('BoxScoreTable', () => {
   it('emits a stat change for the edited cell', async () => {
     const onStatChange = vi.fn()
-    render(<BoxScoreTable roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]} lines={{ 'roster-1': zero }} disabledColumns={[]} onStatChange={onStatChange} />)
+    render(<BoxScoreTable roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]} lines={{ 1: zero }} disabledColumns={[]} onStatChange={onStatChange} />)
     const cell = screen.getByLabelText(/r\. albuquerque.*pts/i)
     await userEvent.type(cell, '5')
-    expect(onStatChange).toHaveBeenLastCalledWith('roster-1', 'pts', 5)
+    expect(onStatChange).toHaveBeenLastCalledWith(1, 'pts', 5)
   })
   it('flags fgm greater than fga inline', () => {
-    render(<BoxScoreTable roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]} lines={{ 'roster-1': { ...zero, fgm: 9, fga: 4 } }} disabledColumns={[]} onStatChange={() => {}} />)
+    render(<BoxScoreTable roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]} lines={{ 1: { ...zero, fgm: 9, fga: 4 } }} disabledColumns={[]} onStatChange={() => {}} />)
     expect(screen.getByText(/fgm não pode exceder fga/i)).toBeInTheDocument()
   })
 
@@ -64,14 +64,14 @@ describe('BoxScoreTable', () => {
     await userEvent.clear(minutes)
     await userEvent.type(minutes, '38')
 
-    expect(onStatChange).toHaveBeenLastCalledWith('roster-1', 'minutesSeconds', 2280)
+    expect(onStatChange).toHaveBeenLastCalledWith(1, 'minutesSeconds', 2280)
   })
 
   it('shows N/A and removes the input for a disabled column', () => {
     render(
       <BoxScoreTable
-        roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]}
-        lines={{ 'roster-1': { ...zero, reb: null } }}
+        roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]}
+        lines={{ 1: { ...zero, reb: null } }}
         disabledColumns={['reb']}
         onStatChange={() => {}}
       />,
@@ -84,8 +84,8 @@ describe('BoxScoreTable', () => {
   it('renders an editable input for an enabled column', () => {
     render(
       <BoxScoreTable
-        roster={[{ tournamentRosterId: 'roster-1', name: 'R. Albuquerque', number: 7 }]}
-        lines={{ 'roster-1': zero }}
+        roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]}
+        lines={{ 1: zero }}
         disabledColumns={[]}
         onStatChange={() => {}}
       />,

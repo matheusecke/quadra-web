@@ -2,19 +2,20 @@ import { useId, useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Input } from '../../../components/ui/Input/Input'
+import { parsePositiveId } from '../parsePositiveId'
 import s from './InlineCreateField.module.css'
 
 export interface InlineCreateOption {
-  id: string
+  id: number
   label: string
 }
 
 export interface InlineCreateFieldProps {
   label: string
   options: InlineCreateOption[]
-  value: string | null
-  onChange: (id: string) => void
-  onCreate: (label: string) => Promise<{ id: string }>
+  value: number | null
+  onChange: (id: number) => void
+  onCreate: (label: string) => Promise<{ id: number }>
   createLabel: string
 }
 
@@ -45,9 +46,9 @@ export function InlineCreateField({ label, options, value, onChange, onCreate, c
         <div className={s.controlWrap}>
           <Combobox
             id={selectId}
-            options={options.map((option) => ({ value: option.id, label: option.label }))}
-            value={value}
-            onChange={onChange}
+            options={options.map((option) => ({ value: String(option.id), label: option.label }))}
+            value={value == null ? null : String(value)}
+            onChange={(raw) => { const id = parsePositiveId(raw); if (id != null) onChange(id) }}
             placeholder="Selecione…"
           />
         </div>

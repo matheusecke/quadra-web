@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MvpSelect } from './MvpSelect'
 
 const candidates = [
-  { tournamentRosterId: 'roster-1', athleteId: 'a1', name: 'Rafael Moura', teamName: 'Casa' },
-  { tournamentRosterId: 'roster-2', athleteId: 'a2', name: 'Diego Santos', teamName: 'Fora' },
+  { tournamentRosterId: 1, athleteId: 101, name: 'Rafael Moura', teamName: 'Casa' },
+  { tournamentRosterId: 2, athleteId: 102, name: 'Diego Santos', teamName: 'Fora' },
 ]
 
 describe('MvpSelect', () => {
@@ -14,12 +14,12 @@ describe('MvpSelect', () => {
     render(<MvpSelect candidates={candidates} value={null} onChange={onChange} />)
     await userEvent.click(screen.getByLabelText(/mvp da partida/i))
     await userEvent.click(screen.getByRole('option', { name: 'Diego Santos (Fora)' }))
-    expect(onChange).toHaveBeenCalledWith('roster-2')
+    expect(onChange).toHaveBeenCalledWith(2)
   })
 
   it('clears the MVP selection', async () => {
     const onChange = vi.fn()
-    render(<MvpSelect candidates={candidates} value="roster-1" onChange={onChange} />)
+    render(<MvpSelect candidates={candidates} value={1} onChange={onChange} />)
     await userEvent.click(screen.getByLabelText(/mvp da partida/i))
     await userEvent.click(screen.getByRole('option', { name: '— nenhum —' }))
     expect(onChange).toHaveBeenCalledWith(null)
