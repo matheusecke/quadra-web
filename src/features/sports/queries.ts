@@ -50,8 +50,14 @@ export const matchKeys = {
   detail: (id: number) => [...matchKeys.all, 'detail', id] as const,
 }
 
+export const teamKeys = {
+  all: ['teams'] as const,
+  list: () => [...teamKeys.all, 'list'] as const,
+}
+
 export const athleteKeys = {
   all: ['athletes'] as const,
+  list: () => [...athleteKeys.all, 'list'] as const,
   detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
   summary: (id: number) => [...athleteKeys.all, 'summary', id] as const,
   matches: (id: number) => [...athleteKeys.all, 'matches', id] as const,
@@ -133,6 +139,14 @@ export function useMatchDetailQuery(id: number | undefined) {
     queryFn: () => sportsApi.getMatchDetail(id!),
     enabled: id != null,
   })
+}
+
+export function useTeamsQuery() {
+  return useQuery({ queryKey: teamKeys.list(), queryFn: () => sportsApi.getTeams() })
+}
+
+export function useAthletesQuery() {
+  return useQuery({ queryKey: athleteKeys.list(), queryFn: () => sportsApi.getAthletes() })
 }
 
 export function useAthleteQuery(id: number | undefined) {
