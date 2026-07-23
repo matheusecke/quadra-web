@@ -7,9 +7,13 @@ import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useAllTournamentTeamsQuery, useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
+import {
+  useAllTournamentTeamsQuery,
+  useMatchesQuery,
+  useTeamsQuery,
+  useTournamentsQuery,
+} from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
@@ -46,9 +50,17 @@ export function MatchesPage() {
     return () => clearTimeout(t)
   }, [q])
 
-  const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
+  const matchesQuery = useMatchesQuery()
+  const teamsQuery = useTeamsQuery()
+  const { data: matches } = matchesQuery
   const { data: tournaments } = useTournamentsQuery()
   const { data: allTournamentTeams } = useAllTournamentTeamsQuery()
+  const isLoading = matchesQuery.isPending || teamsQuery.isPending
+  const isError = matchesQuery.isError || teamsQuery.isError
+  const refetch = () => {
+    matchesQuery.refetch()
+    teamsQuery.refetch()
+  }
   const isOrgAdmin = useIsOrgAdmin()
 
   const champMap = useMemo(
@@ -56,8 +68,8 @@ export function MatchesPage() {
     [tournaments],
   )
   const tournamentTeams = useMemo(
-    () => tournamentTeamMap(allTournamentTeams ?? [], teamMap(getTeams())),
-    [allTournamentTeams],
+    () => tournamentTeamMap(allTournamentTeams ?? [], teamMap(teamsQuery.data ?? [])),
+    [allTournamentTeams, teamsQuery.data],
   )
 
   const items = useMemo(() => {

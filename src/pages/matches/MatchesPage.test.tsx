@@ -2,10 +2,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as sportsApi from '../../services/sportsApi'
 import { MatchesPage } from './MatchesPage'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+
+afterEach(() => vi.restoreAllMocks())
 
 function renderMatchesPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -41,5 +44,11 @@ describe('MatchesPage', () => {
     expect(row).not.toBeNull()
     expect(within(row as HTMLTableRowElement).getByText('Time 1')).toBeInTheDocument()
     expect(within(row as HTMLTableRowElement).getByText('Time 2')).toBeInTheDocument()
+  })
+
+  it('shows the page error state when the team catalog fails', async () => {
+    vi.spyOn(sportsApi, 'getTeams').mockRejectedValueOnce(new Error('catalog unavailable'))
+    renderMatchesPage()
+    expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
   })
 })
