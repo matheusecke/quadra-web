@@ -1,12 +1,12 @@
 // SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
 import {
-  getAthletes,
+  getAthletes as getMockAthletes,
   getAthleteById,
   getAthleteMatches as getMockAthleteMatches,
   getAthleteSummaryById,
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
-  getTeams,
+  getTeams as getMockTeams,
   seedCategories,
   seedEnrollment,
   seedGroupId,
@@ -57,7 +57,7 @@ const seedMatchDetails = seedMatches
   .map((match) => getMatchDetailById(match.id))
   .filter((detail): detail is MatchDetail => Boolean(detail))
 
-const teamNameById = new Map(getTeams().map((team) => [team.id, team.name]))
+const teamNameById = new Map(getMockTeams().map((team) => [team.id, team.name]))
 
 const seedTournamentTeams: TournamentTeam[] = seedEnrollment.flatMap((enrollment) =>
   enrollment.teamIds.map((teamId) => ({
@@ -106,7 +106,7 @@ const seedInvernoBracketSlots: BracketSlot[] = [
 ]
 
 const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournamentTeam) =>
-  getAthletes()
+  getMockAthletes()
     .filter((athlete) => athlete.currentTeamId === tournamentTeam.teamId)
     .map((athlete) => ({
       id: seedRosterId(tournamentTeam.tournamentId, athlete.id),
@@ -194,7 +194,11 @@ export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store
 export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
 export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
 
+// ── Teams ────────────────────────────────────────────────────────────────────
+export const getTeams = () => Promise.resolve(getMockTeams())
+
 // ── Athletes ─────────────────────────────────────────────────────────────────
+export const getAthletes = () => Promise.resolve(getMockAthletes())
 export const getAthlete = (id: number) => Promise.resolve(getAthleteById(id))
 export const getAthleteSummary = (id: number) => Promise.resolve(getAthleteSummaryById(id))
 export const getAthleteMatches = (id: number) => Promise.resolve(getMockAthleteMatches(id))

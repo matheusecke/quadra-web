@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { MatchDetailPage } from './MatchDetailPage'
+import * as sportsApi from '../../services/sportsApi'
 import type { TournamentTeam } from '../../features/sports/types'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
@@ -85,5 +86,14 @@ describe('MatchDetailPage', () => {
     renderDetail('131')
 
     expect((await screen.findAllByText('Titans FC')).length).toBeGreaterThan(0)
+  })
+
+  it('resolves the MVP from the queried athlete catalog', async () => {
+    const athletes = await sportsApi.getAthletes()
+    vi.spyOn(sportsApi, 'getAthletes').mockResolvedValueOnce(
+      athletes.map((athlete) => athlete.id === 101 ? { ...athlete, name: 'MVP via seam' } : athlete),
+    )
+    renderDetail('131')
+    expect(await screen.findByText('MVP via seam')).toBeInTheDocument()
   })
 })

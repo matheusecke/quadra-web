@@ -14,13 +14,12 @@ import { MvpSelect } from '../../features/sports/components/MvpSelect'
 import { PeriodScoreEditor } from '../../features/sports/components/PeriodScoreEditor'
 import { StatColumnsConfig } from '../../features/sports/components/StatColumnsConfig'
 import { boxScoreReducer, columnHasData, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
-import { getAthletes, getTeams } from '../../features/sports/mock-sports-data'
-import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTournamentTeamsQuery } from '../../features/sports/queries'
+import { useAthletesQuery, useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTeamsQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
 import type { PlayerStatInput } from '../../features/sports/statistics'
 import { teamMap, tournamentTeamMap } from '../../features/sports/sportsUtils'
-import type { MatchDetail } from '../../features/sports/types'
+import type { Athlete, MatchDetail, Team } from '../../features/sports/types'
 import type { PlayerBoxScoreInput, SubmitMatchResultInput } from '../../services/sportsApi/types'
 import s from './MatchSumulaPage.module.css'
 
@@ -28,6 +27,8 @@ export function MatchSumulaPage() {
   const { matchId: rawMatchId } = useParams<{ matchId: string }>()
   const matchId = parsePositiveId(rawMatchId)
   const { data: match, isPending, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
+  const teamsQuery = useTeamsQuery()
+  const athletesQuery = useAthletesQuery()
 
   if (matchId == null) {
     return (
@@ -36,7 +37,7 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  if (isPending) {
+  if (isPending || teamsQuery.isPending || athletesQuery.isPending) {
     return (
       <div className={s.page}>
         <Skeleton height={40} />
@@ -44,10 +45,10 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  if (isError) {
+  if (isError || teamsQuery.isError || athletesQuery.isError) {
     return (
       <div className={s.page}>
-        <ErrorState title="Não foi possível carregar a partida." onRetry={refetch} />
+        <ErrorState title="Não foi possível carregar a partida." onRetry={() => { refetch(); teamsQuery.refetch(); athletesQuery.refetch() }} />
       </div>
     )
   }
@@ -58,13 +59,13 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  return <SumulaEditor match={match} />
+  return <SumulaEditor match={match} teams={teamsQuery.data ?? []} athletes={athletesQuery.data ?? []} />
 }
 
-function SumulaEditor({ match }: { match: MatchDetail }) {
+function SumulaEditor({ match, teams, athletes: athleteList }: { match: MatchDetail; teams: Team[]; athletes: Athlete[] }) {
   const { data: homeRoster, isPending: isHomeRosterPending } = useRosterQuery(match.tournamentId, match.homeTournamentTeamId)
   const { data: awayRoster, isPending: isAwayRosterPending } = useRosterQuery(match.tournamentId, match.awayTournamentTeamId)
-  const athletes = useMemo(() => new Map(getAthletes().map((athlete) => [athlete.id, athlete])), [])
+  const athletes = useMemo(() => new Map(athleteList.map((athlete) => [athlete.id, athlete])), [athleteList])
 
   if (isHomeRosterPending || isAwayRosterPending) {
     return <div className={s.page}><Skeleton height={200} /></div>
@@ -80,6 +81,7 @@ function SumulaEditor({ match }: { match: MatchDetail }) {
     <SumulaForm
       key={`${match.id}-${homeRoster?.length ?? 0}-${awayRoster?.length ?? 0}`}
       match={match}
+      teams={teams}
       homeRoster={mapRoster(homeRoster)}
       awayRoster={mapRoster(awayRoster)}
     />
@@ -94,16 +96,20 @@ interface SumulaRosterEntry {
 
 interface SumulaFormProps {
   match: MatchDetail
+  teams: Team[]
   homeRoster: SumulaRosterEntry[]
   awayRoster: SumulaRosterEntry[]
 }
 
-function SumulaForm({ match, homeRoster, awayRoster }: SumulaFormProps) {
+function SumulaForm({ match, teams, homeRoster, awayRoster }: SumulaFormProps) {
   const navigate = useNavigate()
   const submit = useSubmitMatchResult()
-  const teams = useMemo(() => teamMap(getTeams()), [])
+  const teamsById = useMemo(() => teamMap(teams), [teams])
   const { data: tournamentTeamsData } = useTournamentTeamsQuery(match.tournamentId)
-  const tournamentTeams = useMemo(() => tournamentTeamMap(tournamentTeamsData ?? [], teams), [tournamentTeamsData, teams])
+  const tournamentTeams = useMemo(
+    () => tournamentTeamMap(tournamentTeamsData ?? [], teamsById),
+    [tournamentTeamsData, teamsById],
+  )
 
   const homeIds = useMemo(() => homeRoster.map((r) => r.tournamentRosterId), [homeRoster])
   const awayIds = useMemo(() => awayRoster.map((r) => r.tournamentRosterId), [awayRoster])

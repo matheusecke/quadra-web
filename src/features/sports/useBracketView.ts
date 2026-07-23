@@ -1,5 +1,4 @@
-import { getTeams } from './mock-sports-data'
-import { useBracketRoundsQuery, useBracketSlotsQuery, useMatchesQuery, useTournamentTeamsQuery } from './queries'
+import { useBracketRoundsQuery, useBracketSlotsQuery, useMatchesQuery, useTeamsQuery, useTournamentTeamsQuery } from './queries'
 
 import type { BracketRound, MatchStatus } from './types'
 
@@ -33,10 +32,11 @@ export interface BracketView {
 export function useBracketView(tournamentId: number): BracketView {
   const roundsQuery = useBracketRoundsQuery(tournamentId)
   const slotsQuery = useBracketSlotsQuery(tournamentId)
+  const teamsQuery = useTeamsQuery()
   const { data: matches = [] } = useMatchesQuery({ tournamentId })
   const { data: tournamentTeams = [] } = useTournamentTeamsQuery(tournamentId)
 
-  const teamsById = new Map(getTeams().map((team) => [team.id, team]))
+  const teamsById = new Map((teamsQuery.data ?? []).map((team) => [team.id, team]))
   const matchesById = new Map(matches.map((match) => [match.id, match]))
 
   return {
@@ -46,8 +46,8 @@ export function useBracketView(tournamentId: number): BracketView {
       const team = teamsById.get(entry.teamId)
       return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? String(entry.teamId) }
     }),
-    isPending: roundsQuery.isPending || slotsQuery.isPending,
-    isError: roundsQuery.isError || slotsQuery.isError,
-    refetch: () => { void roundsQuery.refetch(); void slotsQuery.refetch() },
+    isPending: roundsQuery.isPending || slotsQuery.isPending || teamsQuery.isPending,
+    isError: roundsQuery.isError || slotsQuery.isError || teamsQuery.isError,
+    refetch: () => { void roundsQuery.refetch(); void slotsQuery.refetch(); void teamsQuery.refetch() },
   }
 }

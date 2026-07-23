@@ -2,14 +2,21 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { SummaryTab } from './SummaryTab'
-import { getAthletes, getMatchDetailById } from '../../../features/sports/mock-sports-data'
-import type { MatchDetail } from '../../../features/sports/types'
+import { getMatchDetailById } from '../../../features/sports/mock-sports-data'
+import type { Athlete, MatchDetail } from '../../../features/sports/types'
 
 const baseMatch = getMatchDetailById(131) as MatchDetail
-const athlete = getAthletes().find((candidate) =>
-  ![...baseMatch.homeStats.players, ...baseMatch.awayStats.players]
-    .some((player) => player.athleteId === candidate.id),
-) as NonNullable<ReturnType<typeof getAthletes>[number]>
+
+const athlete: Athlete = {
+  id: 999,
+  name: 'Bruno Castro',
+  number: 44,
+  position: 'C',
+  currentTeamId: 1,
+  status: 'ACTIVE',
+}
+
+const athletes = new Map<number, Athlete>([[athlete.id, athlete]])
 
 const tournamentTeams = new Map([
   [baseMatch.homeTournamentTeamId, { name: 'Time 1', shortName: 'T01' }],
@@ -19,7 +26,7 @@ const tournamentTeams = new Map([
 const renderTab = (match: MatchDetail) =>
   render(
     <MemoryRouter>
-      <SummaryTab match={match} tournamentTeams={tournamentTeams} />
+      <SummaryTab match={match} tournamentTeams={tournamentTeams} athletes={athletes} />
     </MemoryRouter>,
   )
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -21,6 +21,15 @@ const renderSumula = (matchId: string) => {
 }
 
 describe('MatchSumulaPage', () => {
+  it('builds roster rows from the queried athlete catalog', async () => {
+    const athletes = await sportsApi.getAthletes()
+    vi.spyOn(sportsApi, 'getAthletes').mockResolvedValueOnce(
+      athletes.map((athlete) => athlete.id === 101 ? { ...athlete, name: 'Atleta via seam' } : athlete),
+    )
+    renderSumula('216')
+    expect(await screen.findByText('Atleta via seam')).toBeInTheDocument()
+  })
+
   it('warns when total points do not match the final score', async () => {
     renderSumula('216')
     const anyPts = await screen.findAllByLabelText(/pts/i)

@@ -8,9 +8,14 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useMatchDetailQuery, useTournamentsQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import {
+  useAthletesQuery,
+  useMatchDetailQuery,
+  useTeamsQuery,
+  useTournamentsQuery,
+  useTournamentTeamsQuery,
+} from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
@@ -35,12 +40,24 @@ export function MatchDetailPage() {
   const matchId = parsePositiveId(rawMatchId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: match, isPending: isLoading, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
+  const matchQuery = useMatchDetailQuery(matchId ?? undefined)
+  const match = matchQuery.data
   const { data: tournaments } = useTournamentsQuery()
   const { data: tournamentTeamsData } = useTournamentTeamsQuery(match?.tournamentId)
+  const teamsQuery = useTeamsQuery()
+  const athletesQuery = useAthletesQuery()
   const [activeTab, setActiveTab] = useState('summary')
 
-  const teams        = teamMap(getTeams())
+  const isLoading = matchQuery.isPending || teamsQuery.isPending || athletesQuery.isPending
+  const isError = matchQuery.isError || teamsQuery.isError || athletesQuery.isError
+  const refetch = () => {
+    matchQuery.refetch()
+    teamsQuery.refetch()
+    athletesQuery.refetch()
+  }
+
+  const teams = teamMap(teamsQuery.data ?? [])
+  const athletes = new Map((athletesQuery.data ?? []).map((athlete) => [athlete.id, athlete]))
   const tournamentTeams = tournamentTeamMap(tournamentTeamsData ?? [], teams)
   const tournament = tournaments?.find((c) => c.id === match?.tournamentId)
 
@@ -223,7 +240,7 @@ export function MatchDetailPage() {
             description="A vitória foi atribuída por W.O. conforme a FIBA D.3.1."
           />
         ) : activeTab === 'summary' && (
-          <SummaryTab match={match} tournamentTeams={tournamentTeams} />
+          <SummaryTab match={match} tournamentTeams={tournamentTeams} athletes={athletes} />
         )}
         {!isForfeit && activeTab === 'stats' && (
           <StatsTab match={match} tournamentTeams={tournamentTeams} />

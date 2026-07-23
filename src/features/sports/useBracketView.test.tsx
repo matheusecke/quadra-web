@@ -1,10 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import * as sportsApi from '../../services/sportsApi'
 import { bracketLayout } from './bracketLayout'
 import { useBracketView } from './useBracketView'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 const wrapper = ({ children }: { children: ReactNode }) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -28,6 +33,12 @@ describe('useBracketView', () => {
 
   it('names each enrolled team for the side options', async () => {
     expect((await demoView()).teams).toHaveLength(16)
+  })
+
+  it('reports an error when the team catalog cannot load', async () => {
+    vi.spyOn(sportsApi, 'getTeams').mockRejectedValueOnce(new Error('catalog unavailable'))
+    const { result } = renderHook(() => useBracketView(1), { wrapper })
+    await waitFor(() => expect(result.current.isError).toBe(true))
   })
 })
 

@@ -6,7 +6,6 @@ import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { GroupsPanel } from '../../../features/sports/components/GroupsPanel'
 import { StandingsCard } from '../../../features/sports/components/StandingsCard'
-import { getTeams } from '../../../features/sports/mock-sports-data'
 import {
   standingsKeys,
   useAssignTeamToGroup,
@@ -19,7 +18,6 @@ import {
   useStandingsQuery,
   useTournamentTeamsQuery,
 } from '../../../features/sports/queries'
-import { teamMap } from '../../../features/sports/sportsUtils'
 import type { StandingRow, Team, Tournament } from '../../../features/sports/types'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import s from './GroupsTab.module.css'
@@ -88,11 +86,10 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   const groupTeams = groupTeamsQuery.data ?? []
   const envelopes = standingsQuery.data ?? []
   const tournamentTeams = tournamentTeamsQuery.data ?? []
-  const teamNameById = teamMap(getTeams())
 
   const enrolledTeams = tournamentTeams.map((tournamentTeam) => ({
     id: tournamentTeam.id,
-    name: teamNameById.get(tournamentTeam.teamId)?.name ?? tournamentTeam.displayNameSnapshot,
+    name: teams.get(tournamentTeam.teamId)?.name ?? tournamentTeam.displayNameSnapshot,
   }))
 
   const assignedTeamIds = groupTeams.map((groupTeam) => groupTeam.tournamentTeamId)

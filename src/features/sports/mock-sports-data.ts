@@ -4,7 +4,7 @@
  * (Team N = puc-time-N; Athlete 101+index; Tournament 1=Geral, 2=Inverno, 3=fixtures).
  * Team/athlete display names still trace tcc-api/prisma/seeds/puc-dev-seed.sql.
  */
-import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, Match, MatchDetail, PeriodScore, PlayerMatchStats, Season, StatLeaders, Team, TeamMatchStats, Tournament, TournamentCategory } from './types'
+import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, Match, MatchDetail, MatchMvp, PeriodScore, PlayerMatchStats, Season, StatLeaders, Team, TeamMatchStats, Tournament, TournamentCategory } from './types'
 import { SHOOTING_FIELDS, type StatField } from './statistics'
 import { aggregateAthleteStats } from './sportsUtils'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from './seedIds'
@@ -308,7 +308,7 @@ export const seedMatches: Match[] = [...geralMatches, ...invernoMatches, sumulaS
   }))
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
-const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats }>([
+const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats; mvp?: MatchMvp }>([
   [217, (() => { const b = buildBoxScore(SEED_TOURNAMENT.FIXTURES, 68, 71, 3, 4); return { periodScores: mkPeriods([17,18], [16,19], [18,17], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
   [218, { periodScores: [], homeStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 3), players: [] }, awayStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 4), players: [] } }],
   [101, (() => { const b = buildBoxScore(GERAL, 80, 89, 1, 2); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
@@ -361,7 +361,7 @@ const FINAL_AWAY = mkTeam(tournamentTeamId(GERAL, 2), [
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 114)!, 24,  4, 4, 1, 0, 0, 1, 1, 2, 5, 0, 1, 0, 0),
   mkPlayer(GERAL, PUC_ATHLETES.find((a) => a.id === 115)!, 18,  2, 2, 1, 0, 0, 0, 1, 1, 3, 0, 1, 0, 0),
 ])
-MATCH_EXTRA.set(131, { periodScores: mkPeriods([22,20],[18,22],[20,18],[16,16],[8,4]), homeStats: FINAL_HOME, awayStats: FINAL_AWAY })
+MATCH_EXTRA.set(131, { periodScores: mkPeriods([22,20],[18,22],[20,18],[16,16],[8,4]), homeStats: FINAL_HOME, awayStats: FINAL_AWAY, mvp: { tournamentRosterId: seedRosterId(GERAL, 101), athleteId: 101 } })
 
 export function getTeams(): Team[] { return MOCK_TEAMS }
 export function getTournaments(): Tournament[] { return MOCK_TOURNAMENTS }
@@ -372,7 +372,7 @@ export function getCategories(): TournamentCategory[] { return seedCategories }
 export function getSeasonLabel(seasonId: number): string { return seedSeasons.find((s) => s.id === seasonId)?.label ?? String(seasonId) }
 export function getCategoryName(categoryId: number | null): string { return categoryId ? (seedCategories.find((c) => c.id === categoryId)?.name ?? String(categoryId)) : '—' }
 export function getAllMatches(): Match[] { return MOCK_MATCHES }
-export function getMatchDetailById(id: number): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA.get(id); return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { tournamentTeamId: match.homeTournamentTeamId, players: [] }, awayStats: extra?.awayStats ?? { tournamentTeamId: match.awayTournamentTeamId, players: [] }, mvp: null } }
+export function getMatchDetailById(id: number): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA.get(id); return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { tournamentTeamId: match.homeTournamentTeamId, players: [] }, awayStats: extra?.awayStats ?? { tournamentTeamId: match.awayTournamentTeamId, players: [] }, mvp: extra?.mvp ?? null } }
 export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
 export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
 export function getAthleteById(athleteId: number): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }
