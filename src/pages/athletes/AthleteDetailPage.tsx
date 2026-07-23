@@ -310,7 +310,7 @@ export function AthleteDetailPage() {
   const { athleteId: rawAthleteId } = useParams<{ athleteId: string }>()
   const athleteId = parsePositiveId(rawAthleteId)
   const navigate = useNavigate()
-  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch } = useAthleteQuery(athleteId ?? undefined)
+  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch: refetchAthlete } = useAthleteQuery(athleteId ?? undefined)
   const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId ?? undefined)
   const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId ?? undefined)
   const {
@@ -326,6 +326,11 @@ export function AthleteDetailPage() {
   const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
   const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading || teamsQuery.isPending || seasonsQuery.isPending
   const isError = athleteError || summaryError || matchesError || tournamentError || teamsQuery.isError || seasonsQuery.isError
+  const refetch = () => {
+    refetchAthlete()
+    teamsQuery.refetch()
+    seasonsQuery.refetch()
+  }
 
   if (athleteId == null) {
     return (

@@ -150,5 +150,17 @@ describe('AthleteDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
     expect(screen.getByText('Temporada via seam')).toBeInTheDocument()
   })
+
+  it('recovers from a season catalog fetch failure when the retry button is clicked', async () => {
+    vi.spyOn(sportsApi, 'getSeasons').mockRejectedValueOnce(new Error('seasons unavailable'))
+    const user = userEvent.setup()
+    renderAthletePage()
+
+    expect(await screen.findByText('Não foi possível carregar o atleta.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    await waitForAthletePage()
+  })
 })
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
