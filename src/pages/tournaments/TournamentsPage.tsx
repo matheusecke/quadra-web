@@ -7,9 +7,8 @@ import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useTournamentsQuery } from '../../features/sports/queries'
+import { useCategoriesQuery, useSeasonsQuery, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { TournamentStatus } from '../../features/sports/types'
 import {
@@ -37,9 +36,24 @@ export function TournamentsPage() {
   const [status, setStatus] = useState<TournamentStatus | ''>('')
   const [season, setSeason] = useState<number | null>(null)
 
-  const { data, isPending: isLoading, isError, refetch } = useTournamentsQuery()
+  const tournamentsQuery = useTournamentsQuery()
+  const seasonsQuery = useSeasonsQuery()
+  const categoriesQuery = useCategoriesQuery()
+  const { data } = tournamentsQuery
+  const isLoading = tournamentsQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const isError = tournamentsQuery.isError || seasonsQuery.isError || categoriesQuery.isError
+  const refetch = () => {
+    tournamentsQuery.refetch()
+    seasonsQuery.refetch()
+    categoriesQuery.refetch()
+  }
   const isOrgAdmin = useIsOrgAdmin()
-  const seasons = useMemo(() => getSeasons(), [])
+  const seasons = useMemo(() => seasonsQuery.data ?? [], [seasonsQuery.data])
+  const seasonLabels = useMemo(() => new Map(seasons.map((item) => [item.id, item.label])), [seasons])
+  const categoryNames = useMemo(
+    () => new Map((categoriesQuery.data ?? []).map((item) => [item.id, item.name])),
+    [categoriesQuery.data],
+  )
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300)
@@ -163,8 +177,10 @@ export function TournamentsPage() {
                         <td className={s.td}>
                           <span className={s.cName}>{c.name}</span>
                         </td>
-                        <td className={`${s.td} ${s.mono}`}>{getSeasonLabel(c.seasonId)}</td>
-                        <td className={s.tdMuted}>{getCategoryName(c.categoryId)}</td>
+                        <td className={`${s.td} ${s.mono}`}>{seasonLabels.get(c.seasonId) ?? String(c.seasonId)}</td>
+                        <td className={s.tdMuted}>
+                          {c.categoryId == null ? '—' : categoryNames.get(c.categoryId) ?? String(c.categoryId)}
+                        </td>
                         <td className={s.td}>
                           <Badge variant={tournamentStatusVariant(c.status)}>
                             {TOURNAMENT_STATUS_LABELS[c.status]}
