@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import { getAthletes } from '../../../features/sports/mock-sports-data'
-import type { MatchDetail, PlayerMatchStats } from '../../../features/sports/types'
+import type { Athlete, MatchDetail, PlayerMatchStats } from '../../../features/sports/types'
 import { calculatePeriodTotal, getPeriodLabel } from '../../../features/sports/sportsUtils'
 import s from '../matches.module.css'
 
 interface SummaryTabProps {
   match: MatchDetail
   tournamentTeams: Map<number, { name: string; shortName: string }>
+  athletes: Map<number, Athlete>
 }
 
 const LEADER_CATS: { key: keyof PlayerMatchStats; label: string; full: string }[] = [
@@ -18,7 +18,7 @@ const LEADER_CATS: { key: keyof PlayerMatchStats; label: string; full: string }[
   { key: 'blk', label: 'BLK', full: 'Tocos' },
 ]
 
-export function SummaryTab({ match, tournamentTeams }: SummaryTabProps) {
+export function SummaryTab({ match, tournamentTeams, athletes }: SummaryTabProps) {
   const allPlayers = [
     ...match.homeStats.players.map((player) => ({ ...player, tournamentTeamId: match.homeTournamentTeamId })),
     ...match.awayStats.players.map((player) => ({ ...player, tournamentTeamId: match.awayTournamentTeamId })),
@@ -40,7 +40,7 @@ export function SummaryTab({ match, tournamentTeams }: SummaryTabProps) {
   const homeTotal = match.homeScore ?? calculatePeriodTotal(periods, 'home')
   const awayTotal = match.awayScore ?? calculatePeriodTotal(periods, 'away')
   const mvp = match.mvp
-  const mvpAthlete = mvp ? getAthletes().find((athlete) => athlete.id === mvp.athleteId) : null
+  const mvpAthlete = mvp ? athletes.get(mvp.athleteId) : null
 
   return (
     <>
