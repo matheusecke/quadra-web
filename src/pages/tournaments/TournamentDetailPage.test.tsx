@@ -247,6 +247,20 @@ describe('TournamentDetailPage admin region', () => {
   })
 })
 
+describe('TournamentDetailPage metadata', () => {
+  it('renders metadata from the queried season and category catalogs', async () => {
+    vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
+      { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+    ])
+    vi.spyOn(sportsApi, 'getCategories').mockResolvedValueOnce([
+      { id: 2, name: 'Categoria via seam', sortOrder: 1 },
+    ])
+    renderDetail('1')
+    expect(await screen.findByText('Temporada via seam')).toBeInTheDocument()
+    expect(screen.getByText('Categoria via seam')).toBeInTheDocument()
+  })
+})
+
 describe('TournamentDetailPage tab query param', () => {
   it('opens the Partidas tab from the tab query param on first paint', async () => {
     mockIsOrgAdmin.mockReturnValue(false)

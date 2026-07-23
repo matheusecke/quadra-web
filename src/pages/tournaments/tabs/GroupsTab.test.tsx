@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GroupsTab } from './GroupsTab'
 import * as sportsApi from '../../../services/sportsApi'
-import { getTeams } from '../../../features/sports/mock-sports-data'
 import { teamMap } from '../../../features/sports/sportsUtils'
 import type { Tournament } from '../../../features/sports/types'
 
@@ -29,7 +28,7 @@ describe('GroupsTab', () => {
   })
 
   it('renders one StandingsCard per envelope for a tournament that has groups', async () => {
-    const team = getTeams()[0]
+    const [team] = await sportsApi.getTeams()
     const tournament = await sportsApi.createTournament({
       name: 'Copa das Estrelas',
       seasonId: 1,
@@ -45,7 +44,7 @@ describe('GroupsTab', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={client}>
-        <GroupsTab tournament={tournament} teams={teamMap(getTeams())} />
+        <GroupsTab tournament={tournament} teams={teamMap([team])} />
       </QueryClientProvider>,
     )
 

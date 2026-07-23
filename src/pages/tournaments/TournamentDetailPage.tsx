@@ -9,7 +9,6 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { Collapse } from '../../components/ui/Collapse'
-import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
@@ -18,7 +17,7 @@ import { ChampionHighlight } from '../../features/sports/components/ChampionHigh
 import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
 import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
 import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
-import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
+import { useAddRosterEntry, useAthletesQuery, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -43,9 +42,14 @@ export function TournamentDetailPage() {
   const tournamentId = parsePositiveId(rawTournamentId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId ?? undefined)
+  const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
+  const { data: tournament } = tournamentQuery
   const { data: matches } = useMatchesQuery({ tournamentId: tournamentId ?? undefined })
   const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId ?? undefined)
+  const teamsQuery = useTeamsQuery()
+  const athletesQuery = useAthletesQuery()
+  const seasonsQuery = useSeasonsQuery()
+  const categoriesQuery = useCategoriesQuery()
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
   const addRosterEntry = useAddRosterEntry()
@@ -79,8 +83,18 @@ export function TournamentDetailPage() {
   const { data: roster } = useRosterQuery(tournamentId ?? undefined, rosterTournamentTeamId ?? undefined)
   const availableTeams = useMemo(() => {
     const enrolled = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
-    return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
-  }, [enrolledJoins])
+    return (teamsQuery.data ?? []).filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
+  }, [enrolledJoins, teamsQuery.data])
+
+  const isLoading = tournamentQuery.isPending || teamsQuery.isPending || athletesQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const isError = tournamentQuery.isError || teamsQuery.isError || athletesQuery.isError || seasonsQuery.isError || categoriesQuery.isError
+  const refetch = () => {
+    tournamentQuery.refetch()
+    teamsQuery.refetch()
+    athletesQuery.refetch()
+    seasonsQuery.refetch()
+    categoriesQuery.refetch()
+  }
 
   if (tournamentId == null) {
     return (
@@ -92,7 +106,14 @@ export function TournamentDetailPage() {
     )
   }
 
-  const teams = teamMap(getTeams())
+  const teams = teamMap(teamsQuery.data ?? [])
+  const athletes = new Map((athletesQuery.data ?? []).map((athlete) => [athlete.id, athlete]))
+  const seasonLabel = seasonsQuery.data?.find((season) => season.id === tournament?.seasonId)?.label
+    ?? String(tournament?.seasonId ?? '')
+  const categoryName = tournament?.categoryId == null
+    ? '—'
+    : categoriesQuery.data?.find((category) => category.id === tournament.categoryId)?.name
+      ?? String(tournament.categoryId)
   const enrolledTeamMap = tournamentTeamMap(enrolledJoins ?? [], teams)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
   const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
@@ -100,14 +121,14 @@ export function TournamentDetailPage() {
   const rosterDisplay = (roster ?? []).map((entry) => ({
     id: entry.id,
     athleteId: entry.athleteId,
-    name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? String(entry.athleteId),
+    name: athletes.get(entry.athleteId)?.name ?? String(entry.athleteId),
     jerseyNumber: entry.jerseyNumber,
     role: entry.role,
   }))
 
   const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === rosterTournamentTeamId)?.teamId
   const availableAthletes = rosterTeamGlobalId
-    ? getAthletes()
+    ? (athletesQuery.data ?? [])
         .filter((athlete) => athlete.currentTeamId === rosterTeamGlobalId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
         .map((athlete) => ({ id: athlete.id, name: athlete.name }))
     : []
@@ -253,9 +274,9 @@ export function TournamentDetailPage() {
           <div>
             <h1 className={s.detailTitle}>{tournament.name}</h1>
             <div className={s.detailMeta}>
-              <span className={s.mono}>{getSeasonLabel(tournament.seasonId)}</span>
+              <span className={s.mono}>{seasonLabel}</span>
               <span className={s.detailMetaSep}>·</span>
-              <span>{getCategoryName(tournament.categoryId)}</span>
+              <span>{categoryName}</span>
             </div>
           </div>
           <div className={s.detailStatusCol}>
