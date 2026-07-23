@@ -7,9 +7,15 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useAthleteMatchesQuery, useAthleteQuery, useAthleteSummaryQuery, useAthleteTournamentStatsQuery } from '../../features/sports/queries'
+import {
+  useAthleteMatchesQuery,
+  useAthleteQuery,
+  useAthleteSummaryQuery,
+  useAthleteTournamentStatsQuery,
+  useSeasonsQuery,
+  useTeamsQuery,
+} from '../../features/sports/queries'
 import type {
   AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
@@ -214,8 +220,10 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
 
 function TournamentsContent({
   rows,
+  seasonLabels,
 }: {
   rows: AthleteTournamentStatsRow[]
+  seasonLabels: Map<number, string>
 }) {
   const navigate = useNavigate()
 
@@ -276,7 +284,7 @@ function TournamentsContent({
                   </Link>
                 </td>
                 <td className={s.td}>{row.teamName}</td>
-                <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
+                <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? String(row.tournament.seasonId)}</td>
                 <td className={s.tdNum}>{games}</td>
                 <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, row.totals.measuredGames.minutesSeconds))}</td>
                 <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, row.totals.measuredGames.pts))}</td>
@@ -310,11 +318,14 @@ export function AthleteDetailPage() {
     isPending: tournamentLoading,
     isError: tournamentError,
   } = useAthleteTournamentStatsQuery(athleteId ?? undefined)
+  const teamsQuery = useTeamsQuery()
+  const seasonsQuery = useSeasonsQuery()
   const [activeTab, setActiveTab] = useState('summary')
 
-  const teams = teamMap(getTeams())
-  const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading
-  const isError = athleteError || summaryError || matchesError || tournamentError
+  const teams = teamMap(teamsQuery.data ?? [])
+  const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
+  const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading || teamsQuery.isPending || seasonsQuery.isPending
+  const isError = athleteError || summaryError || matchesError || tournamentError || teamsQuery.isError || seasonsQuery.isError
 
   if (athleteId == null) {
     return (
@@ -412,7 +423,7 @@ export function AthleteDetailPage() {
         {activeTab === 'summary' && <SummaryContent summary={summary} />}
         {activeTab === 'matches' && <MatchesContent rows={matches ?? []} />}
         {activeTab === 'tournaments' && (
-          <TournamentsContent rows={tournamentStats ?? []} />
+          <TournamentsContent rows={tournamentStats ?? []} seasonLabels={seasonLabels} />
         )}
       </div>
     </div>

@@ -139,5 +139,16 @@ describe('AthleteDetailPage', () => {
 
     expect(screen.getByText('Snapshot FC')).toBeInTheDocument()
   })
+
+  it('renders tournament seasons from the queried catalog', async () => {
+    vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
+      { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+    ])
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+    expect(screen.getByText('Temporada via seam')).toBeInTheDocument()
+  })
 })
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
