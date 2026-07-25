@@ -24,6 +24,7 @@ describe('TournamentsPage catalog labels', () => {
     vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
       { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])
+    vi.spyOn(sportsApi, 'getCategories').mockResolvedValueOnce([])
     renderPage()
     const row = (await screen.findByText('Campeonato Geral da PUC 2026')).closest('tr') as HTMLTableRowElement
     expect(within(row).getByText('Temporada via seam')).toBeInTheDocument()

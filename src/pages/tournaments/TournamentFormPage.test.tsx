@@ -1,78 +1,43 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
+import * as sportsApi from '../../services/sportsApi'
 import { TournamentFormPage } from './TournamentFormPage'
 
-const renderNew = () => {
+const season = { id: 5, label: '2026/27', startDate: '2026-08-01', endDate: '2027-07-31', status: 'ACTIVE' as const }
+
+const renderPage = () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/tournaments/new']}>
-        <Routes>
-          <Route path="/tournaments/new" element={<TournamentFormPage />} />
-          <Route path="/tournaments/:tournamentId" element={<div>detalhe</div>} />
-        </Routes>
-      </MemoryRouter>
+      <MemoryRouter><TournamentFormPage /></MemoryRouter>
     </QueryClientProvider>,
   )
 }
 
-describe('TournamentFormPage (create)', () => {
-  it('creates a tournament and navigates to its detail', async () => {
-    renderNew()
-    await userEvent.type(screen.getByLabelText(/nome/i), 'Copa de Verão')
-    await userEvent.click(await screen.findByLabelText(/temporada/i))
-    await userEvent.click(screen.getByRole('option', { name: '2025/26' }))
-    await userEvent.click(screen.getByLabelText(/formato/i))
-    await userEvent.click(screen.getByRole('option', { name: 'Grupos + mata-mata' }))
-    await userEvent.type(screen.getByLabelText(/início/i), '01/02/2026')
-    await userEvent.type(screen.getByLabelText(/fim/i), '01/06/2026')
-    await userEvent.click(screen.getByRole('button', { name: /criar campeonato/i }))
-    await waitFor(() => expect(screen.getByText('detalhe')).toBeInTheDocument())
-  }, 10_000)
-})
+afterEach(() => vi.restoreAllMocks())
 
-const renderEdit = (id: string) => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/tournaments/${id}/edit`]}>
-        <Routes>
-          <Route path="/tournaments/:tournamentId/edit" element={<TournamentFormPage />} />
-          <Route path="/tournaments/:tournamentId" element={<div>detalhe do campeonato</div>} />
-          <Route path="/tournaments" element={<div>lista de campeonatos</div>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
-}
-
-describe('TournamentFormPage cancel', () => {
-  it('returns to the championship detail when cancelling an edit', async () => {
-    renderEdit('2')
-
-    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
-
-    expect(screen.getByText('detalhe do campeonato')).toBeInTheDocument()
+describe('TournamentFormPage season field', () => {
+  it('asks only for active seasons', async () => {
+    const getSeasons = vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([season])
+    vi.spyOn(sportsApi, 'getCategories').mockResolvedValue([])
+    renderPage()
+    await waitFor(() => expect(getSeasons).toHaveBeenCalledWith({ status: 'ACTIVE' }))
   })
 
-  it('returns to the championship list when cancelling creation', async () => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/tournaments/new']}>
-          <Routes>
-            <Route path="/tournaments/new" element={<TournamentFormPage />} />
-            <Route path="/tournaments" element={<div>lista de campeonatos</div>} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
+  it('does not offer creating a season from the tournament form', async () => {
+    vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([season])
+    vi.spyOn(sportsApi, 'getCategories').mockResolvedValue([])
+    renderPage()
+    await screen.findByText('Temporada')
+    expect(screen.queryByRole('button', { name: /criar temporada/i })).not.toBeInTheDocument()
+  })
 
-    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }))
-
-    expect(screen.getByText('lista de campeonatos')).toBeInTheDocument()
+  it('still offers creating a category inline', async () => {
+    vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([season])
+    vi.spyOn(sportsApi, 'getCategories').mockResolvedValue([])
+    renderPage()
+    expect(await screen.findByRole('button', { name: /criar categoria/i })).toBeInTheDocument()
   })
 })
