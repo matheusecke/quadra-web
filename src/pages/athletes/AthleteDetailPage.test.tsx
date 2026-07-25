@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 
@@ -25,6 +25,12 @@ async function waitForAthletePage() {
 }
 
 afterEach(() => vi.restoreAllMocks())
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([
+    { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+  ])
+})
 
 describe('AthleteDetailPage', () => {
   it('renders athlete header with jersey number, name, abbreviated position, current team and status only', async () => {

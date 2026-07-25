@@ -2,13 +2,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TournamentDetailPage } from './TournamentDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import { SEED_TOURNAMENT, tournamentTeamId } from '../../features/sports/seedIds'
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([
+    { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+  ])
+  vi.spyOn(sportsApi, 'getCategories').mockResolvedValue([
+    { id: 1, name: 'Sub-19', sortOrder: 1 },
+    { id: 2, name: 'Adulto Masculino', sortOrder: 2 },
+  ])
+})
 
 const renderDetail = (id: string) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

@@ -36,7 +36,6 @@ import type {
   CreateBracketSlotInput,
   CreateCategoryInput,
   CreateGroupInput,
-  CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
@@ -46,7 +45,6 @@ import type {
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
-  UpdateSeasonInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
@@ -153,9 +151,8 @@ const store = createSportsStore({
 })
 
 // ── Seasons ──────────────────────────────────────────────────────────────────
-export const getSeasons = () => Promise.resolve(store.listSeasons())
-export const createSeason = (input: CreateSeasonInput) => Promise.resolve(store.createSeason(input))
-export const updateSeason = (id: number, input: UpdateSeasonInput) => Promise.resolve(store.updateSeason(id, input))
+export { getSeasons, listSeasonsPage, createSeason } from './seasons'
+export type { ListSeasonsParams } from './seasons'
 
 // ── Categories ─────────────────────────────────────────────────────────────────
 export const getCategories = () => Promise.resolve(store.listCategories())
