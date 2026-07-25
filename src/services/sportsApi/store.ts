@@ -7,12 +7,10 @@ import type {
   BracketRound,
   BracketSlot,
   RosterEntry,
-  Season,
   StandingsEnvelope,
   StatLeaders,
   TeamMatchStats,
   Tournament,
-  TournamentCategory,
   TournamentGroup,
   TournamentGroupTeam,
   TournamentTeam,
@@ -25,10 +23,8 @@ import type {
   ClearTiebreakOrderInput,
   CompleteTournamentInput,
   CreateBracketRoundInput,
-  CreateCategoryInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
@@ -39,7 +35,6 @@ import type {
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
-  UpdateSeasonInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
@@ -47,8 +42,6 @@ import type {
 } from './types'
 
 export interface SportsStoreSeed {
-  seasons: Season[]
-  categories: TournamentCategory[]
   tournaments: Tournament[]
   matches: Match[]
   tournamentTeams?: TournamentTeam[]
@@ -75,8 +68,6 @@ const emptyLeaders = (): StatLeaders => ({ ppg: [], rpg: [], apg: [], stg: [], b
 const isActive = (record: { isDeleted?: boolean }) => record.isDeleted !== true
 
 export function createSportsStore(seed: SportsStoreSeed) {
-  const seasons: Season[] = [...seed.seasons]
-  const categories: TournamentCategory[] = [...seed.categories]
   const tournaments: Tournament[] = seed.tournaments.map((t) => ({ ...t }))
   const matches: StoredMatch[] = seed.matches.map((match) => {
     const { bracketRound, ...rest } = match
@@ -214,33 +205,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
   }
 
   return {
-    // ── Seasons ──────────────────────────────────────────────────────────────
-    listSeasons(): Season[] {
-      return [...seasons]
-    },
-    createSeason(input: CreateSeasonInput): Season {
-      const season: Season = { id: nextId(), label: input.label, startDate: input.startDate, endDate: input.endDate, status: 'ACTIVE' }
-      seasons.push(season)
-      return season
-    },
-    updateSeason(id: number, input: UpdateSeasonInput): Season {
-      const season = seasons.find((s) => s.id === id)
-      if (!season) throw new Error(`Season ${id} not found`)
-      Object.assign(season, input)
-      return season
-    },
-
-    // ── Categories ───────────────────────────────────────────────────────────
-    listCategories(): TournamentCategory[] {
-      return [...categories]
-    },
-    createCategory(input: CreateCategoryInput): TournamentCategory {
-      const sortOrder = input.sortOrder ?? categories.reduce((max, c) => Math.max(max, c.sortOrder ?? 0), 0) + 1
-      const category: TournamentCategory = { id: nextId(), name: input.name, sortOrder, status: 'ACTIVE' }
-      categories.push(category)
-      return category
-    },
-
     // ── Tournaments ──────────────────────────────────────────────────────────
     listTournaments(): Tournament[] {
       return [...tournaments]

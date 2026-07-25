@@ -7,13 +7,11 @@ import {
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
   getTeams as getMockTeams,
-  seedCategories,
   seedEnrollment,
   seedGroupId,
   seedGroupMembership,
   seedMatches,
   seedBracketRounds,
-  seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
@@ -136,8 +134,6 @@ const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flat
 )
 
 const store = createSportsStore({
-  seasons: seedSeasons,
-  categories: seedCategories,
   tournaments: seedTournaments,
   matches: seedMatches,
   tournamentTeams: seedTournamentTeams,

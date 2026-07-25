@@ -7,10 +7,9 @@ const period = (n: number, home: number, away: number): PeriodScore => ({
 })
 
 function scheduledMatch() {
-  const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-  const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
+  const store = createSportsStore({ tournaments: [], matches: [] })
   const tournament = store.createTournament({
-    name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
+    name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
   })
   const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Tigres' })
   const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Albatrozes' })
@@ -21,25 +20,16 @@ function scheduledMatch() {
 }
 
 describe('createSportsStore', () => {
-  it('creates a season and lists it', () => {
-    const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-    const created = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
-    expect(created.id).toBeTruthy()
-    expect(store.listSeasons()).toHaveLength(1)
-  })
-
   it('rejects enrolling the same team twice in one tournament', () => {
-    const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-    const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
-    const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const store = createSportsStore({ tournaments: [], matches: [] })
+    const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
     store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
     expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })).toThrow(/already enrolled/i)
   })
 
   it('rejects an athlete on two teams in the same tournament', () => {
-    const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-    const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
-    const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const store = createSportsStore({ tournaments: [], matches: [] })
+    const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
     const home = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
     const away = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
     store.addRosterEntry({ tournamentId: t.id, tournamentTeamId: home.id, athleteId: 101, jerseyNumber: 7, role: 'ATHLETE' })
@@ -50,10 +40,9 @@ describe('createSportsStore', () => {
 
 describe('createTournament', () => {
   it('creates a tournament as a draft, invisible until the admin publishes it', () => {
-    const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-    const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
+    const store = createSportsStore({ tournaments: [], matches: [] })
     const created = store.createTournament({
-      name: 'Copa', seasonId: season.id, categoryId: null, format: 'LEAGUE',
+      name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE',
       startDate: '2026-02-01', endDate: '2026-06-01',
     })
     expect(created.status).toBe('DRAFT')

@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { createSportsStore } from './store'
 
 const freshTournament = () => {
-  const store = createSportsStore({ seasons: [], categories: [], tournaments: [], matches: [] })
-  const season = store.createSeason({ label: '2026', startDate: '2026-01-01', endDate: '2026-12-31' })
-  const t = store.createTournament({ name: 'Copa', seasonId: season.id, categoryId: null, format: 'GROUP_STAGE_KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
+  const store = createSportsStore({ tournaments: [], matches: [] })
+  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'GROUP_STAGE_KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
   const home = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
   const away = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
   return { store, tournamentId: t.id, homeTournamentTeamId: home.id, awayTournamentTeamId: away.id }
