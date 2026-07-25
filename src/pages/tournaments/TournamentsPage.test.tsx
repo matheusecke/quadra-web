@@ -37,7 +37,7 @@ describe('TournamentsPage catalog labels', () => {
       { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])
     vi.spyOn(sportsApi, 'getCategories').mockResolvedValueOnce([
-      { id: 2, name: 'Categoria via seam', sortOrder: 1 },
+      { id: 2, name: 'Categoria via seam', sortOrder: 1, status: 'ACTIVE' },
     ])
     renderPage()
     const row = (await screen.findByText('Campeonato Geral da PUC 2026')).closest('tr') as HTMLTableRowElement

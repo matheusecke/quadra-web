@@ -15,8 +15,8 @@ beforeEach(() => {
     { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
   ])
   vi.spyOn(sportsApi, 'getCategories').mockResolvedValue([
-    { id: 1, name: 'Sub-19', sortOrder: 1 },
-    { id: 2, name: 'Adulto Masculino', sortOrder: 2 },
+    { id: 1, name: 'Sub-19', sortOrder: 1, status: 'ACTIVE' },
+    { id: 2, name: 'Adulto Masculino', sortOrder: 2, status: 'ACTIVE' },
   ])
 })
 
@@ -263,7 +263,7 @@ describe('TournamentDetailPage metadata', () => {
       { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])
     vi.spyOn(sportsApi, 'getCategories').mockResolvedValueOnce([
-      { id: 2, name: 'Categoria via seam', sortOrder: 1 },
+      { id: 2, name: 'Categoria via seam', sortOrder: 1, status: 'ACTIVE' },
     ])
     renderDetail('1')
     expect(await screen.findByText('Temporada via seam')).toBeInTheDocument()

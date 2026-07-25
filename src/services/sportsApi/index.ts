@@ -34,7 +34,6 @@ import type {
   CompleteTournamentInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
-  CreateCategoryInput,
   CreateGroupInput,
   CreateTournamentInput,
   EnrollTeamInput,
@@ -155,8 +154,8 @@ export { getSeasons, listSeasonsPage, createSeason } from './seasons'
 export type { ListSeasonsParams } from './seasons'
 
 // ── Categories ─────────────────────────────────────────────────────────────────
-export const getCategories = () => Promise.resolve(store.listCategories())
-export const createCategory = (input: CreateCategoryInput) => Promise.resolve(store.createCategory(input))
+export { getCategories, listCategoriesPage, createCategory } from './categories'
+export type { ListCategoriesParams } from './categories'
 
 // ── Tournaments ──────────────────────────────────────────────────────────────────
 export const getTournaments = () => Promise.resolve(store.listTournaments())

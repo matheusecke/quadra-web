@@ -14,8 +14,8 @@ export const seedSeasons: Season[] = [
 ]
 
 export const seedCategories: TournamentCategory[] = [
-  { id: 1, name: 'Sub-19', sortOrder: 1 },
-  { id: 2, name: 'Adulto Masculino', sortOrder: 2 },
+  { id: 1, name: 'Sub-19', sortOrder: 1, status: 'ACTIVE' },
+  { id: 2, name: 'Adulto Masculino', sortOrder: 2, status: 'ACTIVE' },
 ]
 export const MOCK_TEAMS: Team[] = [
   { id: 1, name: 'Time 1', shortName: 'T01', city: 'Campinas' },

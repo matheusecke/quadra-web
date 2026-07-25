@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Tags } from 'lucide-react'
 import { Button } from '../../../components/ui/Button/Button'
@@ -19,11 +19,6 @@ export function CategoriesPage() {
   const [name, setName] = useState('')
   const [sortOrder, setSortOrder] = useState<number | ''>('')
   const [formError, setFormError] = useState('')
-
-  const sorted = useMemo(
-    () => [...(categories ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)),
-    [categories],
-  )
 
   const closeForm = () => {
     setIsFormOpen(false)
@@ -89,7 +84,7 @@ export function CategoriesPage() {
               <Skeleton key={i} height={40} />
             ))}
           </div>
-        ) : sorted.length > 0 ? (
+        ) : (categories ?? []).length > 0 ? (
           <Table>
             <TableHead>
               <TableRow>
@@ -98,10 +93,10 @@ export function CategoriesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sorted.map((category) => (
+              {(categories ?? []).map((category) => (
                 <TableRow key={category.id}>
                   <TableCell>{category.name}</TableCell>
-                  <TableCell>{category.sortOrder}</TableCell>
+                  <TableCell>{category.sortOrder ?? '—'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

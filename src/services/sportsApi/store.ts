@@ -235,8 +235,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
       return [...categories]
     },
     createCategory(input: CreateCategoryInput): TournamentCategory {
-      const sortOrder = input.sortOrder ?? categories.reduce((max, c) => Math.max(max, c.sortOrder), 0) + 1
-      const category: TournamentCategory = { id: nextId(), name: input.name, sortOrder }
+      const sortOrder = input.sortOrder ?? categories.reduce((max, c) => Math.max(max, c.sortOrder ?? 0), 0) + 1
+      const category: TournamentCategory = { id: nextId(), name: input.name, sortOrder, status: 'ACTIVE' }
       categories.push(category)
       return category
     },
