@@ -190,7 +190,8 @@ export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => 
 export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
 
 // ── Teams ────────────────────────────────────────────────────────────────────
-export const getTeams = () => Promise.resolve(getMockTeams())
+export { getTeams, listTeamsPage, listRosterCandidatesPage, searchRosterCandidates, searchTeams } from './catalogs'
+export type { ListRosterCandidatesParams, ListTeamsParams } from './catalogs'
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
 export const getAthletes = () => Promise.resolve(getMockAthletes())

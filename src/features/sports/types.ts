@@ -34,7 +34,16 @@ export interface Team {
   name: string
   /** Short tag (3 letters) used in dense tables and bracket cells. */
   shortName: string
-  city?: string
+  city?: string | null
+}
+
+/** GET /athletes — a catalog of users eligible for a roster, not an athlete's sports detail. */
+export interface RosterCandidate {
+  id: number // User.id
+  name: string
+  teamId: number
+  role: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber: number | null
 }
 
 export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
