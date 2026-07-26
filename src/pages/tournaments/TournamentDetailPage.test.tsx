@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TournamentDetailPage } from './TournamentDetailPage'
 import * as sportsApi from '../../services/sportsApi'
+import { getTournamentById } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, tournamentTeamId } from '../../features/sports/seedIds'
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
@@ -18,6 +19,8 @@ beforeEach(() => {
     { id: 1, name: 'Sub-19', sortOrder: 1, status: 'ACTIVE' },
     { id: 2, name: 'Adulto Masculino', sortOrder: 2, status: 'ACTIVE' },
   ])
+  // getTournament now hits the real API; these tests still read the seeded demo data.
+  vi.spyOn(sportsApi, 'getTournament').mockImplementation(async (id) => getTournamentById(id)!)
 })
 
 const renderDetail = (id: string) => {

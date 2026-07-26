@@ -14,7 +14,7 @@ import type { TournamentStatus } from '../../features/sports/types'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
-  formatDate,
+  formatPeriod,
   formatRelative,
   matchProgress,
 } from '../../features/sports/sportsUtils'
@@ -192,9 +192,7 @@ export function TournamentsPage() {
                           <span className={s.numSub}>fin./total</span>
                         </td>
                         <td className={s.tdMuted}>
-                          <span className={s.mono}>{formatDate(c.startDate)}</span>
-                          <span className={s.periodSep}>-</span>
-                          <span className={s.mono}>{formatDate(c.endDate)}</span>
+                          <span className={s.mono}>{formatPeriod(c)}</span>
                         </td>
                         <td className={s.tdMuted}>{formatRelative(c.updatedAt)}</td>
                       </tr>

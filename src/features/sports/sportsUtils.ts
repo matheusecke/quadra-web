@@ -198,8 +198,13 @@ export function matchProgress(tournament: Tournament): string {
   return `${tournament.finishedMatchCount}/${tournament.matchCount}`
 }
 
+/** Rascunho sem data é normal — a API ordena com NULLS FIRST justamente por isso. */
 export function formatPeriod(tournament: Tournament): string {
-  return `${formatDate(tournament.startDate)} - ${formatDate(tournament.endDate)}`
+  const { startsAt, endsAt } = tournament
+  if (!startsAt && !endsAt) return '—'
+  if (!endsAt) return `A partir de ${formatDate(startsAt!)}`
+  if (!startsAt) return `Até ${formatDate(endsAt)}`
+  return `${formatDate(startsAt)} - ${formatDate(endsAt)}`
 }
 
 const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })

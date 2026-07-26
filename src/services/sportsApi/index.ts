@@ -7,6 +7,7 @@ import {
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
   getTeams as getMockTeams,
+  getTournamentLeaders as getMockTournamentLeaders,
   seedEnrollment,
   seedGroupId,
   seedGroupMembership,
@@ -29,15 +30,12 @@ import { createSportsStore } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
-  CompleteTournamentInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
-  ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
@@ -45,7 +43,6 @@ import type {
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
-  UpdateTournamentInput,
 } from './types'
 
 const seedMatchDetails = seedMatches
@@ -154,13 +151,21 @@ export { getCategories, listCategoriesPage, createCategory } from './categories'
 export type { ListCategoriesParams } from './categories'
 
 // ── Tournaments ──────────────────────────────────────────────────────────────────
-export const getTournaments = () => Promise.resolve(store.listTournaments())
-export const getTournament = (id: number) => Promise.resolve(store.getTournament(id))
-export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
-export const updateTournament = (id: number, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
-export const completeTournament = (input: CompleteTournamentInput) => Promise.resolve(store.completeTournament(input))
-export const reopenTournament = (input: ReopenTournamentInput) => Promise.resolve(store.reopenTournament(input))
-export const getChampionSuggestion = (tournamentId: number) => Promise.resolve(store.championSuggestion(tournamentId))
+export {
+  getTournaments,
+  listTournamentsPage,
+  getTournament,
+  createTournament,
+  updateTournament,
+  completeTournament,
+  reopenTournament,
+  getChampionSuggestion,
+} from './tournaments'
+export type { ListTournamentsParams } from './tournaments'
+
+// ── Tournament leaders (mock até a fase 10: GET /tournaments/:id/leaders) ─────────
+export const getTournamentLeaders = (tournamentId: number) =>
+  Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))

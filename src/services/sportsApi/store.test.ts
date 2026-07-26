@@ -9,7 +9,7 @@ const period = (n: number, home: number, away: number): PeriodScore => ({
 function scheduledMatch() {
   const store = createSportsStore({ tournaments: [], matches: [] })
   const tournament = store.createTournament({
-    name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01',
+    name: 'Copa', seasonId: 1, format: 'LEAGUE',
   })
   const homeTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 1, displayName: 'Tigres' })
   const awayTournamentTeam = store.enrollTeam({ tournamentId: tournament.id, teamId: 2, displayName: 'Albatrozes' })
@@ -22,14 +22,14 @@ function scheduledMatch() {
 describe('createSportsStore', () => {
   it('rejects enrolling the same team twice in one tournament', () => {
     const store = createSportsStore({ tournaments: [], matches: [] })
-    const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'LEAGUE' })
     store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
     expect(() => store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })).toThrow(/already enrolled/i)
   })
 
   it('rejects an athlete on two teams in the same tournament', () => {
     const store = createSportsStore({ tournaments: [], matches: [] })
-    const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'LEAGUE' })
     const home = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
     const away = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
     store.addRosterEntry({ tournamentId: t.id, tournamentTeamId: home.id, athleteId: 101, jerseyNumber: 7, role: 'ATHLETE' })
@@ -41,10 +41,7 @@ describe('createSportsStore', () => {
 describe('createTournament', () => {
   it('creates a tournament as a draft, invisible until the admin publishes it', () => {
     const store = createSportsStore({ tournaments: [], matches: [] })
-    const created = store.createTournament({
-      name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE',
-      startDate: '2026-02-01', endDate: '2026-06-01',
-    })
+    const created = store.createTournament({ name: 'Copa', seasonId: 1, format: 'LEAGUE' })
     expect(created.status).toBe('DRAFT')
   })
 })

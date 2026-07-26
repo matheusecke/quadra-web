@@ -111,8 +111,8 @@ describe('PUC sports mock data', () => {
     expect(quarters.map((slot) => semiOf(slot.winnerTournamentTeamId))).toEqual([1, 1, 2, 2])
   })
 
-  it('keeps the declared champion on the completed demo tournament', async () => {
-    const tournament = await sportsApi.getTournament(1)
+  it('keeps the declared champion on the completed demo tournament', () => {
+    const tournament = getTournamentById(1)
     expect(tournament?.championTournamentTeamId).toBe(1001)
   })
 

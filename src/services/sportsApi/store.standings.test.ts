@@ -9,7 +9,7 @@ const period = (n: number, home: number, away: number): PeriodScore => ({
 /** Two teams that beat each other by the same margin: every FIBA criterion is exhausted. */
 const cyclicTie = () => {
   const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'LEAGUE', startDate: '2026-02-01', endDate: '2026-06-01' })
+  const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'LEAGUE' })
   const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
   const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })
   const first = store.scheduleMatch({ tournamentId: t.id, homeTournamentTeamId: alfa.id, awayTournamentTeamId: beta.id, scheduledAt: '2026-03-01T18:00' })
@@ -22,7 +22,7 @@ const cyclicTie = () => {
 describe('store.listStandings', () => {
   it('returns one envelope per group, scoped to the teams and matches of that group', () => {
     const store = createSportsStore({ tournaments: [], matches: [] })
-    const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'GROUP_STAGE', startDate: '2026-02-01', endDate: '2026-06-01' })
+    const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'GROUP_STAGE' })
     const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
     const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })
     const gama = store.enrollTeam({ tournamentId: t.id, teamId: 3, displayName: 'Gama' })

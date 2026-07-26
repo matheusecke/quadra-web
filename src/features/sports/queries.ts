@@ -125,6 +125,14 @@ export function useTournamentQuery(id: number | undefined) {
   })
 }
 
+export function useTournamentLeadersQuery(tournamentId: number | undefined) {
+  return useQuery({
+    queryKey: [...tournamentKeys.all, 'leaders', tournamentId ?? -1] as const,
+    queryFn: () => sportsApi.getTournamentLeaders(tournamentId!),
+    enabled: tournamentId != null,
+  })
+}
+
 export function useTournamentTeamsQuery(tournamentId: number | undefined) {
   return useQuery({
     queryKey: tournamentKeys.teams(tournamentId ?? -1),

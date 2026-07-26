@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import * as sportsApi from '../../services/sportsApi'
+import { getTournaments as getMockTournaments } from '../../features/sports/mock-sports-data'
 import { TournamentsPage } from './TournamentsPage'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
@@ -21,6 +22,8 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('TournamentsPage catalog labels', () => {
   it('renders a season label from the queried catalog', async () => {
+    // getTournaments now hits the real API; these tests still read the seeded demo data.
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue(getMockTournaments())
     vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
       { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])
@@ -34,6 +37,7 @@ describe('TournamentsPage catalog labels', () => {
     // NOTE: brief's fixture used id: 1, but the seeded "Campeonato Geral da PUC 2026"
     // row has categoryId: 2 (see mock-sports-data.ts). Corrected to id: 2 so the label
     // lookup by categoryId actually matches this row (same fix as Task 4).
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue(getMockTournaments())
     vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
       { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])

@@ -3,7 +3,7 @@ import { createSportsStore } from './store'
 
 const knockout = () => {
   const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
+  const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'KNOCKOUT' })
   store.updateTournament(t.id, { status: 'IN_PROGRESS' })
   const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
   const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })

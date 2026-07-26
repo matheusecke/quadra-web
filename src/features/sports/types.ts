@@ -1,12 +1,6 @@
 /**
  * Sports domain — type definitions.
  *
- * ⚠️ TEMPORARY / MOCK DOMAIN
- * The sports domain does not yet exist in the real backend. These types describe
- * the shape we expect the future API to expose so that screens can be built today
- * against local mock data (see `mock-sports-data.ts`). When the API lands, keep these
- * types as the contract and swap the mock source for real fetch calls.
- *
  * Enum *values* are kept in English (consistent with `types/admin.ts`, e.g.
  * `'ACTIVE'`); human-facing Portuguese labels live in `sportsUtils.ts`.
  */
@@ -176,19 +170,22 @@ export interface Tournament {
   name: string
   seasonId: number
   categoryId: number | null
+  regulation: string | null
   format: TournamentFormat
   status: TournamentStatus
+  /** Instantes ISO-8601 completos (`timestamptz`), não dia-calendário como em `Season`. */
+  startsAt: string | null
+  endsAt: string | null
+  registrationStartsAt: string | null
+  registrationEndsAt: string | null
+  /** Deriva só da janela de inscrição. Janela vazia é fechada, nunca "aberta para sempre". */
+  isRegistrationOpen: boolean
+  /** Inscrição campeã (`TournamentTeam`), nunca um `Team`. Nula enquanto não há título. */
+  championTournamentTeamId: number | null
   enrolledTeamCount: number
   matchCount: number
   finishedMatchCount: number
-  startDate: string // ISO date
-  endDate: string // ISO date
-  updatedAt: string // ISO datetime
-  /** Short regulation summary (mocked). */
-  regulation: string
-  leaders: StatLeaders
-  /** Explicit declared tournament-team champion, null while no title is declared. */
-  championTournamentTeamId: number | null
+  updatedAt: string
 }
 
 export interface TournamentTeam {

@@ -8,6 +8,7 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Field } from '../../components/ui/Field/Field'
 import { InlineCreateField } from '../../features/sports/components/InlineCreateField'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
+import { toDayInput, toInstant } from '../../features/sports/tournamentDates'
 import {
   useCategoriesQuery,
   useCreateCategory,
@@ -51,9 +52,9 @@ export function TournamentFormPage() {
         seasonId: existing.seasonId,
         categoryId: existing.categoryId,
         format: existing.format,
-        startDate: existing.startDate,
-        endDate: existing.endDate,
-        regulation: existing.regulation,
+        startDate: toDayInput(existing.startsAt),
+        endDate: toDayInput(existing.endsAt),
+        regulation: existing.regulation ?? '',
       },
     })
   }, [existing])
@@ -76,10 +77,10 @@ export function TournamentFormPage() {
     const input = {
       name: state.name.trim(),
       seasonId: state.seasonId!,
-      categoryId: state.categoryId,
+      categoryId: state.categoryId ?? undefined,
       format: state.format,
-      startDate: state.startDate,
-      endDate: state.endDate,
+      startsAt: toInstant(state.startDate) ?? undefined,
+      endsAt: toInstant(state.endDate) ?? undefined,
       regulation: state.regulation || undefined,
     }
     if (isEdit && tournamentId) {

@@ -8,7 +8,7 @@ const period = (n: number, home: number, away: number): PeriodScore => ({
 
 const fresh = () => {
   const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
+  const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'KNOCKOUT' })
   const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
   const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })
   return { store, tournamentId: t.id, alfaId: alfa.id, betaId: beta.id }
@@ -131,7 +131,7 @@ describe('bracket store', () => {
 
   it('refuses a slot whose round belongs to another tournament', () => {
     const { store, tournamentId } = fresh()
-    const otherTournament = store.createTournament({ name: 'Outra Copa', seasonId: 1, categoryId: null, format: 'KNOCKOUT', startDate: '2027-02-01', endDate: '2027-06-01' })
+    const otherTournament = store.createTournament({ name: 'Outra Copa', seasonId: 1, format: 'KNOCKOUT' })
     const round = store.createBracketRound({ tournamentId: otherTournament.id, label: 'Final' })
     expect(() => store.createBracketSlot({ tournamentId, roundId: round.id })).toThrow('Round does not belong to this tournament')
   })

@@ -8,7 +8,6 @@ import type {
   BracketSlot,
   RosterEntry,
   StandingsEnvelope,
-  StatLeaders,
   TeamMatchStats,
   Tournament,
   TournamentGroup,
@@ -62,8 +61,6 @@ export interface MatchExtra {
 }
 
 type StoredMatch = Omit<Match, 'bracketRound'>
-
-const emptyLeaders = (): StatLeaders => ({ ppg: [], rpg: [], apg: [], stg: [], bpg: [] })
 
 const isActive = (record: { isDeleted?: boolean }) => record.isDeleted !== true
 
@@ -217,18 +214,20 @@ export function createSportsStore(seed: SportsStoreSeed) {
         id: nextId(),
         name: input.name,
         seasonId: input.seasonId,
-        categoryId: input.categoryId,
+        categoryId: input.categoryId ?? null,
+        regulation: input.regulation ?? null,
         format: input.format,
         status: 'DRAFT',
+        startsAt: input.startsAt ?? null,
+        endsAt: input.endsAt ?? null,
+        registrationStartsAt: input.registrationStartsAt ?? null,
+        registrationEndsAt: input.registrationEndsAt ?? null,
+        isRegistrationOpen: false,
+        championTournamentTeamId: null,
         enrolledTeamCount: 0,
         matchCount: 0,
         finishedMatchCount: 0,
-        startDate: input.startDate,
-        endDate: input.endDate,
         updatedAt: new Date().toISOString(),
-        regulation: input.regulation ?? '',
-        leaders: emptyLeaders(),
-        championTournamentTeamId: null,
       }
       tournaments.push(tournament)
       return tournament

@@ -3,7 +3,7 @@ import { createSportsStore } from './store'
 
 const freshTournament = () => {
   const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'GROUP_STAGE_KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
+  const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'GROUP_STAGE_KNOCKOUT' })
   const home = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
   const away = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
   return { store, tournamentId: t.id, homeTournamentTeamId: home.id, awayTournamentTeamId: away.id }
