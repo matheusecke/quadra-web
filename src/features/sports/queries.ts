@@ -1,5 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
+import type { EntityStatus } from '../../types/admin'
+import type { SeasonStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -26,12 +28,14 @@ import type {
 
 export const seasonKeys = {
   all: ['seasons'] as const,
-  list: () => [...seasonKeys.all, 'list'] as const,
+  list: (status?: SeasonStatus) => [...seasonKeys.all, 'list', status ?? 'all'] as const,
+  infinite: (q: string, status: SeasonStatus | '') => [...seasonKeys.all, 'infinite', q, status] as const,
 }
 
 export const categoryKeys = {
   all: ['categories'] as const,
-  list: () => [...categoryKeys.all, 'list'] as const,
+  list: (status?: EntityStatus) => [...categoryKeys.all, 'list', status ?? 'all'] as const,
+  infinite: (q: string, status: EntityStatus | '') => [...categoryKeys.all, 'infinite', q, status] as const,
 }
 
 export const tournamentKeys = {
@@ -82,12 +86,31 @@ export const bracketKeys = {
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 
-export function useSeasonsQuery() {
-  return useQuery({ queryKey: seasonKeys.list(), queryFn: () => sportsApi.getSeasons() })
+export function useSeasonsQuery(params: { status?: SeasonStatus } = {}) {
+  return useQuery({ queryKey: seasonKeys.list(params.status), queryFn: () => sportsApi.getSeasons(params) })
 }
 
-export function useCategoriesQuery() {
-  return useQuery({ queryKey: categoryKeys.list(), queryFn: () => sportsApi.getCategories() })
+export function useCategoriesQuery(params: { status?: EntityStatus } = {}) {
+  return useQuery({ queryKey: categoryKeys.list(params.status), queryFn: () => sportsApi.getCategories(params) })
+}
+
+/** Tela de gestão: uma página por vez, com busca e filtro server-side. */
+export function useSeasonsInfiniteQuery({ q, status }: { q: string; status: SeasonStatus | '' }) {
+  return useInfiniteQuery({
+    queryKey: seasonKeys.infinite(q, status),
+    queryFn: ({ pageParam }) => sportsApi.listSeasonsPage({ page: pageParam, limit: 20, q: q || undefined, status: status || undefined }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined),
+  })
+}
+
+export function useCategoriesInfiniteQuery({ q, status }: { q: string; status: EntityStatus | '' }) {
+  return useInfiniteQuery({
+    queryKey: categoryKeys.infinite(q, status),
+    queryFn: ({ pageParam }) => sportsApi.listCategoriesPage({ page: pageParam, limit: 20, q: q || undefined, status: status || undefined }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined),
+  })
 }
 
 export function useTournamentsQuery() {

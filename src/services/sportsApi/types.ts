@@ -1,4 +1,4 @@
-import type { PeriodScore, SeasonStatus, TournamentFormat, TournamentStatus } from '../../features/sports/types'
+import type { PeriodScore, TournamentFormat, TournamentStatus } from '../../features/sports/types'
 import type { PlayerStatInput } from '../../features/sports/statistics'
 
 export interface CreateSeasonInput {
@@ -6,8 +6,6 @@ export interface CreateSeasonInput {
   startDate: string
   endDate: string
 }
-
-export type UpdateSeasonInput = Partial<CreateSeasonInput> & { status?: SeasonStatus }
 
 export interface CreateCategoryInput {
   name: string

@@ -11,7 +11,6 @@ import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useCategoriesQuery,
   useCreateCategory,
-  useCreateSeason,
   useCreateTournament,
   useSeasonsQuery,
   useTournamentQuery,
@@ -36,10 +35,9 @@ export function TournamentFormPage() {
 
   const [state, dispatch] = useReducer(tournamentFormReducer, undefined, initialTournamentFormState)
 
-  const { data: seasons } = useSeasonsQuery()
+  const { data: seasons } = useSeasonsQuery({ status: 'ACTIVE' })
   const { data: categories } = useCategoriesQuery()
   const { data: existing } = useTournamentQuery(tournamentId ?? undefined)
-  const createSeason = useCreateSeason()
   const createCategory = useCreateCategory()
   const createTournament = useCreateTournament()
   const updateTournament = useUpdateTournament()
@@ -59,6 +57,12 @@ export function TournamentFormPage() {
       },
     })
   }, [existing])
+
+  // A API devolve as temporadas por startDate DESC: a primeira ativa é a mais recente (contrato §2).
+  useEffect(() => {
+    if (isEdit || state.seasonId != null || !seasons?.length) return
+    dispatch({ type: 'setField', field: 'seasonId', value: seasons[0].id })
+  }, [isEdit, seasons, state.seasonId])
 
   if (rawTournamentId != null && tournamentId == null) {
     return <ErrorState title="ID de campeonato inválido." />
@@ -101,14 +105,18 @@ export function TournamentFormPage() {
           inputProps={{ value: state.name, onChange: (e) => dispatch({ type: 'setField', field: 'name', value: e.target.value }) }}
         />
 
-        <InlineCreateField
-          label="Temporada"
-          createLabel="criar temporada"
-          value={state.seasonId}
-          options={(seasons ?? []).map((season) => ({ id: season.id, label: season.label }))}
-          onChange={(id) => dispatch({ type: 'setField', field: 'seasonId', value: id })}
-          onCreate={(label) => createSeason.mutateAsync({ label, startDate: '', endDate: '' })}
-        />
+        <Field label="Temporada" id="tournament-season" hint="Temporadas são cadastradas em Esportivo › Temporadas.">
+          <Combobox
+            id="tournament-season"
+            options={(seasons ?? []).map((season) => ({ value: String(season.id), label: season.label }))}
+            value={state.seasonId == null ? null : String(state.seasonId)}
+            onChange={(raw) => {
+              const id = parsePositiveId(raw)
+              if (id != null) dispatch({ type: 'setField', field: 'seasonId', value: id })
+            }}
+            placeholder="Selecione…"
+          />
+        </Field>
 
         <InlineCreateField
           label="Categoria"

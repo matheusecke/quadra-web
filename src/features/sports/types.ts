@@ -11,6 +11,7 @@
  * `'ACTIVE'`); human-facing Portuguese labels live in `sportsUtils.ts`.
  */
 
+import type { EntityStatus } from '../../types/admin'
 import type { StatField } from './statistics'
 
 // ── Status enums ────────────────────────────────────────────────────────────
@@ -165,7 +166,9 @@ export interface Season {
 export interface TournamentCategory {
   id: number
   name: string
-  sortOrder: number
+  /** null quando não há ordem manual — a API ordena com NULLS LAST, o cliente não reordena. */
+  sortOrder: number | null
+  status: EntityStatus
 }
 
 export interface Tournament {

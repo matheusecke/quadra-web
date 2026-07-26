@@ -7,13 +7,11 @@ import {
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
   getTeams as getMockTeams,
-  seedCategories,
   seedEnrollment,
   seedGroupId,
   seedGroupMembership,
   seedMatches,
   seedBracketRounds,
-  seedSeasons,
   seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
@@ -34,9 +32,7 @@ import type {
   CompleteTournamentInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
-  CreateCategoryInput,
   CreateGroupInput,
-  CreateSeasonInput,
   CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
@@ -46,7 +42,6 @@ import type {
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
-  UpdateSeasonInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
@@ -139,8 +134,6 @@ const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flat
 )
 
 const store = createSportsStore({
-  seasons: seedSeasons,
-  categories: seedCategories,
   tournaments: seedTournaments,
   matches: seedMatches,
   tournamentTeams: seedTournamentTeams,
@@ -153,13 +146,12 @@ const store = createSportsStore({
 })
 
 // ── Seasons ──────────────────────────────────────────────────────────────────
-export const getSeasons = () => Promise.resolve(store.listSeasons())
-export const createSeason = (input: CreateSeasonInput) => Promise.resolve(store.createSeason(input))
-export const updateSeason = (id: number, input: UpdateSeasonInput) => Promise.resolve(store.updateSeason(id, input))
+export { getSeasons, listSeasonsPage, createSeason } from './seasons'
+export type { ListSeasonsParams } from './seasons'
 
 // ── Categories ─────────────────────────────────────────────────────────────────
-export const getCategories = () => Promise.resolve(store.listCategories())
-export const createCategory = (input: CreateCategoryInput) => Promise.resolve(store.createCategory(input))
+export { getCategories, listCategoriesPage, createCategory } from './categories'
+export type { ListCategoriesParams } from './categories'
 
 // ── Tournaments ──────────────────────────────────────────────────────────────────
 export const getTournaments = () => Promise.resolve(store.listTournaments())
