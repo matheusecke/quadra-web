@@ -36,6 +36,7 @@ describe('season queries', () => {
 
 describe('catalog queries', () => {
   it('loads teams through React Query', async () => {
+    vi.spyOn(sportsApi, 'getTeams').mockResolvedValue([{ id: 1, name: 'Time 1', shortName: 'T01', city: 'Campinas' }])
     const list = renderHook(() => useTeamsQuery(), { wrapper })
     await waitFor(() => expect(list.result.current.data?.[0]?.shortName).toBe('T01'))
   })
