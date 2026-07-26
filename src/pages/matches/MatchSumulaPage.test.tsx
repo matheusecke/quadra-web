@@ -63,6 +63,14 @@ const renderSumula = (matchId: string) => {
 }
 
 describe('MatchSumulaPage', () => {
+  it('blocks result submission when a roster cannot be loaded', async () => {
+    vi.spyOn(sportsApi, 'getTournamentRoster').mockRejectedValue(new Error('roster unavailable'))
+    renderSumula('216')
+
+    expect(await screen.findByText('Não foi possível carregar os elencos.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /finalizar partida/i })).not.toBeInTheDocument()
+  })
+
   it('renders roster rows from the queried roster snapshot, not the athlete catalog', async () => {
     const getAthletes = vi.spyOn(sportsApi, 'getAthletes')
     renderSumula('216')

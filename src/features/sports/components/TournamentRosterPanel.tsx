@@ -38,7 +38,7 @@ export interface TournamentRosterPanelProps {
   onRetry: () => void
   onSearchCandidates: (q: string, role: RosterRole) => Promise<SearchSelectOption[]>
   onAdd: (entry: RosterEntryDraft) => Promise<void>
-  onRemove: (id: number) => void
+  onRemove: (id: number) => Promise<void>
   onUpdate: (id: number, input: { jerseyNumber?: number | null; role?: RosterRole }) => Promise<void>
   errorMessage?: string
 }
@@ -62,6 +62,7 @@ export function TournamentRosterPanel({
   const [busy, setBusy] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [confirmingId, setConfirmingId] = useState<number | null>(null)
+  const [removingId, setRemovingId] = useState<number | null>(null)
   const [draftNumber, setDraftNumber] = useState<number | ''>('')
   const [draftRole, setDraftRole] = useState<RosterRole>('ATHLETE')
 
@@ -103,6 +104,18 @@ export function TournamentRosterPanel({
       setEditingId(null)
     } catch {
       // the caller surfaces the failure via errorMessage; keep the row in edit mode
+    }
+  }
+
+  const handleRemove = async (id: number) => {
+    setRemovingId(id)
+    try {
+      await onRemove(id)
+      setConfirmingId(null)
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep confirmation open
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -169,7 +182,7 @@ export function TournamentRosterPanel({
                     ) : isConfirming ? (
                       <div className={`${s.actions} ${s.actionsVisible}`}>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingId(null)}>Cancelar</Button>
-                        <Button type="button" variant="danger" size="sm" onClick={() => onRemove(entry.id)}>Confirmar</Button>
+                        <Button type="button" variant="danger" size="sm" loading={removingId === entry.id} onClick={() => handleRemove(entry.id)}>Confirmar</Button>
                       </div>
                     ) : (
                       <div className={s.actions}>
@@ -192,6 +205,7 @@ export function TournamentRosterPanel({
           <label className={s.label}>
             Atleta
             <SearchSelect
+              key={role}
               value={selectedCandidate}
               onChange={setSelectedCandidate}
               onSearch={(q) => onSearchCandidates(q, role)}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TournamentRosterPanel } from './TournamentRosterPanel'
 import type { RosterDisplayEntry, TournamentRosterPanelProps } from './TournamentRosterPanel'
@@ -71,6 +71,21 @@ describe('TournamentRosterPanel', () => {
     onSearchCandidates.mockClear()
     await userEvent.type(screen.getByRole('combobox'), 'Rafael')
     await waitFor(() => expect(onSearchCandidates).toHaveBeenCalledWith('Rafael', 'COACHING_STAFF'))
+  })
+
+  it('ignores an athlete search that resolves after the role changes', async () => {
+    let resolveSearch!: (value: Array<{ id: number; label: string }>) => void
+    const onSearchCandidates = vi.fn(() => new Promise<Array<{ id: number; label: string }>>((resolve) => {
+      resolveSearch = resolve
+    }))
+    renderPanel({ onSearchCandidates })
+    await userEvent.type(screen.getByRole('combobox'), 'Rafael')
+    await waitFor(() => expect(onSearchCandidates).toHaveBeenCalledWith('Rafael', 'ATHLETE'))
+    await userEvent.click(screen.getByRole('button', { name: 'Papel' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Comissão técnica' }))
+    await act(async () => resolveSearch([{ id: 165, label: 'Rafael Moura' }]))
+
+    expect(screen.queryByRole('option', { name: 'Rafael Moura' })).not.toBeInTheDocument()
   })
 
   it('sends null when an existing jersey is cleared', async () => {

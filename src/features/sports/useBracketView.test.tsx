@@ -56,6 +56,13 @@ describe('useBracketView', () => {
     expect((await demoView()).teams).toHaveLength(16)
   })
 
+  it('uses the enrollment snapshot when the current team was renamed', async () => {
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValueOnce([
+      { ...GERAL_TOURNAMENT_TEAMS[0], displayNameSnapshot: 'Nome histórico' },
+    ])
+    expect((await demoView()).teams[0].name).toBe('Nome histórico')
+  })
+
   it('reports an error when the team catalog cannot load', async () => {
     vi.spyOn(sportsApi, 'getTeams').mockRejectedValueOnce(new Error('catalog unavailable'))
     const { result } = renderHook(() => useBracketView(1), { wrapper })

@@ -62,11 +62,23 @@ export function MatchSumulaPage() {
 }
 
 function SumulaEditor({ match, teams }: { match: MatchDetail; teams: Team[] }) {
-  const { data: homeRoster, isPending: isHomeRosterPending } = useRosterQuery(match.homeTournamentTeamId)
-  const { data: awayRoster, isPending: isAwayRosterPending } = useRosterQuery(match.awayTournamentTeamId)
+  const homeRosterQuery = useRosterQuery(match.homeTournamentTeamId)
+  const awayRosterQuery = useRosterQuery(match.awayTournamentTeamId)
+  const { data: homeRoster } = homeRosterQuery
+  const { data: awayRoster } = awayRosterQuery
 
-  if (isHomeRosterPending || isAwayRosterPending) {
+  if (homeRosterQuery.isPending || awayRosterQuery.isPending) {
     return <div className={s.page}><Skeleton height={200} /></div>
+  }
+  if (homeRosterQuery.isError || awayRosterQuery.isError) {
+    return (
+      <div className={s.page}>
+        <ErrorState
+          title="Não foi possível carregar os elencos."
+          onRetry={() => { homeRosterQuery.refetch(); awayRosterQuery.refetch() }}
+        />
+      </div>
+    )
   }
 
   const mapRoster = (roster: typeof homeRoster) =>

@@ -230,6 +230,17 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     expect(getAthletes).not.toHaveBeenCalled()
   })
 
+  it('renders the enrollment snapshot instead of the current team name', async () => {
+    invernoTeams[0] = { ...invernoTeams[0], displayNameSnapshot: 'Nome histórico' }
+    mockIsOrgAdmin.mockReturnValue(true)
+    renderDetail('2')
+    await screen.findByText('Copa de Inverno PUC')
+    await userEvent.click(screen.getByRole('tab', { name: 'Equipes' }))
+
+    expect(await within(enrolledList()).findByText('Nome histórico')).toBeInTheDocument()
+    expect(within(enrolledList()).queryByText('Time 1')).not.toBeInTheDocument()
+  })
+
   it('marks the Elenco control expanded when open', async () => {
     await openTeamsTab()
     await userEvent.click(elenco('Time 1'))
@@ -304,6 +315,44 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
 
     expect(within(row).getByRole('button', { name: 'Remover' })).toBeInTheDocument()
     expect(screen.queryByText('Remover Time 1 do campeonato?')).not.toBeInTheDocument()
+  })
+
+  it('keeps team removal confirmation open and shows the mapped API error', async () => {
+    vi.spyOn(sportsApi, 'removeTournamentTeam').mockRejectedValue(
+      Object.assign(new axios.AxiosError('erro'), { response: { data: { error: { code: 'REGISTRATION_IN_USE' } } } }),
+    )
+    await openTeamsTab()
+    const row = teamRow('Time 1')
+    await userEvent.click(within(row).getByRole('button', { name: 'Remover' }))
+    await userEvent.click(within(row).getByRole('button', { name: 'Confirmar' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('A inscrição já está em uso pelo chaveamento.')
+    expect(within(row).getByText('Remover Time 1 do campeonato?')).toBeInTheDocument()
+  })
+
+  it('keeps roster removal confirmation open and shows the mapped API error', async () => {
+    vi.spyOn(sportsApi, 'removeTournamentRoster').mockRejectedValue(
+      Object.assign(new axios.AxiosError('erro'), { response: { data: { error: { code: 'INACTIVE_REGISTRATION' } } } }),
+    )
+    await openTeamsTab()
+    await userEvent.click(elenco('Time 1'))
+    const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
+    await userEvent.click(within(region).getByRole('button', { name: 'Remover' }))
+    await userEvent.click(within(region).getByRole('button', { name: 'Confirmar' }))
+
+    expect(await within(region).findByRole('alert')).toHaveTextContent('A inscrição ou o membro não está ativo.')
+    expect(within(region).getByText('Remover Rafael Moura do elenco neste campeonato?')).toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage registration query state', () => {
+  it('blocks enrollment controls when registrations cannot be loaded', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockRejectedValue(new Error('registrations unavailable'))
+    renderDetail('2')
+
+    expect(await screen.findByText('Não foi possível carregar o campeonato.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Inscrever' })).not.toBeInTheDocument()
   })
 })
 

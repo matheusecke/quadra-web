@@ -44,7 +44,7 @@ export function useBracketView(tournamentId: number): BracketView {
     slots: (slotsQuery.data ?? []).map((slot) => ({ ...slot, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null })),
     teams: tournamentTeams.map((entry) => {
       const team = teamsById.get(entry.teamId)
-      return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? String(entry.teamId) }
+      return { tournamentTeamId: entry.id, name: entry.displayNameSnapshot, shortName: team?.shortName ?? String(entry.teamId) }
     }),
     isPending: roundsQuery.isPending || slotsQuery.isPending || teamsQuery.isPending,
     isError: roundsQuery.isError || slotsQuery.isError || teamsQuery.isError,

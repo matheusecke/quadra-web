@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
 import * as sportsApi from '../../services/sportsApi'
+import { getTeams as getMockTeams } from '../../features/sports/mock-sports-data'
 
 const RAFAEL_ID = 101
 
@@ -27,6 +28,7 @@ async function waitForAthletePage() {
 afterEach(() => vi.restoreAllMocks())
 
 beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(getMockTeams())
   vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([
     { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
   ])

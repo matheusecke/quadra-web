@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
+import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
+import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { cn } from '../../../components/ui/cn'
 import type { Tournament, StandingRow, Team } from '../../../features/sports/types'
 import { formatDiff } from '../../../features/sports/sportsUtils'
@@ -14,13 +16,18 @@ interface TeamsTabProps {
 
 export function TeamsTab({ tournament, teams }: TeamsTabProps) {
   const { data: envelopes } = useStandingsQuery(tournament.id, tournament.format)
-  const { data: tournamentTeams } = useTournamentTeamsQuery(tournament.id)
+  const tournamentTeamsQuery = useTournamentTeamsQuery(tournament.id)
+  const { data: tournamentTeams } = tournamentTeamsQuery
   const standingsByTeam = useMemo(() => {
     const map = new Map<number, StandingRow>()
     ;(envelopes ?? []).forEach((envelope) => envelope.rows.forEach((row) => map.set(row.tournamentTeamId, row)))
     return map
   }, [envelopes])
 
+  if (tournamentTeamsQuery.isPending) return <Skeleton width="100%" height={240} />
+  if (tournamentTeamsQuery.isError) {
+    return <ErrorState title="Não foi possível carregar as equipes." onRetry={tournamentTeamsQuery.refetch} />
+  }
   if ((tournamentTeams ?? []).length === 0) {
     return (
       <div className={s.tabEmpty}>
@@ -52,7 +59,7 @@ export function TeamsTab({ tournament, teams }: TeamsTabProps) {
             return (
               <tr key={entry.id} className={s.tr} style={{ cursor: 'default' }}>
                 <td className={s.td}>
-                  <span className={s.cName}>{team?.name ?? '—'}</span>
+                  <span className={s.cName}>{entry.displayNameSnapshot}</span>
                   <span className={s.standTeamTag}>{team?.shortName}</span>
                 </td>
                 <td className={s.td}>
