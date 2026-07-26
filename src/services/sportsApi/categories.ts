@@ -10,6 +10,8 @@ export interface ListCategoriesParams {
   /** Busca parcial, case-insensitive, sobre `name`. */
   q?: string
   status?: EntityStatus
+  /** Repetido na query string (`?ids=1&ids=2`), nunca CSV — contrato §37. */
+  ids?: number[]
 }
 
 /** Teto de `limit` do backend. */

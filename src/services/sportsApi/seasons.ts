@@ -10,6 +10,8 @@ export interface ListSeasonsParams {
   /** Busca parcial, case-insensitive, sobre `label`. */
   q?: string
   status?: SeasonStatus
+  /** Repetido na query string (`?ids=1&ids=2`), nunca CSV — contrato §37. */
+  ids?: number[]
 }
 
 /** Teto de `limit` do backend. */
