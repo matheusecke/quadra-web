@@ -9,7 +9,7 @@ import type {
   RosterEntry,
   StandingsEnvelope,
   TeamMatchStats,
-  Tournament,
+  TournamentFormat,
   TournamentGroup,
   TournamentGroupTeam,
   TournamentTeam,
@@ -20,15 +20,12 @@ import type { StandingTeamInput } from './standings'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
-  CompleteTournamentInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
-  ReopenTournamentInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
   SetTiebreakOrderInput,
@@ -37,11 +34,9 @@ import type {
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
-  UpdateTournamentInput,
 } from './types'
 
 export interface SportsStoreSeed {
-  tournaments: Tournament[]
   matches: Match[]
   tournamentTeams?: TournamentTeam[]
   rosterEntries?: RosterEntry[]
@@ -65,7 +60,6 @@ type StoredMatch = Omit<Match, 'bracketRound'>
 const isActive = (record: { isDeleted?: boolean }) => record.isDeleted !== true
 
 export function createSportsStore(seed: SportsStoreSeed) {
-  const tournaments: Tournament[] = seed.tournaments.map((t) => ({ ...t }))
   const matches: StoredMatch[] = seed.matches.map((match) => {
     const { bracketRound, ...rest } = match
     void bracketRound
@@ -90,12 +84,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
 
   let nextNumericId = 10_000
   const nextId = () => nextNumericId++
-
-  const requireTournament = (id: number): Tournament => {
-    const found = tournaments.find((t) => t.id === id)
-    if (!found) throw new Error(`Tournament ${id} not found`)
-    return found
-  }
 
   const emptyTeamStats = (tournamentTeamId: number): TeamMatchStats => ({ tournamentTeamId, players: [] })
 
@@ -150,11 +138,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
     return tournamentTeamId === match.homeTournamentTeamId
   }
 
-  const bumpFinished = (match: StoredMatch) => {
-    const tournament = tournaments.find((entry) => entry.id === match.tournamentId)
-    if (tournament) tournament.finishedMatchCount += 1
-  }
-
   const toStandingTeam = (tt: TournamentTeam): StandingTeamInput => ({
     tournamentTeamId: tt.id,
     teamId: tt.teamId,
@@ -173,15 +156,14 @@ export function createSportsStore(seed: SportsStoreSeed) {
   const toMatch = (match: StoredMatch): Match => ({ ...match, bracketRound: bracketRoundOf(match.id) })
 
   /** GET /tournaments/:id/standings — §8.7. The ranking rule lives here, not in the UI. */
-  const buildStandings = (tournamentId: number, groupId?: number | null): StandingsEnvelope[] => {
-    const tournament = requireTournament(tournamentId)
+  const buildStandings = (tournamentId: number, format: TournamentFormat, groupId?: number | null): StandingsEnvelope[] => {
     const enrolled = tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
     const tournamentMatches = matches.filter((m) => m.tournamentId === tournamentId).map(toMatch)
 
-    const hasGroups = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
+    const hasGroups = format === 'GROUP_STAGE' || format === 'GROUP_STAGE_KNOCKOUT'
     if (!hasGroups) {
       // A knockout bracket has no classification; a LEAGUE is one single group.
-      if (tournament.format === 'KNOCKOUT') return []
+      if (format === 'KNOCKOUT') return []
       return [computeStandings(enrolled.map(toStandingTeam), tournamentMatches, null)]
     }
 
@@ -202,43 +184,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
   }
 
   return {
-    // ── Tournaments ──────────────────────────────────────────────────────────
-    listTournaments(): Tournament[] {
-      return [...tournaments]
-    },
-    getTournament(id: number): Tournament | undefined {
-      return tournaments.find((t) => t.id === id)
-    },
-    createTournament(input: CreateTournamentInput): Tournament {
-      const tournament: Tournament = {
-        id: nextId(),
-        name: input.name,
-        seasonId: input.seasonId,
-        categoryId: input.categoryId ?? null,
-        regulation: input.regulation ?? null,
-        format: input.format,
-        status: 'DRAFT',
-        startsAt: input.startsAt ?? null,
-        endsAt: input.endsAt ?? null,
-        registrationStartsAt: input.registrationStartsAt ?? null,
-        registrationEndsAt: input.registrationEndsAt ?? null,
-        isRegistrationOpen: false,
-        championTournamentTeamId: null,
-        enrolledTeamCount: 0,
-        matchCount: 0,
-        finishedMatchCount: 0,
-        updatedAt: new Date().toISOString(),
-      }
-      tournaments.push(tournament)
-      return tournament
-    },
-    updateTournament(id: number, input: UpdateTournamentInput): Tournament {
-      const tournament = requireTournament(id)
-      Object.assign(tournament, input)
-      tournament.updatedAt = new Date().toISOString()
-      return tournament
-    },
-
     // ── Tournament teams (enrollment) ──────────────────────────────────────────
     listTournamentTeams(tournamentId: number): TournamentTeam[] {
       return tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
@@ -261,16 +206,12 @@ export function createSportsStore(seed: SportsStoreSeed) {
         tiebreakBlockKey: null,
       }
       tournamentTeams.push(record)
-      const tournament = requireTournament(input.tournamentId)
-      tournament.enrolledTeamCount += 1
       return record
     },
     removeTournamentTeam(id: number): void {
       const record = tournamentTeams.find((tt) => tt.id === id)
       if (!record) return
       record.isDeleted = true
-      const tournament = tournaments.find((t) => t.id === record.tournamentId)
-      if (tournament) tournament.enrolledTeamCount -= 1
     },
 
     // ── Bracket ────────────────────────────────────────────────────────────────
@@ -357,55 +298,11 @@ export function createSportsStore(seed: SportsStoreSeed) {
         throw new Error('Winner must be one of the slot sides')
       }
       slot.winnerTournamentTeamId = input.winnerTournamentTeamId
-      const tournament = requireTournament(slot.tournamentId)
-      if (tournament.status === 'COMPLETED') {
-        tournament.status = 'IN_PROGRESS'
-        tournament.championTournamentTeamId = null
-      }
+      // A reabertura em cascata ao trocar o vencedor de uma vaga é regra de servidor (fase 7):
+      // o store não alcança mais o campeonato, que agora vive na API.
       return slot
     },
 
-    championSuggestion(tournamentId: number): number | null {
-      const tournament = requireTournament(tournamentId)
-      if (tournament.format === 'GROUP_STAGE') return null
-      if (tournament.format === 'LEAGUE') {
-        const envelope = buildStandings(tournamentId)[0]
-        return envelope?.standingsState === 'FINAL' ? envelope.rows.find((row) => row.position === 1)?.tournamentTeamId ?? null : null
-      }
-      const slots = bracketSlots.filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
-      if (slots.length === 0) return null
-      const numberOf = (roundId: number) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
-      const lastNumber = Math.max(...slots.map((slot) => numberOf(slot.roundId)))
-      const finalSlots = slots.filter((slot) => numberOf(slot.roundId) === lastNumber)
-      return finalSlots.length === 1 ? finalSlots[0].winnerTournamentTeamId : null
-    },
-    completeTournament(input: CompleteTournamentInput): Tournament {
-      const tournament = requireTournament(input.tournamentId)
-      if (tournament.status !== 'IN_PROGRESS') throw new Error('Only a tournament in progress can be completed')
-      const champion = input.championTournamentTeamId
-      if (tournament.format === 'GROUP_STAGE') {
-        if (champion) throw new Error('A group stage has no champion')
-      } else {
-        if (!champion) throw new Error('Champion is required for this format')
-        const enrolled = tournamentTeams.find((entry) => entry.id === champion && isActive(entry) && entry.tournamentId === input.tournamentId)
-        if (!enrolled) throw new Error('Champion must be a team enrolled in this tournament')
-        if ((tournament.format === 'KNOCKOUT' || tournament.format === 'GROUP_STAGE_KNOCKOUT') && !bracketSlots.some((slot) => isActive(slot) && slot.tournamentId === input.tournamentId && slot.winnerTournamentTeamId === champion)) {
-          throw new Error('Champion must have won a bracket slot')
-        }
-      }
-      tournament.status = 'COMPLETED'
-      tournament.championTournamentTeamId = champion
-      tournament.updatedAt = new Date().toISOString()
-      return tournament
-    },
-    reopenTournament(input: ReopenTournamentInput): Tournament {
-      const tournament = requireTournament(input.tournamentId)
-      if (tournament.status !== 'COMPLETED') throw new Error('Only a completed tournament can be reopened')
-      tournament.status = 'IN_PROGRESS'
-      tournament.championTournamentTeamId = null
-      tournament.updatedAt = new Date().toISOString()
-      return tournament
-    },
     removeBracketSlot(id: number): void {
       const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
       if (!slot) return
@@ -536,8 +433,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         tournamentGroupId: input.groupId ?? null,
       }
       matches.push(match)
-      const tournament = tournaments.find((t) => t.id === input.tournamentId)
-      if (tournament) tournament.matchCount += 1
       return toMatch(match)
     },
     submitMatchResult(input: SubmitMatchResultInput): Match {
@@ -558,7 +453,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
           awayStats: emptyTeamStats(match.awayTournamentTeamId),
           mvp: null,
         })
-        bumpFinished(match)
         return toMatch(match)
       }
 
@@ -595,13 +489,12 @@ export function createSportsStore(seed: SportsStoreSeed) {
         awayStats: toBoxScore(match.awayTournamentTeamId, input),
         mvp,
       })
-      bumpFinished(match)
       return toMatch(match)
     },
 
     // ── Standings ──────────────────────────────────────────────────────────────
-    listStandings(tournamentId: number, groupId?: number | null): StandingsEnvelope[] {
-      return buildStandings(tournamentId, groupId)
+    listStandings(tournamentId: number, format: TournamentFormat, groupId?: number | null): StandingsEnvelope[] {
+      return buildStandings(tournamentId, format, groupId)
     },
     setTiebreakOrder(input: SetTiebreakOrderInput): void {
       const submitted = input.entries.map((entry) => entry.tournamentTeamId)
@@ -609,7 +502,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
 
       // The block must be one the norm itself produced — not a set the admin invented.
       const currentBlockKeys = new Set(
-        buildStandings(input.tournamentId)
+        buildStandings(input.tournamentId, input.format)
           .flatMap((envelope) => envelope.rows)
           .map((row) => row.tieBlockKey)
           .filter((blockKey): blockKey is string => blockKey !== null),

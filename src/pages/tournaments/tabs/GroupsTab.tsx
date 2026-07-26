@@ -36,7 +36,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
 
   const groupsQuery = useGroupsQuery(tournament.id)
   const groupTeamsQuery = useGroupTeamsQuery(tournament.id)
-  const standingsQuery = useStandingsQuery(tournament.id)
+  const standingsQuery = useStandingsQuery(tournament.id, tournament.format)
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournament.id)
 
   const createGroup = useCreateGroup()
@@ -127,7 +127,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
 
   const handleSetTiebreakOrder = async (entries: { tournamentTeamId: number; order: number }[]) => {
     try {
-      await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, entries })
+      await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, format: tournament.format, entries })
       setCardError('')
     } catch (error) {
       handleTieBreakError(error)

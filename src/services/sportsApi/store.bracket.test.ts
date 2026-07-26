@@ -6,12 +6,14 @@ const period = (n: number, home: number, away: number): PeriodScore => ({
   periodNumber: n, type: 'REGULAR', overtimeNumber: null, homePoints: home, awayPoints: away,
 })
 
+/** Tournament id is a plain foreign key here — the store no longer tracks tournaments themselves. */
+const TOURNAMENT_ID = 1
+
 const fresh = () => {
-  const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, format: 'KNOCKOUT' })
-  const alfa = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Alfa' })
-  const beta = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Beta' })
-  return { store, tournamentId: t.id, alfaId: alfa.id, betaId: beta.id }
+  const store = createSportsStore({ matches: [] })
+  const alfa = store.enrollTeam({ tournamentId: TOURNAMENT_ID, teamId: 1, displayName: 'Alfa' })
+  const beta = store.enrollTeam({ tournamentId: TOURNAMENT_ID, teamId: 2, displayName: 'Beta' })
+  return { store, tournamentId: TOURNAMENT_ID, alfaId: alfa.id, betaId: beta.id }
 }
 
 describe('bracket store', () => {
@@ -131,8 +133,7 @@ describe('bracket store', () => {
 
   it('refuses a slot whose round belongs to another tournament', () => {
     const { store, tournamentId } = fresh()
-    const otherTournament = store.createTournament({ name: 'Outra Copa', seasonId: 1, format: 'KNOCKOUT' })
-    const round = store.createBracketRound({ tournamentId: otherTournament.id, label: 'Final' })
+    const round = store.createBracketRound({ tournamentId: TOURNAMENT_ID + 1, label: 'Final' })
     expect(() => store.createBracketSlot({ tournamentId, roundId: round.id })).toThrow('Round does not belong to this tournament')
   })
 

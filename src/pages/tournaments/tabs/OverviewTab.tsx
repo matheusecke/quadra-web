@@ -31,7 +31,7 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
   const isKnockout = hasKnockout(tournament.format)
   // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
-    useStandingsQuery(tournament.id)
+    useStandingsQuery(tournament.id, tournament.format)
   const tables = envelopes ?? []
 
   return (

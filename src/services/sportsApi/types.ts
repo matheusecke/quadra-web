@@ -133,6 +133,8 @@ export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: number
 
 export interface SetTiebreakOrderInput {
   tournamentId: number
+  /** The store no longer knows tournaments — standings needs the format from the caller. */
+  format: TournamentFormat
   entries: { tournamentTeamId: number; order: number }[]
 }
 

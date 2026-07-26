@@ -1,4 +1,3 @@
-// SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
 import {
   getAthletes as getMockAthletes,
   getAthleteById,
@@ -13,7 +12,6 @@ import {
   seedGroupMembership,
   seedMatches,
   seedBracketRounds,
-  seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
 import type {
@@ -22,6 +20,7 @@ import type {
   MatchDetail,
   RosterEntry,
   StandingsEnvelope,
+  TournamentFormat,
   TournamentGroup,
   TournamentGroupTeam,
   TournamentTeam,
@@ -131,7 +130,6 @@ const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flat
 )
 
 const store = createSportsStore({
-  tournaments: seedTournaments,
   matches: seedMatches,
   tournamentTeams: seedTournamentTeams,
   rosterEntries: seedRosterEntries,
@@ -215,10 +213,10 @@ export const assignTeamToGroup = (input: AssignGroupTeamInput) => Promise.resolv
 export const removeGroupTeam = (id: number) => Promise.resolve(store.removeGroupTeam(id))
 
 // ── Standings & tiebreaks ────────────────────────────────────────────────────
-export function listStandings(tournamentId: number): Promise<StandingsEnvelope[]>
-export function listStandings(tournamentId: number, groupId: number): Promise<StandingsEnvelope>
-export function listStandings(tournamentId: number, groupId?: number) {
-  const envelopes = store.listStandings(tournamentId, groupId)
+export function listStandings(tournamentId: number, format: TournamentFormat): Promise<StandingsEnvelope[]>
+export function listStandings(tournamentId: number, format: TournamentFormat, groupId: number): Promise<StandingsEnvelope>
+export function listStandings(tournamentId: number, format: TournamentFormat, groupId?: number) {
+  const envelopes = store.listStandings(tournamentId, format, groupId)
   return Promise.resolve(groupId ? envelopes[0] : envelopes)
 }
 export const setTiebreakOrder = (input: SetTiebreakOrderInput) => Promise.resolve(store.setTiebreakOrder(input))

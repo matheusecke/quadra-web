@@ -20,7 +20,7 @@ interface StandingsTabProps {
  */
 export function StandingsTab({ tournament, teams }: StandingsTabProps) {
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: envelopes, isPending, isError, refetch } = useStandingsQuery(tournament.id)
+  const { data: envelopes, isPending, isError, refetch } = useStandingsQuery(tournament.id, tournament.format)
   const setTiebreak = useSetTiebreakOrder()
   const clearTiebreak = useClearTiebreakOrder()
   const [tiebreakError, setTiebreakError] = useState('')
@@ -58,7 +58,7 @@ export function StandingsTab({ tournament, teams }: StandingsTabProps) {
       errorMessage={tiebreakError}
       onSetTiebreakOrder={async (entries) => {
         try {
-          await setTiebreak.mutateAsync({ tournamentId: tournament.id, entries })
+          await setTiebreak.mutateAsync({ tournamentId: tournament.id, format: tournament.format, entries })
           setTiebreakError('')
         } catch {
           setTiebreakError('A composição do empate mudou. Recarregue a classificação.')
