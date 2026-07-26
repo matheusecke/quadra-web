@@ -69,8 +69,8 @@ export function TournamentFormPage() {
         categoryId: existing.categoryId,
         format: existing.format,
         status: existing.status === 'COMPLETED' ? 'IN_PROGRESS' : existing.status,
-        startDate: toDayInput(existing.startsAt),
-        endDate: toDayInput(existing.endsAt),
+        startsAt: toDayInput(existing.startsAt),
+        endsAt: toDayInput(existing.endsAt),
         registrationStartsAt: toDayInput(existing.registrationStartsAt),
         registrationEndsAt: toDayInput(existing.registrationEndsAt),
         regulation: existing.regulation ?? '',
@@ -169,10 +169,10 @@ export function TournamentFormPage() {
 
         <div className={s.dates}>
           <Field label="Início" id="tournament-start">
-            <DateTimeField id="tournament-start" type="date" value={state.startDate} onChange={(value) => dispatch({ type: 'setField', field: 'startDate', value })} />
+            <DateTimeField id="tournament-start" type="date" value={state.startsAt} onChange={(value) => dispatch({ type: 'setField', field: 'startsAt', value })} />
           </Field>
           <Field label="Fim" id="tournament-end" error={errors.dateRange}>
-            <DateTimeField id="tournament-end" type="date" value={state.endDate} onChange={(value) => dispatch({ type: 'setField', field: 'endDate', value })} />
+            <DateTimeField id="tournament-end" type="date" value={state.endsAt} onChange={(value) => dispatch({ type: 'setField', field: 'endsAt', value })} />
           </Field>
         </div>
 

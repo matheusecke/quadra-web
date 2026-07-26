@@ -9,8 +9,8 @@ export interface TournamentFormState {
   format: TournamentFormat
   status: EditableTournamentStatus
   /** Dias de calendário, no formato do `<input type="date">`. A conversão é na borda. */
-  startDate: string
-  endDate: string
+  startsAt: string
+  endsAt: string
   registrationStartsAt: string
   registrationEndsAt: string
   regulation: string
@@ -33,8 +33,8 @@ export const initialTournamentFormState = (): TournamentFormState => ({
   categoryId: null,
   format: 'LEAGUE',
   status: 'DRAFT',
-  startDate: '',
-  endDate: '',
+  startsAt: '',
+  endsAt: '',
   registrationStartsAt: '',
   registrationEndsAt: '',
   regulation: '',
@@ -55,7 +55,7 @@ export function validateTournamentForm(state: TournamentFormState): TournamentFo
   const errors: TournamentFormErrors = {}
   if (!state.name.trim()) errors.name = 'Informe o nome do campeonato.'
   if (!state.seasonId) errors.seasonId = 'Selecione a temporada.'
-  if (state.startDate && state.endDate && state.startDate > state.endDate) {
+  if (state.startsAt && state.endsAt && state.startsAt > state.endsAt) {
     errors.dateRange = 'A data de início deve ser anterior à de fim.'
   }
   if (state.registrationStartsAt && state.registrationEndsAt && state.registrationStartsAt > state.registrationEndsAt) {
@@ -74,9 +74,9 @@ export function toCreateInput(state: TournamentFormState): CreateTournamentInput
   }
   if (state.categoryId != null) input.categoryId = state.categoryId
   if (state.regulation.trim()) input.regulation = state.regulation.trim()
-  const startsAt = toInstant(state.startDate)
+  const startsAt = toInstant(state.startsAt)
   if (startsAt) input.startsAt = startsAt
-  const endsAt = toInstant(state.endDate)
+  const endsAt = toInstant(state.endsAt)
   if (endsAt) input.endsAt = endsAt
   const registrationStartsAt = toInstant(state.registrationStartsAt)
   if (registrationStartsAt) input.registrationStartsAt = registrationStartsAt
@@ -93,8 +93,8 @@ export function toUpdateInput(state: TournamentFormState, isCompleted: boolean):
     format: state.format,
     categoryId: state.categoryId,
     regulation: state.regulation.trim() || null,
-    startsAt: toInstant(state.startDate),
-    endsAt: toInstant(state.endDate),
+    startsAt: toInstant(state.startsAt),
+    endsAt: toInstant(state.endsAt),
     registrationStartsAt: toInstant(state.registrationStartsAt),
     registrationEndsAt: toInstant(state.registrationEndsAt, true),
   }
