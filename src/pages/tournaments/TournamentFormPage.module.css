@@ -56,6 +56,12 @@
   outline-offset: 1px;
 }
 
+.formError {
+  font-size: 13px;
+  color: var(--accent-deep);
+  margin: 0;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
