@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import api, { refreshAccessToken, setAccessToken } from '../services/api'
+import { queryClient } from '../lib/query-client'
 import { AuthContext, type AuthStatus } from './auth-context'
 import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterBody, RegisterInput, TokenPayload } from '../types/api'
 
@@ -111,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const chooseOrg = useCallback(async (organizationId: number) => {
     const { data } = await api.post<ApiResponse<TokenPayload>>('/auth/org', { organizationId })
     setAccessToken(data.data.accessToken)
+    queryClient.clear()
     const me = await fetchMe()
     setUser(me)
   }, [])

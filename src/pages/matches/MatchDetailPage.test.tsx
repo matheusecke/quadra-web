@@ -2,12 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatchDetailPage } from './MatchDetailPage'
 import * as sportsApi from '../../services/sportsApi'
+import { getTeams as getMockTeams } from '../../features/sports/mock-sports-data'
 import type { TournamentTeam } from '../../features/sports/types'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(getMockTeams())
+})
 
 // GERAL tournament (id 1) enrollment snapshot naming Time 1 "Titans FC" — proves the score hero
 // resolves via the enrollment snapshot, not a live re-lookup in the global team catalog.

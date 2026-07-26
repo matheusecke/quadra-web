@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { useAuth } from '../hooks/useAuth'
 import api, { refreshAccessToken, setAccessToken } from '../services/api'
+import { queryClient } from '../lib/query-client'
 
 vi.mock('../services/api', () => ({
   default: {
@@ -64,6 +65,16 @@ function RefreshOrganizationsHarness() {
         refresh organizations
       </button>
       <span>{organizations.map((org) => org.organizationName).join(', ')}</span>
+    </div>
+  )
+}
+
+function ChooseOrgHarness() {
+  const { chooseOrg, user } = useAuth()
+  return (
+    <div>
+      <button type="button" onClick={() => chooseOrg(202)}>choose organization</button>
+      <span data-testid="chosen-organization">{user?.organizationId}</span>
     </div>
   )
 }
@@ -297,5 +308,34 @@ describe('AuthContext refreshOrganizations', () => {
       expect(screen.getByText('Liga Atualizada')).toBeInTheDocument()
     })
     expect(api.get).toHaveBeenCalledWith('/auth/org')
+  })
+})
+
+describe('AuthContext chooseOrg', () => {
+  it('clears cached tenant data when the active organization changes', async () => {
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
+    queryClient.setQueryData(['teams', 'list'], [{ id: 1, name: 'Tenant anterior' }])
+    vi.mocked(api.post).mockResolvedValue({
+      data: { data: { accessToken: 'organization-token' }, statusCode: 200 },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          email: 'user@example.com',
+          name: 'User Name',
+          isSystemAdmin: false,
+          organizationId: 202,
+          role: 'ORG_ADMIN',
+        },
+        statusCode: 200,
+      },
+    })
+
+    render(<AuthProvider><ChooseOrgHarness /></AuthProvider>)
+    await userEvent.click(screen.getByRole('button', { name: 'choose organization' }))
+    await screen.findByText('202')
+
+    expect(queryClient.getQueryData(['teams', 'list'])).toBeUndefined()
   })
 })

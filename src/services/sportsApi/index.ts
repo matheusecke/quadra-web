@@ -32,16 +32,13 @@ import type {
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  EnrollTeamInput,
   LinkSlotMatchInput,
-  RosterEntryInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
-  UpdateRosterEntryInput,
 } from './types'
 
 const seedMatchDetails = seedMatches
@@ -166,10 +163,15 @@ export const getTournamentLeaders = (tournamentId: number) =>
   Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
-export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))
-export const getAllTournamentTeams = () => Promise.resolve(store.listAllTournamentTeams())
-export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
-export const removeTournamentTeam = (id: number) => Promise.resolve(store.removeTournamentTeam(id))
+export {
+  enrollTeam,
+  getAllTournamentTeams,
+  getTournamentTeams,
+  listTournamentTeamsPage,
+  removeTournamentTeam,
+  updateTournamentTeam,
+} from './tournament-teams'
+export type { ListTournamentTeamsParams } from './tournament-teams'
 
 // ── Bracket ──────────────────────────────────────────────────────────────────
 export const getBracketRounds = (tournamentId: number): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))
@@ -184,13 +186,16 @@ export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(stor
 export const removeBracketSlot = (id: number) => Promise.resolve(store.removeBracketSlot(id))
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
-export const getRoster = (tournamentId: number, tournamentTeamId: number) => Promise.resolve(store.listRoster(tournamentId, tournamentTeamId))
-export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
-export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
-export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
+export {
+  addTournamentRoster,
+  getTournamentRoster,
+  removeTournamentRoster,
+  updateTournamentRoster,
+} from './tournament-rosters'
 
 // ── Teams ────────────────────────────────────────────────────────────────────
-export const getTeams = () => Promise.resolve(getMockTeams())
+export { getTeams, listTeamsPage, listRosterCandidatesPage, searchRosterCandidates, searchTeams } from './catalogs'
+export type { ListRosterCandidatesParams, ListTeamsParams } from './catalogs'
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
 export const getAthletes = () => Promise.resolve(getMockAthletes())

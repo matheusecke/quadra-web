@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
@@ -15,9 +15,9 @@ import { TournamentRosterPanel } from '../../features/sports/components/Tourname
 import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
 import { ChampionHighlight } from '../../features/sports/components/ChampionHighlight'
 import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
-import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
-import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
-import { useAddRosterEntry, useAthletesQuery, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
+import type { RosterEntryDraft, RosterRole } from '../../features/sports/components/TournamentRosterPanel'
+import * as sportsApi from '../../services/sportsApi'
+import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import { apiErrorCode } from '../../services/apiError'
 import {
@@ -45,6 +45,22 @@ const COMPLETE_ERRORS: Record<string, string> = {
   INVALID_STATUS_TRANSITION: 'O status do campeonato mudou. Recarregue a página.',
 }
 
+const ENROLLMENT_MESSAGES: Record<string, string> = {
+  DUPLICATE_RECORD: 'Equipe já inscrita neste campeonato.',
+  INVALID_TEAM: 'A equipe não está disponível para esta organização.',
+  TOURNAMENT_NOT_MUTABLE: 'Este campeonato não permite mais alterações.',
+  REGISTRATION_IN_USE: 'A inscrição já está em uso pelo chaveamento.',
+}
+
+const ROSTER_MESSAGES: Record<string, string> = {
+  DUPLICATE_RECORD: 'A pessoa já está ativa neste elenco.',
+  ATHLETE_ALREADY_REGISTERED: 'Atleta já está em outra equipe neste campeonato.',
+  INVALID_ROSTER_MEMBER: 'A pessoa não possui vínculo ativo com esta equipe.',
+  INVALID_ROSTER_ROLE: 'O papel escolhido não corresponde ao vínculo ativo.',
+  INACTIVE_REGISTRATION: 'A inscrição ou o membro não está ativo.',
+  TOURNAMENT_NOT_MUTABLE: 'Este campeonato não permite mais alterações.',
+}
+
 export function TournamentDetailPage() {
   const { tournamentId: rawTournamentId } = useParams<{ tournamentId: string }>()
   const tournamentId = parsePositiveId(rawTournamentId)
@@ -53,9 +69,9 @@ export function TournamentDetailPage() {
   const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
   const { data: tournament } = tournamentQuery
   const { data: matches } = useMatchesQuery({ tournamentId: tournamentId ?? undefined })
-  const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId ?? undefined)
+  const tournamentTeamsQuery = useTournamentTeamsQuery(tournamentId ?? undefined)
+  const { data: enrolledJoins } = tournamentTeamsQuery
   const teamsQuery = useTeamsQuery()
-  const athletesQuery = useAthletesQuery()
   const seasonsQuery = useSeasonsQuery()
   const categoriesQuery = useCategoriesQuery()
   const enrollTeam = useEnrollTeam()
@@ -88,18 +104,15 @@ export function TournamentDetailPage() {
   const [completionError, setCompletionError] = useState('')
   const [isReopening, setIsReopening] = useState(false)
   const [reopenError, setReopenError] = useState('')
-  const { data: roster } = useRosterQuery(tournamentId ?? undefined, rosterTournamentTeamId ?? undefined)
-  const availableTeams = useMemo(() => {
-    const enrolled = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
-    return (teamsQuery.data ?? []).filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
-  }, [enrolledJoins, teamsQuery.data])
+  const rosterQuery = useRosterQuery(rosterTournamentTeamId ?? undefined)
+  const { data: roster } = rosterQuery
 
-  const isLoading = tournamentQuery.isPending || teamsQuery.isPending || athletesQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
-  const isError = tournamentQuery.isError || teamsQuery.isError || athletesQuery.isError || seasonsQuery.isError || categoriesQuery.isError
+  const isLoading = tournamentQuery.isPending || tournamentTeamsQuery.isPending || teamsQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const isError = tournamentQuery.isError || tournamentTeamsQuery.isError || teamsQuery.isError || seasonsQuery.isError || categoriesQuery.isError
   const refetch = () => {
     tournamentQuery.refetch()
+    tournamentTeamsQuery.refetch()
     teamsQuery.refetch()
-    athletesQuery.refetch()
     seasonsQuery.refetch()
     categoriesQuery.refetch()
   }
@@ -115,7 +128,6 @@ export function TournamentDetailPage() {
   }
 
   const teams = teamMap(teamsQuery.data ?? [])
-  const athletes = new Map((athletesQuery.data ?? []).map((athlete) => [athlete.id, athlete]))
   const seasonLabel = seasonsQuery.data?.find((season) => season.id === tournament?.seasonId)?.label
     ?? String(tournament?.seasonId ?? '')
   const categoryName = tournament?.categoryId == null
@@ -124,49 +136,85 @@ export function TournamentDetailPage() {
       ?? String(tournament.categoryId)
   const enrolledTeamMap = tournamentTeamMap(enrolledJoins ?? [], teams)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
-  const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
+  const championName = championTournamentTeam?.displayNameSnapshot ?? null
 
   const rosterDisplay = (roster ?? []).map((entry) => ({
     id: entry.id,
-    athleteId: entry.athleteId,
-    name: athletes.get(entry.athleteId)?.name ?? String(entry.athleteId),
+    userId: entry.userId,
+    name: entry.displayNameSnapshot,
     jerseyNumber: entry.jerseyNumber,
     role: entry.role,
   }))
 
   const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === rosterTournamentTeamId)?.teamId
-  const availableAthletes = rosterTeamGlobalId
-    ? (athletesQuery.data ?? [])
-        .filter((athlete) => athlete.currentTeamId === rosterTeamGlobalId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
-        .map((athlete) => ({ id: athlete.id, name: athlete.name }))
-    : []
+
+  const searchEnrollmentTeams = async (q: string) => {
+    const enrolledTeamIds = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
+    return (await sportsApi.searchTeams(q))
+      .filter((team) => !enrolledTeamIds.has(team.id))
+      .map((team) => ({ id: team.id, label: team.name, secondary: team.shortName }))
+  }
+
+  const searchRosterCandidates = async (q: string, role: RosterRole) => {
+    if (rosterTeamGlobalId == null) return []
+    return (await sportsApi.searchRosterCandidates({ q, teamId: rosterTeamGlobalId, role }))
+      .map((candidate) => ({
+        id: candidate.id,
+        label: candidate.name,
+        secondary: candidate.jerseyNumber == null ? undefined : `Camisa ${candidate.jerseyNumber}`,
+      }))
+  }
 
   const handleAddRoster = async (draft: RosterEntryDraft) => {
     if (rosterTournamentTeamId == null) return
     try {
-      await addRosterEntry.mutateAsync({ tournamentId, tournamentTeamId: rosterTournamentTeamId, ...draft })
+      await addRosterEntry.mutateAsync({ tournamentTeamId: rosterTournamentTeamId, ...draft })
       setRosterError('')
-    } catch {
-      setRosterError('Atleta já está em uma equipe no mesmo campeonato.')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível adicionar ao elenco.')
+      throw error
     }
   }
 
-  const handleUpdateRoster = async (id: number, input: UpdateRosterEntryInput) => {
+  const handleUpdateRoster = async (id: number, input: { jerseyNumber?: number | null; role?: RosterRole }) => {
     if (rosterTournamentTeamId == null) return
-    await updateRosterEntry.mutateAsync({ id, tournamentId, tournamentTeamId: rosterTournamentTeamId, input })
+    try {
+      await updateRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId, input })
+      setRosterError('')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível atualizar o elenco.')
+      throw error
+    }
   }
 
-  const handleRemoveRoster = (id: number) => {
+  const handleRemoveRoster = async (id: number) => {
     if (rosterTournamentTeamId == null) return
-    removeRosterEntry.mutate({ id, tournamentId, tournamentTeamId: rosterTournamentTeamId })
+    try {
+      await removeRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId })
+      setRosterError('')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível remover do elenco.')
+      throw error
+    }
   }
 
   const handleEnroll = async (teamId: number) => {
     try {
-      await enrollTeam.mutateAsync({ tournamentId, teamId, displayName: teams.get(teamId)?.name ?? String(teamId) })
+      await enrollTeam.mutateAsync({ tournamentId, teamId })
       setEnrollError('')
-    } catch {
-      setEnrollError('Equipe já inscrita neste campeonato.')
+    } catch (error) {
+      setEnrollError(ENROLLMENT_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível inscrever a equipe.')
+      throw error
+    }
+  }
+
+  const handleRemoveTeam = async (id: number) => {
+    try {
+      await removeTeam.mutateAsync(id)
+      setEnrollError('')
+      setConfirmingTeamId(null)
+    } catch (error) {
+      setEnrollError(ENROLLMENT_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível remover a equipe.')
     }
   }
 
@@ -340,7 +388,7 @@ export function TournamentDetailPage() {
             </div>
             {isCompleting && (
               <CompleteTournamentPanel
-                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? String(entry.teamId) }))}
+                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? String(entry.teamId) }))}
                 suggestion={championSuggestion ?? null}
                 requiresChampion={tournament.format !== 'GROUP_STAGE'}
                 onComplete={handleComplete}
@@ -373,11 +421,11 @@ export function TournamentDetailPage() {
           <div className={s.teamsTab}>
             {isOrgAdmin && (
               <div className={s.enrollManage}>
-                <EnrollTeamPanel availableTeams={availableTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
+                <EnrollTeamPanel onSearch={searchEnrollmentTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
                 {enrolledJoins && enrolledJoins.length > 0 && (
                   <ul className={s.enrolledList} aria-label="Equipes inscritas">
                     {enrolledJoins.map((join) => {
-                      const teamName = teams.get(join.teamId)?.name ?? String(join.teamId)
+                      const teamName = join.displayNameSnapshot
                       const isOpen = rosterTournamentTeamId === join.id
                       const isConfirming = confirmingTeamId === join.id
                       const panelId = `roster-panel-${join.id}`
@@ -391,7 +439,7 @@ export function TournamentDetailPage() {
                                   <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingTeamId(null)}>
                                     Cancelar
                                   </Button>
-                                  <Button type="button" variant="danger" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                                  <Button type="button" variant="danger" size="sm" loading={removeTeam.isPending} onClick={() => handleRemoveTeam(join.id)}>
                                     Confirmar
                                   </Button>
                                 </>
@@ -424,7 +472,10 @@ export function TournamentDetailPage() {
                             {isOpen ? (
                               <TournamentRosterPanel
                                 roster={rosterDisplay}
-                                availableAthletes={availableAthletes}
+                                isLoading={rosterQuery.isPending}
+                                isError={rosterQuery.isError}
+                                onRetry={rosterQuery.refetch}
+                                onSearchCandidates={searchRosterCandidates}
                                 onAdd={handleAddRoster}
                                 onUpdate={handleUpdateRoster}
                                 onRemove={handleRemoveRoster}

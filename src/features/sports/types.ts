@@ -34,7 +34,16 @@ export interface Team {
   name: string
   /** Short tag (3 letters) used in dense tables and bracket cells. */
   shortName: string
-  city?: string
+  city?: string | null
+}
+
+/** GET /athletes — a catalog of users eligible for a roster, not an athlete's sports detail. */
+export interface RosterCandidate {
+  id: number // User.id
+  name: string
+  teamId: number
+  role: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber: number | null
 }
 
 export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
@@ -198,7 +207,6 @@ export interface TournamentTeam {
   /** The recorded draw (FIBA's last criterion) and the block it was recorded for. §8.8 */
   tiebreakOrder: number | null
   tiebreakBlockKey: string | null
-  isDeleted?: boolean
 }
 
 export interface TournamentGroup {
@@ -225,6 +233,18 @@ export interface RosterEntry {
   jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
   isDeleted?: boolean
+}
+
+export type RosterRole = 'ATHLETE' | 'COACHING_STAFF'
+
+export interface TournamentRoster {
+  id: number
+  tournamentId: number
+  tournamentTeamId: number
+  userId: number
+  role: RosterRole
+  jerseyNumber: number | null
+  displayNameSnapshot: string
 }
 
 export interface BracketRound {

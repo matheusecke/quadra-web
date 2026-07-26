@@ -23,9 +23,7 @@ import type {
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  EnrollTeamInput,
   LinkSlotMatchInput,
-  RosterEntryInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
   SetTiebreakOrderInput,
@@ -33,8 +31,33 @@ import type {
   SubmitMatchResultInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
-  UpdateRosterEntryInput,
 } from './types'
+
+/** The real `EnrollTeamInput` (Phase 3) narrowed to `{ tournamentId, teamId }` once the API
+ *  started deriving `displayName`/`seed` server-side. The still-mock-only phases (groups,
+ *  brackets, standings) seed their fixtures through this store directly and still need both. */
+interface MockEnrollTeamInput {
+  tournamentId: number
+  teamId: number
+  displayName: string
+  seed?: number | null
+}
+
+/** `RosterEntryInput`/`UpdateRosterEntryInput` were replaced at the real HTTP boundary by
+ *  `CreateTournamentRosterInput`/`UpdateTournamentRosterInput` (`userId`, optional jersey).
+ *  The mock roster used by groups/brackets/standings fixtures keeps its own athleteId shape. */
+interface MockRosterEntryInput {
+  tournamentId: number
+  tournamentTeamId: number
+  athleteId: number
+  jerseyNumber: number
+  role: 'ATHLETE' | 'COACHING_STAFF'
+}
+
+interface MockUpdateRosterEntryInput {
+  jerseyNumber?: number
+  role?: 'ATHLETE' | 'COACHING_STAFF'
+}
 
 export interface SportsStoreSeed {
   matches: Match[]
@@ -57,6 +80,11 @@ export interface MatchExtra {
 
 type StoredMatch = Omit<Match, 'bracketRound'>
 
+/** The canonical `TournamentTeam` dropped `isDeleted` once registrations moved to the real API
+ *  (§ Phase 3). Withdrawal for the still-mock-only phases (groups, brackets, matches) keeps
+ *  soft-deleting locally, so the store keeps its own superset type instead of exporting it. */
+type MockTournamentTeam = TournamentTeam & { isDeleted?: boolean }
+
 const isActive = (record: { isDeleted?: boolean }) => record.isDeleted !== true
 
 export function createSportsStore(seed: SportsStoreSeed) {
@@ -65,7 +93,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     void bracketRound
     return rest
   })
-  const tournamentTeams: TournamentTeam[] = seed.tournamentTeams?.map((entry) => ({ ...entry })) ?? []
+  const tournamentTeams: MockTournamentTeam[] = seed.tournamentTeams?.map((entry) => ({ ...entry })) ?? []
   const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
   const tournamentGroups: TournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
   const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
@@ -191,7 +219,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     listAllTournamentTeams(): TournamentTeam[] {
       return tournamentTeams.filter((tt) => isActive(tt))
     },
-    enrollTeam(input: EnrollTeamInput): TournamentTeam {
+    enrollTeam(input: MockEnrollTeamInput): TournamentTeam {
       const exists = tournamentTeams.some(
         (tt) => isActive(tt) && tt.tournamentId === input.tournamentId && tt.teamId === input.teamId,
       )
@@ -318,7 +346,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
     listRoster(tournamentId: number, tournamentTeamId: number): RosterEntry[] {
       return rosterEntries.filter((r) => isActive(r) && r.tournamentId === tournamentId && r.tournamentTeamId === tournamentTeamId)
     },
-    addRosterEntry(input: RosterEntryInput): RosterEntry {
+    addRosterEntry(input: MockRosterEntryInput): RosterEntry {
       if (input.role === 'ATHLETE') {
         const conflict = rosterEntries.some(
           (r) =>
@@ -341,7 +369,7 @@ export function createSportsStore(seed: SportsStoreSeed) {
       rosterEntries.push(record)
       return record
     },
-    updateRosterEntry(id: number, input: UpdateRosterEntryInput): RosterEntry {
+    updateRosterEntry(id: number, input: MockUpdateRosterEntryInput): RosterEntry {
       const entry = rosterEntries.find((record) => record.id === id)
       if (!entry) throw new Error('Roster entry not found')
       Object.assign(entry, input)

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GroupsTab } from './GroupsTab'
 import * as sportsApi from '../../../services/sportsApi'
 import { teamMap } from '../../../features/sports/sportsUtils'
-import type { StandingsEnvelope, Tournament } from '../../../features/sports/types'
+import type { StandingsEnvelope, Team, Tournament } from '../../../features/sports/types'
 
 // useIsOrgAdmin reads from AuthContext, which no test here provides — mocked the same way
 // TournamentDetailPage.test.tsx does.
@@ -28,9 +28,9 @@ describe('GroupsTab', () => {
   })
 
   it('renders one StandingsCard per envelope for a tournament that has groups', async () => {
-    const [team] = await sportsApi.getTeams()
     // A fresh id kept off the real API: this test only exercises GroupsTab's own rendering
     // of whatever the group/standings queries resolve with, mocked at the sportsApi boundary.
+    const team: Team = { id: 501, name: 'Equipe de Teste', shortName: 'EQT' }
     const fakeTournament = { id: 501, format: 'GROUP_STAGE' } as unknown as Tournament
     const groupA = { id: 701, tournamentId: fakeTournament.id, name: 'Grupo A', sortOrder: 1 }
     const enrollment = {

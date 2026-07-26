@@ -12,9 +12,9 @@ import type {
   CreateGroupInput,
   CreateSeasonInput,
   CreateTournamentInput,
+  CreateTournamentRosterInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
-  RosterEntryInput,
   ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
@@ -23,7 +23,7 @@ import type {
   UpdateTournamentInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
-  UpdateRosterEntryInput,
+  UpdateTournamentRosterInput,
 } from '../../services/sportsApi/types'
 
 export const seasonKeys = {
@@ -44,7 +44,7 @@ export const tournamentKeys = {
   detail: (id: number) => [...tournamentKeys.all, 'detail', id] as const,
   teams: (id: number) => [...tournamentKeys.all, 'teams', id] as const,
   allTeams: () => [...tournamentKeys.all, 'teams', 'all'] as const,
-  roster: (tournamentId: number, tournamentTeamId: number) => [...tournamentKeys.all, 'roster', tournamentId, tournamentTeamId] as const,
+  roster: (tournamentTeamId: number) => [...tournamentKeys.all, 'roster', tournamentTeamId] as const,
   championSuggestion: (id: number) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
 }
 
@@ -176,11 +176,11 @@ export function useAllTournamentTeamsQuery() {
   })
 }
 
-export function useRosterQuery(tournamentId: number | undefined, tournamentTeamId: number | undefined) {
+export function useRosterQuery(tournamentTeamId: number | undefined) {
   return useQuery({
-    queryKey: tournamentKeys.roster(tournamentId ?? -1, tournamentTeamId ?? -1),
-    queryFn: () => sportsApi.getRoster(tournamentId!, tournamentTeamId!),
-    enabled: tournamentId != null && tournamentTeamId != null,
+    queryKey: tournamentKeys.roster(tournamentTeamId ?? -1),
+    queryFn: () => sportsApi.getTournamentRoster(tournamentTeamId!),
+    enabled: tournamentTeamId != null,
   })
 }
 
@@ -401,28 +401,28 @@ export function useRemoveBracketSlot() {
 export function useAddRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: RosterEntryInput) => sportsApi.addRosterEntry(input),
+    mutationFn: (input: CreateTournamentRosterInput) => sportsApi.addTournamentRoster(input),
     onSuccess: (_data, input) =>
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(input.tournamentId, input.tournamentTeamId) }),
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(input.tournamentTeamId) }),
   })
 }
 
 export function useUpdateRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; tournamentId: number; tournamentTeamId: number; input: UpdateRosterEntryInput }) =>
-      sportsApi.updateRosterEntry(id, input),
+    mutationFn: ({ id, input }: { id: number; tournamentTeamId: number; input: UpdateTournamentRosterInput }) =>
+      sportsApi.updateTournamentRoster(id, input),
     onSuccess: (_data, variables) =>
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.tournamentTeamId) }),
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentTeamId) }),
   })
 }
 
 export function useRemoveRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id }: { id: number; tournamentId: number; tournamentTeamId: number }) => sportsApi.removeRosterEntry(id),
+    mutationFn: ({ id }: { id: number; tournamentTeamId: number }) => sportsApi.removeTournamentRoster(id),
     onSuccess: (_data, variables) =>
-      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentId, variables.tournamentTeamId) }),
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.roster(variables.tournamentTeamId) }),
   })
 }
 

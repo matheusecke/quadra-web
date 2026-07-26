@@ -1,10 +1,52 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { MatchSumulaPage } from './MatchSumulaPage'
 import * as sportsApi from '../../services/sportsApi'
+import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
+import type { Team, TournamentRoster, TournamentTeam } from '../../features/sports/types'
+
+const INVERNO = SEED_TOURNAMENT.INVERNO
+const homeTtId = tournamentTeamId(INVERNO, 1)
+const awayTtId = tournamentTeamId(INVERNO, 2)
+
+const TEAMS: Team[] = [
+  { id: 1, name: 'Time 1', shortName: 'T01', city: 'Campinas' },
+  { id: 2, name: 'Time 2', shortName: 'T02', city: 'Campinas' },
+]
+
+const TOURNAMENT_TEAMS: TournamentTeam[] = [
+  { id: homeTtId, tournamentId: INVERNO, teamId: 1, displayNameSnapshot: 'Time 1', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+  { id: awayTtId, tournamentId: INVERNO, teamId: 2, displayNameSnapshot: 'Time 2', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
+]
+
+// userIds match the mock matches engine's own seeded roster (§ seedRosterEntries in
+// mock-sports-data.ts) so a submitted box score's tournamentRosterId is still recognized —
+// match submission stays on the mock engine until its own integration phase.
+const HOME_ROSTER: TournamentRoster[] = [
+  { id: seedRosterId(INVERNO, 101), tournamentId: INVERNO, tournamentTeamId: homeTtId, userId: 101, role: 'ATHLETE', jerseyNumber: 4, displayNameSnapshot: 'Rafael Moura' },
+  { id: seedRosterId(INVERNO, 102), tournamentId: INVERNO, tournamentTeamId: homeTtId, userId: 102, role: 'ATHLETE', jerseyNumber: null, displayNameSnapshot: 'Diego Santos' },
+  { id: seedRosterId(INVERNO, 103), tournamentId: INVERNO, tournamentTeamId: homeTtId, userId: 103, role: 'ATHLETE', jerseyNumber: 6, displayNameSnapshot: 'Felipe Oliveira' },
+]
+
+const AWAY_ROSTER: TournamentRoster[] = [
+  { id: seedRosterId(INVERNO, 109), tournamentId: INVERNO, tournamentTeamId: awayTtId, userId: 109, role: 'ATHLETE', jerseyNumber: 4, displayNameSnapshot: 'Nicolas Barbosa' },
+  { id: seedRosterId(INVERNO, 110), tournamentId: INVERNO, tournamentTeamId: awayTtId, userId: 110, role: 'ATHLETE', jerseyNumber: 5, displayNameSnapshot: 'Otávio Ribeiro' },
+  { id: seedRosterId(INVERNO, 111), tournamentId: INVERNO, tournamentTeamId: awayTtId, userId: 111, role: 'ATHLETE', jerseyNumber: 6, displayNameSnapshot: 'Paulo Carvalho' },
+]
+
+const ROSTERS_BY_TOURNAMENT_TEAM: Record<number, TournamentRoster[]> = {
+  [homeTtId]: HOME_ROSTER,
+  [awayTtId]: AWAY_ROSTER,
+}
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(TEAMS)
+  vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(TOURNAMENT_TEAMS)
+  vi.spyOn(sportsApi, 'getTournamentRoster').mockImplementation(async (ttId) => ROSTERS_BY_TOURNAMENT_TEAM[ttId] ?? [])
+})
 
 const renderSumula = (matchId: string) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -21,13 +63,20 @@ const renderSumula = (matchId: string) => {
 }
 
 describe('MatchSumulaPage', () => {
-  it('builds roster rows from the queried athlete catalog', async () => {
-    const athletes = await sportsApi.getAthletes()
-    vi.spyOn(sportsApi, 'getAthletes').mockResolvedValueOnce(
-      athletes.map((athlete) => athlete.id === 101 ? { ...athlete, name: 'Atleta via seam' } : athlete),
-    )
+  it('blocks result submission when a roster cannot be loaded', async () => {
+    vi.spyOn(sportsApi, 'getTournamentRoster').mockRejectedValue(new Error('roster unavailable'))
     renderSumula('216')
-    expect(await screen.findByText('Atleta via seam')).toBeInTheDocument()
+
+    expect(await screen.findByText('Não foi possível carregar os elencos.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /finalizar partida/i })).not.toBeInTheDocument()
+  })
+
+  it('renders roster rows from the queried roster snapshot, not the athlete catalog', async () => {
+    const getAthletes = vi.spyOn(sportsApi, 'getAthletes')
+    renderSumula('216')
+    expect(await screen.findByText('Rafael Moura')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(getAthletes).not.toHaveBeenCalled()
   })
 
   it('warns when total points do not match the final score', async () => {

@@ -3,11 +3,23 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { getTournaments as getMockTournaments } from '../../features/sports/mock-sports-data'
+import { getTournaments as getMockTournaments, seedEnrollment } from '../../features/sports/mock-sports-data'
+import { tournamentTeamId } from '../../features/sports/seedIds'
 import * as sportsApi from '../../services/sportsApi'
 import { MatchFormPage } from './MatchFormPage'
 
 afterEach(() => vi.restoreAllMocks())
+
+const tournamentTeamsFor = (tournamentId: number) =>
+  (seedEnrollment.find((entry) => entry.tournamentId === tournamentId)?.teamIds ?? []).map((teamId) => ({
+    id: tournamentTeamId(tournamentId, teamId),
+    tournamentId,
+    teamId,
+    displayNameSnapshot: `Time ${teamId}`,
+    seed: null,
+    tiebreakOrder: null,
+    tiebreakBlockKey: null,
+  }))
 
 function LocationProbe() {
   const location = useLocation()
@@ -31,6 +43,7 @@ const renderNew = () => {
 describe('MatchFormPage', () => {
   it('rejects scheduling a team against itself', async () => {
     vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue(getMockTournaments())
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockImplementation(async (id) => tournamentTeamsFor(id))
     renderNew()
     await userEvent.click(await screen.findByLabelText(/campeonato/i))
     await userEvent.click(await screen.findByRole('option', { name: /copa/i }))
