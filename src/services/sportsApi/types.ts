@@ -89,9 +89,10 @@ export interface LinkSlotMatchInput {
 export interface EnrollTeamInput {
   tournamentId: number
   teamId: number
-  /** display_name_snapshot — the team's name at enrollment (DB spec §5.3). */
-  displayName: string
-  seed?: number
+}
+
+export interface UpdateTournamentTeamInput {
+  seed?: number | null
 }
 
 export interface CreateGroupInput {

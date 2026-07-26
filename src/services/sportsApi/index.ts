@@ -32,7 +32,6 @@ import type {
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
   ScheduleMatchInput,
@@ -166,10 +165,15 @@ export const getTournamentLeaders = (tournamentId: number) =>
   Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
-export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))
-export const getAllTournamentTeams = () => Promise.resolve(store.listAllTournamentTeams())
-export const enrollTeam = (input: EnrollTeamInput) => Promise.resolve(store.enrollTeam(input))
-export const removeTournamentTeam = (id: number) => Promise.resolve(store.removeTournamentTeam(id))
+export {
+  enrollTeam,
+  getAllTournamentTeams,
+  getTournamentTeams,
+  listTournamentTeamsPage,
+  removeTournamentTeam,
+  updateTournamentTeam,
+} from './tournament-teams'
+export type { ListTournamentTeamsParams } from './tournament-teams'
 
 // ── Bracket ──────────────────────────────────────────────────────────────────
 export const getBracketRounds = (tournamentId: number): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))

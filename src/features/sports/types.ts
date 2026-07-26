@@ -207,7 +207,6 @@ export interface TournamentTeam {
   /** The recorded draw (FIBA's last criterion) and the block it was recorded for. §8.8 */
   tiebreakOrder: number | null
   tiebreakBlockKey: string | null
-  isDeleted?: boolean
 }
 
 export interface TournamentGroup {
