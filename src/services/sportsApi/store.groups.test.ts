@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { createSportsStore } from './store'
 
+/** Tournament id is a plain foreign key here — the store no longer tracks tournaments themselves. */
+const TOURNAMENT_ID = 1
+
 const freshTournament = () => {
-  const store = createSportsStore({ tournaments: [], matches: [] })
-  const t = store.createTournament({ name: 'Copa', seasonId: 1, categoryId: null, format: 'GROUP_STAGE_KNOCKOUT', startDate: '2026-02-01', endDate: '2026-06-01' })
-  const home = store.enrollTeam({ tournamentId: t.id, teamId: 1, displayName: 'Tigres' })
-  const away = store.enrollTeam({ tournamentId: t.id, teamId: 2, displayName: 'Albatrozes' })
-  return { store, tournamentId: t.id, homeTournamentTeamId: home.id, awayTournamentTeamId: away.id }
+  const store = createSportsStore({ matches: [] })
+  const home = store.enrollTeam({ tournamentId: TOURNAMENT_ID, teamId: 1, displayName: 'Tigres' })
+  const away = store.enrollTeam({ tournamentId: TOURNAMENT_ID, teamId: 2, displayName: 'Albatrozes' })
+  return { store, tournamentId: TOURNAMENT_ID, homeTournamentTeamId: home.id, awayTournamentTeamId: away.id }
 }
 
 describe('groups store', () => {

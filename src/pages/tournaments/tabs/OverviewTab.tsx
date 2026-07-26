@@ -4,7 +4,7 @@ import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { BracketBoard } from '../../../features/sports/components/BracketBoard'
 import type { Tournament, Match, Team } from '../../../features/sports/types'
 import { hasKnockout, sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
-import { useStandingsQuery } from '../../../features/sports/queries'
+import { useStandingsQuery, useTournamentLeadersQuery } from '../../../features/sports/queries'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
@@ -25,12 +25,13 @@ interface OverviewTabProps {
  */
 export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSeeBracket }: OverviewTabProps) {
   const recentMatches = sortMatchesByDateDesc(matches)
-  const hasLeaders = tournament.leaders.ppg.length > 0
+  const { data: leaders } = useTournamentLeadersQuery(tournament.id)
+  const hasLeaders = (leaders?.ppg.length ?? 0) > 0
   const bracket = useBracketView(tournament.id)
   const isKnockout = hasKnockout(tournament.format)
   // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
-    useStandingsQuery(tournament.id)
+    useStandingsQuery(tournament.id, tournament.format)
   const tables = envelopes ?? []
 
   return (
@@ -105,7 +106,7 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
           <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
         </div>
         {hasLeaders ? (
-          <LeadersGrid leaders={tournament.leaders} teams={teams} perCard={3} />
+          <LeadersGrid leaders={leaders!} teams={teams} perCard={3} />
         ) : (
           <div className={s.tabEmpty}>
             <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
@@ -133,7 +134,7 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Regulamento</h2>
         </div>
-        <div className={s.regulation}>{tournament.regulation}</div>
+        <div className={s.regulation}>{tournament.regulation ?? 'Regulamento não informado.'}</div>
       </section>
     </>
   )

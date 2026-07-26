@@ -1,4 +1,3 @@
-// SWAP SEAM: replace these bodies with axios calls to /tournaments/* when the API exists. Signatures stay.
 import {
   getAthletes as getMockAthletes,
   getAthleteById,
@@ -7,12 +6,12 @@ import {
   getAthleteTournamentStats as getMockAthleteTournamentStats,
   getMatchDetailById,
   getTeams as getMockTeams,
+  getTournamentLeaders as getMockTournamentLeaders,
   seedEnrollment,
   seedGroupId,
   seedGroupMembership,
   seedMatches,
   seedBracketRounds,
-  seedTournaments,
 } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from '../../features/sports/seedIds'
 import type {
@@ -21,6 +20,7 @@ import type {
   MatchDetail,
   RosterEntry,
   StandingsEnvelope,
+  TournamentFormat,
   TournamentGroup,
   TournamentGroupTeam,
   TournamentTeam,
@@ -29,15 +29,12 @@ import { createSportsStore } from './store'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
-  CompleteTournamentInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   CreateGroupInput,
-  CreateTournamentInput,
   EnrollTeamInput,
   LinkSlotMatchInput,
   RosterEntryInput,
-  ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
@@ -45,7 +42,6 @@ import type {
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
   UpdateRosterEntryInput,
-  UpdateTournamentInput,
 } from './types'
 
 const seedMatchDetails = seedMatches
@@ -134,7 +130,6 @@ const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flat
 )
 
 const store = createSportsStore({
-  tournaments: seedTournaments,
   matches: seedMatches,
   tournamentTeams: seedTournamentTeams,
   rosterEntries: seedRosterEntries,
@@ -154,13 +149,21 @@ export { getCategories, listCategoriesPage, createCategory } from './categories'
 export type { ListCategoriesParams } from './categories'
 
 // ── Tournaments ──────────────────────────────────────────────────────────────────
-export const getTournaments = () => Promise.resolve(store.listTournaments())
-export const getTournament = (id: number) => Promise.resolve(store.getTournament(id))
-export const createTournament = (input: CreateTournamentInput) => Promise.resolve(store.createTournament(input))
-export const updateTournament = (id: number, input: UpdateTournamentInput) => Promise.resolve(store.updateTournament(id, input))
-export const completeTournament = (input: CompleteTournamentInput) => Promise.resolve(store.completeTournament(input))
-export const reopenTournament = (input: ReopenTournamentInput) => Promise.resolve(store.reopenTournament(input))
-export const getChampionSuggestion = (tournamentId: number) => Promise.resolve(store.championSuggestion(tournamentId))
+export {
+  getTournaments,
+  listTournamentsPage,
+  getTournament,
+  createTournament,
+  updateTournament,
+  completeTournament,
+  reopenTournament,
+  getChampionSuggestion,
+} from './tournaments'
+export type { ListTournamentsParams } from './tournaments'
+
+// ── Tournament leaders (mock até a fase 10: GET /tournaments/:id/leaders) ─────────
+export const getTournamentLeaders = (tournamentId: number) =>
+  Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export const getTournamentTeams = (tournamentId: number) => Promise.resolve(store.listTournamentTeams(tournamentId))
@@ -210,10 +213,10 @@ export const assignTeamToGroup = (input: AssignGroupTeamInput) => Promise.resolv
 export const removeGroupTeam = (id: number) => Promise.resolve(store.removeGroupTeam(id))
 
 // ── Standings & tiebreaks ────────────────────────────────────────────────────
-export function listStandings(tournamentId: number): Promise<StandingsEnvelope[]>
-export function listStandings(tournamentId: number, groupId: number): Promise<StandingsEnvelope>
-export function listStandings(tournamentId: number, groupId?: number) {
-  const envelopes = store.listStandings(tournamentId, groupId)
+export function listStandings(tournamentId: number, format: TournamentFormat): Promise<StandingsEnvelope[]>
+export function listStandings(tournamentId: number, format: TournamentFormat, groupId: number): Promise<StandingsEnvelope>
+export function listStandings(tournamentId: number, format: TournamentFormat, groupId?: number) {
+  const envelopes = store.listStandings(tournamentId, format, groupId)
   return Promise.resolve(groupId ? envelopes[0] : envelopes)
 }
 export const setTiebreakOrder = (input: SetTiebreakOrderInput) => Promise.resolve(store.setTiebreakOrder(input))

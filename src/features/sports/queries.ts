@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import type { EntityStatus } from '../../types/admin'
-import type { SeasonStatus } from './types'
+import type { SeasonStatus, TournamentFormat, TournamentStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -117,11 +117,46 @@ export function useTournamentsQuery() {
   return useQuery({ queryKey: tournamentKeys.list(), queryFn: () => sportsApi.getTournaments() })
 }
 
+export const tournamentInfiniteKey = (
+  q: string,
+  seasonId: number | null,
+  categoryId: number | null,
+  status: TournamentStatus | '',
+) => [...tournamentKeys.all, 'infinite', q, seasonId ?? 'all', categoryId ?? 'all', status] as const
+
+/** Tela de gestão: uma página por vez, com busca e filtros server-side. */
+export function useTournamentsInfiniteQuery({
+  q, seasonId, categoryId, status,
+}: { q: string; seasonId: number | null; categoryId: number | null; status: TournamentStatus | '' }) {
+  return useInfiniteQuery({
+    queryKey: tournamentInfiniteKey(q, seasonId, categoryId, status),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listTournamentsPage({
+        page: pageParam,
+        limit: 20,
+        q: q || undefined,
+        seasonId: seasonId ?? undefined,
+        categoryId: categoryId ?? undefined,
+        status: status || undefined,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined),
+  })
+}
+
 export function useTournamentQuery(id: number | undefined) {
   return useQuery({
     queryKey: tournamentKeys.detail(id ?? -1),
     queryFn: () => sportsApi.getTournament(id!),
     enabled: id != null,
+  })
+}
+
+export function useTournamentLeadersQuery(tournamentId: number | undefined) {
+  return useQuery({
+    queryKey: [...tournamentKeys.all, 'leaders', tournamentId ?? -1] as const,
+    queryFn: () => sportsApi.getTournamentLeaders(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
@@ -205,11 +240,11 @@ export function useGroupTeamsQuery(tournamentId: number | undefined) {
 }
 
 /** One request, N tables. The rows arrive ranked — nothing here sorts. */
-export function useStandingsQuery(tournamentId: number | undefined) {
+export function useStandingsQuery(tournamentId: number | undefined, format: TournamentFormat | undefined) {
   return useQuery({
     queryKey: standingsKeys.list(tournamentId ?? -1),
-    queryFn: () => sportsApi.listStandings(tournamentId!),
-    enabled: tournamentId != null,
+    queryFn: () => sportsApi.listStandings(tournamentId!, format!),
+    enabled: tournamentId != null && format != null,
   })
 }
 

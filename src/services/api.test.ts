@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import buildURL from 'axios/unsafe/helpers/buildURL.js'
 
 const axiosMock = vi.hoisted(() => {
   let responseRejected: ((error: unknown) => Promise<unknown>) | undefined
@@ -30,7 +31,7 @@ vi.mock('axios', () => ({
   },
 }))
 
-import { refreshAccessToken } from './api'
+import { PARAMS_SERIALIZER, refreshAccessToken } from './api'
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -121,5 +122,16 @@ describe('refreshAccessToken', () => {
       'shared-token',
       { data: { data: 'retried' } },
     ])
+  })
+})
+
+describe('serialização de query params', () => {
+  it('repete a chave para listas em vez de emitir ids[]', () => {
+    expect(buildURL('/tournaments', { ids: [12, 15], seasonId: 3 }, PARAMS_SERIALIZER))
+      .toBe('/tournaments?ids=12&ids=15&seasonId=3')
+  })
+
+  it('mantém um parâmetro escalar intacto', () => {
+    expect(buildURL('/seasons', { q: 'copa' }, PARAMS_SERIALIZER)).toBe('/seasons?q=copa')
   })
 })

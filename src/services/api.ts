@@ -8,9 +8,16 @@ export const setAccessToken = (token: string | null) => {
   accessToken = token
 }
 
+/**
+ * A API espera `?ids=1&ids=2` repetido (contrato §37). O default do axios emite `ids[]=1`,
+ * que chega como outra chave: o filtro é ignorado em silêncio, sem 400.
+ */
+export const PARAMS_SERIALIZER = { indexes: null } as const
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true, // sends the httpOnly refresh token cookie on every request
+  paramsSerializer: PARAMS_SERIALIZER,
 })
 
 // Inject the access token into every outgoing request
