@@ -19,6 +19,7 @@ import type { RosterEntryDraft } from '../../features/sports/components/Tourname
 import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
 import { useAddRosterEntry, useAthletesQuery, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
+import { apiErrorCode } from '../../services/apiError'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
@@ -36,6 +37,13 @@ import { StandingsTab } from './tabs/StandingsTab'
 import { StatsTab } from './tabs/StatsTab'
 import { BracketTab } from './tabs/BracketTab'
 import s from './tournaments.module.css'
+
+const COMPLETE_ERRORS: Record<string, string> = {
+  CHAMPION_REQUIRED: 'Selecione a equipe campeã.',
+  CHAMPION_NOT_ALLOWED: 'Um campeonato de fase de grupos não tem campeão.',
+  INVALID_CHAMPION: 'A equipe escolhida não está inscrita ou não venceu a decisão.',
+  INVALID_STATUS_TRANSITION: 'O status do campeonato mudou. Recarregue a página.',
+}
 
 export function TournamentDetailPage() {
   const { tournamentId: rawTournamentId } = useParams<{ tournamentId: string }>()
@@ -168,7 +176,7 @@ export function TournamentDetailPage() {
       setCompletionError('')
       setIsCompleting(false)
     } catch (error) {
-      setCompletionError(error instanceof Error && error.message === 'Champion must have won a bracket slot' ? 'O campeão precisa ser uma equipe que venceu uma vaga do chaveamento.' : error instanceof Error ? error.message : '')
+      setCompletionError(COMPLETE_ERRORS[apiErrorCode(error) ?? ''] ?? 'Não foi possível encerrar o campeonato.')
     }
   }
 
@@ -178,7 +186,7 @@ export function TournamentDetailPage() {
       setReopenError('')
       setIsReopening(false)
     } catch (error) {
-      setReopenError(error instanceof Error ? error.message : 'Não foi possível reabrir o campeonato.')
+      setReopenError(COMPLETE_ERRORS[apiErrorCode(error) ?? ''] ?? 'Não foi possível reabrir o campeonato.')
     }
   }
 
@@ -303,6 +311,12 @@ export function TournamentDetailPage() {
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Partidas</span>
             <span className={s.infoValue}>{matchProgress(tournament)}</span>
+          </div>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Inscrições</span>
+            <span className={s.infoValue}>
+              {tournament.isRegistrationOpen && tournament.status === 'REGISTRATION' ? 'Abertas' : 'Fechadas'}
+            </span>
           </div>
         </div>
 

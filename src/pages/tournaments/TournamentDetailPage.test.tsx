@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import axios from 'axios'
 import { TournamentDetailPage } from './TournamentDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import { getTournamentById } from '../../features/sports/mock-sports-data'
@@ -63,6 +64,31 @@ describe('TournamentDetailPage info strip', () => {
     await waitFor(() => expect(screen.getByText(/campeonato geral/i)).toBeInTheDocument())
 
     expect(screen.queryByText(/fase atual/i)).not.toBeInTheDocument()
+  })
+
+  it('anuncia a inscrição aberta apenas quando a janela está valendo', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue({
+      ...getTournamentById(1)!, isRegistrationOpen: true, status: 'REGISTRATION',
+    })
+    renderDetail('1')
+    expect(await screen.findByText('Abertas')).toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage complete errors', () => {
+  it('explica a recusa da API ao encerrar sem campeão', async () => {
+    mockIsOrgAdmin.mockReturnValue(true)
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue({
+      ...getTournamentById(1)!, status: 'IN_PROGRESS', format: 'GROUP_STAGE',
+    })
+    vi.spyOn(sportsApi, 'completeTournament').mockRejectedValue(
+      Object.assign(new axios.AxiosError('erro'), { response: { data: { error: { code: 'CHAMPION_REQUIRED' } } } }),
+    )
+    renderDetail('1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Encerrar campeonato' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar encerramento' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Selecione a equipe campeã.')
   })
 })
 
