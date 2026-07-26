@@ -3,14 +3,32 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import type { Tournament } from '../../../features/sports/types'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as sportsApi from '../../../services/sportsApi'
-import { tournamentTeamId } from '../../../features/sports/seedIds'
+import { getTeams as getMockTeams } from '../../../features/sports/mock-sports-data'
+import { SEED_TOURNAMENT, tournamentTeamId } from '../../../features/sports/seedIds'
 
 import { BracketTab } from './BracketTab'
 
 const isOrgAdmin = vi.hoisted(() => ({ value: false }))
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => isOrgAdmin.value }))
+
+const GERAL_TEAMS = getMockTeams()
+const GERAL_TOURNAMENT_TEAMS = GERAL_TEAMS.map((team) => ({
+  id: tournamentTeamId(SEED_TOURNAMENT.GERAL, team.id),
+  tournamentId: SEED_TOURNAMENT.GERAL,
+  teamId: team.id,
+  displayNameSnapshot: team.name,
+  seed: null,
+  tiebreakOrder: null,
+  tiebreakBlockKey: null,
+}))
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(GERAL_TEAMS)
+  vi.spyOn(sportsApi, 'getTournamentTeams').mockImplementation(async (id) =>
+    id === SEED_TOURNAMENT.GERAL ? GERAL_TOURNAMENT_TEAMS : [])
+})
 
 const empty = { id: 999, name: 'Copa', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
 const demo = { id: 1, name: 'Geral', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament

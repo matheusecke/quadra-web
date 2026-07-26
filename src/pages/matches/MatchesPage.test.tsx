@@ -2,11 +2,30 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as sportsApi from '../../services/sportsApi'
+import { getTeams as getMockTeams, seedEnrollment } from '../../features/sports/mock-sports-data'
+import { tournamentTeamId } from '../../features/sports/seedIds'
 import { MatchesPage } from './MatchesPage'
 
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+
+const ALL_TOURNAMENT_TEAMS = seedEnrollment.flatMap((entry) =>
+  entry.teamIds.map((teamId) => ({
+    id: tournamentTeamId(entry.tournamentId, teamId),
+    tournamentId: entry.tournamentId,
+    teamId,
+    displayNameSnapshot: `Time ${teamId}`,
+    seed: null,
+    tiebreakOrder: null,
+    tiebreakBlockKey: null,
+  })),
+)
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(getMockTeams())
+  vi.spyOn(sportsApi, 'getAllTournamentTeams').mockResolvedValue(ALL_TOURNAMENT_TEAMS)
+})
 
 afterEach(() => vi.restoreAllMocks())
 

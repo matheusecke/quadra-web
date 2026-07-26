@@ -1,11 +1,32 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as sportsApi from '../../services/sportsApi'
 import { bracketLayout } from './bracketLayout'
 import { useBracketView } from './useBracketView'
+import { SEED_TOURNAMENT, tournamentTeamId } from './seedIds'
+import type { Team, TournamentTeam } from './types'
+
+const GERAL_TEAMS: Team[] = Array.from({ length: 16 }, (_, i) => ({
+  id: i + 1, name: `Time ${i + 1}`, shortName: `T${String(i + 1).padStart(2, '0')}`, city: 'Campinas',
+}))
+
+const GERAL_TOURNAMENT_TEAMS: TournamentTeam[] = GERAL_TEAMS.map((team) => ({
+  id: tournamentTeamId(SEED_TOURNAMENT.GERAL, team.id),
+  tournamentId: SEED_TOURNAMENT.GERAL,
+  teamId: team.id,
+  displayNameSnapshot: team.name,
+  seed: null,
+  tiebreakOrder: null,
+  tiebreakBlockKey: null,
+}))
+
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(GERAL_TEAMS)
+  vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(GERAL_TOURNAMENT_TEAMS)
+})
 
 afterEach(() => {
   vi.restoreAllMocks()
