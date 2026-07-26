@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import type { EntityStatus } from '../../types/admin'
-import type { SeasonStatus, TournamentFormat } from './types'
+import type { SeasonStatus, TournamentFormat, TournamentStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -115,6 +115,33 @@ export function useCategoriesInfiniteQuery({ q, status }: { q: string; status: E
 
 export function useTournamentsQuery() {
   return useQuery({ queryKey: tournamentKeys.list(), queryFn: () => sportsApi.getTournaments() })
+}
+
+export const tournamentInfiniteKey = (
+  q: string,
+  seasonId: number | null,
+  categoryId: number | null,
+  status: TournamentStatus | '',
+) => [...tournamentKeys.all, 'infinite', q, seasonId ?? 'all', categoryId ?? 'all', status] as const
+
+/** Tela de gestão: uma página por vez, com busca e filtros server-side. */
+export function useTournamentsInfiniteQuery({
+  q, seasonId, categoryId, status,
+}: { q: string; seasonId: number | null; categoryId: number | null; status: TournamentStatus | '' }) {
+  return useInfiniteQuery({
+    queryKey: tournamentInfiniteKey(q, seasonId, categoryId, status),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listTournamentsPage({
+        page: pageParam,
+        limit: 20,
+        q: q || undefined,
+        seasonId: seasonId ?? undefined,
+        categoryId: categoryId ?? undefined,
+        status: status || undefined,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined),
+  })
 }
 
 export function useTournamentQuery(id: number | undefined) {

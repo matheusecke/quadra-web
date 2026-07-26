@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Trophy, X } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
@@ -7,8 +7,9 @@ import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useCategoriesQuery, useSeasonsQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { useCategoriesQuery, useSeasonsQuery, useTournamentsInfiniteQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { TournamentStatus } from '../../features/sports/types'
 import {
@@ -35,15 +36,16 @@ export function TournamentsPage() {
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<TournamentStatus | ''>('')
   const [season, setSeason] = useState<number | null>(null)
+  const [category, setCategory] = useState<number | null>(null)
 
-  const tournamentsQuery = useTournamentsQuery()
   const seasonsQuery = useSeasonsQuery()
   const categoriesQuery = useCategoriesQuery()
-  const { data } = tournamentsQuery
-  const isLoading = tournamentsQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
-  const isError = tournamentsQuery.isError || seasonsQuery.isError || categoriesQuery.isError
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError, refetch: refetchTournaments } =
+    useTournamentsInfiniteQuery({ q: debouncedQ, seasonId: season, categoryId: category, status })
+  const isLoading = isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const hasError = isError || seasonsQuery.isError || categoriesQuery.isError
   const refetch = () => {
-    tournamentsQuery.refetch()
+    refetchTournaments()
     seasonsQuery.refetch()
     categoriesQuery.refetch()
   }
@@ -60,18 +62,13 @@ export function TournamentsPage() {
     return () => clearTimeout(t)
   }, [q])
 
-  const items = useMemo(() => {
-    const all = data ?? []
-    return all.filter((c) => {
-      if (debouncedQ && !c.name.toLowerCase().includes(debouncedQ.toLowerCase())) return false
-      if (status && c.status !== status) return false
-      if (season != null && c.seasonId !== season) return false
-      return true
-    })
-  }, [data, debouncedQ, status, season])
-
-  const total = data?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || status || season != null)
+  const items = data?.pages.flatMap((page) => page.data) ?? []
+  const total = data?.pages[0]?.meta.totalItems ?? 0
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+  const sentinelRef = useInfiniteScroll(loadMore, hasNextPage ?? false)
+  const hasFilters = Boolean(debouncedQ || status || season != null || category != null)
 
   return (
     <div className={s.page}>
@@ -124,11 +121,19 @@ export function TournamentsPage() {
           <div className={s.filterControl}>
             <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />
           </div>
+          <div className={s.filterControl}>
+            <Combobox
+              aria-label="Filtrar por categoria"
+              options={[{ value: '', label: 'Categoria' }, ...(categoriesQuery.data ?? []).map((item) => ({ value: String(item.id), label: item.name }))]}
+              value={category == null ? null : String(category)}
+              onChange={(raw) => setCategory(parsePositiveId(raw))}
+            />
+          </div>
         </div>
       </div>
 
       <div className={s.body}>
-        {isError ? (
+        {hasError ? (
           <div className={s.bodyFill}>
             <ErrorState title="Não foi possível carregar os campeonatos." onRetry={refetch} />
           </div>
@@ -197,6 +202,13 @@ export function TournamentsPage() {
                         <td className={s.tdMuted}>{formatRelative(c.updatedAt)}</td>
                       </tr>
                     ))}
+                {!isLoading && (
+                  <tr>
+                    <td colSpan={8} style={{ padding: 0 }}>
+                      <div ref={sentinelRef} style={{ height: 1 }} />
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
@@ -214,10 +226,9 @@ export function TournamentsPage() {
           </div>
         )}
 
-        {!isLoading && !isError && items.length > 0 && (
+        {!isLoading && !hasError && items.length > 0 && (
           <p className={s.counter}>
-            {items.length}
-            {items.length !== total ? ` de ${total}` : ''} campeonato{items.length === 1 ? '' : 's'}
+            {items.length} de {total} carregados
           </p>
         )}
       </div>
