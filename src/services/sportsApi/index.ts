@@ -33,14 +33,12 @@ import type {
   CreateBracketSlotInput,
   CreateGroupInput,
   LinkSlotMatchInput,
-  RosterEntryInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
-  UpdateRosterEntryInput,
 } from './types'
 
 const seedMatchDetails = seedMatches
@@ -188,10 +186,12 @@ export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(stor
 export const removeBracketSlot = (id: number) => Promise.resolve(store.removeBracketSlot(id))
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
-export const getRoster = (tournamentId: number, tournamentTeamId: number) => Promise.resolve(store.listRoster(tournamentId, tournamentTeamId))
-export const addRosterEntry = (input: RosterEntryInput) => Promise.resolve(store.addRosterEntry(input))
-export const updateRosterEntry = (id: number, input: UpdateRosterEntryInput) => Promise.resolve(store.updateRosterEntry(id, input))
-export const removeRosterEntry = (id: number) => Promise.resolve(store.removeRosterEntry(id))
+export {
+  addTournamentRoster,
+  getTournamentRoster,
+  removeTournamentRoster,
+  updateTournamentRoster,
+} from './tournament-rosters'
 
 // ── Teams ────────────────────────────────────────────────────────────────────
 export { getTeams, listTeamsPage, listRosterCandidatesPage, searchRosterCandidates, searchTeams } from './catalogs'

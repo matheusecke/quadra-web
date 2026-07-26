@@ -107,17 +107,16 @@ export interface AssignGroupTeamInput {
   tournamentTeamId: number
 }
 
-export interface RosterEntryInput {
-  tournamentId: number
+export interface CreateTournamentRosterInput {
+  userId: number
   tournamentTeamId: number
-  athleteId: number
-  jerseyNumber: number
   role: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber?: number | null
 }
 
-export interface UpdateRosterEntryInput {
-  jerseyNumber?: number
+export interface UpdateTournamentRosterInput {
   role?: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber?: number | null
 }
 
 export interface ScheduleMatchInput {

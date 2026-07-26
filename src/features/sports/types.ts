@@ -235,6 +235,18 @@ export interface RosterEntry {
   isDeleted?: boolean
 }
 
+export type RosterRole = 'ATHLETE' | 'COACHING_STAFF'
+
+export interface TournamentRoster {
+  id: number
+  tournamentId: number
+  tournamentTeamId: number
+  userId: number
+  role: RosterRole
+  jerseyNumber: number | null
+  displayNameSnapshot: string
+}
+
 export interface BracketRound {
   id: number
   tournamentId: number
