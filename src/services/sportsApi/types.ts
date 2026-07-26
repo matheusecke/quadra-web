@@ -12,17 +12,35 @@ export interface CreateCategoryInput {
   sortOrder?: number
 }
 
+/** Os quatro status que a API aceita em POST e PATCH. `COMPLETED` só vem de `/complete`. */
+export type EditableTournamentStatus = Exclude<TournamentStatus, 'COMPLETED'>
+
 export interface CreateTournamentInput {
   name: string
   seasonId: number
-  categoryId: number | null
   format: TournamentFormat
-  startDate: string
-  endDate: string
+  categoryId?: number
   regulation?: string
+  status?: EditableTournamentStatus
+  startsAt?: string
+  endsAt?: string
+  registrationStartsAt?: string
+  registrationEndsAt?: string
 }
 
-export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: Exclude<TournamentStatus, 'COMPLETED'> }
+/** No PATCH, `null` limpa a coluna e `undefined` deixa como está — a diferença importa. */
+export interface UpdateTournamentInput {
+  name?: string
+  seasonId?: number
+  format?: TournamentFormat
+  categoryId?: number | null
+  regulation?: string | null
+  status?: EditableTournamentStatus
+  startsAt?: string | null
+  endsAt?: string | null
+  registrationStartsAt?: string | null
+  registrationEndsAt?: string | null
+}
 
 export interface CompleteTournamentInput {
   tournamentId: number
