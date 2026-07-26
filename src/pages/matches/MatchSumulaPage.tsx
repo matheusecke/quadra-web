@@ -14,12 +14,12 @@ import { MvpSelect } from '../../features/sports/components/MvpSelect'
 import { PeriodScoreEditor } from '../../features/sports/components/PeriodScoreEditor'
 import { StatColumnsConfig } from '../../features/sports/components/StatColumnsConfig'
 import { boxScoreReducer, columnHasData, initBoxScoreState, teamTotalPoints } from '../../features/sports/boxScore.reducer'
-import { useAthletesQuery, useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTeamsQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
+import { useMatchDetailQuery, useRosterQuery, useSubmitMatchResult, useTeamsQuery, useTournamentTeamsQuery } from '../../features/sports/queries'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { isScoreConsistent, periodsSum } from '../../features/sports/statistics'
 import type { PlayerStatInput } from '../../features/sports/statistics'
 import { teamMap, tournamentTeamMap } from '../../features/sports/sportsUtils'
-import type { Athlete, MatchDetail, Team } from '../../features/sports/types'
+import type { MatchDetail, Team } from '../../features/sports/types'
 import type { PlayerBoxScoreInput, SubmitMatchResultInput } from '../../services/sportsApi/types'
 import s from './MatchSumulaPage.module.css'
 
@@ -28,7 +28,6 @@ export function MatchSumulaPage() {
   const matchId = parsePositiveId(rawMatchId)
   const { data: match, isPending, isError, refetch } = useMatchDetailQuery(matchId ?? undefined)
   const teamsQuery = useTeamsQuery()
-  const athletesQuery = useAthletesQuery()
 
   if (matchId == null) {
     return (
@@ -37,7 +36,7 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  if (isPending || teamsQuery.isPending || athletesQuery.isPending) {
+  if (isPending || teamsQuery.isPending) {
     return (
       <div className={s.page}>
         <Skeleton height={40} />
@@ -45,10 +44,10 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  if (isError || teamsQuery.isError || athletesQuery.isError) {
+  if (isError || teamsQuery.isError) {
     return (
       <div className={s.page}>
-        <ErrorState title="Não foi possível carregar a partida." onRetry={() => { refetch(); teamsQuery.refetch(); athletesQuery.refetch() }} />
+        <ErrorState title="Não foi possível carregar a partida." onRetry={() => { refetch(); teamsQuery.refetch() }} />
       </div>
     )
   }
@@ -59,23 +58,23 @@ export function MatchSumulaPage() {
       </div>
     )
   }
-  return <SumulaEditor match={match} teams={teamsQuery.data ?? []} athletes={athletesQuery.data ?? []} />
+  return <SumulaEditor match={match} teams={teamsQuery.data ?? []} />
 }
 
-function SumulaEditor({ match, teams, athletes: athleteList }: { match: MatchDetail; teams: Team[]; athletes: Athlete[] }) {
-  const { data: homeRoster, isPending: isHomeRosterPending } = useRosterQuery(match.tournamentId, match.homeTournamentTeamId)
-  const { data: awayRoster, isPending: isAwayRosterPending } = useRosterQuery(match.tournamentId, match.awayTournamentTeamId)
-  const athletes = useMemo(() => new Map(athleteList.map((athlete) => [athlete.id, athlete])), [athleteList])
+function SumulaEditor({ match, teams }: { match: MatchDetail; teams: Team[] }) {
+  const { data: homeRoster, isPending: isHomeRosterPending } = useRosterQuery(match.homeTournamentTeamId)
+  const { data: awayRoster, isPending: isAwayRosterPending } = useRosterQuery(match.awayTournamentTeamId)
 
   if (isHomeRosterPending || isAwayRosterPending) {
     return <div className={s.page}><Skeleton height={200} /></div>
   }
 
   const mapRoster = (roster: typeof homeRoster) =>
-    (roster ?? []).flatMap((entry) => {
-      const athlete = athletes.get(entry.athleteId)
-      return athlete ? [{ tournamentRosterId: entry.id, name: athlete.name, number: entry.jerseyNumber }] : []
-    })
+    (roster ?? []).map((entry) => ({
+      tournamentRosterId: entry.id,
+      name: entry.displayNameSnapshot,
+      number: entry.jerseyNumber,
+    }))
 
   return (
     <SumulaForm
@@ -91,7 +90,7 @@ function SumulaEditor({ match, teams, athletes: athleteList }: { match: MatchDet
 interface SumulaRosterEntry {
   tournamentRosterId: number
   name: string
-  number: number
+  number: number | null
 }
 
 interface SumulaFormProps {

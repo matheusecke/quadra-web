@@ -8,7 +8,7 @@ import s from './BoxScoreTable.module.css'
 export interface BoxScoreRosterEntry {
   tournamentRosterId: number
   name: string
-  number: number
+  number: number | null
 }
 
 export interface BoxScoreTableProps {
@@ -66,7 +66,7 @@ export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, disabl
             const errors = line ? validatePlayerStatLine(line) : []
             return (
               <tr key={entry.tournamentRosterId}>
-                <td className={`${s.cell} ${s.mono}`}>{entry.number}</td>
+                <td className={`${s.cell} ${s.mono}`}>{entry.number ?? '—'}</td>
                 <td className={s.cell}>
                   <span className={s.name}>{entry.name}</span>
                   {errors.length > 0 && (

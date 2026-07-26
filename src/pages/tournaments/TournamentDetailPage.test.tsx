@@ -8,11 +8,53 @@ import { TournamentDetailPage } from './TournamentDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import { getTournamentById } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, tournamentTeamId } from '../../features/sports/seedIds'
+import type { RosterCandidate, Team, TournamentRoster, TournamentTeam } from '../../features/sports/types'
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
 
+const TEAMS: Team[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => ({
+  id, name: `Time ${id}`, shortName: `T0${id}`, city: 'Campinas',
+}))
+
+const CANDIDATES: RosterCandidate[] = [
+  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4 },
+  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4 },
+]
+
+const geralTeams: TournamentTeam[] = [{
+  id: tournamentTeamId(SEED_TOURNAMENT.GERAL, 1),
+  tournamentId: SEED_TOURNAMENT.GERAL,
+  teamId: 1,
+  displayNameSnapshot: 'Time 1',
+  seed: null,
+  tiebreakOrder: null,
+  tiebreakBlockKey: null,
+}]
+
+const rafaelRoster: TournamentRoster = {
+  id: 88,
+  tournamentId: SEED_TOURNAMENT.INVERNO,
+  tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 1),
+  userId: 101,
+  role: 'ATHLETE',
+  jerseyNumber: 4,
+  displayNameSnapshot: 'Rafael Moura',
+}
+
+let invernoTeams: TournamentTeam[]
+
 beforeEach(() => {
+  invernoTeams = [1, 2, 3, 4, 5, 6, 7, 8].map((teamId) => ({
+    id: tournamentTeamId(SEED_TOURNAMENT.INVERNO, teamId),
+    tournamentId: SEED_TOURNAMENT.INVERNO,
+    teamId,
+    displayNameSnapshot: `Time ${teamId}`,
+    seed: null,
+    tiebreakOrder: null,
+    tiebreakBlockKey: null,
+  }))
+
   vi.spyOn(sportsApi, 'getSeasons').mockResolvedValue([
     { id: 1, label: '2025/26', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
   ])
@@ -22,6 +64,39 @@ beforeEach(() => {
   ])
   // getTournament now hits the real API; these tests still read the seeded demo data.
   vi.spyOn(sportsApi, 'getTournament').mockImplementation(async (id) => getTournamentById(id)!)
+  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(TEAMS)
+  vi.spyOn(sportsApi, 'searchTeams').mockImplementation(async (q) =>
+    TEAMS.filter((team) => team.name.toLowerCase().includes(q.toLowerCase())))
+  vi.spyOn(sportsApi, 'getTournamentTeams').mockImplementation(async (id) =>
+    id === SEED_TOURNAMENT.INVERNO ? invernoTeams : geralTeams)
+  vi.spyOn(sportsApi, 'enrollTeam').mockImplementation(async ({ tournamentId, teamId }) => {
+    const team = TEAMS.find((candidate) => candidate.id === teamId)!
+    const entry: TournamentTeam = {
+      id: tournamentTeamId(tournamentId, teamId),
+      tournamentId,
+      teamId,
+      displayNameSnapshot: team.name,
+      seed: null,
+      tiebreakOrder: null,
+      tiebreakBlockKey: null,
+    }
+    if (tournamentId === SEED_TOURNAMENT.INVERNO) invernoTeams = [...invernoTeams, entry]
+    return entry
+  })
+  vi.spyOn(sportsApi, 'getTournamentRoster').mockImplementation(async (ttId) =>
+    ttId === tournamentTeamId(SEED_TOURNAMENT.INVERNO, 1) ? [rafaelRoster] : [])
+  vi.spyOn(sportsApi, 'searchRosterCandidates').mockImplementation(async ({ q, teamId, role }) =>
+    CANDIDATES.filter((candidate) =>
+      candidate.teamId === teamId && candidate.role === role && (!q || candidate.name.toLowerCase().includes(q.toLowerCase()))))
+  vi.spyOn(sportsApi, 'addTournamentRoster').mockResolvedValue({
+    id: 999,
+    tournamentId: SEED_TOURNAMENT.INVERNO,
+    tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 9),
+    userId: 165,
+    role: 'ATHLETE',
+    jerseyNumber: 4,
+    displayNameSnapshot: 'Claudio Barbosa',
+  })
 })
 
 const renderDetail = (id: string) => {
@@ -146,11 +221,13 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     expect(screen.queryByRole('region', { name: 'Elenco Time 1' })).toBeNull()
   })
 
-  it('renders the roster content inside the opened region', async () => {
+  it('renders the roster content from the server snapshot, not the athlete catalog', async () => {
+    const getAthletes = vi.spyOn(sportsApi, 'getAthletes')
     await openTeamsTab()
     await userEvent.click(elenco('Time 1'))
     const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
     expect(await within(region).findByText('Rafael Moura')).toBeInTheDocument()
+    expect(getAthletes).not.toHaveBeenCalled()
   })
 
   it('marks the Elenco control expanded when open', async () => {
@@ -170,27 +247,43 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     )
   })
 
-  it('adds a roster entry keyed by the enrollment\'s own tournamentTeamId, not the global team id', async () => {
+  it('enrolls a team and adds a roster member using API identities, not local mock ids', async () => {
     await openTeamsTab()
 
-    await userEvent.click(screen.getByLabelText('Equipe'))
+    await userEvent.type(screen.getByRole('combobox'), 'Time 9')
     await userEvent.click(await screen.findByRole('option', { name: /^Time 9/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Inscrever' }))
+
+    expect(sportsApi.searchTeams).toHaveBeenCalledWith('Time 9')
+    expect(sportsApi.enrollTeam).toHaveBeenCalledWith({ tournamentId: 2, teamId: 9 })
 
     const row = (await within(enrolledList()).findByText('Time 9')).closest('li') as HTMLElement
     await userEvent.click(within(row).getByRole('button', { name: 'Elenco' }))
     const region = await screen.findByRole('region', { name: 'Elenco Time 9' })
 
-    await userEvent.click(within(region).getByLabelText('Atleta'))
+    await userEvent.type(within(region).getByRole('combobox'), 'Claudio')
     await userEvent.click(await screen.findByRole('option', { name: /^Claudio Barbosa/ }))
     await userEvent.type(within(region).getByLabelText('Número'), '4')
     await userEvent.click(within(region).getByRole('button', { name: 'Adicionar ao elenco' }))
 
-    const enrollment = (await sportsApi.getTournamentTeams(2)).find((entry) => entry.teamId === 9)
-    await waitFor(async () => {
-      const roster = await sportsApi.getRoster(2, enrollment!.id)
-      expect(roster.some((entry) => entry.athleteId === 165)).toBe(true)
+    expect(sportsApi.searchRosterCandidates).toHaveBeenCalledWith({ q: 'Claudio', teamId: 9, role: 'ATHLETE' })
+    expect(sportsApi.addTournamentRoster).toHaveBeenCalledWith({
+      userId: 165,
+      tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.INVERNO, 9),
+      role: 'ATHLETE',
+      jerseyNumber: 4,
     })
+  })
+
+  it('shows the mapped message when enrollment is rejected as a duplicate', async () => {
+    vi.spyOn(sportsApi, 'enrollTeam').mockRejectedValue(
+      Object.assign(new axios.AxiosError('erro'), { response: { data: { error: { code: 'DUPLICATE_RECORD' } } } }),
+    )
+    await openTeamsTab()
+    await userEvent.type(screen.getByRole('combobox'), 'Time 9')
+    await userEvent.click(await screen.findByRole('option', { name: /^Time 9/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Inscrever' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Equipe já inscrita neste campeonato.')
   })
 
   it('requires inline confirmation before removing an enrolled team', async () => {
