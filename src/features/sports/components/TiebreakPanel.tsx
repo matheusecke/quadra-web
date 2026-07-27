@@ -30,6 +30,8 @@ export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClea
     setBusy(true)
     try {
       await onSave(rows.map((row) => ({ tournamentTeamId: row.tournamentTeamId, order: orders[row.tournamentTeamId] })))
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the panel open to retry
     } finally {
       setBusy(false)
     }
@@ -39,6 +41,8 @@ export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClea
     setBusy(true)
     try {
       await onClear()
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the panel open to retry
     } finally {
       setBusy(false)
     }

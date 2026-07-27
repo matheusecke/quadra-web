@@ -6,9 +6,17 @@ import { getTournamentById, getMatchesByTournament, getTeams } from '../../../fe
 import * as sportsApi from '../../../services/sportsApi'
 import { tournamentTeamMap } from '../../../features/sports/sportsUtils'
 import { OverviewTab } from './OverviewTab'
+import type { StandingsEnvelope } from '../../../features/sports/types'
 
 const { isOrgAdmin } = vi.hoisted(() => ({ isOrgAdmin: { value: false } }))
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => isOrgAdmin.value }))
+
+const groupTable = (id: number, name: string): StandingsEnvelope => ({
+  group: { id, name },
+  standingsState: 'EMPTY',
+  pendingMatches: 0,
+  rows: [],
+})
 
 const renderGeral = (tournament = getTournamentById(1)!, onSeeBracket = vi.fn()) => {
 
@@ -74,7 +82,8 @@ describe('OverviewTab', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
-  it('shows one classification table per group, derived from the matches', async () => {
+  it('shows one classification table per group the api returns', async () => {
+    vi.spyOn(sportsApi, 'listStandings').mockResolvedValueOnce([groupTable(701, 'Grupo A'), groupTable(704, 'Grupo D')])
     renderGeral()
 
     await waitFor(() => expect(screen.getByText('Grupo A')).toBeInTheDocument())

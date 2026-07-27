@@ -24,9 +24,9 @@ import type {
 import { STAT_FIELDS, sumNullable, type StatField } from './statistics'
 
 // ── Standings formatting ────────────────────────────────────────────────────
-// The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
-// Appendix D). Rows arrive ranked, with pointDiff and winPct already resolved —
-// recomputing them here would be the client re-deriving a server decision.
+// The ranking rule lives in the API (GET /tournaments/:id/standings, FIBA Appendix D).
+// Rows arrive ranked, with pointDiff and winPct already resolved — recomputing them here
+// would be the client re-deriving a server decision.
 
 /** Format a win percentage as a `.XXX` string, basketball convention. `—` when unmeasured. */
 export function formatPct(row: StandingRow): string {

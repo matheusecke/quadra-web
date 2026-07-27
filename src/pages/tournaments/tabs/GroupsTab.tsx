@@ -22,14 +22,13 @@ import {
 import type { Team, Tournament } from '../../../features/sports/types'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import { apiErrorCode } from '../../../services/apiError'
+import { describeTiebreakError, isStaleTieBlock } from './tiebreakErrors'
 import s from './GroupsTab.module.css'
 
 interface GroupsTabProps {
   tournament: Tournament
   teams: Map<number, Team>
 }
-
-const TIED_BLOCK_MISMATCH = 'Tied block no longer matches'
 
 const GROUP_ERROR_MESSAGES: Record<string, string> = {
   DUPLICATE_RECORD: 'Já existe um grupo com esse nome neste campeonato.',
@@ -50,7 +49,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
 
   const groupsQuery = useGroupsQuery(tournament.id)
   const groupTeamsQuery = useGroupTeamsQuery(tournament.id)
-  const standingsQuery = useStandingsQuery(tournament.id, tournament.format)
+  const standingsQuery = useStandingsQuery(tournament.id)
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournament.id)
 
   const createGroup = useCreateGroup()
@@ -144,21 +143,19 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   }
 
   const handleTieBreakError = (error: unknown) => {
-    if (error instanceof Error && error.message === TIED_BLOCK_MISMATCH) {
-      setCardError('A composição do empate mudou. Recarregue a classificação.')
+    setCardError(describeTiebreakError(error))
+    if (isStaleTieBlock(error)) {
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(tournament.id) })
-      return
     }
-    // The panel already blocks an incomplete permutation; this is the safety net behind it.
-    setCardError('Não foi possível registrar o sorteio. Tente novamente.')
   }
 
   const handleSetTiebreakOrder = async (entries: { tournamentTeamId: number; order: number }[]) => {
     try {
-      await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, format: tournament.format, entries })
+      await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, entries })
       setCardError('')
     } catch (error) {
       handleTieBreakError(error)
+      throw error
     }
   }
 
@@ -168,6 +165,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
       setCardError('')
     } catch (error) {
       handleTieBreakError(error)
+      throw error
     }
   }
 

@@ -29,9 +29,9 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
   const hasLeaders = (leaders?.ppg.length ?? 0) > 0
   const bracket = useBracketView(tournament.id)
   const isKnockout = hasKnockout(tournament.format)
-  // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
+  // Ranked by the API, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
-    useStandingsQuery(tournament.id, tournament.format)
+    useStandingsQuery(tournament.id)
   const tables = envelopes ?? []
 
   return (

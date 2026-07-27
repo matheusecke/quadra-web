@@ -7,6 +7,7 @@ import { GroupsTab } from './GroupsTab'
 import * as sportsApi from '../../../services/sportsApi'
 import { teamMap } from '../../../features/sports/sportsUtils'
 import type {
+  StandingRow,
   StandingsEnvelope,
   Team,
   Tournament,
@@ -52,6 +53,22 @@ const envelope: StandingsEnvelope = {
   }],
 }
 
+const tiedRow = (registrationId: number, teamId: number, teamName: string, position: number): StandingRow => ({
+  position, tournamentTeamId: registrationId, teamId, teamName,
+  played: 2, wins: 1, losses: 1, classificationPoints: 3, pointsFor: 150, pointsAgainst: 150,
+  pointDiff: 0, winPct: 0.5, isTiedUnresolved: true, tieBlockKey: '801-802',
+})
+
+const tiedEnvelope: StandingsEnvelope = {
+  group: { id: groupA.id, name: groupA.name },
+  standingsState: 'PARTIAL',
+  pendingMatches: 2,
+  rows: [
+    tiedRow(registration.id, team.id, team.name, 1),
+    tiedRow(registration2.id, team2.id, team2.name, 2),
+  ],
+}
+
 const apiError = (statusCode: number, code: string) =>
   Object.assign(new axios.AxiosError('erro'), { response: { status: statusCode, data: { error: { code }, statusCode } } })
 
@@ -72,7 +89,7 @@ function renderTab({
   vi.spyOn(sportsApi, 'getGroups').mockResolvedValue(groups)
   vi.spyOn(sportsApi, 'getGroupTeams').mockResolvedValue(groupTeams)
   vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(tournamentTeams)
-  vi.spyOn(sportsApi, 'listStandings').mockImplementation((() => Promise.resolve(envelopes)) as unknown as typeof sportsApi.listStandings)
+  vi.spyOn(sportsApi, 'listStandings').mockResolvedValue(envelopes)
 
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -80,6 +97,14 @@ function renderTab({
       <GroupsTab tournament={tournament} teams={teamMap([team, team2])} />
     </QueryClientProvider>,
   )
+}
+
+/** Opens the block's panel from its row action, then saves the positions it seeded (1º, 2º). */
+async function registerDraw() {
+  const rowActions = await screen.findAllByRole('button', { name: /^registrar sorteio$/i })
+  await userEvent.click(rowActions[0])
+  const buttons = screen.getAllByRole('button', { name: /^registrar sorteio$/i })
+  await userEvent.click(buttons[buttons.length - 1])
 }
 
 async function createGroup(name: string) {
@@ -133,6 +158,32 @@ describe('GroupsTab', () => {
     renderTab({ isOrgAdmin: true })
     await createGroup('Grupo D')
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível criar o grupo.')
+  })
+
+  it('explains a tied block the server no longer recognises', async () => {
+    vi.spyOn(sportsApi, 'setTiebreakOrder').mockRejectedValue(apiError(409, 'TIE_BLOCK_MISMATCH'))
+    renderTab({ isOrgAdmin: true, envelopes: [tiedEnvelope] })
+    await registerDraw()
+    expect(await screen.findByRole('alert')).toHaveTextContent('A composição do empate mudou. Recarregue a classificação.')
+  })
+
+  it('reloads the classification when the tied block no longer exists', async () => {
+    vi.spyOn(sportsApi, 'setTiebreakOrder').mockRejectedValue(apiError(409, 'TIE_BLOCK_MISMATCH'))
+    renderTab({ isOrgAdmin: true, envelopes: [tiedEnvelope] })
+    await screen.findAllByRole('button', { name: /^registrar sorteio$/i })
+
+    // The result that dissolved the block landed between the two requests.
+    vi.mocked(sportsApi.listStandings).mockResolvedValue([envelope])
+    await registerDraw()
+
+    expect(await screen.findByText(/nenhuma partida finalizada/i)).toBeInTheDocument()
+  })
+
+  it('explains a locked tournament when registering a draw', async () => {
+    vi.spyOn(sportsApi, 'setTiebreakOrder').mockRejectedValue(apiError(409, 'TOURNAMENT_NOT_MUTABLE'))
+    renderTab({ isOrgAdmin: true, envelopes: [tiedEnvelope] })
+    await registerDraw()
+    expect(await screen.findByRole('alert')).toHaveTextContent('O campeonato está encerrado. Reabra-o para alterar o sorteio.')
   })
 
   it('keeps the membership action out of the standings rows', async () => {

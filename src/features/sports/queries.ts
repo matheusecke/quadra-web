@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import type { EntityStatus } from '../../types/admin'
-import type { SeasonStatus, TournamentFormat, TournamentStatus } from './types'
+import type { SeasonStatus, TournamentStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -241,11 +241,11 @@ export function useGroupTeamsQuery(tournamentId: number | undefined) {
 }
 
 /** One request, N tables. The rows arrive ranked — nothing here sorts. */
-export function useStandingsQuery(tournamentId: number | undefined, format: TournamentFormat | undefined) {
+export function useStandingsQuery(tournamentId: number | undefined) {
   return useQuery({
     queryKey: standingsKeys.list(tournamentId ?? -1),
-    queryFn: () => sportsApi.listStandings(tournamentId!, format!),
-    enabled: tournamentId != null && format != null,
+    queryFn: () => sportsApi.listStandings(tournamentId!),
+    enabled: tournamentId != null,
   })
 }
 
@@ -508,9 +508,9 @@ export function useSetTiebreakOrder() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: SetTiebreakOrderInput) => sportsApi.setTiebreakOrder(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupKeys.all })
-      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    // The API answers with the recomputed tables, so there is nothing left to read.
+    onSuccess: (envelopes, variables) => {
+      queryClient.setQueryData(standingsKeys.list(variables.tournamentId), envelopes)
     },
   })
 }
@@ -519,9 +519,8 @@ export function useClearTiebreakOrder() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ClearTiebreakOrderInput) => sportsApi.clearTiebreakOrder(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: groupKeys.all })
-      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: standingsKeys.list(variables.tournamentId) })
     },
   })
 }
