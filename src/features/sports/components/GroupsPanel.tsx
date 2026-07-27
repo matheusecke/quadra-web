@@ -76,6 +76,8 @@ export function GroupsPanel({
     try {
       await onCreateGroup(trimmed)
       setName('')
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the current draft
     } finally {
       setCreating(false)
     }
@@ -88,6 +90,8 @@ export function GroupsPanel({
       await onAssign(groupId, tournamentTeamId)
       setGroupId(null)
       setTournamentTeamId(null)
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the current selection
     } finally {
       setAssigning(false)
     }
