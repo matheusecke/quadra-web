@@ -11,7 +11,9 @@ const groups: GroupOption[] = [GROUP_A, GROUP_B]
 const enrolledTeams: GroupsTeamOption[] = [{ id: 1, name: 'Tigres' }, { id: 2, name: 'Albatrozes' }]
 
 /** Grupo A has Tigres; Grupo B is empty; Albatrozes is unassigned. */
-const members: GroupMemberRow[] = [{ id: 901, tournamentGroupId: GROUP_A.id, name: 'Tigres' }]
+const members: GroupMemberRow[] = [
+  { id: 901, tournamentGroupId: GROUP_A.id, tournamentTeamId: enrolledTeams[0].id, name: 'Tigres' },
+]
 
 function renderPanel(overrides: Partial<GroupsPanelProps> = {}) {
   const props: GroupsPanelProps = {
@@ -114,5 +116,14 @@ describe('GroupsPanel', () => {
     await userEvent.click(screen.getByLabelText(/^equipe$/i))
     expect(screen.queryByRole('option', { name: 'Tigres' })).not.toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Albatrozes' })).toBeInTheDocument()
+  })
+
+  // Two registrations can share a display name; only the assigned id is out of the list.
+  it('tells apart two enrolled teams with the same name', async () => {
+    renderPanel({
+      enrolledTeams: [{ id: 1, name: 'Tigres' }, { id: 2, name: 'Tigres' }],
+      members: [{ id: 901, tournamentGroupId: GROUP_A.id, tournamentTeamId: 1, name: 'Tigres' }],
+    })
+    expect(screen.getByText(/1 equipe inscrita ainda não está em nenhum grupo/i)).toBeInTheDocument()
   })
 })

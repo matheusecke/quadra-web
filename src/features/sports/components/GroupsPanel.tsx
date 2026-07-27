@@ -21,6 +21,7 @@ export interface GroupMemberRow {
   /** TournamentGroupTeam id — what DELETE /tournament-group-teams/:id takes. */
   id: number
   tournamentGroupId: number
+  tournamentTeamId: number
   name: string
 }
 
@@ -67,7 +68,7 @@ export function GroupsPanel({
   const [removingGroupId, setRemovingGroupId] = useState<number | null>(null)
   const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
 
-  const unassigned = enrolledTeams.filter((team) => !members.some((member) => member.name === team.name))
+  const unassigned = enrolledTeams.filter((team) => !members.some((member) => member.tournamentTeamId === team.id))
 
   const handleCreateGroup = async () => {
     const trimmed = name.trim()

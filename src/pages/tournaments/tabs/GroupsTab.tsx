@@ -85,6 +85,7 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   const members = groupTeams.map((groupTeam) => ({
     id: groupTeam.id,
     tournamentGroupId: groupTeam.tournamentGroupId,
+    tournamentTeamId: groupTeam.tournamentTeamId,
     name: nameByRegistration.get(groupTeam.tournamentTeamId) ?? String(groupTeam.tournamentTeamId),
   }))
   const enrolledTeams = tournamentTeams.map((tournamentTeam) => ({
