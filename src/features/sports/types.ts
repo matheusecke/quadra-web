@@ -213,16 +213,15 @@ export interface TournamentGroup {
   id: number
   tournamentId: number
   name: string
-  sortOrder: number
-  isDeleted?: boolean
+  /** Ordem do servidor. A lista já vem ordenada; o cliente nunca reordena. */
+  sortOrder: number | null
 }
 
 export interface TournamentGroupTeam {
   id: number
   tournamentId: number
-  groupId: number
+  tournamentGroupId: number
   tournamentTeamId: number
-  isDeleted?: boolean
 }
 
 export interface RosterEntry {

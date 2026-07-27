@@ -20,6 +20,7 @@ import type {
   SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
+  UpdateGroupInput,
   UpdateTournamentInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
@@ -452,6 +453,28 @@ export function useCreateGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateGroupInput) => sportsApi.createGroup(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useUpdateGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: UpdateGroupInput }) => sportsApi.updateGroup(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    },
+  })
+}
+
+export function useRemoveGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => sportsApi.removeGroup(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.all })
       queryClient.invalidateQueries({ queryKey: standingsKeys.all })

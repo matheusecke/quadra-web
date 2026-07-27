@@ -10,19 +10,15 @@ import type {
   StandingsEnvelope,
   TeamMatchStats,
   TournamentFormat,
-  TournamentGroup,
-  TournamentGroupTeam,
   TournamentTeam,
 } from '../../features/sports/types'
 import { periodsSum } from '../../features/sports/statistics'
 import { computeStandings } from './standings'
 import type { StandingTeamInput } from './standings'
 import type {
-  AssignGroupTeamInput,
   ClearTiebreakOrderInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
-  CreateGroupInput,
   LinkSlotMatchInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
@@ -63,8 +59,8 @@ export interface SportsStoreSeed {
   matches: Match[]
   tournamentTeams?: TournamentTeam[]
   rosterEntries?: RosterEntry[]
-  tournamentGroups?: TournamentGroup[]
-  tournamentGroupTeams?: TournamentGroupTeam[]
+  tournamentGroups?: MockTournamentGroup[]
+  tournamentGroupTeams?: MockTournamentGroupTeam[]
   bracketRounds?: BracketRound[]
   bracketSlots?: BracketSlot[]
   /** Optional pre-computed match details (reference box scores for seeded matches). */
@@ -85,6 +81,38 @@ type StoredMatch = Omit<Match, 'bracketRound'>
  *  soft-deleting locally, so the store keeps its own superset type instead of exporting it. */
 type MockTournamentTeam = TournamentTeam & { isDeleted?: boolean }
 
+/** The canonical `TournamentGroup`/`TournamentGroupTeam` moved to the real API (Phase 4) and
+ *  adopted the server's own field names and a server-owned `sortOrder`. The still-mock-only
+ *  standings and match fixtures keep their own shape: a local `groupId` and a client-assigned
+ *  `sortOrder` the store can compute deterministically for its seed data. */
+export type MockTournamentGroup = {
+  id: number
+  tournamentId: number
+  name: string
+  sortOrder: number
+  isDeleted?: boolean
+}
+
+export type MockTournamentGroupTeam = {
+  id: number
+  tournamentId: number
+  groupId: number
+  tournamentTeamId: number
+  isDeleted?: boolean
+}
+
+interface MockCreateGroupInput {
+  tournamentId: number
+  name: string
+  sortOrder?: number
+}
+
+interface MockAssignGroupTeamInput {
+  tournamentId: number
+  groupId: number
+  tournamentTeamId: number
+}
+
 const isActive = (record: { isDeleted?: boolean }) => record.isDeleted !== true
 
 export function createSportsStore(seed: SportsStoreSeed) {
@@ -95,8 +123,8 @@ export function createSportsStore(seed: SportsStoreSeed) {
   })
   const tournamentTeams: MockTournamentTeam[] = seed.tournamentTeams?.map((entry) => ({ ...entry })) ?? []
   const rosterEntries: RosterEntry[] = seed.rosterEntries?.map((entry) => ({ ...entry })) ?? []
-  const tournamentGroups: TournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
-  const tournamentGroupTeams: TournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
+  const tournamentGroups: MockTournamentGroup[] = seed.tournamentGroups?.map((g) => ({ ...g })) ?? []
+  const tournamentGroupTeams: MockTournamentGroupTeam[] = seed.tournamentGroupTeams?.map((g) => ({ ...g })) ?? []
   const bracketRounds: BracketRound[] = seed.bracketRounds?.map((round) => ({ ...round })) ?? []
   const bracketSlots: BracketSlot[] = seed.bracketSlots?.map((slot) => ({ ...slot })) ?? []
   const matchExtras = new Map<number, MatchExtra>()
@@ -381,27 +409,27 @@ export function createSportsStore(seed: SportsStoreSeed) {
     },
 
     // ── Groups ─────────────────────────────────────────────────────────────────
-    listGroups(tournamentId: number): TournamentGroup[] {
+    listGroups(tournamentId: number): MockTournamentGroup[] {
       return tournamentGroups
         .filter((g) => isActive(g) && g.tournamentId === tournamentId)
         .sort((a, b) => a.sortOrder - b.sortOrder)
     },
-    createGroup(input: CreateGroupInput): TournamentGroup {
+    createGroup(input: MockCreateGroupInput): MockTournamentGroup {
       const existing = tournamentGroups.filter((g) => isActive(g) && g.tournamentId === input.tournamentId)
       const sortOrder = input.sortOrder ?? existing.reduce((max, g) => Math.max(max, g.sortOrder), 0) + 1
-      const group: TournamentGroup = { id: nextId(), tournamentId: input.tournamentId, name: input.name, sortOrder }
+      const group: MockTournamentGroup = { id: nextId(), tournamentId: input.tournamentId, name: input.name, sortOrder }
       tournamentGroups.push(group)
       return group
     },
-    listGroupTeams(tournamentId: number): TournamentGroupTeam[] {
+    listGroupTeams(tournamentId: number): MockTournamentGroupTeam[] {
       return tournamentGroupTeams.filter((gt) => isActive(gt) && gt.tournamentId === tournamentId)
     },
-    assignTeamToGroup(input: AssignGroupTeamInput): TournamentGroupTeam {
+    assignTeamToGroup(input: MockAssignGroupTeamInput): MockTournamentGroupTeam {
       const taken = tournamentGroupTeams.some(
         (gt) => isActive(gt) && gt.tournamentId === input.tournamentId && gt.tournamentTeamId === input.tournamentTeamId,
       )
       if (taken) throw new Error('Team already assigned to a group in this tournament')
-      const record: TournamentGroupTeam = {
+      const record: MockTournamentGroupTeam = {
         id: nextId(),
         tournamentId: input.tournamentId,
         groupId: input.groupId,
