@@ -98,12 +98,14 @@ export interface UpdateTournamentTeamInput {
 export interface CreateGroupInput {
   tournamentId: number
   name: string
-  sortOrder?: number
+}
+
+export interface UpdateGroupInput {
+  name: string
 }
 
 export interface AssignGroupTeamInput {
-  tournamentId: number
-  groupId: number
+  tournamentGroupId: number
   tournamentTeamId: number
 }
 
