@@ -133,10 +133,9 @@ export interface ScheduleMatchInput {
 /** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
 export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: number }
 
+/** The whole tied block, every time: `order` is a complete permutation of `1..n`. */
 export interface SetTiebreakOrderInput {
   tournamentId: number
-  /** The store no longer knows tournaments — standings needs the format from the caller. */
-  format: TournamentFormat
   entries: { tournamentTeamId: number; order: number }[]
 }
 

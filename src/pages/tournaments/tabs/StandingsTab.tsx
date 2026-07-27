@@ -6,6 +6,7 @@ import { StandingsCard } from '../../../features/sports/components/StandingsCard
 import { useClearTiebreakOrder, useSetTiebreakOrder, useStandingsQuery } from '../../../features/sports/queries'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import type { Tournament, Team } from '../../../features/sports/types'
+import { describeTiebreakError, isStaleTieBlock } from './tiebreakErrors'
 import s from '../tournaments.module.css'
 
 interface StandingsTabProps {
@@ -20,10 +21,15 @@ interface StandingsTabProps {
  */
 export function StandingsTab({ tournament, teams }: StandingsTabProps) {
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: envelopes, isPending, isError, refetch } = useStandingsQuery(tournament.id, tournament.format)
+  const { data: envelopes, isPending, isError, refetch } = useStandingsQuery(tournament.id)
   const setTiebreak = useSetTiebreakOrder()
   const clearTiebreak = useClearTiebreakOrder()
   const [tiebreakError, setTiebreakError] = useState('')
+
+  const handleTiebreakError = async (error: unknown) => {
+    setTiebreakError(describeTiebreakError(error))
+    if (isStaleTieBlock(error)) await refetch()
+  }
 
   if (isPending) {
     return (
@@ -58,15 +64,21 @@ export function StandingsTab({ tournament, teams }: StandingsTabProps) {
       errorMessage={tiebreakError}
       onSetTiebreakOrder={async (entries) => {
         try {
-          await setTiebreak.mutateAsync({ tournamentId: tournament.id, format: tournament.format, entries })
+          await setTiebreak.mutateAsync({ tournamentId: tournament.id, entries })
           setTiebreakError('')
-        } catch {
-          setTiebreakError('A composição do empate mudou. Recarregue a classificação.')
-          await refetch()
+        } catch (error) {
+          await handleTiebreakError(error)
+          throw error
         }
       }}
       onClearTiebreakOrder={async (blockKey) => {
-        await clearTiebreak.mutateAsync({ tournamentId: tournament.id, blockKey })
+        try {
+          await clearTiebreak.mutateAsync({ tournamentId: tournament.id, blockKey })
+          setTiebreakError('')
+        } catch (error) {
+          await handleTiebreakError(error)
+          throw error
+        }
       }}
     />
   )

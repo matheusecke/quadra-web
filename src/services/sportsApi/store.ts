@@ -7,22 +7,16 @@ import type {
   BracketRound,
   BracketSlot,
   RosterEntry,
-  StandingsEnvelope,
   TeamMatchStats,
-  TournamentFormat,
   TournamentTeam,
 } from '../../features/sports/types'
 import { periodsSum } from '../../features/sports/statistics'
-import { computeStandings } from './standings'
-import type { StandingTeamInput } from './standings'
 import type {
-  ClearTiebreakOrderInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   LinkSlotMatchInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
-  SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateBracketRoundInput,
@@ -194,14 +188,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
     return tournamentTeamId === match.homeTournamentTeamId
   }
 
-  const toStandingTeam = (tt: TournamentTeam): StandingTeamInput => ({
-    tournamentTeamId: tt.id,
-    teamId: tt.teamId,
-    name: tt.displayNameSnapshot,
-    tiebreakOrder: tt.tiebreakOrder,
-    tiebreakBlockKey: tt.tiebreakBlockKey,
-  })
-
   const bracketRoundOf = (matchId: number): Match['bracketRound'] => {
     const slot = bracketSlots.find((entry) => isActive(entry) && entry.matchId === matchId)
     if (!slot) return null
@@ -210,34 +196,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
   }
 
   const toMatch = (match: StoredMatch): Match => ({ ...match, bracketRound: bracketRoundOf(match.id) })
-
-  /** GET /tournaments/:id/standings — §8.7. The ranking rule lives here, not in the UI. */
-  const buildStandings = (tournamentId: number, format: TournamentFormat, groupId?: number | null): StandingsEnvelope[] => {
-    const enrolled = tournamentTeams.filter((tt) => isActive(tt) && tt.tournamentId === tournamentId)
-    const tournamentMatches = matches.filter((m) => m.tournamentId === tournamentId).map(toMatch)
-
-    const hasGroups = format === 'GROUP_STAGE' || format === 'GROUP_STAGE_KNOCKOUT'
-    if (!hasGroups) {
-      // A knockout bracket has no classification; a LEAGUE is one single group.
-      if (format === 'KNOCKOUT') return []
-      return [computeStandings(enrolled.map(toStandingTeam), tournamentMatches, null)]
-    }
-
-    const groups = tournamentGroups
-      .filter((g) => isActive(g) && g.tournamentId === tournamentId && (!groupId || g.id === groupId))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-
-    return groups.map((group) => {
-      const memberTournamentTeamIds = new Set(
-        tournamentGroupTeams
-          .filter((gt) => isActive(gt) && gt.groupId === group.id)
-          .map((gt) => gt.tournamentTeamId),
-      )
-      const members = enrolled.filter((tt) => memberTournamentTeamIds.has(tt.id))
-      const groupMatches = tournamentMatches.filter((m) => m.tournamentGroupId === group.id)
-      return computeStandings(members.map(toStandingTeam), groupMatches, { id: group.id, name: group.name })
-    })
-  }
 
   return {
     // ── Tournament teams (enrollment) ──────────────────────────────────────────
@@ -546,46 +504,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
         mvp,
       })
       return toMatch(match)
-    },
-
-    // ── Standings ──────────────────────────────────────────────────────────────
-    listStandings(tournamentId: number, format: TournamentFormat, groupId?: number | null): StandingsEnvelope[] {
-      return buildStandings(tournamentId, format, groupId)
-    },
-    setTiebreakOrder(input: SetTiebreakOrderInput): void {
-      const submitted = input.entries.map((entry) => entry.tournamentTeamId)
-      const key = [...submitted].sort().join('-')
-
-      // The block must be one the norm itself produced — not a set the admin invented.
-      const currentBlockKeys = new Set(
-        buildStandings(input.tournamentId, input.format)
-          .flatMap((envelope) => envelope.rows)
-          .map((row) => row.tieBlockKey)
-          .filter((blockKey): blockKey is string => blockKey !== null),
-      )
-      if (new Set(submitted).size !== submitted.length || !currentBlockKeys.has(key)) {
-        throw new Error('Tied block no longer matches')
-      }
-
-      const orders = input.entries.map((entry) => entry.order).sort((a, b) => a - b)
-      if (!orders.every((order, i) => order === i + 1)) {
-        throw new Error('Tiebreak order must be a complete permutation')
-      }
-
-      for (const entry of input.entries) {
-        const record = tournamentTeams.find((tt) => tt.id === entry.tournamentTeamId && isActive(tt))
-        if (!record) throw new Error('Tied block no longer matches')
-        record.tiebreakOrder = entry.order
-        record.tiebreakBlockKey = key
-      }
-    },
-    clearTiebreakOrder(input: ClearTiebreakOrderInput): void {
-      for (const record of tournamentTeams) {
-        if (record.tournamentId === input.tournamentId && record.tiebreakBlockKey === input.blockKey) {
-          record.tiebreakOrder = null
-          record.tiebreakBlockKey = null
-        }
-      }
     },
   }
 }

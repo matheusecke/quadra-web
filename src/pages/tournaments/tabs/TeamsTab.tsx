@@ -15,7 +15,7 @@ interface TeamsTabProps {
 }
 
 export function TeamsTab({ tournament, teams }: TeamsTabProps) {
-  const { data: envelopes } = useStandingsQuery(tournament.id, tournament.format)
+  const { data: envelopes } = useStandingsQuery(tournament.id)
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournament.id)
   const { data: tournamentTeams } = tournamentTeamsQuery
   const standingsByTeam = useMemo(() => {

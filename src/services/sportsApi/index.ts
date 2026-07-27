@@ -19,19 +19,15 @@ import type {
   BracketSlot,
   MatchDetail,
   RosterEntry,
-  StandingsEnvelope,
-  TournamentFormat,
   TournamentTeam,
 } from '../../features/sports/types'
 import { createSportsStore } from './store'
 import type { MockTournamentGroup, MockTournamentGroupTeam } from './store'
 import type {
-  ClearTiebreakOrderInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
   LinkSlotMatchInput,
   ScheduleMatchInput,
-  SetTiebreakOrderInput,
   SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateBracketRoundInput,
@@ -219,11 +215,4 @@ export {
 } from './tournament-groups'
 
 // ── Standings & tiebreaks ────────────────────────────────────────────────────
-export function listStandings(tournamentId: number, format: TournamentFormat): Promise<StandingsEnvelope[]>
-export function listStandings(tournamentId: number, format: TournamentFormat, groupId: number): Promise<StandingsEnvelope>
-export function listStandings(tournamentId: number, format: TournamentFormat, groupId?: number) {
-  const envelopes = store.listStandings(tournamentId, format, groupId)
-  return Promise.resolve(groupId ? envelopes[0] : envelopes)
-}
-export const setTiebreakOrder = (input: SetTiebreakOrderInput) => Promise.resolve(store.setTiebreakOrder(input))
-export const clearTiebreakOrder = (input: ClearTiebreakOrderInput) => Promise.resolve(store.clearTiebreakOrder(input))
+export { clearTiebreakOrder, listStandings, setTiebreakOrder } from './standings'

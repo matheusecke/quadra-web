@@ -12,8 +12,8 @@ vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => 
 
 describe('StandingsTab', () => {
   it('ranks the winner of a finished league match first', async () => {
-    // Ranking itself is the data layer's job (covered by store.standings.test.ts) — this
-    // test only checks that the tab renders the rows in the order the API returns them.
+    // Ranking itself is the API's job — this test only checks that the tab renders the
+    // rows in the order the API returns them.
     const tournament = { id: 501, format: 'LEAGUE' } as unknown as Tournament
     const envelope: StandingsEnvelope = {
       group: null,
@@ -24,7 +24,7 @@ describe('StandingsTab', () => {
         { position: 2, tournamentTeamId: 2, teamId: 2, teamName: 'Time 2', played: 1, wins: 0, losses: 1, classificationPoints: 1, pointsFor: 60, pointsAgainst: 80, pointDiff: -20, winPct: 0, isTiedUnresolved: false, tieBlockKey: null },
       ],
     }
-    vi.spyOn(sportsApi, 'listStandings').mockImplementation((() => Promise.resolve([envelope])) as unknown as typeof sportsApi.listStandings)
+    vi.spyOn(sportsApi, 'listStandings').mockResolvedValue([envelope])
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
