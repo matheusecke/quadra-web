@@ -21,17 +21,14 @@ import type {
   RosterEntry,
   StandingsEnvelope,
   TournamentFormat,
-  TournamentGroup,
-  TournamentGroupTeam,
   TournamentTeam,
 } from '../../features/sports/types'
 import { createSportsStore } from './store'
+import type { MockTournamentGroup, MockTournamentGroupTeam } from './store'
 import type {
-  AssignGroupTeamInput,
   ClearTiebreakOrderInput,
   CreateBracketRoundInput,
   CreateBracketSlotInput,
-  CreateGroupInput,
   LinkSlotMatchInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
@@ -108,7 +105,7 @@ const seedRosterEntries: RosterEntry[] = seedTournamentTeams.flatMap((tournament
 
 /** Same numeric id `seedGroupId` derives for the mock's group-stage matches — the two sides
  *  agree without a lookup table. */
-const seedTournamentGroups: TournamentGroup[] = seedGroupMembership.map((g) => ({
+const seedTournamentGroups: MockTournamentGroup[] = seedGroupMembership.map((g) => ({
   id: seedGroupId(g.tournamentId, g.groupName),
   tournamentId: g.tournamentId,
   name: g.groupName,
@@ -117,7 +114,7 @@ const seedTournamentGroups: TournamentGroup[] = seedGroupMembership.map((g) => (
 
 let nextGroupTeamId = 3000
 
-const seedTournamentGroupTeams: TournamentGroupTeam[] = seedGroupMembership.flatMap((g) =>
+const seedTournamentGroupTeams: MockTournamentGroupTeam[] = seedGroupMembership.flatMap((g) =>
   g.teamIds.map((teamId) => ({
     id: ++nextGroupTeamId,
     tournamentId: g.tournamentId,
@@ -211,11 +208,15 @@ export const scheduleMatch = (input: ScheduleMatchInput) => Promise.resolve(stor
 export const submitMatchResult = (input: SubmitMatchResultInput) => Promise.resolve(store.submitMatchResult(input))
 
 // ── Groups ───────────────────────────────────────────────────────────────────
-export const getGroups = (tournamentId: number) => Promise.resolve(store.listGroups(tournamentId))
-export const createGroup = (input: CreateGroupInput) => Promise.resolve(store.createGroup(input))
-export const getGroupTeams = (tournamentId: number) => Promise.resolve(store.listGroupTeams(tournamentId))
-export const assignTeamToGroup = (input: AssignGroupTeamInput) => Promise.resolve(store.assignTeamToGroup(input))
-export const removeGroupTeam = (id: number) => Promise.resolve(store.removeGroupTeam(id))
+export {
+  assignTeamToGroup,
+  createGroup,
+  getGroupTeams,
+  getGroups,
+  removeGroup,
+  removeGroupTeam,
+  updateGroup,
+} from './tournament-groups'
 
 // ── Standings & tiebreaks ────────────────────────────────────────────────────
 export function listStandings(tournamentId: number, format: TournamentFormat): Promise<StandingsEnvelope[]>
