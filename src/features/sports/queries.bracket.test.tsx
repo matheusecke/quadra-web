@@ -1,28 +1,70 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import * as sportsApi from '../../services/sportsApi'
-import { useCreateTournament, useCreateBracketRound, useCreateBracketSlot, useBracketSlotsQuery } from './queries'
-import type { Tournament } from './types'
+import { useBracketQuery, useCreateBracketRound, useCreateBracketSlot, useRemoveBracketSlot } from './queries'
+import type { BracketRound, BracketSlot } from './types'
+
+afterEach(() => vi.restoreAllMocks())
 
 const wrapper = ({ children }: { children: ReactNode }) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 
-describe('bracket queries', () => {
-  it('creates a slot and lists it', async () => {
-    // The bracket itself still lives in the mock store, which never validates that the
-    // tournamentId it is handed actually exists — so a real tournament isn't needed here.
-    vi.spyOn(sportsApi, 'createTournament').mockResolvedValue({ id: 501 } as Tournament)
-    const create = renderHook(() => useCreateTournament(), { wrapper })
-    const t = await create.result.current.mutateAsync({ name: 'Copa K', seasonId: 1, format: 'KNOCKOUT' })
-    const round = renderHook(() => useCreateBracketRound(), { wrapper })
-    const createdRound = await round.result.current.mutateAsync({ tournamentId: t.id, label: 'Final' })
-    const slot = renderHook(() => useCreateBracketSlot(), { wrapper })
-    await slot.result.current.mutateAsync({ tournamentId: t.id, roundId: createdRound.id, label: 'Final' })
-    const list = renderHook(() => useBracketSlotsQuery(t.id), { wrapper })
-    await waitFor(() => expect(list.result.current.data?.some((s) => s.label === 'Final')).toBe(true))
+const round: BracketRound = { id: 10, tournamentId: 12, number: 1, label: 'Semifinais' }
+
+const emptyBracket = { rounds: [], slots: [] }
+
+describe('useBracketQuery', () => {
+  it('reads the whole bracket in a single call', async () => {
+    const getBracket = vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({
+      rounds: [round],
+      slots: [{ id: 101, roundId: 10, position: 1, label: null, homeTeam: null, awayTeam: null, winnerTournamentTeamId: null }],
+    })
+    const { result } = renderHook(() => useBracketQuery(12), { wrapper })
+    await waitFor(() => expect(result.current.data?.slots).toHaveLength(1))
+    expect(getBracket).toHaveBeenCalledExactlyOnceWith(12)
+  })
+
+  it('stays idle without a tournament', () => {
+    const getBracket = vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(emptyBracket)
+    renderHook(() => useBracketQuery(undefined), { wrapper })
+    expect(getBracket).not.toHaveBeenCalled()
+  })
+})
+
+describe('bracket mutations', () => {
+  it('refetches the bracket after a round is created', async () => {
+    const getBracket = vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(emptyBracket)
+    vi.spyOn(sportsApi, 'createBracketRound').mockResolvedValue(round)
+    const { result } = renderHook(() => ({ list: useBracketQuery(12), create: useCreateBracketRound() }), { wrapper })
+    await waitFor(() => expect(getBracket).toHaveBeenCalledTimes(1))
+    await result.current.create.mutateAsync({ tournamentId: 12, number: 1, label: 'Semifinais' })
+    await waitFor(() => expect(getBracket).toHaveBeenCalledTimes(2))
+  })
+
+  it('refetches the bracket after a slot is removed', async () => {
+    const getBracket = vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(emptyBracket)
+    vi.spyOn(sportsApi, 'removeBracketSlot').mockResolvedValue(undefined)
+    const { result } = renderHook(() => ({ list: useBracketQuery(12), remove: useRemoveBracketSlot() }), { wrapper })
+    await waitFor(() => expect(getBracket).toHaveBeenCalledTimes(1))
+    await result.current.remove.mutateAsync(101)
+    await waitFor(() => expect(getBracket).toHaveBeenCalledTimes(2))
+  })
+})
+
+/** Kept honest: the write response is the flat row, not the enriched read node. */
+describe('write responses', () => {
+  it('hands back the persisted slot row untouched', async () => {
+    const row: BracketSlot = {
+      id: 101, tournamentId: 12, roundId: 10, position: 1, label: null,
+      homeTournamentTeamId: 21, awayTournamentTeamId: null, matchId: null, winnerTournamentTeamId: null,
+    }
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(emptyBracket)
+    vi.spyOn(sportsApi, 'createBracketSlot').mockResolvedValue(row)
+    const { result } = renderHook(() => useCreateBracketSlot(), { wrapper })
+    expect(await result.current.mutateAsync({ roundId: 10, position: 1 })).toEqual(row)
   })
 })

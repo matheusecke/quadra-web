@@ -14,11 +14,9 @@ import type {
   CreateTournamentInput,
   CreateTournamentRosterInput,
   EnrollTeamInput,
-  LinkSlotMatchInput,
   ReopenTournamentInput,
   ScheduleMatchInput,
   SetTiebreakOrderInput,
-  SetSlotWinnerInput,
   SubmitMatchResultInput,
   UpdateGroupInput,
   UpdateTournamentInput,
@@ -249,18 +247,11 @@ export function useStandingsQuery(tournamentId: number | undefined) {
   })
 }
 
-export function useBracketSlotsQuery(tournamentId: number | undefined) {
+/** One route, one query: the API answers rounds and slots together, already ordered. */
+export function useBracketQuery(tournamentId: number | undefined) {
   return useQuery({
     queryKey: bracketKeys.list(tournamentId ?? -1),
-    queryFn: () => sportsApi.getBracketSlots(tournamentId!),
-    enabled: tournamentId != null,
-  })
-}
-
-export function useBracketRoundsQuery(tournamentId: number | undefined) {
-  return useQuery({
-    queryKey: [...bracketKeys.list(tournamentId ?? -1), 'rounds'] as const,
-    queryFn: () => sportsApi.getBracketRounds(tournamentId!),
+    queryFn: () => sportsApi.getBracket(tournamentId!),
     enabled: tournamentId != null,
   })
 }
@@ -369,33 +360,11 @@ export function useUpdateBracketSlot() {
   })
 }
 
-export function useLinkSlotMatch() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: LinkSlotMatchInput) => sportsApi.linkSlotMatch(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bracketKeys.all })
-      queryClient.invalidateQueries({ queryKey: matchKeys.all })
-    },
-  })
-}
-
-export function useSetSlotWinner() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: SetSlotWinnerInput) => sportsApi.setSlotWinner(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
-  })
-}
-
 export function useRemoveBracketSlot() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => sportsApi.removeBracketSlot(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bracketKeys.all })
-      queryClient.invalidateQueries({ queryKey: matchKeys.all })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: bracketKeys.all }),
   })
 }
 
