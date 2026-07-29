@@ -12,15 +12,9 @@ import type {
 } from '../../features/sports/types'
 import { periodsSum } from '../../features/sports/statistics'
 import type {
-  CreateBracketRoundInput,
-  CreateBracketSlotInput,
-  LinkSlotMatchInput,
   ScheduleMatchInput,
   PlayerBoxScoreInput,
-  SetSlotWinnerInput,
   SubmitMatchResultInput,
-  UpdateBracketRoundInput,
-  UpdateBracketSlotInput,
 } from './types'
 
 /** The real `EnrollTeamInput` (Phase 3) narrowed to `{ tournamentId, teamId }` once the API
@@ -226,106 +220,6 @@ export function createSportsStore(seed: SportsStoreSeed) {
       const record = tournamentTeams.find((tt) => tt.id === id)
       if (!record) return
       record.isDeleted = true
-    },
-
-    // ── Bracket ────────────────────────────────────────────────────────────────
-    listBracketRounds(tournamentId: number): BracketRound[] {
-      return bracketRounds
-        .filter((round) => isActive(round) && round.tournamentId === tournamentId)
-        .sort((a, b) => a.number - b.number)
-    },
-    createBracketRound(input: CreateBracketRoundInput): BracketRound {
-      const existing = bracketRounds.filter((round) => isActive(round) && round.tournamentId === input.tournamentId)
-      const round: BracketRound = {
-        id: nextId(),
-        tournamentId: input.tournamentId,
-        number: input.number ?? existing.reduce((max, entry) => Math.max(max, entry.number), 0) + 1,
-        label: input.label ?? null,
-      }
-      bracketRounds.push(round)
-      return round
-    },
-    updateBracketRound(id: number, input: UpdateBracketRoundInput): BracketRound {
-      const round = bracketRounds.find((entry) => entry.id === id && isActive(entry))
-      if (!round) throw new Error(`Bracket round ${id} not found`)
-      if (input.label !== undefined) round.label = input.label
-      return round
-    },
-    removeBracketRound(id: number): void {
-      const round = bracketRounds.find((entry) => entry.id === id && isActive(entry))
-      if (!round) return
-      if (bracketSlots.some((slot) => isActive(slot) && slot.roundId === id)) {
-        throw new Error('Cannot remove a round that still has slots')
-      }
-      round.isDeleted = true
-    },
-    listBracketSlots(tournamentId: number): BracketSlot[] {
-      const numberOf = (roundId: number) => bracketRounds.find((round) => round.id === roundId)?.number ?? 0
-      return bracketSlots
-        .filter((slot) => isActive(slot) && slot.tournamentId === tournamentId)
-        .sort((a, b) => numberOf(a.roundId) - numberOf(b.roundId) || a.position - b.position)
-    },
-    createBracketSlot(input: CreateBracketSlotInput): BracketSlot {
-      const round = bracketRounds.find((entry) => entry.id === input.roundId && isActive(entry))
-      if (!round || round.tournamentId !== input.tournamentId) throw new Error('Round does not belong to this tournament')
-      const inRound = bracketSlots.filter((slot) => isActive(slot) && slot.roundId === input.roundId)
-      const position = input.position ?? inRound.reduce((max, slot) => Math.max(max, slot.position), 0) + 1
-      const slot: BracketSlot = {
-        id: nextId(),
-        tournamentId: input.tournamentId,
-        roundId: input.roundId,
-        position,
-        label: input.label ?? null,
-        homeTournamentTeamId: null,
-        awayTournamentTeamId: null,
-        matchId: null,
-        winnerTournamentTeamId: null,
-      }
-      bracketSlots.push(slot)
-      return slot
-    },
-    updateBracketSlot(id: number, input: UpdateBracketSlotInput): BracketSlot {
-      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
-      if (!slot) throw new Error(`Bracket slot ${id} not found`)
-      if (input.homeTournamentTeamId !== undefined) slot.homeTournamentTeamId = input.homeTournamentTeamId
-      if (input.awayTournamentTeamId !== undefined) slot.awayTournamentTeamId = input.awayTournamentTeamId
-      if (input.label !== undefined) slot.label = input.label
-      if (
-        slot.winnerTournamentTeamId !== null &&
-        slot.winnerTournamentTeamId !== slot.homeTournamentTeamId &&
-        slot.winnerTournamentTeamId !== slot.awayTournamentTeamId
-      ) {
-        slot.winnerTournamentTeamId = null
-      }
-      return slot
-    },
-    linkSlotMatch(input: LinkSlotMatchInput): BracketSlot {
-      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
-      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
-      slot.matchId = input.matchId
-      return slot
-    },
-    setSlotWinner(input: SetSlotWinnerInput): BracketSlot {
-      const slot = bracketSlots.find((entry) => entry.id === input.slotId && isActive(entry))
-      if (!slot) throw new Error(`Bracket slot ${input.slotId} not found`)
-      if (![slot.homeTournamentTeamId, slot.awayTournamentTeamId].includes(input.winnerTournamentTeamId)) {
-        throw new Error('Winner must be one of the slot sides')
-      }
-      slot.winnerTournamentTeamId = input.winnerTournamentTeamId
-      // A reabertura em cascata ao trocar o vencedor de uma vaga é regra de servidor (fase 7):
-      // o store não alcança mais o campeonato, que agora vive na API.
-      return slot
-    },
-
-    removeBracketSlot(id: number): void {
-      const slot = bracketSlots.find((entry) => entry.id === id && isActive(entry))
-      if (!slot) return
-      if (slot.matchId) {
-        const match = matches.find((entry) => entry.id === slot.matchId)
-        if (match?.status === 'FINISHED') throw new Error('Cannot remove a slot whose match is finished')
-        if (match) match.status = 'CANCELLED'
-      }
-      slot.isDeleted = true
     },
 
     // ── Roster ─────────────────────────────────────────────────────────────────
