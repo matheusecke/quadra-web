@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { AxiosError } from 'axios'
 import type { Tournament } from '../../../features/sports/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as sportsApi from '../../../services/sportsApi'
@@ -24,14 +25,30 @@ const GERAL_TOURNAMENT_TEAMS = GERAL_TEAMS.map((team) => ({
   tiebreakBlockKey: null,
 }))
 
+const DEMO_BRACKET: sportsApi.BracketRead = {
+  rounds: [
+    { id: 1, tournamentId: SEED_TOURNAMENT.GERAL, number: 1, label: 'Quartas de final' },
+    { id: 2, tournamentId: SEED_TOURNAMENT.GERAL, number: 2, label: 'Semifinais' },
+    { id: 3, tournamentId: SEED_TOURNAMENT.GERAL, number: 3, label: 'Final' },
+  ],
+  slots: [
+    { id: 101, roundId: 1, position: 1, label: null, homeTeam: null, awayTeam: null, winnerTournamentTeamId: null },
+  ],
+}
+
 beforeEach(() => {
   vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(GERAL_TEAMS)
   vi.spyOn(sportsApi, 'getTournamentTeams').mockImplementation(async (id) =>
     id === SEED_TOURNAMENT.GERAL ? GERAL_TOURNAMENT_TEAMS : [])
+  vi.spyOn(sportsApi, 'getBracket').mockImplementation(async (id) =>
+    id === SEED_TOURNAMENT.GERAL ? DEMO_BRACKET : { rounds: [], slots: [] })
 })
 
-const empty = { id: 999, name: 'Copa', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
-const demo = { id: 1, name: 'Geral', format: 'KNOCKOUT', teamIds: [] } as unknown as Tournament
+const empty = { id: 999, name: 'Copa', format: 'KNOCKOUT', status: 'IN_PROGRESS', teamIds: [] } as unknown as Tournament
+const demo = { id: 1, name: 'Geral', format: 'KNOCKOUT', status: 'IN_PROGRESS', teamIds: [] } as unknown as Tournament
+const knockout = { id: 12, name: 'Copa', format: 'KNOCKOUT', status: 'IN_PROGRESS', teamIds: [] } as unknown as Tournament
+const completed = { ...knockout, status: 'COMPLETED' } as Tournament
+const league = { ...knockout, format: 'LEAGUE' } as Tournament
 
 const renderTab = (tournament: Tournament) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -66,27 +83,59 @@ describe('BracketTab', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /nova rodada/i })).toBeInTheDocument())
   })
 
-  it('schedules a filled slot using its own tournamentTeamId directly, not a re-derived global id', async () => {
+  it('hides the editing canvas on a completed knockout', async () => {
     isOrgAdmin.value = true
-    renderTab(demo)
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({
+      rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Final' }],
+      slots: [{ id: 101, roundId: 10, position: 1, label: null, homeTeam: null, awayTeam: null, winnerTournamentTeamId: null }],
+    })
+    renderTab(completed)
+    await waitFor(() => expect(screen.getByText('Final')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: '+ Nova rodada' })).not.toBeInTheDocument()
+  })
 
-    await userEvent.click(await screen.findByRole('button', { name: /nova rodada/i }))
-    const newRound = (await screen.findByRole('heading', { name: 'Rodada 4' })).closest('div') as HTMLElement
-    await userEvent.click(within(newRound).getByRole('button', { name: /adicionar partida/i }))
+  it('hides the editing canvas on a league tournament', async () => {
+    isOrgAdmin.value = true
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    renderTab(league)
+    await waitFor(() => expect(screen.getByText('Chaveamento ainda não montado.')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: '+ Nova rodada' })).not.toBeInTheDocument()
+  })
 
-    await userEvent.click(await screen.findByRole('button', { name: /mandante/i }))
-    await userEvent.click(await screen.findByRole('option', { name: /^Time 15/ }))
-    await userEvent.click(screen.getByRole('button', { name: /visitante/i }))
-    await userEvent.click(await screen.findByRole('option', { name: /^Time 16/ }))
+  it('creates the first round as number 1', async () => {
+    isOrgAdmin.value = true
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    const createBracketRound = vi.spyOn(sportsApi, 'createBracketRound').mockResolvedValue({ id: 10, tournamentId: 12, number: 1, label: null })
+    renderTab(knockout)
+    await userEvent.click(await screen.findByRole('button', { name: '+ Nova rodada' }))
+    expect(createBracketRound).toHaveBeenCalledWith({ tournamentId: 12, number: 1 })
+  })
 
-    await userEvent.click(await screen.findByRole('button', { name: /agendar/i }))
-    fireEvent.change(screen.getByLabelText(/data e hora/i), { target: { value: '12/08/2026 19:00' } })
-    await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+  it('creates the next round after the highest loaded number', async () => {
+    isOrgAdmin.value = true
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({
+      rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Semifinais' }, { id: 11, tournamentId: 12, number: 2, label: 'Final' }],
+      slots: [],
+    })
+    const createBracketRound = vi.spyOn(sportsApi, 'createBracketRound').mockResolvedValue({ id: 12, tournamentId: 12, number: 3, label: null })
+    renderTab(knockout)
+    await userEvent.click(await screen.findByRole('button', { name: '+ Nova rodada' }))
+    expect(createBracketRound).toHaveBeenCalledWith({ tournamentId: 12, number: 3 })
+  })
 
-    const link = await screen.findByRole('link', { name: /lançar súmula/i })
-    const matchId = Number(link.getAttribute('href')?.match(/\/matches\/(\d+)/)?.[1])
-    const detail = await sportsApi.getMatchDetail(matchId)
-    expect(detail?.homeTournamentTeamId).toBe(tournamentTeamId(1, 15))
-    expect(detail?.awayTournamentTeamId).toBe(tournamentTeamId(1, 16))
+  it('explains a round that still holds slots', async () => {
+    isOrgAdmin.value = true
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({
+      rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Semifinais' }],
+      slots: [{ id: 101, roundId: 10, position: 1, label: null, homeTeam: null, awayTeam: null, winnerTournamentTeamId: null }],
+    })
+    vi.spyOn(sportsApi, 'removeBracketRound').mockRejectedValue(
+      new AxiosError('conflict', undefined, undefined, undefined, {
+        status: 409, data: { error: { code: 'ROUND_NOT_EMPTY' } },
+      } as never),
+    )
+    renderTab(knockout)
+    await userEvent.click(await screen.findByRole('button', { name: 'Remover Semifinais' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Remova as vagas desta rodada antes de excluí-la.')
   })
 })
