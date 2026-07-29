@@ -15,8 +15,7 @@ export interface BracketBoardProps {
 }
 
 export function BracketBoard({ rounds, slots, championTournamentTeamId = null, variant = 'compact' }: BracketBoardProps) {
-  const ordered = [...rounds].sort((a, b) => a.number - b.number)
-  const { mode, edges } = bracketLayout(ordered, slots.map((slot) => ({
+  const { mode, edges } = bracketLayout(rounds, slots.map((slot) => ({
     id: slot.id,
     roundId: slot.roundId,
     position: slot.position,
@@ -24,7 +23,7 @@ export function BracketBoard({ rounds, slots, championTournamentTeamId = null, v
     awayTournamentTeamId: slot.awayTeam?.tournamentTeamId ?? null,
     winnerTournamentTeamId: slot.winnerTournamentTeamId,
   })))
-  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
+  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId)
   const edgeOut = (slotId: number) => edges.find((edge) => edge.fromSlotId === slotId) ?? null
   const hasEdgeIn = (slotId: number) => edges.some((edge) => edge.toSlotId === slotId)
 
@@ -49,10 +48,10 @@ export function BracketBoard({ rounds, slots, championTournamentTeamId = null, v
 
   return <div className={cn(s.board, variant === 'full' && s.full)}>
     <div className={s.headerRow}>
-      {ordered.map((round) => <div className={s.headerCell} key={round.id}>{roundDisplayName(round)}</div>)}
+      {rounds.map((round) => <div className={s.headerCell} key={round.id}>{roundDisplayName(round)}</div>)}
     </div>
     <div className={s.columns}>
-      {ordered.map((round) => (
+      {rounds.map((round) => (
         <div className={s.column} key={round.id}>
           {mode === 'tree' ? (
             <div className={s.treeStack}>

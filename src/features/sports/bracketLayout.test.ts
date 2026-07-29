@@ -60,6 +60,12 @@ describe('bracketLayout edges', () => {
     expect(bracketLayout(rounds(3), fullTree()).edges).toHaveLength(6)
   })
 
+  it('preserves the slot order received from the API while deriving edges', () => {
+    expect(bracketLayout(rounds(3), fullTree().reverse()).edges.map((edge) => edge.fromSlotId)).toEqual([
+      14, 13, 12, 11, 16, 15,
+    ])
+  })
+
   it('draws no edge for a winner not yet placed in the next round', () => {
     const slots = fullTree().map((entry) => (entry.id === 17 ? { ...entry, homeTournamentTeamId: null } : entry))
     expect(bracketLayout(rounds(3), slots).edges).toHaveLength(5)

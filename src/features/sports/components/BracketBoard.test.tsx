@@ -39,6 +39,28 @@ describe('BracketBoard', () => {
     expect(screen.getByText('Semifinais')).toBeInTheDocument()
   })
 
+  it('preserves the round and slot order received from the API', () => {
+    renderBoard({
+      rounds: [
+        { id: 2, tournamentId: 1, number: 2, label: 'Recebida primeiro' },
+        { id: 1, tournamentId: 1, number: 1, label: 'Recebida depois' },
+      ],
+      slots: [
+        slot({ id: 12, roundId: 2, position: 2, label: 'Vaga recebida primeiro' }),
+        slot({ id: 11, roundId: 1, position: 1, label: 'Vaga recebida depois' }),
+      ],
+    })
+
+    expect(screen.getAllByText(/Recebida (primeiro|depois)/).map((node) => node.textContent)).toEqual([
+      'Recebida primeiro',
+      'Recebida depois',
+    ])
+    expect(screen.getAllByRole('article').map((card) => card.getAttribute('aria-label'))).toEqual([
+      'Vaga recebida primeiro',
+      'Vaga recebida depois',
+    ])
+  })
+
   it('falls back to the round number when the round has no label', () => {
     renderBoard({ rounds: [{ id: 1, tournamentId: 1, number: 1, label: null }], slots: [slot({ id: 11, roundId: 1, position: 1 })] })
     expect(screen.getByText('Rodada 1')).toBeInTheDocument()

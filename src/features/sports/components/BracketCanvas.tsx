@@ -30,7 +30,7 @@ export function BracketCanvas({
   const [labelDraft, setLabelDraft] = useState('')
   const [editingRoundId, setEditingRoundId] = useState<number | null>(null)
   const [roundDraft, setRoundDraft] = useState('')
-  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
+  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId)
   const roundOf = (slot: BracketSlotView) => rounds.find((round) => round.id === slot.roundId) ?? { label: null }
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {

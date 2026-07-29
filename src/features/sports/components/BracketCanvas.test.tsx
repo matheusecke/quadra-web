@@ -56,6 +56,23 @@ describe('BracketCanvas', () => {
     expect(screen.getByRole('button', { name: 'Quartas de final' })).toBeInTheDocument()
   })
 
+  it('preserves the slot order received from the API', () => {
+    render(<BracketCanvas
+      rounds={rounds}
+      slots={[
+        slot({ id: 12, position: 2, label: 'Recebida primeiro' }),
+        slot({ id: 11, position: 1, label: 'Recebida depois' }),
+      ]}
+      teams={teams}
+      {...handlers()}
+    />)
+
+    expect(screen.getAllByText(/Recebida (primeiro|depois)/).map((button) => button.textContent)).toEqual([
+      'Recebida primeiro',
+      'Recebida depois',
+    ])
+  })
+
   it('falls back to the round number when the round has no label', () => {
     const unnamedRounds = [{ id: 1, tournamentId: 1, number: 1, label: null }]
     render(<BracketCanvas rounds={unnamedRounds} slots={[slot()]} teams={teams} {...handlers()} />)
