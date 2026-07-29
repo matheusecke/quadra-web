@@ -1,54 +1,51 @@
 import { Trophy } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 import { cn } from '../../../components/ui/cn'
 import { bracketLayout } from '../bracketLayout'
 import { roundDisplayName, slotDisplayName } from '../sportsUtils'
 
-import type { BracketRound } from '../types'
-import type { BracketSlotView, BracketTeamOption } from '../useBracketView'
+import type { BracketRound, BracketSlotView } from '../types'
 import s from './BracketBoard.module.css'
 
 export interface BracketBoardProps {
   rounds: BracketRound[]
   slots: BracketSlotView[]
-  teams: BracketTeamOption[]
   championTournamentTeamId?: number | null
   variant?: 'compact' | 'full'
 }
 
-export function BracketBoard({ rounds, slots, teams, championTournamentTeamId = null, variant = 'compact' }: BracketBoardProps) {
+export function BracketBoard({ rounds, slots, championTournamentTeamId = null, variant = 'compact' }: BracketBoardProps) {
   const ordered = [...rounds].sort((a, b) => a.number - b.number)
-  const { mode, edges } = bracketLayout(ordered, slots)
+  const { mode, edges } = bracketLayout(ordered, slots.map((slot) => ({
+    id: slot.id,
+    roundId: slot.roundId,
+    position: slot.position,
+    homeTournamentTeamId: slot.homeTeam?.tournamentTeamId ?? null,
+    awayTournamentTeamId: slot.awayTeam?.tournamentTeamId ?? null,
+    winnerTournamentTeamId: slot.winnerTournamentTeamId,
+  })))
   const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
-  const teamOf = (id: number | null) => teams.find((team) => team.tournamentTeamId === id) ?? null
   const edgeOut = (slotId: number) => edges.find((edge) => edge.fromSlotId === slotId) ?? null
   const hasEdgeIn = (slotId: number) => edges.some((edge) => edge.toSlotId === slotId)
 
   const renderSide = (slot: BracketSlotView, side: 'home' | 'away') => {
-    const tournamentTeamId = side === 'home' ? slot.homeTournamentTeamId : slot.awayTournamentTeamId
-    const otherSide = side === 'home' ? slot.awayTournamentTeamId : slot.homeTournamentTeamId
-    if (!tournamentTeamId) return <div className={s.side}><span className={s.empty}>{otherSide ? 'bye' : 'a definir'}</span></div>
-    const team = teamOf(tournamentTeamId)
-    const score = slot.match ? (side === 'home' ? slot.match.homeScore : slot.match.awayScore) : null
-    const isWinner = tournamentTeamId === slot.winnerTournamentTeamId
+    const team = side === 'home' ? slot.homeTeam : slot.awayTeam
+    const otherSide = side === 'home' ? slot.awayTeam : slot.homeTeam
+    if (!team) return <div className={s.side}><span className={s.empty}>{otherSide ? 'bye' : 'a definir'}</span></div>
+    const isWinner = team.tournamentTeamId === slot.winnerTournamentTeamId
     return <div className={cn(s.side, isWinner && s.sideWinner)}>
-      <span className={s.tag}>{team?.shortName ?? '—'}</span>
-      <span className={s.name}>{team?.name ?? tournamentTeamId}</span>
-      {tournamentTeamId === championTournamentTeamId && <><Trophy size={12} strokeWidth={1.8} className={s.trophy} aria-hidden="true" /><span className={s.srOnly}>Campeão</span></>}
-      {score !== null && <span className={s.score}>{score}</span>}
+      <span className={s.tag}>{team.shortName}</span>
+      <span className={s.name}>{team.name}</span>
+      {team.tournamentTeamId === championTournamentTeamId && <><Trophy size={12} strokeWidth={1.8} className={s.trophy} aria-hidden="true" /><span className={s.srOnly}>Campeão</span></>}
       {isWinner && <span className={s.srOnly}>Vencedor</span>}
     </div>
   }
 
-  const renderCard = (slot: BracketSlotView, round: BracketRound) => {
-    const inner = <>{renderSide(slot, 'home')}{renderSide(slot, 'away')}</>
-    return <article className={s.cardWrap} aria-label={slotDisplayName(slot, round)} key={slot.id}>
-      {slot.matchId
-        ? <Link to={`/matches/${slot.matchId}`} className={s.card}>{inner}</Link>
-        : <div className={s.card}>{inner}</div>}
+  const renderCard = (slot: BracketSlotView, round: BracketRound) => (
+    <article className={s.cardWrap} aria-label={slotDisplayName(slot, round)} key={slot.id}>
+      <div className={s.card}>{renderSide(slot, 'home')}{renderSide(slot, 'away')}</div>
     </article>
-  }
+  )
 
   return <div className={cn(s.board, variant === 'full' && s.full)}>
     <div className={s.headerRow}>

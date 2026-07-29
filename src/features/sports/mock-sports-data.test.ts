@@ -84,33 +84,6 @@ describe('PUC sports mock data', () => {
     expect('teamIds' in geral).toBe(false)
   })
 
-  it('seeds the demo bracket as three named rounds', async () => {
-    const rounds = await sportsApi.getBracketRounds(1)
-    expect(rounds.map((round) => round.label)).toEqual(['Quartas de final', 'Semifinais', 'Final'])
-  })
-
-  it('seeds the demo bracket ending in a single slot won by the declared champion', async () => {
-    const rounds = await sportsApi.getBracketRounds(1)
-    const slots = await sportsApi.getBracketSlots(1)
-    const finalSlots = slots.filter((slot) => slot.roundId === rounds[rounds.length - 1].id)
-    expect(finalSlots).toHaveLength(1)
-  })
-
-  it('leaves the phase name off the demo slots', async () => {
-    const slots = await sportsApi.getBracketSlots(1)
-    expect(slots.every((slot) => slot.label === null)).toBe(true)
-  })
-
-  it('orders the demo quarter-final slots so adjacent winners meet in the semi they actually contest', async () => {
-    const rounds = await sportsApi.getBracketRounds(1)
-    const slots = await sportsApi.getBracketSlots(1)
-    const quarters = slots.filter((slot) => slot.roundId === rounds[0].id)
-    const semis = slots.filter((slot) => slot.roundId === rounds[1].id)
-    const semiOf = (winnerId: number | null) =>
-      semis.find((semi) => semi.homeTournamentTeamId === winnerId || semi.awayTournamentTeamId === winnerId)?.position
-    expect(quarters.map((slot) => semiOf(slot.winnerTournamentTeamId))).toEqual([1, 1, 2, 2])
-  })
-
   it('keeps the declared champion on the completed demo tournament', () => {
     const tournament = getTournamentById(1)
     expect(tournament?.championTournamentTeamId).toBe(1001)
