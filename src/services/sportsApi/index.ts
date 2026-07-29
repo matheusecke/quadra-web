@@ -23,16 +23,7 @@ import type {
 } from '../../features/sports/types'
 import { createSportsStore } from './store'
 import type { MockTournamentGroup, MockTournamentGroupTeam } from './store'
-import type {
-  CreateBracketRoundInput,
-  CreateBracketSlotInput,
-  LinkSlotMatchInput,
-  ScheduleMatchInput,
-  SetSlotWinnerInput,
-  SubmitMatchResultInput,
-  UpdateBracketRoundInput,
-  UpdateBracketSlotInput,
-} from './types'
+import type { ScheduleMatchInput, SubmitMatchResultInput } from './types'
 
 const seedMatchDetails = seedMatches
   .map((match) => getMatchDetailById(match.id))
@@ -167,16 +158,16 @@ export {
 export type { ListTournamentTeamsParams } from './tournament-teams'
 
 // ── Bracket ──────────────────────────────────────────────────────────────────
-export const getBracketRounds = (tournamentId: number): Promise<BracketRound[]> => Promise.resolve(store.listBracketRounds(tournamentId))
-export const createBracketRound = (input: CreateBracketRoundInput) => Promise.resolve(store.createBracketRound(input))
-export const updateBracketRound = (id: number, input: UpdateBracketRoundInput) => Promise.resolve(store.updateBracketRound(id, input))
-export const removeBracketRound = (id: number) => Promise.resolve(store.removeBracketRound(id))
-export const getBracketSlots = (tournamentId: number): Promise<BracketSlot[]> => Promise.resolve(store.listBracketSlots(tournamentId))
-export const createBracketSlot = (input: CreateBracketSlotInput) => Promise.resolve(store.createBracketSlot(input))
-export const updateBracketSlot = (id: number, input: UpdateBracketSlotInput) => Promise.resolve(store.updateBracketSlot(id, input))
-export const linkSlotMatch = (input: LinkSlotMatchInput) => Promise.resolve(store.linkSlotMatch(input))
-export const setSlotWinner = (input: SetSlotWinnerInput) => Promise.resolve(store.setSlotWinner(input))
-export const removeBracketSlot = (id: number) => Promise.resolve(store.removeBracketSlot(id))
+export {
+  createBracketRound,
+  createBracketSlot,
+  getBracket,
+  removeBracketRound,
+  removeBracketSlot,
+  updateBracketRound,
+  updateBracketSlot,
+} from './tournament-brackets'
+export type { BracketRead } from './tournament-brackets'
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
 export {

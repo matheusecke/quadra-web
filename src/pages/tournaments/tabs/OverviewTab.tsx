@@ -89,7 +89,7 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
           )}
           {!bracket.isPending && !bracket.isError && (
             bracket.slots.length > 0 ? (
-              <BracketBoard rounds={bracket.rounds} slots={bracket.slots} teams={bracket.teams} championTournamentTeamId={tournament.championTournamentTeamId} />
+              <BracketBoard rounds={bracket.rounds} slots={bracket.slots} championTournamentTeamId={tournament.championTournamentTeamId} />
             ) : (
               <div className={s.tabEmpty}>
                 <EmptyState title="Chaveamento ainda não montado." />

@@ -269,6 +269,25 @@ export interface BracketSlot {
   isDeleted?: boolean
 }
 
+export interface BracketSlotTeam {
+  tournamentTeamId: number
+  /** Registration snapshot. A renamed team keeps the historical name here. */
+  name: string
+  /** Read live from the catalogue — deliberately not a snapshot. */
+  shortName: string
+}
+
+export interface BracketSlotView {
+  id: number
+  /** Copied from the parent round while flattening. */
+  roundId: number
+  position: number
+  label: string | null
+  homeTeam: BracketSlotTeam | null
+  awayTeam: BracketSlotTeam | null
+  winnerTournamentTeamId: number | null
+}
+
 // ── Match detail (with per-game box score) ────────────────────────────────────
 
 /** Individual player box-score line for a single match. */

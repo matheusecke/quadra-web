@@ -3,41 +3,33 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { BracketBoard } from './BracketBoard'
-import type { BracketRound } from '../types'
-import type { BracketSlotView } from '../useBracketView'
+import type { BracketRound, BracketSlotView } from '../types'
 
 const rounds: BracketRound[] = [
   { id: 1, tournamentId: 1, number: 1, label: 'Semifinais' },
   { id: 2, tournamentId: 1, number: 2, label: 'Final' },
 ]
 
-const teams = [
-  { tournamentTeamId: 1, name: 'Alfa', shortName: 'T01' },
-  { tournamentTeamId: 2, name: 'Beta', shortName: 'T02' },
-  { tournamentTeamId: 3, name: 'Gama', shortName: 'T03' },
-  { tournamentTeamId: 4, name: 'Delta', shortName: 'T04' },
-]
+const team = (tournamentTeamId: number, name: string, shortName: string) => ({ tournamentTeamId, name, shortName })
 
 const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'roundId' | 'position'>): BracketSlotView => ({
   label: null,
-  homeTournamentTeamId: null,
-  awayTournamentTeamId: null,
-  matchId: null,
+  homeTeam: null,
+  awayTeam: null,
   winnerTournamentTeamId: null,
-  match: null,
   ...over,
 })
 
 const tree = (): BracketSlotView[] => [
-  slot({ id: 11, roundId: 1, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 2, winnerTournamentTeamId: 1 }),
-  slot({ id: 12, roundId: 1, position: 2, homeTournamentTeamId: 3, awayTournamentTeamId: 4, winnerTournamentTeamId: 3 }),
-  slot({ id: 13, roundId: 2, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 3, winnerTournamentTeamId: 1 }),
+  slot({ id: 11, roundId: 1, position: 1, homeTeam: team(1, 'Alfa', 'T01'), awayTeam: team(2, 'Beta', 'T02'), winnerTournamentTeamId: 1 }),
+  slot({ id: 12, roundId: 1, position: 2, homeTeam: team(3, 'Gama', 'T03'), awayTeam: team(4, 'Delta', 'T04'), winnerTournamentTeamId: 3 }),
+  slot({ id: 13, roundId: 2, position: 1, homeTeam: team(1, 'Alfa', 'T01'), awayTeam: team(3, 'Gama', 'T03'), winnerTournamentTeamId: 1 }),
 ]
 
 const renderBoard = (props: Partial<Parameters<typeof BracketBoard>[0]> = {}) =>
   render(
     <MemoryRouter>
-      <BracketBoard rounds={rounds} slots={tree()} teams={teams} {...props} />
+      <BracketBoard rounds={rounds} slots={tree()} {...props} />
     </MemoryRouter>,
   )
 
@@ -45,6 +37,28 @@ describe('BracketBoard', () => {
   it('labels each round on the header row', () => {
     renderBoard()
     expect(screen.getByText('Semifinais')).toBeInTheDocument()
+  })
+
+  it('preserves the round and slot order received from the API', () => {
+    renderBoard({
+      rounds: [
+        { id: 2, tournamentId: 1, number: 2, label: 'Recebida primeiro' },
+        { id: 1, tournamentId: 1, number: 1, label: 'Recebida depois' },
+      ],
+      slots: [
+        slot({ id: 12, roundId: 2, position: 2, label: 'Vaga recebida primeiro' }),
+        slot({ id: 11, roundId: 1, position: 1, label: 'Vaga recebida depois' }),
+      ],
+    })
+
+    expect(screen.getAllByText(/Recebida (primeiro|depois)/).map((node) => node.textContent)).toEqual([
+      'Recebida primeiro',
+      'Recebida depois',
+    ])
+    expect(screen.getAllByRole('article').map((card) => card.getAttribute('aria-label'))).toEqual([
+      'Vaga recebida primeiro',
+      'Vaga recebida depois',
+    ])
   })
 
   it('falls back to the round number when the round has no label', () => {
@@ -80,7 +94,7 @@ describe('BracketBoard', () => {
   })
 
   it('calls an empty side a bye when the other side is filled', () => {
-    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, homeTournamentTeamId: 1 })] })
+    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, homeTeam: team(1, 'Alfa', 'T01') })] })
     expect(screen.getByText('bye')).toBeInTheDocument()
   })
 
@@ -89,14 +103,14 @@ describe('BracketBoard', () => {
     expect(screen.getAllByText('a definir')).toHaveLength(2)
   })
 
-  it('links a card that has a match to the match page', () => {
-    renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, matchId: 101, match: { id: 101, status: 'FINISHED', date: '2026-05-01T20:00:00.000Z', homeScore: 80, awayScore: 70 } })] })
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/matches/101')
-  })
-
-  it('does not link a card without a match', () => {
-    renderBoard()
-    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  it('renders the team names carried on the slot, with no lookup table', () => {
+    render(
+      <MemoryRouter>
+        <BracketBoard rounds={rounds} slots={[slot({ id: 11, roundId: 1, position: 1, homeTeam: team(9, 'Engenharia', 'ENG'), awayTeam: null })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Engenharia')).toBeInTheDocument()
+    expect(screen.getByText('ENG')).toBeInTheDocument()
   })
 
   it('marks the declared champion', () => {

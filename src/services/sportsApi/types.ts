@@ -51,39 +51,35 @@ export interface ReopenTournamentInput {
   tournamentId: number
 }
 
+/** `number` and `label` go in the body; `tournamentId` is the path. */
 export interface CreateBracketRoundInput {
   tournamentId: number
-  /** Optional: defaults to the highest active number plus one. The UI never types it. */
-  number?: number
-  label?: string
+  /** Required by the API, unique among the tournament's active rounds. The UI derives max + 1. */
+  number: number
+  label?: string | null
 }
 
 export interface UpdateBracketRoundInput {
-  label?: string
+  number?: number
+  label?: string | null
 }
 
+/** The round goes in the body, not the path — the tournament is inferred from it. */
 export interface CreateBracketSlotInput {
-  tournamentId: number
   roundId: number
-  /** Optional: defaults to the next free position in the round. The UI never types it. */
-  position?: number
-  label?: string
-}
-
-export interface UpdateBracketSlotInput {
+  /** Required by the API, unique among the round's active slots. The UI derives max + 1. */
+  position: number
+  label?: string | null
   homeTournamentTeamId?: number | null
   awayTournamentTeamId?: number | null
-  label?: string
 }
 
-export interface SetSlotWinnerInput {
-  slotId: number
-  winnerTournamentTeamId: number
-}
-
-export interface LinkSlotMatchInput {
-  slotId: number
-  matchId: number
+/** `roundId` is absent on purpose: moving a slot between rounds means delete and recreate. */
+export interface UpdateBracketSlotInput {
+  position?: number
+  label?: string | null
+  homeTournamentTeamId?: number | null
+  awayTournamentTeamId?: number | null
 }
 
 export interface EnrollTeamInput {
