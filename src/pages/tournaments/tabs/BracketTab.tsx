@@ -5,7 +5,7 @@ import { BracketCanvas } from '../../../features/sports/components/BracketCanvas
 import type { BracketSlotView, Tournament, TournamentStatus } from '../../../features/sports/types'
 import {
   useCreateBracketRound, useCreateBracketSlot, useLinkBracketSlotMatch, useRemoveBracketRound,
-  useRemoveBracketSlot, useUnlinkBracketSlotMatch, useUpdateBracketRound, useUpdateBracketSlot,
+  useRemoveBracketSlot, useSetBracketSlotWinner, useUnlinkBracketSlotMatch, useUpdateBracketRound, useUpdateBracketSlot,
 } from '../../../features/sports/queries'
 import { formatDateTime, hasKnockout } from '../../../features/sports/sportsUtils'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
@@ -60,7 +60,18 @@ function matchLinkErrorMessage(error: unknown): string {
   return MATCH_LINK_ERROR_MESSAGES[code ?? ''] ?? BRACKET_ERROR_MESSAGES[code ?? ''] ?? 'Não foi possível salvar a alteração. Tente novamente.'
 }
 
-export function BracketTab({ tournament }: { tournament: Tournament }) {
+function winnerErrorMessage(error: unknown): string {
+  const code = apiErrorCode(error)
+  if (code === 'INVALID_SLOT_WINNER') return 'O vencedor deve ser um dos participantes da vaga.'
+  return MATCH_LINK_ERROR_MESSAGES[code ?? ''] ?? BRACKET_ERROR_MESSAGES[code ?? ''] ?? 'Não foi possível salvar a alteração. Tente novamente.'
+}
+
+interface BracketTabProps {
+  tournament: Tournament
+  onRefetchTournament: () => Promise<unknown>
+}
+
+export function BracketTab({ tournament, onRefetchTournament }: BracketTabProps) {
   const isOrgAdmin = useIsOrgAdmin()
   const { rounds, slots, teams, isPending, isError, refetch } = useBracketView(tournament.id)
   const createRound = useCreateBracketRound()
@@ -71,15 +82,19 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
   const removeSlot = useRemoveBracketSlot()
   const linkMatch = useLinkBracketSlotMatch()
   const unlinkMatch = useUnlinkBracketSlotMatch()
+  const setWinner = useSetBracketSlotWinner()
   const [errorMessage, setErrorMessage] = useState('')
 
   const canEditStructure = isOrgAdmin && hasKnockout(tournament.format) && EDITABLE_STATUSES.includes(tournament.status)
+  const canSetWinner = isOrgAdmin && hasKnockout(tournament.format) && tournament.status !== 'CANCELLED'
 
   const busySlotId = linkMatch.isPending
     ? (linkMatch.variables?.slotId ?? null)
     : unlinkMatch.isPending
       ? (unlinkMatch.variables?.slotId ?? null)
-      : null
+      : setWinner.isPending
+        ? (setWinner.variables?.slotId ?? null)
+        : null
 
   /** The API derives nothing: the client picks the next value and owns the collision. */
   const nextRoundNumber = Math.max(0, ...rounds.map((round) => round.number)) + 1
@@ -110,6 +125,18 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
     }
   }
 
+  const runWinner = async (write: Promise<unknown>) => {
+    try {
+      await write
+      setErrorMessage('')
+      // Awaited so the confirmation flow that triggered COMPLETED sees the
+      // reopened status and cleared champion as soon as it closes.
+      await Promise.all([refetch(), onRefetchTournament()])
+    } catch (error) {
+      setErrorMessage(winnerErrorMessage(error))
+    }
+  }
+
   const searchMatches = async (slot: BracketSlotView, query: string) => {
     const tournamentTeamIds = [slot.homeTeam?.tournamentTeamId, slot.awayTeam?.tournamentTeamId]
       .filter((id): id is number => id !== undefined)
@@ -128,10 +155,26 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
       }))
   }
 
+  const fillSide = (id: number, side: 'home' | 'away', tournamentTeamId: number | null) => {
+    const targetSlot = slots.find((candidate) => candidate.id === id)
+    const currentTeamId = side === 'home' ? targetSlot?.homeTeam?.tournamentTeamId : targetSlot?.awayTeam?.tournamentTeamId
+    const replacesTheWinner = targetSlot?.winnerTournamentTeamId != null
+      && currentTeamId === targetSlot.winnerTournamentTeamId
+      && tournamentTeamId !== currentTeamId
+    if (replacesTheWinner) {
+      setErrorMessage('Limpe o vencedor antes de substituir esta equipe')
+      return Promise.resolve()
+    }
+    return run(updateSlot.mutateAsync({
+      id,
+      input: side === 'home' ? { homeTournamentTeamId: tournamentTeamId } : { awayTournamentTeamId: tournamentTeamId },
+    }))
+  }
+
   if (isPending) return <Skeleton width="100%" height={240} />
   if (isError) return <ErrorState title="Não foi possível carregar o chaveamento." onRetry={refetch} />
 
-  if (!canEditStructure) {
+  if (!canEditStructure && !canSetWinner) {
     if (slots.length === 0) return <EmptyState title="Chaveamento ainda não montado." />
     return <div className={s.tab}>
       <BracketBoard rounds={rounds} slots={slots} championTournamentTeamId={tournament.championTournamentTeamId} variant="full" />
@@ -139,23 +182,23 @@ export function BracketTab({ tournament }: { tournament: Tournament }) {
   }
 
   return <div className={s.tab}>
-    {slots.length === 0 && <EmptyState title="Nenhuma vaga de chaveamento criada ainda." description="Crie a primeira rodada e monte o mata-mata." />}
+    {slots.length === 0 && canEditStructure && <EmptyState title="Nenhuma vaga de chaveamento criada ainda." description="Crie a primeira rodada e monte o mata-mata." />}
     <BracketCanvas rounds={rounds} slots={slots} teams={teams} tournamentId={tournament.id}
-      canEditStructure={canEditStructure} busySlotId={busySlotId} errorMessage={errorMessage}
+      tournamentStatus={tournament.status} canEditStructure={canEditStructure} canSetWinner={canSetWinner}
+      busySlotId={busySlotId} errorMessage={errorMessage}
       onCreateRound={() => run(createRound.mutateAsync({ tournamentId: tournament.id, number: nextRoundNumber }))}
       onRenameRound={(id, label) => run(updateRound.mutateAsync({ id, input: { label } }))}
       onRemoveRound={(id) => run(removeRound.mutateAsync(id))}
       onCreateSlot={(roundId) => run(createSlot.mutateAsync({ roundId, position: nextPosition(roundId) }))}
       onRenameSlot={(id, label) => run(updateSlot.mutateAsync({ id, input: { label } }))}
       onRemoveSlot={(id) => run(removeSlot.mutateAsync(id))}
-      onFillSide={(id, side, tournamentTeamId) => run(updateSlot.mutateAsync({
-        id,
-        input: side === 'home' ? { homeTournamentTeamId: tournamentTeamId } : { awayTournamentTeamId: tournamentTeamId },
-      }))}
+      onFillSide={fillSide}
       onSearchMatches={searchMatches}
       onLinkMatch={(slotId, matchId) => runMatchLink(linkMatch.mutateAsync({ tournamentId: tournament.id, slotId, matchId }))}
       onUnlinkMatch={(slot) => slot.match
         ? runMatchLink(unlinkMatch.mutateAsync({ tournamentId: tournament.id, slotId: slot.id, matchId: slot.match.id }))
-        : Promise.resolve()} />
+        : Promise.resolve()}
+      onSetWinner={(slotId, matchId, winnerTournamentTeamId) =>
+        runWinner(setWinner.mutateAsync({ tournamentId: tournament.id, slotId, matchId, winnerTournamentTeamId }))} />
   </div>
 }

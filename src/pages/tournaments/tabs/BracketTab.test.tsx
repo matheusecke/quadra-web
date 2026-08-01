@@ -58,12 +58,12 @@ const knockout = { id: 12, name: 'Copa', format: 'KNOCKOUT', status: 'IN_PROGRES
 const completed = { ...knockout, status: 'COMPLETED' } as Tournament
 const league = { ...knockout, format: 'LEAGUE' } as Tournament
 
-const renderTab = (tournament: Tournament) => {
+const renderTab = (tournament: Tournament, onRefetchTournament = vi.fn().mockResolvedValue(undefined)) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <BracketTab tournament={tournament} />
+        <BracketTab tournament={tournament} onRefetchTournament={onRefetchTournament} />
       </QueryClientProvider>
     </MemoryRouter>,
   )
@@ -245,6 +245,61 @@ describe('BracketTab', () => {
       renderTab(knockout)
       await userEvent.click(await screen.findByRole('button', { name: 'Desvincular partida' }))
       expect(screen.getByRole('alertdialog')).toHaveTextContent('Desvincular removerá a partida desta vaga.')
+    })
+  })
+
+  describe('setting the slot winner', () => {
+    const bracketWithParticipants = (slotOverrides: Partial<sportsApi.BracketRead['slots'][number]> = {}): sportsApi.BracketRead => ({
+      rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Final' }],
+      slots: [{
+        id: 101, roundId: 10, position: 1, label: null,
+        homeTeam: { tournamentTeamId: 41, name: 'Águias', shortName: 'AGU' },
+        awayTeam: { tournamentTeamId: 52, name: 'Falcões', shortName: 'FAL' },
+        match: null, winnerTournamentTeamId: null,
+        ...slotOverrides,
+      }],
+    })
+
+    it('offers the winner control even on a completed tournament, once structure editing is closed', async () => {
+      isOrgAdmin.value = true
+      vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(bracketWithParticipants())
+      renderTab(completed)
+      expect(await screen.findByRole('button', { name: /vencedor/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /nova rodada/i })).not.toBeInTheDocument()
+    })
+
+    it('hides the winner control on a cancelled tournament', async () => {
+      isOrgAdmin.value = true
+      vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(bracketWithParticipants())
+      renderTab({ ...knockout, status: 'CANCELLED' } as Tournament)
+      await waitFor(() => expect(screen.getByText('Final')).toBeInTheDocument())
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    })
+
+    it('writes the winner and refreshes the tournament so the confirmation flow sees it', async () => {
+      isOrgAdmin.value = true
+      vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(bracketWithParticipants())
+      const setWinner = vi.spyOn(sportsApi, 'setBracketSlotWinner').mockResolvedValue({
+        id: 101, tournamentId: 12, roundId: 10, position: 1, label: null,
+        homeTournamentTeamId: 41, awayTournamentTeamId: 52, matchId: null, winnerTournamentTeamId: 41,
+      })
+      const onRefetchTournament = vi.fn().mockResolvedValue(undefined)
+      renderTab(knockout, onRefetchTournament)
+      await userEvent.click(await screen.findByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Águias' }))
+      await waitFor(() => expect(setWinner).toHaveBeenCalledWith(101, { winnerTournamentTeamId: 41 }))
+      await waitFor(() => expect(onRefetchTournament).toHaveBeenCalled())
+    })
+
+    it('blocks replacing the winning side until the winner is cleared', async () => {
+      isOrgAdmin.value = true
+      vi.spyOn(sportsApi, 'getBracket').mockResolvedValue(bracketWithParticipants({ winnerTournamentTeamId: 41 }))
+      const updateSlot = vi.spyOn(sportsApi, 'updateBracketSlot')
+      renderTab(knockout)
+      await userEvent.click(await screen.findByRole('button', { name: /mandante/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Remover equipe' }))
+      expect(updateSlot).not.toHaveBeenCalled()
+      expect(await screen.findByRole('alert')).toHaveTextContent('Limpe o vencedor antes de substituir esta equipe')
     })
   })
 })

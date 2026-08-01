@@ -429,6 +429,31 @@ export function useUnlinkBracketSlotMatch() {
   })
 }
 
+function invalidateBracketWinner(
+  queryClient: ReturnType<typeof useQueryClient>,
+  variables: { tournamentId: number; matchId: number | null },
+) {
+  queryClient.invalidateQueries({ queryKey: bracketKeys.list(variables.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(variables.tournamentId) })
+  if (variables.matchId !== null) queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.matchId) })
+}
+
+export function useSetBracketSlotWinner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId, winnerTournamentTeamId }: {
+      tournamentId: number
+      slotId: number
+      matchId: number | null
+      winnerTournamentTeamId: number | null
+    }) => sportsApi.setBracketSlotWinner(slotId, { winnerTournamentTeamId }),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketWinner(queryClient, variables),
+    onError: (_error, variables) => invalidateBracketWinner(queryClient, variables),
+  })
+}
+
 export function useAddRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({

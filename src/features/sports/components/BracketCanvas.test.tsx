@@ -21,7 +21,9 @@ const slot = (over: Partial<BracketSlotView> = {}): BracketSlotView => ({
 
 const handlers = () => ({
   tournamentId: 1,
+  tournamentStatus: 'IN_PROGRESS' as const,
   canEditStructure: true,
+  canSetWinner: false,
   busySlotId: null,
   onFillSide: vi.fn().mockResolvedValue(undefined),
   onRenameSlot: vi.fn().mockResolvedValue(undefined),
@@ -33,6 +35,7 @@ const handlers = () => ({
   onSearchMatches: vi.fn().mockResolvedValue([]),
   onLinkMatch: vi.fn().mockResolvedValue(undefined),
   onUnlinkMatch: vi.fn().mockResolvedValue(undefined),
+  onSetWinner: vi.fn().mockResolvedValue(undefined),
 })
 
 describe('BracketCanvas', () => {
@@ -265,6 +268,101 @@ describe('BracketCanvas', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Voltar' }))
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
       expect(props.onUnlinkMatch).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('read-only structure', () => {
+    it('hides every structure-editing control when the admin cannot edit structure', () => {
+      render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...handlers()} canEditStructure={false} />)
+      expect(screen.queryByRole('button', { name: /nova rodada/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /adicionar partida/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /remover/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /mandante|visitante/i })).not.toBeInTheDocument()
+      expect(screen.getByText('Alfa')).toBeInTheDocument()
+    })
+
+    it('still shows the round and slot titles as plain text', () => {
+      render(<BracketCanvas rounds={rounds} slots={[slot()]} teams={teams} {...handlers()} canEditStructure={false} />)
+      expect(screen.getByText('Quartas de final')).toBeInTheDocument()
+      expect(screen.getByText('Semifinal 1')).toBeInTheDocument()
+    })
+  })
+
+  describe('set the slot winner', () => {
+    const filledSlot = slot({
+      homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' },
+      awayTeam: { tournamentTeamId: 2, name: 'Beta', shortName: 'BET' },
+    })
+
+    it('shows no winner control when the admin cannot set winners', () => {
+      render(<BracketCanvas rounds={rounds} slots={[filledSlot]} teams={teams} {...handlers()} canSetWinner={false} />)
+      expect(screen.queryByRole('button', { name: /vencedor/i })).not.toBeInTheDocument()
+    })
+
+    it('offers only the filled sides plus a no-winner option', async () => {
+      render(<BracketCanvas rounds={rounds} slots={[filledSlot]} teams={teams} {...handlers()} canSetWinner={true} />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      expect(screen.getByRole('option', { name: 'Sem vencedor' })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Alfa' })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Beta' })).toBeInTheDocument()
+    })
+
+    it('writes the chosen winner directly outside a completed tournament', async () => {
+      const props = handlers()
+      render(<BracketCanvas rounds={rounds} slots={[filledSlot]} teams={teams} {...props} canSetWinner={true} />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Alfa' }))
+      expect(props.onSetWinner).toHaveBeenCalledWith(11, null, 1)
+    })
+
+    it('does nothing when the current winner is selected again', async () => {
+      const props = handlers()
+      render(<BracketCanvas rounds={rounds} slots={[{ ...filledSlot, winnerTournamentTeamId: 1 }]} teams={teams} {...props} canSetWinner={true} />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Alfa' }))
+      expect(props.onSetWinner).not.toHaveBeenCalled()
+    })
+
+    it('clears the winner when no-winner is chosen', async () => {
+      const props = handlers()
+      render(<BracketCanvas rounds={rounds} slots={[{ ...filledSlot, winnerTournamentTeamId: 1 }]} teams={teams} {...props} canSetWinner={true} />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Sem vencedor' }))
+      expect(props.onSetWinner).toHaveBeenCalledWith(11, null, null)
+    })
+
+    it('confirms before writing on a completed tournament', async () => {
+      const props = handlers()
+      render(<BracketCanvas rounds={rounds} slots={[filledSlot]} teams={teams} {...props} canSetWinner={true} tournamentStatus="COMPLETED" />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Alfa' }))
+      expect(props.onSetWinner).not.toHaveBeenCalled()
+      expect(screen.getByRole('alertdialog')).toHaveTextContent('Alterar o vencedor pode reabrir o campeonato e limpar o campeão.')
+      await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+      expect(props.onSetWinner).toHaveBeenCalledWith(11, null, 1)
+    })
+
+    it('cancels the completed-tournament confirmation without writing', async () => {
+      const props = handlers()
+      render(<BracketCanvas rounds={rounds} slots={[filledSlot]} teams={teams} {...props} canSetWinner={true} tournamentStatus="COMPLETED" />)
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Alfa' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+      expect(props.onSetWinner).not.toHaveBeenCalled()
+    })
+
+    it('passes the linked match id along with the winner', async () => {
+      const props = handlers()
+      const withMatch = { ...filledSlot, match: { id: 501, status: 'FINISHED' as const, date: null, homeScore: null, awayScore: null } }
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[withMatch]} teams={teams} {...props} canSetWinner={true} />
+        </MemoryRouter>,
+      )
+      await userEvent.click(screen.getByRole('button', { name: /vencedor/i }))
+      await userEvent.click(screen.getByRole('option', { name: 'Alfa' }))
+      expect(props.onSetWinner).toHaveBeenCalledWith(11, 501, 1)
     })
   })
 })

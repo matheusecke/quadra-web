@@ -14,6 +14,7 @@ import {
   useMatchesInfiniteQuery,
   useSeasonsInfiniteQuery,
   useSeasonsQuery,
+  useSetBracketSlotWinner,
   useTeamsQuery,
   useAthletesQuery,
   useTournamentMatchesQuery,
@@ -298,6 +299,74 @@ describe('bracket match link', () => {
       matchKeys.lists(),
       matchKeys.detail(501),
       tournamentKeys.detail(12),
+    ])
+  })
+})
+
+describe('bracket slot winner', () => {
+  it('sends a numeric winner as the request body', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockResolvedValue(bracketSlotRow)
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501, winnerTournamentTeamId: 41 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.setBracketSlotWinner).toHaveBeenCalledWith(71, { winnerTournamentTeamId: 41 })
+  })
+
+  it('sends null as a present key to clear the winner', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockResolvedValue({ ...bracketSlotRow, winnerTournamentTeamId: null })
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501, winnerTournamentTeamId: null })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.setBracketSlotWinner).toHaveBeenCalledWith(71, { winnerTournamentTeamId: null })
+  })
+
+  it('retries a concurrent winner write exactly once', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockRejectedValueOnce(apiFailure('CONCURRENT_MODIFICATION')).mockResolvedValueOnce(bracketSlotRow)
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501, winnerTournamentTeamId: 41 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.setBracketSlotWinner).toHaveBeenCalledTimes(2)
+  })
+
+  it('invalidates the bracket, tournament and embedded match after a successful write', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockResolvedValue(bracketSlotRow)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501, winnerTournamentTeamId: 41 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      bracketKeys.list(12),
+      tournamentKeys.detail(12),
+      matchKeys.detail(501),
+    ])
+  })
+
+  it('skips the match invalidation when the slot has no linked match', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockResolvedValue(bracketSlotRow)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: null, winnerTournamentTeamId: 41 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      bracketKeys.list(12),
+      tournamentKeys.detail(12),
+    ])
+  })
+
+  it('invalidates the bracket and tournament after a second concurrent failure', async () => {
+    vi.spyOn(sportsApi, 'setBracketSlotWinner').mockRejectedValue(apiFailure('CONCURRENT_MODIFICATION'))
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSetBracketSlotWinner(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501, winnerTournamentTeamId: 41 })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(sportsApi.setBracketSlotWinner).toHaveBeenCalledTimes(2)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      bracketKeys.list(12),
+      tournamentKeys.detail(12),
+      matchKeys.detail(501),
     ])
   })
 })

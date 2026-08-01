@@ -513,7 +513,7 @@ export function TournamentDetailPage() {
             isOrgAdmin={isOrgAdmin}
           />
         )}
-        {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
+        {activeTab === 'bracket' && <BracketTab tournament={tournament} onRefetchTournament={() => tournamentQuery.refetch()} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
         {activeTab === 'stats' && <StatsTab tournament={tournament} teams={teams} />}
       </div>

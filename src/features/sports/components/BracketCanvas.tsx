@@ -4,9 +4,11 @@ import { formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtil
 import { Badge, Button, Combobox, Input, SearchSelect } from '../../../components/ui'
 import type { SearchSelectOption } from '../../../components/ui/SearchSelect'
 import { parsePositiveId } from '../parsePositiveId'
-import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
+import type { BracketMatchView, BracketRound, BracketSlotView, TournamentStatus } from '../types'
 import type { BracketTeamOption } from '../useBracketView'
 import s from './BracketCanvas.module.css'
+
+const NO_WINNER_OPTION = { value: '', label: 'Sem vencedor' }
 
 const CLEAR_OPTION = { value: '', label: 'Remover equipe' }
 
@@ -29,7 +31,9 @@ export interface BracketCanvasProps {
   slots: BracketSlotView[]
   teams: BracketTeamOption[]
   tournamentId: number
+  tournamentStatus: TournamentStatus
   canEditStructure: boolean
+  canSetWinner: boolean
   busySlotId: number | null
   /** `null` clears the side. */
   onFillSide: (slotId: number, side: 'home' | 'away', tournamentTeamId: number | null) => Promise<void>
@@ -42,13 +46,14 @@ export interface BracketCanvasProps {
   onSearchMatches: (slot: BracketSlotView, query: string) => Promise<SearchSelectOption[]>
   onLinkMatch: (slotId: number, matchId: number) => Promise<void>
   onUnlinkMatch: (slot: BracketSlotView) => Promise<void>
+  onSetWinner: (slotId: number, matchId: number | null, winnerTournamentTeamId: number | null) => Promise<void>
   errorMessage?: string
 }
 
 export function BracketCanvas({
-  rounds, slots, teams, canEditStructure, busySlotId,
+  rounds, slots, teams, tournamentStatus, canEditStructure, canSetWinner, busySlotId,
   onFillSide, onRenameSlot, onCreateSlot, onRemoveSlot, onCreateRound, onRenameRound, onRemoveRound,
-  onSearchMatches, onLinkMatch, onUnlinkMatch, errorMessage,
+  onSearchMatches, onLinkMatch, onUnlinkMatch, onSetWinner, errorMessage,
 }: BracketCanvasProps) {
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null)
   const [labelDraft, setLabelDraft] = useState('')
@@ -56,6 +61,7 @@ export function BracketCanvas({
   const [roundDraft, setRoundDraft] = useState('')
   const [pendingMatchBySlot, setPendingMatchBySlot] = useState<Record<number, SearchSelectOption | null>>({})
   const [confirmingUnlinkSlotId, setConfirmingUnlinkSlotId] = useState<number | null>(null)
+  const [confirmingWinnerBySlot, setConfirmingWinnerBySlot] = useState<Record<number, number | null>>({})
   const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId)
   const roundOf = (slot: BracketSlotView) => rounds.find((round) => round.id === slot.roundId) ?? { label: null }
 
@@ -63,6 +69,11 @@ export function BracketCanvas({
     const team = side === 'home' ? slot.homeTeam : slot.awayTeam
     const otherSide = side === 'home' ? slot.awayTeam : slot.homeTeam
     const label = slotDisplayName(slot, roundOf(slot))
+
+    if (!canEditStructure) {
+      return <p className={s.sideReadOnly}>{team ? team.name : (otherSide ? 'bye' : 'a definir')}</p>
+    }
+
     const options = teams.map((entry) => ({ value: String(entry.tournamentTeamId), label: entry.name, secondary: entry.shortName }))
     return <Combobox
       aria-label={`${label} — ${side === 'home' ? 'mandante' : 'visitante'}`}
@@ -70,6 +81,56 @@ export function BracketCanvas({
       options={team ? [CLEAR_OPTION, ...options] : options}
       value={team ? String(team.tournamentTeamId) : null}
       onChange={(raw) => { void onFillSide(slot.id, side, parsePositiveId(raw)) }}
+    />
+  }
+
+  const renderWinnerControl = (slot: BracketSlotView) => {
+    if (!canSetWinner) return null
+    const busy = busySlotId === slot.id
+    const label = slotDisplayName(slot, roundOf(slot))
+    const options = [slot.homeTeam, slot.awayTeam]
+      .filter((team): team is NonNullable<typeof team> => team !== null)
+      .map((team) => ({ value: String(team.tournamentTeamId), label: team.name }))
+
+    const clearWinnerConfirmation = () => setConfirmingWinnerBySlot((prev) => {
+      const next = { ...prev }
+      delete next[slot.id]
+      return next
+    })
+
+    const pendingWinner = confirmingWinnerBySlot[slot.id]
+    if (pendingWinner !== undefined) {
+      return <div className={s.confirm} role="alertdialog" aria-label="Confirmar vencedor">
+        <p>Alterar o vencedor pode reabrir o campeonato e limpar o campeão.</p>
+        <div className={s.confirmActions}>
+          <Button type="button" variant="ghost" size="sm" onClick={clearWinnerConfirmation}>
+            Voltar
+          </Button>
+          <Button type="button" variant="primary" size="sm" loading={busy}
+            onClick={() => {
+              void onSetWinner(slot.id, slot.match?.id ?? null, pendingWinner).finally(clearWinnerConfirmation)
+            }}>
+            Confirmar
+          </Button>
+        </div>
+      </div>
+    }
+
+    return <Combobox
+      aria-label={`${label} — vencedor`}
+      placeholder="Definir vencedor"
+      options={[NO_WINNER_OPTION, ...options]}
+      value={slot.winnerTournamentTeamId !== null ? String(slot.winnerTournamentTeamId) : null}
+      disabled={busySlotId !== null}
+      onChange={(raw) => {
+        const winnerTournamentTeamId = parsePositiveId(raw)
+        if (winnerTournamentTeamId === slot.winnerTournamentTeamId) return
+        if (tournamentStatus === 'COMPLETED') {
+          setConfirmingWinnerBySlot((prev) => ({ ...prev, [slot.id]: winnerTournamentTeamId }))
+          return
+        }
+        void onSetWinner(slot.id, slot.match?.id ?? null, winnerTournamentTeamId)
+      }}
     />
   }
 
@@ -127,37 +188,42 @@ export function BracketCanvas({
         const roundSlots = slotsOf(round.id)
         return <div className={s.round} key={round.id}>
           <div className={s.slotHeader}>
-            {editingRoundId === round.id
-              ? <Input aria-label="Nome da rodada" value={roundDraft}
-                  onChange={(event) => setRoundDraft(event.target.value)}
-                  onBlur={() => { void onRenameRound(round.id, roundDraft.trim() || null); setEditingRoundId(null) }} autoFocus />
-              : <h3><button type="button" className={s.slotTitle}
-                  onClick={() => { setEditingRoundId(round.id); setRoundDraft(round.label ?? '') }}>{roundDisplayName(round)}</button></h3>}
-            <button type="button" className={s.remove} aria-label={`Remover ${roundDisplayName(round)}`}
-              onClick={() => { void onRemoveRound(round.id) }}>×</button>
+            {canEditStructure
+              ? (editingRoundId === round.id
+                ? <Input aria-label="Nome da rodada" value={roundDraft}
+                    onChange={(event) => setRoundDraft(event.target.value)}
+                    onBlur={() => { void onRenameRound(round.id, roundDraft.trim() || null); setEditingRoundId(null) }} autoFocus />
+                : <h3><button type="button" className={s.slotTitle}
+                    onClick={() => { setEditingRoundId(round.id); setRoundDraft(round.label ?? '') }}>{roundDisplayName(round)}</button></h3>)
+              : <h3>{roundDisplayName(round)}</h3>}
+            {canEditStructure && <button type="button" className={s.remove} aria-label={`Remover ${roundDisplayName(round)}`}
+              onClick={() => { void onRemoveRound(round.id) }}>×</button>}
           </div>
           {roundSlots.map((slot) => {
             const label = slotDisplayName(slot, round)
             const editing = editingSlotId === slot.id
             return <article className={s.slot} key={slot.id}>
               <div className={s.slotHeader}>
-                {editing
-                  ? <Input aria-label="Nome da vaga" value={labelDraft}
-                      onChange={(event) => setLabelDraft(event.target.value)}
-                      onBlur={() => { void onRenameSlot(slot.id, labelDraft.trim() || null); setEditingSlotId(null) }} autoFocus />
-                  : <button type="button" className={s.slotTitle} onClick={() => { setEditingSlotId(slot.id); setLabelDraft(slot.label ?? '') }}>{label}</button>}
-                <button type="button" className={s.remove} aria-label={`Remover ${label}`} onClick={() => { void onRemoveSlot(slot.id) }}>×</button>
+                {canEditStructure
+                  ? (editing
+                    ? <Input aria-label="Nome da vaga" value={labelDraft}
+                        onChange={(event) => setLabelDraft(event.target.value)}
+                        onBlur={() => { void onRenameSlot(slot.id, labelDraft.trim() || null); setEditingSlotId(null) }} autoFocus />
+                    : <button type="button" className={s.slotTitle} onClick={() => { setEditingSlotId(slot.id); setLabelDraft(slot.label ?? '') }}>{label}</button>)
+                  : <span className={s.slotTitle}>{label}</span>}
+                {canEditStructure && <button type="button" className={s.remove} aria-label={`Remover ${label}`} onClick={() => { void onRemoveSlot(slot.id) }}>×</button>}
               </div>
               {renderSide(slot, 'home')}
               {renderSide(slot, 'away')}
               {slot.match && <LinkedMatch match={slot.match} />}
               {renderMatchLink(slot)}
+              {renderWinnerControl(slot)}
             </article>
           })}
-          <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round.id) }}>+ Adicionar partida</button>
+          {canEditStructure && <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round.id) }}>+ Adicionar partida</button>}
         </div>
       })}
-      <button type="button" className={s.ghostRound} onClick={() => { void onCreateRound() }}>+ Nova rodada</button>
+      {canEditStructure && <button type="button" className={s.ghostRound} onClick={() => { void onCreateRound() }}>+ Nova rodada</button>}
     </div>
     {errorMessage && <p className={s.error} role="alert">{errorMessage}</p>}
   </div>
