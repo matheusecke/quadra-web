@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge/Badge'
-import type { Match } from '../../../features/sports/types'
+import type { MatchSummary } from '../../../features/sports/types'
 import {
   formatDateTime,
   MATCH_STATUS_LABELS,
@@ -10,33 +10,30 @@ import {
 import s from '../tournaments.module.css'
 
 interface MatchListProps {
-  matches: Match[]
-  tournamentTeams: Map<number, { name: string; shortName: string }>
+  matches: MatchSummary[]
 }
 
 /** Compact match list used on the overview tab. */
-export function MatchList({ matches, tournamentTeams }: MatchListProps) {
+export function MatchList({ matches }: MatchListProps) {
   return (
     <div className={s.matchList}>
       {matches.map((m) => {
-        const home = tournamentTeams.get(m.homeTournamentTeamId)
-        const away = tournamentTeams.get(m.awayTournamentTeamId)
-        const homeName = home?.name ?? 'A definir'
-        const awayName = away?.name ?? 'A definir'
-        const hasScore = m.homeScore !== null && m.awayScore !== null
-        const isForfeit = m.homeLossType === 'FORFEIT' || m.awayLossType === 'FORFEIT'
+        const homeName = m.homeTeam.teamName
+        const awayName = m.awayTeam.teamName
+        const hasScore = m.homeTeam.score !== null && m.awayTeam.score !== null
+        const isForfeit = m.homeTeam.lossType === 'FORFEIT' || m.awayTeam.lossType === 'FORFEIT'
         const matchupLabel = hasScore
-          ? `${homeName} ${m.homeScore} - ${m.awayScore} ${awayName}`
+          ? `${homeName} ${m.homeTeam.score} - ${m.awayTeam.score} ${awayName}`
           : `${homeName} vs ${awayName}`
         return (
           <Link key={m.id} to={`/matches/${m.id}`} className={s.matchRow}>
-            <span className={s.matchDate}>{formatDateTime(m.date)}</span>
+            <span className={s.matchDate}>{formatDateTime(m.scheduledAt)}</span>
             <span className={s.matchup} aria-label={matchupLabel}>
               {hasScore ? (
                 <>
                   <span className={s.matchTeamName}>{homeName}</span>
                   <span className={s.matchScoreInline}>
-                    {m.homeScore} - {m.awayScore}
+                    {m.homeTeam.score} - {m.awayTeam.score}
                   </span>
                   <span className={s.matchTeamName}>{awayName}</span>
                 </>

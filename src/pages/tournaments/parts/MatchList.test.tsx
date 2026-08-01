@@ -1,35 +1,30 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import type { Match } from '../../../features/sports/types'
+import type { MatchSummary } from '../../../features/sports/types'
 import { MatchList } from './MatchList'
 
-const tournamentTeams = new Map([
-  [1, { name: 'Abutres', shortName: 'ABU' }],
-  [2, { name: 'Águias Douradas', shortName: 'AGD' }],
-])
-
-const finishedMatch: Match = {
+const finishedMatch: MatchSummary = {
   id: 101,
   tournamentId: 1,
-  date: '2026-06-07T21:00:00.000Z',
-  homeTournamentTeamId: 1,
-  awayTournamentTeamId: 2,
-  homeScore: 77,
-  awayScore: 74,
-  status: 'FINISHED',
   tournamentGroupId: null,
+  matchNumber: null,
+  status: 'FINISHED',
+  scheduledAt: '2026-06-07T21:00:00.000Z',
+  startedAt: null,
+  endedAt: null,
+  venueName: 'Ginásio Central',
   bracketRound: { id: 1, number: 1, label: 'Oitavas de final' },
-  homeLossType: null,
-  awayLossType: 'NORMAL',
   scoreSource: 'PERIODS',
+  homeTeam: { tournamentTeamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
 }
 
 describe('MatchList', () => {
   it('renders score inside the matchup and hides statistics status labels', () => {
     render(
       <MemoryRouter>
-        <MatchList matches={[finishedMatch]} tournamentTeams={tournamentTeams} />
+        <MatchList matches={[finishedMatch]} />
       </MemoryRouter>,
     )
 
@@ -41,13 +36,36 @@ describe('MatchList', () => {
   })
 
   it('marks a W.O. as finished', () => {
+    const woMatch: MatchSummary = {
+      ...finishedMatch,
+      homeTeam: { ...finishedMatch.homeTeam, score: 20 },
+      awayTeam: { ...finishedMatch.awayTeam, score: 0, lossType: 'FORFEIT' },
+      scoreSource: 'AWARDED',
+    }
     render(
       <MemoryRouter>
-        <MatchList matches={[{ ...finishedMatch, homeScore: 20, awayScore: 0, awayLossType: 'FORFEIT', scoreSource: 'AWARDED' }]} tournamentTeams={tournamentTeams} />
+        <MatchList matches={[woMatch]} />
       </MemoryRouter>,
     )
 
     expect(screen.getByText('Finalizada')).toBeInTheDocument()
     expect(screen.getByText('W.O.')).toBeInTheDocument()
+  })
+
+  it('hides the score block when a side has not been scored', () => {
+    const pendingMatch: MatchSummary = {
+      ...finishedMatch,
+      status: 'SCHEDULED',
+      scoreSource: null,
+      homeTeam: { ...finishedMatch.homeTeam, score: null, result: null, isWinner: null },
+      awayTeam: { ...finishedMatch.awayTeam, score: null, result: null, isWinner: null },
+    }
+    render(
+      <MemoryRouter>
+        <MatchList matches={[pendingMatch]} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('Abutres vs Águias Douradas')).toBeInTheDocument()
   })
 })

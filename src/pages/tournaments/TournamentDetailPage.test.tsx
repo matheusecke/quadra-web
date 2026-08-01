@@ -8,7 +8,31 @@ import { TournamentDetailPage } from './TournamentDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import { getTournamentById } from '../../features/sports/mock-sports-data'
 import { SEED_TOURNAMENT, tournamentTeamId } from '../../features/sports/seedIds'
-import type { RosterCandidate, Team, TournamentRoster, TournamentTeam } from '../../features/sports/types'
+import type { MatchSummary, RosterCandidate, Team, TournamentRoster, TournamentTeam } from '../../features/sports/types'
+import type { PaginatedResponse } from '../../types/admin'
+
+const matchPage = (data: MatchSummary[], currentPage: number, totalPages: number): PaginatedResponse<MatchSummary> => ({
+  data,
+  meta: { totalItems: data.length, itemCount: data.length, itemsPerPage: 100, totalPages, currentPage },
+  links: { first: '', previous: null, next: null, last: '' },
+  statusCode: 200,
+})
+
+const buildMatch = (id: number, tournamentId: number): MatchSummary => ({
+  id,
+  tournamentId,
+  tournamentGroupId: null,
+  matchNumber: null,
+  status: 'SCHEDULED',
+  scheduledAt: '2026-06-07T21:00:00.000Z',
+  startedAt: null,
+  endedAt: null,
+  venueName: 'Ginásio Central',
+  bracketRound: null,
+  scoreSource: null,
+  homeTeam: { tournamentTeamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
+})
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
@@ -88,6 +112,7 @@ beforeEach(() => {
   vi.spyOn(sportsApi, 'searchRosterCandidates').mockImplementation(async ({ q, teamId, role }) =>
     CANDIDATES.filter((candidate) =>
       candidate.teamId === teamId && candidate.role === role && (!q || candidate.name.toLowerCase().includes(q.toLowerCase()))))
+  vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockResolvedValue(matchPage([], 1, 1))
   vi.spyOn(sportsApi, 'addTournamentRoster').mockResolvedValue({
     id: 999,
     tournamentId: SEED_TOURNAMENT.INVERNO,
@@ -458,5 +483,43 @@ describe('TournamentDetailPage tab query param', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Partidas' }))
 
     expect(screen.getByTestId('loc')).toHaveTextContent('tab=matches')
+  })
+})
+
+describe('TournamentDetailPage matches collection', () => {
+  it('collects every match page and lists them in the response order on the Partidas tab', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    vi.spyOn(sportsApi, 'listTournamentMatchesPage')
+      .mockResolvedValueOnce(matchPage([buildMatch(101, 2), buildMatch(102, 2)], 1, 2))
+      .mockResolvedValueOnce(matchPage([buildMatch(103, 2)], 2, 2))
+    renderDetailAt('/tournaments/2?tab=matches')
+
+    await screen.findByRole('link', { name: 'Casa 101 vs Visitante 101' })
+    const links = await screen.findAllByRole('link', { name: /^Casa \d+ vs Visitante \d+$/ })
+
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/matches/101', '/matches/102', '/matches/103'])
+  })
+
+  it('shows a matches error state instead of an empty list when the collection fails', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockRejectedValue(new Error('matches unavailable'))
+    renderDetailAt('/tournaments/2?tab=matches')
+
+    expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
+  })
+})
+
+describe('TournamentDetailPage not found', () => {
+  it('shows a not-found state instead of the generic error when the tournament does not exist', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    vi.spyOn(sportsApi, 'getTournament').mockRejectedValue(
+      Object.assign(new axios.AxiosError('erro'), {
+        response: { data: { error: { code: 'RECORD_NOT_FOUND', message: 'Tournament not found' } } },
+      }),
+    )
+    renderDetail('999')
+
+    expect(await screen.findByText('Campeonato não encontrado.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver todos os campeonatos' })).toHaveAttribute('href', '/tournaments')
   })
 })

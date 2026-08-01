@@ -17,9 +17,9 @@ import { ChampionHighlight } from '../../features/sports/components/ChampionHigh
 import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
 import type { RosterEntryDraft, RosterRole } from '../../features/sports/components/TournamentRosterPanel'
 import * as sportsApi from '../../services/sportsApi'
-import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
+import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentMatchesQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
-import { apiErrorCode } from '../../services/apiError'
+import { apiErrorCode, apiErrorMessage } from '../../services/apiError'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
@@ -27,7 +27,6 @@ import {
   hasKnockout,
   matchProgress,
   teamMap,
-  tournamentTeamMap,
 } from '../../features/sports/sportsUtils'
 import { OverviewTab } from './tabs/OverviewTab'
 import { TeamsTab } from './tabs/TeamsTab'
@@ -68,7 +67,8 @@ export function TournamentDetailPage() {
   const isOrgAdmin = useIsOrgAdmin()
   const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
   const { data: tournament } = tournamentQuery
-  const { data: matches } = useMatchesQuery({ tournamentId: tournamentId ?? undefined })
+  const matchesQuery = useTournamentMatchesQuery(tournamentId ?? undefined)
+  const matches = matchesQuery.data ?? []
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournamentId ?? undefined)
   const { data: enrolledJoins } = tournamentTeamsQuery
   const teamsQuery = useTeamsQuery()
@@ -134,7 +134,6 @@ export function TournamentDetailPage() {
     ? '—'
     : categoriesQuery.data?.find((category) => category.id === tournament.categoryId)?.name
       ?? String(tournament.categoryId)
-  const enrolledTeamMap = tournamentTeamMap(enrolledJoins ?? [], teams)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
   const championName = championTournamentTeam?.displayNameSnapshot ?? null
 
@@ -268,24 +267,10 @@ export function TournamentDetailPage() {
     )
   }
 
-  // ── Error ──
-  if (isError) {
-    return (
-      <div className={s.page}>
-        <div className={s.detailHeader}>
-          <Link to="/tournaments" className={s.backLink}>
-            <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
-          </Link>
-        </div>
-        <div className={s.bodyFill}>
-          <ErrorState title="Não foi possível carregar o campeonato." onRetry={refetch} />
-        </div>
-      </div>
-    )
-  }
-
-  // ── Not found ──
-  if (!tournament) {
+  // ── Not found (the tournament itself, not a sibling resource) ──
+  const tournamentNotFound = apiErrorCode(tournamentQuery.error) === 'RECORD_NOT_FOUND'
+    && apiErrorMessage(tournamentQuery.error) === 'Tournament not found'
+  if (tournamentNotFound) {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -304,7 +289,23 @@ export function TournamentDetailPage() {
     )
   }
 
-  const allMatches = matches ?? []
+  // ── Error ──
+  if (isError || !tournament) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <Link to="/tournaments" className={s.backLink}>
+            <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
+          </Link>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="Não foi possível carregar o campeonato." onRetry={refetch} />
+        </div>
+      </div>
+    )
+  }
+
+  const allMatches = matches
 
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
@@ -415,7 +416,15 @@ export function TournamentDetailPage() {
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && (
-          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} tournamentTeams={enrolledTeamMap} onSeeBracket={() => handleTabChange('bracket')} />
+          <OverviewTab
+            tournament={tournament}
+            matches={allMatches}
+            matchesPending={matchesQuery.isPending}
+            matchesError={matchesQuery.isError}
+            onRetryMatches={() => matchesQuery.refetch()}
+            teams={teams}
+            onSeeBracket={() => handleTabChange('bracket')}
+          />
         )}
         {activeTab === 'teams' && (
           <div className={s.teamsTab}>
@@ -495,7 +504,14 @@ export function TournamentDetailPage() {
         )}
         {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
-          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} tournamentTeams={enrolledTeamMap} isOrgAdmin={isOrgAdmin} />
+          <MatchesTab
+            tournament={tournament}
+            matches={allMatches}
+            isPending={matchesQuery.isPending}
+            isError={matchesQuery.isError}
+            onRetry={() => matchesQuery.refetch()}
+            isOrgAdmin={isOrgAdmin}
+          />
         )}
         {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}

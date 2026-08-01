@@ -13,8 +13,8 @@ import type {
   TournamentFormat,
   TournamentStatus,
   LeaderStat,
-  Match,
   MatchStatus,
+  MatchSummary,
   PlayerMatchStats,
   PeriodScore,
   StandingRow,
@@ -41,22 +41,13 @@ export function formatDiff(row: StandingRow): string {
 
 // ── Match helpers ─────────────────────────────────────────────────────────────
 
-/** Most recent first. */
-export function sortMatchesByDateDesc(matches: Match[]): Match[] {
-  return [...matches].sort((a, b) => +new Date(b.date) - +new Date(a.date))
-}
-
-export function isFinished(match: Match): boolean {
-  return match.status === 'FINISHED'
-}
-
 export function hasKnockout(format: TournamentFormat): boolean {
   return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
 /** Phase label derived from the real links — never free text on the match. */
 export function matchPhaseName(
-  match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
+  match: Pick<MatchSummary, 'bracketRound' | 'tournamentGroupId'>,
 ): string | null {
   if (match.bracketRound) return match.bracketRound.label
   return match.tournamentGroupId ? 'Fase de grupos' : null

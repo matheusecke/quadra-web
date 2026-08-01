@@ -2,8 +2,8 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { BracketBoard } from '../../../features/sports/components/BracketBoard'
-import type { Tournament, Match, Team } from '../../../features/sports/types'
-import { hasKnockout, sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
+import type { Tournament, MatchSummary, Team } from '../../../features/sports/types'
+import { hasKnockout } from '../../../features/sports/sportsUtils'
 import { useStandingsQuery, useTournamentLeadersQuery } from '../../../features/sports/queries'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import { LeadersGrid } from '../parts/LeadersGrid'
@@ -13,9 +13,11 @@ import s from '../tournaments.module.css'
 
 interface OverviewTabProps {
   tournament: Tournament
-  matches: Match[]
+  matches: MatchSummary[]
+  matchesPending: boolean
+  matchesError: boolean
+  onRetryMatches: () => void
   teams: Map<number, Team>
-  tournamentTeams: Map<number, { name: string; shortName: string }>
   onSeeBracket: () => void
 }
 
@@ -23,8 +25,7 @@ interface OverviewTabProps {
  * Overview — the main reading surface. Fixed section order:
  * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
-export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSeeBracket }: OverviewTabProps) {
-  const recentMatches = sortMatchesByDateDesc(matches)
+export function OverviewTab({ tournament, matches, matchesPending, matchesError, onRetryMatches, teams, onSeeBracket }: OverviewTabProps) {
   const { data: leaders } = useTournamentLeadersQuery(tournament.id)
   const hasLeaders = (leaders?.ppg.length ?? 0) > 0
   const bracket = useBracketView(tournament.id)
@@ -114,14 +115,21 @@ export function OverviewTab({ tournament, matches, teams, tournamentTeams, onSee
         )}
       </section>
 
-      {/* 4. Lista de partidas, mais recente para mais antiga */}
+      {/* 4. Lista de partidas, na ordem entregue pela API */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
-          <span className={s.sectionHint}>Mais recentes primeiro</span>
         </div>
-        {recentMatches.length > 0 ? (
-          <MatchList matches={recentMatches} tournamentTeams={tournamentTeams} />
+        {matchesPending ? (
+          <div className={s.tabEmpty}>
+            <Skeleton width="100%" height={160} />
+          </div>
+        ) : matchesError ? (
+          <div className={s.tabEmpty}>
+            <ErrorState title="Não foi possível carregar as partidas." onRetry={onRetryMatches} />
+          </div>
+        ) : matches.length > 0 ? (
+          <MatchList matches={matches} />
         ) : (
           <div className={s.tabEmpty}>
             <EmptyState title="Nenhuma partida cadastrada." />
