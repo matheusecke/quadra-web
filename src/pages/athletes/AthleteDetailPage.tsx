@@ -7,6 +7,7 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
+import { toDisplay } from '../../components/ui/DateTimeField/dateDisplay'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useAthleteMatchesQuery,
@@ -26,7 +27,6 @@ import {
   ATHLETE_STATUS_LABELS,
   calcEff,
   calcEffFromTotals,
-  formatDateShort,
   formatMinutesSeconds,
   formatStatPct,
   formatTsPct,
@@ -184,7 +184,7 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
                   if (event.key === 'Enter') navigate(`/matches/${row.match.id}`)
                 }}
               >
-                <td className={s.td}>{formatDateShort(row.match.date)}</td>
+                <td className={s.td}>{toDisplay(row.match.scheduledAt, 'date')}</td>
                 <td className={s.td}>{row.tournament.name}</td>
                 <td className={s.tdStrong}>
                   <Link
