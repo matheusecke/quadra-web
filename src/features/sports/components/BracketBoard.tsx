@@ -1,10 +1,12 @@
 import { Trophy } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
+import { Badge } from '../../../components/ui'
 import { cn } from '../../../components/ui/cn'
 import { bracketLayout } from '../bracketLayout'
-import { roundDisplayName, slotDisplayName } from '../sportsUtils'
+import { formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 
-import type { BracketRound, BracketSlotView } from '../types'
+import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
 import s from './BracketBoard.module.css'
 
 export interface BracketBoardProps {
@@ -12,6 +14,20 @@ export interface BracketBoardProps {
   slots: BracketSlotView[]
   championTournamentTeamId?: number | null
   variant?: 'compact' | 'full'
+}
+
+interface LinkedMatchProps { match: BracketMatchView }
+
+function LinkedMatch({ match }: LinkedMatchProps) {
+  const hasScore = match.homeScore !== null && match.awayScore !== null
+  return (
+    <div className={s.linkedMatch} aria-label="Partida vinculada">
+      <Link to={`/matches/${match.id}`}>Partida #{match.id}</Link>
+      <Badge>{match.status}</Badge>
+      <span>{match.date ? formatDateTime(match.date) : 'Data não informada'}</span>
+      <strong>{hasScore ? `${match.homeScore} × ${match.awayScore}` : 'Placar indisponível'}</strong>
+    </div>
+  )
 }
 
 export function BracketBoard({ rounds, slots, championTournamentTeamId = null, variant = 'compact' }: BracketBoardProps) {
@@ -43,6 +59,7 @@ export function BracketBoard({ rounds, slots, championTournamentTeamId = null, v
   const renderCard = (slot: BracketSlotView, round: BracketRound) => (
     <article className={s.cardWrap} aria-label={slotDisplayName(slot, round)} key={slot.id}>
       <div className={s.card}>{renderSide(slot, 'home')}{renderSide(slot, 'away')}</div>
+      {slot.match && <LinkedMatch match={slot.match} />}
     </article>
   )
 

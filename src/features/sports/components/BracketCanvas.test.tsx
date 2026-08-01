@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { BracketCanvas } from './BracketCanvas'
-import type { BracketRound, BracketSlotView } from '../types'
+import { formatDateTime } from '../sportsUtils'
+import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
 import type { BracketTeamOption } from '../useBracketView'
 
 const teams: BracketTeamOption[] = [
@@ -14,7 +16,7 @@ const rounds: BracketRound[] = [{ id: 1, tournamentId: 1, number: 1, label: 'Qua
 
 const slot = (over: Partial<BracketSlotView> = {}): BracketSlotView => ({
   id: 11, roundId: 1, position: 1, label: 'Semifinal 1',
-  homeTeam: null, awayTeam: null, winnerTournamentTeamId: null, ...over,
+  homeTeam: null, awayTeam: null, match: null, winnerTournamentTeamId: null, ...over,
 })
 
 const handlers = () => ({
@@ -106,5 +108,55 @@ describe('BracketCanvas', () => {
     await userEvent.clear(field)
     fireEvent.blur(field)
     expect(props.onRenameRound).toHaveBeenCalledWith(1, null)
+  })
+
+  describe('linked match', () => {
+    const linkedMatch: BracketMatchView = { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 72, awayScore: 68 }
+
+    it('shows no linked match block when the slot has none', () => {
+      render(<BracketCanvas rounds={rounds} slots={[slot()]} teams={teams} {...handlers()} />)
+      expect(screen.queryByLabelText('Partida vinculada')).not.toBeInTheDocument()
+    })
+
+    it('links to the linked match, with its status, date and score', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: linkedMatch })]} teams={teams} {...handlers()} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByRole('link', { name: /Partida #501/ })).toHaveAttribute('href', '/matches/501')
+      expect(screen.getByText('FINISHED')).toBeInTheDocument()
+      expect(screen.getByText(formatDateTime(linkedMatch.date!))).toBeInTheDocument()
+      expect(screen.getByText('72 × 68')).toBeInTheDocument()
+    })
+
+    it('keeps the score in its own block, not attached to either side name', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas
+            rounds={rounds}
+            slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' }, match: linkedMatch })]}
+            teams={teams}
+            {...handlers()}
+          />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('72 × 68').closest('article')).toContainElement(screen.getByLabelText(/mandante/))
+    })
+
+    it('shows a placeholder when the linked match has no date or score yet', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas
+            rounds={rounds}
+            slots={[slot({ match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })]}
+            teams={teams}
+            {...handlers()}
+          />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Data não informada')).toBeInTheDocument()
+      expect(screen.getByText('Placar indisponível')).toBeInTheDocument()
+    })
   })
 })

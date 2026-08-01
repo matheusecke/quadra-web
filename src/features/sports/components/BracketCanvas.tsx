@@ -1,12 +1,27 @@
 import { useState } from 'react'
-import { roundDisplayName, slotDisplayName } from '../sportsUtils'
-import { Combobox, Input } from '../../../components/ui'
+import { Link } from 'react-router-dom'
+import { formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
+import { Badge, Combobox, Input } from '../../../components/ui'
 import { parsePositiveId } from '../parsePositiveId'
-import type { BracketRound, BracketSlotView } from '../types'
+import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
 import type { BracketTeamOption } from '../useBracketView'
 import s from './BracketCanvas.module.css'
 
 const CLEAR_OPTION = { value: '', label: 'Remover equipe' }
+
+interface LinkedMatchProps { match: BracketMatchView }
+
+function LinkedMatch({ match }: LinkedMatchProps) {
+  const hasScore = match.homeScore !== null && match.awayScore !== null
+  return (
+    <div className={s.linkedMatch} aria-label="Partida vinculada">
+      <Link to={`/matches/${match.id}`}>Partida #{match.id}</Link>
+      <Badge>{match.status}</Badge>
+      <span>{match.date ? formatDateTime(match.date) : 'Data não informada'}</span>
+      <strong>{hasScore ? `${match.homeScore} × ${match.awayScore}` : 'Placar indisponível'}</strong>
+    </div>
+  )
+}
 
 export interface BracketCanvasProps {
   rounds: BracketRound[]
@@ -76,6 +91,7 @@ export function BracketCanvas({
               </div>
               {renderSide(slot, 'home')}
               {renderSide(slot, 'away')}
+              {slot.match && <LinkedMatch match={slot.match} />}
             </article>
           })}
           <button type="button" className={s.ghostSlot} onClick={() => { void onCreateSlot(round.id) }}>+ Adicionar partida</button>
