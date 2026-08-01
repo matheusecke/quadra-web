@@ -14,7 +14,7 @@ export interface BracketView {
   teams: BracketTeamOption[]
   isPending: boolean
   isError: boolean
-  refetch: () => void
+  refetch: () => Promise<void>
 }
 
 /**
@@ -39,6 +39,6 @@ export function useBracketView(tournamentId: number): BracketView {
     })),
     isPending: bracketQuery.isPending,
     isError: bracketQuery.isError,
-    refetch: () => { void bracketQuery.refetch() },
+    refetch: async () => { await bracketQuery.refetch() },
   }
 }

@@ -289,6 +289,14 @@ export interface BracketSlotTeam {
   shortName: string
 }
 
+export interface BracketMatchView {
+  id: number
+  status: MatchStatus
+  date: string | null
+  homeScore: number | null
+  awayScore: number | null
+}
+
 export interface BracketSlotView {
   id: number
   /** Copied from the parent round while flattening. */
@@ -297,6 +305,7 @@ export interface BracketSlotView {
   label: string | null
   homeTeam: BracketSlotTeam | null
   awayTeam: BracketSlotTeam | null
+  match: BracketMatchView | null
   winnerTournamentTeamId: number | null
 }
 

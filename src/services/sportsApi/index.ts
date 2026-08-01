@@ -48,12 +48,16 @@ export {
   createBracketRound,
   createBracketSlot,
   getBracket,
+  linkBracketSlotMatch,
   removeBracketRound,
   removeBracketSlot,
+  setBracketSlotWinner,
+  unlinkBracketSlotMatch,
   updateBracketRound,
   updateBracketSlot,
 } from './tournament-brackets'
 export type { BracketRead } from './tournament-brackets'
+export type { LinkBracketSlotMatchInput, SetBracketSlotWinnerInput } from './types'
 
 // ── Roster ───────────────────────────────────────────────────────────────────────
 export {

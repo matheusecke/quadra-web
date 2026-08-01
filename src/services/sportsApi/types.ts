@@ -99,6 +99,14 @@ export interface UpdateGroupInput {
   name: string
 }
 
+export interface LinkBracketSlotMatchInput {
+  matchId: number
+}
+
+export interface SetBracketSlotWinnerInput {
+  winnerTournamentTeamId: number | null
+}
+
 export interface AssignGroupTeamInput {
   tournamentGroupId: number
   tournamentTeamId: number
