@@ -23,7 +23,7 @@ import type {
 } from '../../features/sports/types'
 import { createSportsStore } from './store'
 import type { MockTournamentGroup, MockTournamentGroupTeam } from './store'
-import type { ScheduleMatchInput, SubmitMatchResultInput } from './types'
+import type { SubmitMatchResultInput } from './types'
 
 const seedMatchDetails = seedMatches
   .map((match) => getMatchDetailById(match.id))
@@ -189,9 +189,21 @@ export const getAthleteMatches = (id: number) => Promise.resolve(getMockAthleteM
 export const getAthleteTournamentStats = (id: number) => Promise.resolve(getMockAthleteTournamentStats(id))
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
-export const getMatches = (filter?: { tournamentId?: number }) => Promise.resolve(store.listMatches(filter))
-export const getMatchDetail = (id: number) => Promise.resolve(store.getMatchDetail(id))
-export const scheduleMatch = (input: ScheduleMatchInput) => Promise.resolve(store.scheduleMatch(input))
+export {
+  cancelMatch,
+  createMatch,
+  getMatch,
+  listMatchesPage,
+  listTournamentMatchesPage,
+  postponeMatch,
+  updateMatch,
+} from './matches'
+export type {
+  CreateMatchInput,
+  ListMatchesParams,
+  ListTournamentMatchesParams,
+  UpdateMatchInput,
+} from './matches'
 export const submitMatchResult = (input: SubmitMatchResultInput) => Promise.resolve(store.submitMatchResult(input))
 
 // ── Groups ───────────────────────────────────────────────────────────────────
