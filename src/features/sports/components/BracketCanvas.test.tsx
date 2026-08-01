@@ -20,6 +20,9 @@ const slot = (over: Partial<BracketSlotView> = {}): BracketSlotView => ({
 })
 
 const handlers = () => ({
+  tournamentId: 1,
+  canEditStructure: true,
+  busySlotId: null,
   onFillSide: vi.fn().mockResolvedValue(undefined),
   onRenameSlot: vi.fn().mockResolvedValue(undefined),
   onCreateSlot: vi.fn().mockResolvedValue(undefined),
@@ -27,6 +30,9 @@ const handlers = () => ({
   onCreateRound: vi.fn().mockResolvedValue(undefined),
   onRenameRound: vi.fn().mockResolvedValue(undefined),
   onRemoveRound: vi.fn().mockResolvedValue(undefined),
+  onSearchMatches: vi.fn().mockResolvedValue([]),
+  onLinkMatch: vi.fn().mockResolvedValue(undefined),
+  onUnlinkMatch: vi.fn().mockResolvedValue(undefined),
 })
 
 describe('BracketCanvas', () => {
@@ -157,6 +163,108 @@ describe('BracketCanvas', () => {
       )
       expect(screen.getByText('Data não informada')).toBeInTheDocument()
       expect(screen.getByText('Placar indisponível')).toBeInTheDocument()
+    })
+  })
+
+  describe('link and unlink a match', () => {
+    const renderEmptySlot = (over: Partial<ReturnType<typeof handlers>> = {}) => {
+      const props = { ...handlers(), ...over }
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot()]} teams={teams} {...props} />
+        </MemoryRouter>,
+      )
+      return props
+    }
+
+    it('searches through the callback as the admin types, without writing', async () => {
+      const props = renderEmptySlot({ onSearchMatches: vi.fn().mockResolvedValue([{ id: 501, label: 'Alfa × Beta', secondary: '01/08/2026' }]) })
+      await userEvent.type(screen.getByPlaceholderText('Buscar partida…'), 'Alfa')
+      await screen.findByRole('option', { name: /Alfa × Beta/ })
+      expect(props.onSearchMatches).toHaveBeenCalledWith(slot(), 'Alfa')
+      expect(props.onLinkMatch).not.toHaveBeenCalled()
+    })
+
+    it('links the selected match only when the button is clicked', async () => {
+      const props = renderEmptySlot({ onSearchMatches: vi.fn().mockResolvedValue([{ id: 501, label: 'Alfa × Beta' }]) })
+      await userEvent.type(screen.getByPlaceholderText('Buscar partida…'), 'Alfa')
+      await userEvent.click(await screen.findByRole('option', { name: 'Alfa × Beta' }))
+      expect(props.onLinkMatch).not.toHaveBeenCalled()
+      await userEvent.click(screen.getByRole('button', { name: 'Vincular partida' }))
+      expect(props.onLinkMatch).toHaveBeenCalledWith(11, 501)
+    })
+
+    it('disables linking until a match is selected', () => {
+      renderEmptySlot()
+      expect(screen.getByRole('button', { name: 'Vincular partida' })).toBeDisabled()
+    })
+
+    it('hides search and link controls for a reader without structure edit rights', () => {
+      renderEmptySlot({ canEditStructure: false })
+      expect(screen.queryByPlaceholderText('Buscar partida…')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Vincular partida' })).not.toBeInTheDocument()
+    })
+
+    it('explains that a finished match cannot be unlinked, with no unlink control', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: { id: 501, status: 'FINISHED', date: null, homeScore: null, awayScore: null } })]} teams={teams} {...handlers()} />
+        </MemoryRouter>,
+      )
+      expect(screen.getByText('Partida finalizada não pode ser desvinculada.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /desvincular/i })).not.toBeInTheDocument()
+    })
+
+    it('warns that unlinking a scheduled match will cancel it before confirming', async () => {
+      const props = handlers()
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })]} teams={teams} {...props} />
+        </MemoryRouter>,
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Desvincular partida' }))
+      expect(screen.getByRole('alertdialog')).toHaveTextContent('Desvincular cancelará a partida e ela não poderá ser reativada nesta fase.')
+      expect(props.onUnlinkMatch).not.toHaveBeenCalled()
+    })
+
+    it('warns with a lighter copy when unlinking an already cancelled match', async () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: { id: 501, status: 'CANCELLED', date: null, homeScore: null, awayScore: null } })]} teams={teams} {...handlers()} />
+        </MemoryRouter>,
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Desvincular partida' }))
+      expect(screen.getByRole('alertdialog')).toHaveTextContent('Desvincular removerá a partida desta vaga.')
+    })
+
+    it('unlinks only after the confirmation is accepted, reachable by keyboard', async () => {
+      const props = handlers()
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })]} teams={teams} {...props} />
+        </MemoryRouter>,
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Desvincular partida' }))
+      const dialog = screen.getByRole('alertdialog')
+      const confirm = screen.getByRole('button', { name: 'Confirmar desvínculo' })
+      expect(dialog).toContainElement(screen.getByRole('button', { name: 'Voltar' }))
+      expect(dialog).toContainElement(confirm)
+      confirm.focus()
+      await userEvent.keyboard('{Enter}')
+      expect(props.onUnlinkMatch).toHaveBeenCalledWith(slot({ match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } }))
+    })
+
+    it('cancels the unlink confirmation without writing', async () => {
+      const props = handlers()
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })]} teams={teams} {...props} />
+        </MemoryRouter>,
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Desvincular partida' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Voltar' }))
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+      expect(props.onUnlinkMatch).not.toHaveBeenCalled()
     })
   })
 })

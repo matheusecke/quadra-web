@@ -9,6 +9,7 @@ import {
   tournamentKeys,
   useCancelMatch,
   useCreateMatch,
+  useLinkBracketSlotMatch,
   usePostponeMatch,
   useMatchesInfiniteQuery,
   useSeasonsInfiniteQuery,
@@ -16,6 +17,7 @@ import {
   useTeamsQuery,
   useAthletesQuery,
   useTournamentMatchesQuery,
+  useUnlinkBracketSlotMatch,
   useUpdateMatch,
 } from './queries'
 import * as sportsApi from '../../services/sportsApi'
@@ -78,6 +80,11 @@ const matchDetail = {
   periods: [],
   playerStats: [],
   mvp: null,
+}
+
+const bracketSlotRow = {
+  id: 71, tournamentId: 12, roundId: 10, position: 2, label: null,
+  homeTournamentTeamId: 23, awayTournamentTeamId: null, matchId: 501, winnerTournamentTeamId: null,
 }
 
 const firstPage = {
@@ -235,5 +242,62 @@ describe('match queries', () => {
     result.current.mutate(matchDetail.id)
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(client.getQueryData(matchKeys.detail(matchDetail.id))).toEqual(cancelled)
+  })
+})
+
+describe('bracket match link', () => {
+  it('links a match by sending only the match id', async () => {
+    vi.spyOn(sportsApi, 'linkBracketSlotMatch').mockResolvedValue(bracketSlotRow)
+    const { result } = renderHook(() => useLinkBracketSlotMatch(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.linkBracketSlotMatch).toHaveBeenCalledWith(71, { matchId: 501 })
+  })
+
+  it('retries a concurrent link exactly once', async () => {
+    vi.spyOn(sportsApi, 'linkBracketSlotMatch').mockRejectedValueOnce(apiFailure('CONCURRENT_MODIFICATION')).mockResolvedValueOnce(bracketSlotRow)
+    const { result } = renderHook(() => useLinkBracketSlotMatch(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.linkBracketSlotMatch).toHaveBeenCalledTimes(2)
+  })
+
+  it('invalidates the bracket, match lists, match detail and tournament after linking', async () => {
+    vi.spyOn(sportsApi, 'linkBracketSlotMatch').mockResolvedValue(bracketSlotRow)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useLinkBracketSlotMatch(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      bracketKeys.list(12),
+      matchKeys.lists(),
+      matchKeys.detail(501),
+      tournamentKeys.detail(12),
+    ])
+  })
+
+  it('unlinks a match using only the slot id', async () => {
+    vi.spyOn(sportsApi, 'unlinkBracketSlotMatch').mockResolvedValue(undefined)
+    const { result } = renderHook(() => useUnlinkBracketSlotMatch(), { wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(sportsApi.unlinkBracketSlotMatch).toHaveBeenCalledWith(71)
+  })
+
+  it('invalidates the bracket, match lists, match detail and tournament after a second concurrent unlink failure', async () => {
+    vi.spyOn(sportsApi, 'unlinkBracketSlotMatch').mockRejectedValue(apiFailure('CONCURRENT_MODIFICATION'))
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useUnlinkBracketSlotMatch(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(sportsApi.unlinkBracketSlotMatch).toHaveBeenCalledTimes(2)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      bracketKeys.list(12),
+      matchKeys.lists(),
+      matchKeys.detail(501),
+      tournamentKeys.detail(12),
+    ])
   })
 })

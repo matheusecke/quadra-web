@@ -395,6 +395,40 @@ export function useRemoveBracketSlot() {
   })
 }
 
+function invalidateBracketMatchLink(
+  queryClient: ReturnType<typeof useQueryClient>,
+  variables: { tournamentId: number; matchId: number },
+) {
+  queryClient.invalidateQueries({ queryKey: bracketKeys.list(variables.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+  queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.matchId) })
+  queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(variables.tournamentId) })
+}
+
+export function useLinkBracketSlotMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId, matchId }: { tournamentId: number; slotId: number; matchId: number }) =>
+      sportsApi.linkBracketSlotMatch(slotId, { matchId }),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (_error, variables) => invalidateBracketMatchLink(queryClient, variables),
+  })
+}
+
+export function useUnlinkBracketSlotMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId }: { tournamentId: number; slotId: number; matchId: number }) =>
+      sportsApi.unlinkBracketSlotMatch(slotId),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (_error, variables) => invalidateBracketMatchLink(queryClient, variables),
+  })
+}
+
 export function useAddRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
