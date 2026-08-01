@@ -13,6 +13,7 @@ import type {
   TournamentFormat,
   TournamentStatus,
   LeaderStat,
+  MatchPeriod,
   MatchStatus,
   MatchSummary,
   PlayerMatchStats,
@@ -205,11 +206,9 @@ export function formatTime(iso: string): string {
 }
 
 /** Derives the column label for a period: 1Q-4Q for regular, OT / 2OT / 3OT for overtime. */
-export function getPeriodLabel(period: PeriodScore): string {
-  if (period.label) return period.label
-  if (period.type === 'REGULAR') return `${period.periodNumber}Q`
-  const overtimeNumber = period.overtimeNumber ?? 1
-  return overtimeNumber === 1 ? 'OT' : `${overtimeNumber}OT`
+export function getPeriodLabel(period: MatchPeriod): string {
+  if (period.periodType === 'REGULAR') return `${period.periodNumber}Q`
+  return period.periodNumber === 1 ? 'OT' : `${period.periodNumber}OT`
 }
 
 /** Safely totals one side from the dynamic period score list, ignoring null periods. */

@@ -271,6 +271,36 @@
 
 .champLink:hover { color: var(--accent); }
 
+.detailActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--accent-deep);
+  margin: 0 0 12px;
+}
+
+.confirm {
+  padding: var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.confirm p { margin: 0; }
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
 /* ── Context line ── */
 .detailContext {
   display: flex;

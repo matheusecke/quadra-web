@@ -4,7 +4,7 @@
  * (Team N = puc-time-N; Athlete 101+index; Tournament 1=Geral, 2=Inverno, 3=fixtures).
  * Team/athlete display names still trace tcc-api/prisma/seeds/puc-dev-seed.sql.
  */
-import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, MatchDetail, MatchMvp, MatchStatus, PeriodScore, PlayerMatchStats, StatLeaders, Team, TeamMatchStats, Tournament } from './types'
+import type { Athlete, AthleteMatchStatsRow, AthleteStatTotals, AthleteTournamentStatsRow, MatchStatus, PeriodScore, StatLeaders, Team, Tournament } from './types'
 import { SHOOTING_FIELDS, type StatField } from './statistics'
 import { aggregateAthleteStats } from './sportsUtils'
 import { SEED_TOURNAMENT, seedRosterId, tournamentTeamId } from './seedIds'
@@ -179,13 +179,42 @@ interface MockMatchFixture {
   scoreSource: 'PERIODS' | 'AWARDED' | null
 }
 
+/** Per-player box-score line used only by the historical match-detail fixtures below
+ *  (MATCH_EXTRA / buildBoxScore), which still back getAthleteMatches until a real athlete
+ *  API lands. Distinct on purpose from the canonical `PlayerMatchStats` in `./types`. */
+interface MockPlayerStatsFixture {
+  tournamentRosterId: number
+  athleteId: number
+  athleteName: string
+  number: number
+  minutesSeconds: number | null
+  pts: number | null
+  reb: number | null
+  ast: number | null
+  stl: number | null
+  blk: number | null
+  tov: number | null
+  pf: number | null
+  fgm: number | null
+  fga: number | null
+  threeFgm: number | null
+  threeFga: number | null
+  ftm: number | null
+  fta: number | null
+}
+
+interface MockTeamStatsFixture {
+  tournamentTeamId: number
+  players: MockPlayerStatsFixture[]
+}
+
 let matchSeq=9000
 function mkMatch(tournamentId:number,date:string,homeTeamId:number,awayTeamId:number,home:number|null,away:number|null,status:MockMatchFixture['status'],venue:string,id?:number):MockMatchFixture{const isFinished=status==='FINISHED';return{id:id??++matchSeq,tournamentId,date,homeTournamentTeamId:tournamentTeamId(tournamentId,homeTeamId),awayTournamentTeamId:tournamentTeamId(tournamentId,awayTeamId),homeScore:home,awayScore:away,status,venue,tournamentGroupId:null,bracketRound:null,homeLossType:isFinished&&home!==null&&away!==null&&home<away?'NORMAL':null,awayLossType:isFinished&&home!==null&&away!==null&&away<home?'NORMAL':null,scoreSource:isFinished?'PERIODS':null}}
-function mkPlayer(tournamentId:number,a:Athlete,minutes:number,pts:number,reb:number,ast:number,stl:number,blk:number,tov:number,pf:number,fgm:number,fga:number,threeFgm:number,threeFga:number,ftm:number,fta:number):PlayerMatchStats{return{tournamentRosterId:seedRosterId(tournamentId,a.id),athleteId:a.id,athleteName:a.name,number:a.number,minutesSeconds:minutes*60,pts,reb,ast,stl,blk,tov,pf,fgm,fga,threeFgm,threeFga,ftm,fta}}
+function mkPlayer(tournamentId:number,a:Athlete,minutes:number,pts:number,reb:number,ast:number,stl:number,blk:number,tov:number,pf:number,fgm:number,fga:number,threeFgm:number,threeFga:number,ftm:number,fta:number):MockPlayerStatsFixture{return{tournamentRosterId:seedRosterId(tournamentId,a.id),athleteId:a.id,athleteName:a.name,number:a.number,minutesSeconds:minutes*60,pts,reb,ast,stl,blk,tov,pf,fgm,fga,threeFgm,threeFga,ftm,fta}}
 function mkPeriods(...pairs:Array<[number|null,number|null]>):PeriodScore[]{return pairs.map(([home,away],idx)=>{const n=idx+1;const ot=n>4;return{periodNumber:n,type:ot?'OVERTIME':'REGULAR',overtimeNumber:ot?n-4:null,homePoints:home,awayPoints:away}})}
-function mkTeam(tournamentTeamId:number,players:PlayerMatchStats[]):TeamMatchStats{return{tournamentTeamId,players}}
-function disableColumns(team:TeamMatchStats,fields:StatField[]):TeamMatchStats{return{...team,players:team.players.map((player)=>{const disabled=Object.fromEntries(fields.map((field)=>[field,null])) as Pick<PlayerMatchStats,StatField>;return{...player,...disabled}})}}
-function buildBoxScore(tournamentId:number,homeScore:number,awayScore:number,homeTeamId:number,awayTeamId:number){function distribute(score:number,roster:Athlete[],teamIdForBoxScore:number){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:PlayerMatchStats[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const threeFgm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-threeFgm);stats.push(mkPlayer(tournamentId,players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,threeFgm,threeFgm+2,ftm,ftm+1))}return mkTeam(teamIdForBoxScore,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM.get(homeTeamId)??[],tournamentTeamId(tournamentId,homeTeamId)),awayStats:distribute(awayScore,ATHLETES_BY_TEAM.get(awayTeamId)??[],tournamentTeamId(tournamentId,awayTeamId))}}
+function mkTeam(tournamentTeamId:number,players:MockPlayerStatsFixture[]):MockTeamStatsFixture{return{tournamentTeamId,players}}
+function disableColumns(team:MockTeamStatsFixture,fields:StatField[]):MockTeamStatsFixture{return{...team,players:team.players.map((player)=>{const disabled=Object.fromEntries(fields.map((field)=>[field,null])) as Pick<MockPlayerStatsFixture,StatField>;return{...player,...disabled}})}}
+function buildBoxScore(tournamentId:number,homeScore:number,awayScore:number,homeTeamId:number,awayTeamId:number){function distribute(score:number,roster:Athlete[],teamIdForBoxScore:number){const players=roster.slice(0,8);const weights=players.map((_,i)=>(players.length-i)*3+2);const totalW=weights.reduce((s,x)=>s+x,0);let remaining=score;const stats:MockPlayerStatsFixture[]=[];for(let i=0;i<players.length;i++){const isLast=i===players.length-1;let pts=isLast?remaining:Math.max(0,Math.round((score*weights[i])/totalW));if(!isLast)remaining-=pts;if(pts<0)pts=0;const fgm=Math.floor(pts*0.45);const threeFgm=Math.min(Math.floor(pts*0.15),Math.max(0,pts-fgm));const ftm=Math.max(0,pts-2*fgm-threeFgm);stats.push(mkPlayer(tournamentId,players[i],18+(i%5)*3,pts,2+(i%4),1+(i%3),i%2,i%3===0?1:0,1+(i%2),2+(i%3),fgm,fgm+3,threeFgm,threeFgm+2,ftm,ftm+1))}return mkTeam(teamIdForBoxScore,stats)}return{homeStats:distribute(homeScore,ATHLETES_BY_TEAM.get(homeTeamId)??[],tournamentTeamId(tournamentId,homeTeamId)),awayStats:distribute(awayScore,ATHLETES_BY_TEAM.get(awayTeamId)??[],tournamentTeamId(tournamentId,awayTeamId))}}
 const REGULATION='Fase classificatória em grupos. As melhores equipes avançam para playoffs em mata-mata. Desempate: vitórias, saldo de pontos, confronto direto.'
 const GERAL = SEED_TOURNAMENT.GERAL; const INVERNO = SEED_TOURNAMENT.INVERNO
 
@@ -327,7 +356,7 @@ export const seedMatches: MockMatchFixture[] = [...geralMatches, ...invernoMatch
   }))
 const MOCK_TOURNAMENTS = seedTournaments
 const MOCK_MATCHES = seedMatches
-const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeStats: TeamMatchStats; awayStats: TeamMatchStats; mvp?: MatchMvp }>([
+const MATCH_EXTRA = new Map<number, { periodScores: PeriodScore[] | null; homeStats: MockTeamStatsFixture; awayStats: MockTeamStatsFixture; mvp?: { tournamentRosterId: number; athleteId: number } }>([
   [217, (() => { const b = buildBoxScore(SEED_TOURNAMENT.FIXTURES, 68, 71, 3, 4); return { periodScores: mkPeriods([17,18], [16,19], [18,17], [17,17]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
   [218, { periodScores: [], homeStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 3), players: [] }, awayStats: { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.FIXTURES, 4), players: [] } }],
   [101, (() => { const b = buildBoxScore(GERAL, 80, 89, 1, 2); return { periodScores: mkPeriods([20,22], [23,23], [19,24], [18,20]), homeStats: b.homeStats, awayStats: b.awayStats }; })()],
@@ -387,7 +416,6 @@ export function getTournaments(): Tournament[] { return MOCK_TOURNAMENTS }
 export function getTournamentById(id: number): Tournament | undefined { return MOCK_TOURNAMENTS.find((c) => c.id === id) }
 export function getMatchesByTournament(tournamentId: number): MockMatchFixture[] { return MOCK_MATCHES.filter((m) => m.tournamentId === tournamentId) }
 export function getAllMatches(): MockMatchFixture[] { return MOCK_MATCHES }
-export function getMatchDetailById(id: number): MatchDetail | undefined { const match = MOCK_MATCHES.find((m) => m.id === id); if (!match) return undefined; const extra = MATCH_EXTRA.get(id); return { ...match, periodScores: extra?.periodScores ?? null, homeStats: extra?.homeStats ?? { tournamentTeamId: match.homeTournamentTeamId, players: [] }, awayStats: extra?.awayStats ?? { tournamentTeamId: match.awayTournamentTeamId, players: [] }, mvp: extra?.mvp ?? null } }
 export const MOCK_ATHLETES: Athlete[] = PUC_ATHLETES
 export function getAthletes(): Athlete[] { return MOCK_ATHLETES }
 export function getAthleteById(athleteId: number): Athlete | undefined { return MOCK_ATHLETES.find((a) => a.id === athleteId) }

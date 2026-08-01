@@ -185,7 +185,7 @@ describe('match queries', () => {
       awayTournamentTeamId: matchDetail.awayTeam.tournamentTeamId,
     })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(invalidateSpy.mock.calls.map(([arg]) => arg.queryKey)).toEqual([
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
@@ -208,7 +208,7 @@ describe('match queries', () => {
     const { result } = renderHook(() => useUpdateMatch(), { wrapper: Wrapper })
     result.current.mutate({ id: matchDetail.id, input: { venueName: 'Quadra 2' } })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(invalidateSpy.mock.calls.map(([arg]) => arg.queryKey)).toEqual([
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
       matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),

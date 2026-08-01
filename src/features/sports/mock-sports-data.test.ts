@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   getAllMatches,
-  getMatchDetailById,
   getMatchesByTournament,
   getTournamentById,
   getTournaments,
@@ -9,9 +8,6 @@ import {
   seedGroupMembership,
   seedMatches,
 } from './mock-sports-data'
-import { calculatePeriodTotal, getPeriodLabel } from './sportsUtils'
-import * as sportsApi from '../../services/sportsApi'
-import { SHOOTING_FIELDS } from './statistics'
 import { SEED_TOURNAMENT, tournamentTeamId } from './seedIds'
 
 describe('seeded group membership', () => {
@@ -30,29 +26,13 @@ describe('seeded group membership', () => {
 
   // Inverno's semifinal pairs two teams of the same group, so "same group on both sides"
   // is not enough on its own to call a match a group match.
-  it('leaves a knockout game between two teams of the same group ungrouped', async () => {
-    const semifinal = (await sportsApi.getMatches({ tournamentId: 2 })).find((m) => m.id === 213)
-    expect(semifinal?.bracketRound?.label).toBe('Semifinais')
+  it('leaves a knockout game between two teams of the same group ungrouped', () => {
+    const semifinal = getMatchesByTournament(2).find((m) => m.id === 213)
     expect(semifinal?.tournamentGroupId).toBeNull()
   })
 })
 
 describe('PUC sports mock data', () => {
-  it('stores seeded playing time in seconds', () => {
-    const final = getMatchDetailById(131)
-    expect(final?.homeStats.players[0].minutesSeconds).toBe(38 * 60)
-  })
-
-  it('exposes matches with block and shooting columns not tracked', () => {
-    const blocksDisabled = getMatchDetailById(129)!
-    const shootingDisabled = getMatchDetailById(130)!
-
-    expect(blocksDisabled.homeStats.players.every((player) => player.blk === null)).toBe(true)
-    expect(shootingDisabled.homeStats.players.every((player) =>
-      SHOOTING_FIELDS.every((field) => player[field] === null),
-    )).toBe(true)
-  })
-
   it('exposes exactly 2 tournaments', () => {
     expect(getTournaments()).toHaveLength(2)
   })
@@ -73,11 +53,6 @@ describe('PUC sports mock data', () => {
     expect(match.awayTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 2))
   })
 
-  it('seeds a box score side keyed by tournamentTeamId', () => {
-    const detail = getMatchDetailById(101)!
-    expect(detail.homeStats.tournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 1))
-  })
-
   it('reports tournament enrolledTeamCount instead of a teamIds array', () => {
     const geral = getTournamentById(SEED_TOURNAMENT.GERAL)!
     expect(geral.enrolledTeamCount).toBe(16)
@@ -87,15 +62,6 @@ describe('PUC sports mock data', () => {
   it('keeps the declared champion on the completed demo tournament', () => {
     const tournament = getTournamentById(1)
     expect(tournament?.championTournamentTeamId).toBe(1001)
-  })
-
-  it('Geral final is OT with consistent box score', () => {
-    const final = getMatchesByTournament(1).find((m) => m.id === 131)
-    expect(final?.homeTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 1))
-    expect(final?.awayTournamentTeamId).toBe(tournamentTeamId(SEED_TOURNAMENT.GERAL, 2))
-    const detail = getMatchDetailById(final!.id)
-    expect(detail?.periodScores?.map(getPeriodLabel)).toContain('OT')
-    expect(calculatePeriodTotal(detail!.periodScores, 'home')).toBe(detail?.homeScore)
   })
 
   it('seeds Inverno with scheduled matches and no finished-result fields', () => {

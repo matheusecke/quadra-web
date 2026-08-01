@@ -13,7 +13,7 @@ import {
 import type { PlayerMatchStats, PeriodScore } from './types'
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 1, athleteId: 1, athleteName: 'A', number: 1, minutesSeconds: 600, pts: 10, reb: 5, ast: 2,
+  tournamentRosterId: 1, tournamentTeamId: 1, displayName: 'A', minutesSeconds: 600, pts: 10, reb: 5, ast: 2,
   stl: 1, blk: 0, tov: 1, pf: 2, fgm: 4, fga: 9, threeFgm: 1, threeFga: 3, ftm: 1, fta: 2, ...over,
 })
 
