@@ -184,6 +184,16 @@ describe('MatchDetailPage — admin actions', () => {
     expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
   })
 
+  it('shows Phase 9 unavailability with a disabled Lançar resultado control', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+
+    renderDetail()
+
+    expect(await screen.findByRole('button', { name: 'Lançar resultado' })).toBeDisabled()
+    expect(screen.getByText('Lançamento de resultado estará disponível após a integração da Fase 9.')).toBeInTheDocument()
+  })
+
   it('asks for inline confirmation before postponing', async () => {
     vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
     vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))

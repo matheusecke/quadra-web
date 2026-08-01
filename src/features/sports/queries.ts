@@ -25,7 +25,6 @@ import type {
   EnrollTeamInput,
   ReopenTournamentInput,
   SetTiebreakOrderInput,
-  SubmitMatchResultInput,
   UpdateGroupInput,
   UpdateTournamentInput,
   UpdateBracketRoundInput,
@@ -496,17 +495,6 @@ export function useCancelMatch() {
     onError: (_error, id) => {
       queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    },
-  })
-}
-
-export function useSubmitMatchResult() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (input: SubmitMatchResultInput) => sportsApi.submitMatchResult(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.all })
-      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
     },
   })
 }

@@ -202,6 +202,7 @@ export function MatchDetailPage() {
               <Link to={`/matches/${match.id}/edit`}>
                 <Button type="button" variant="secondary" size="sm">Editar partida</Button>
               </Link>
+              <Button type="button" variant="secondary" size="sm" disabled>Lançar resultado</Button>
               {canPostpone && (
                 <Button
                   type="button"
@@ -225,6 +226,11 @@ export function MatchDetailPage() {
                 </Button>
               )}
             </div>
+          )}
+          {isOrgAdmin && (
+            <p className={s.phaseNineNotice}>
+              Lançamento de resultado estará disponível após a integração da Fase 9.
+            </p>
           )}
         </div>
 
