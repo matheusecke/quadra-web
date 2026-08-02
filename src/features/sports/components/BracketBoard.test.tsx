@@ -143,7 +143,7 @@ describe('BracketBoard', () => {
     it('links to the linked match, with its status, date and score', () => {
       renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, match: linkedMatch })] })
       expect(screen.getByRole('link', { name: /Partida #501/ })).toHaveAttribute('href', '/matches/501')
-      expect(screen.getByText('FINISHED')).toBeInTheDocument()
+      expect(screen.getByText('Finalizada')).toBeInTheDocument()
       expect(screen.getByText(formatDateTime(linkedMatch.date!))).toBeInTheDocument()
       expect(screen.getByText('72 × 68')).toBeInTheDocument()
     })

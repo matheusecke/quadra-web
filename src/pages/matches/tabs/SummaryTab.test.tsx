@@ -34,6 +34,12 @@ describe('SummaryTab', () => {
     expect(screen.queryByRole('link', { name: 'Rafael Moura' })).not.toBeInTheDocument()
   })
 
+  it('announces an empty summary when the match has neither periods nor an MVP', () => {
+    render(<SummaryTab match={{ ...baseMatch, periods: [], mvp: null }} />)
+
+    expect(screen.getByText('Nenhum resumo disponível.')).toBeInTheDocument()
+  })
+
   it('shows no MVP section when the match has none', () => {
     render(<SummaryTab match={{ ...baseMatch, mvp: null }} />)
 

@@ -75,6 +75,8 @@ export function MatchesTab({ tournament, matches, isPending, isError, onRetry, i
     return true
   }), [matches, team, status, phase, q])
 
+  const hasFilters = Boolean(q || team != null || status || phase)
+
   return (
     <>
       {isOrgAdmin && (
@@ -133,7 +135,10 @@ export function MatchesTab({ tournament, matches, isPending, isError, onRetry, i
 
           {filtered.length === 0 ? (
             <div className={s.tabEmpty}>
-              <EmptyState title="Nenhuma partida encontrada." description="Ajuste os filtros para ver outras partidas." />
+              <EmptyState
+                title={hasFilters ? 'Nenhuma partida encontrada com os filtros atuais.' : 'Nenhuma partida agendada.'}
+                description={hasFilters ? 'Ajuste os filtros para ver outras partidas.' : undefined}
+              />
             </div>
           ) : (
             <div className={s.tableWrap} style={{ maxHeight: 'none' }}>

@@ -7,7 +7,7 @@ import {
   useCreateBracketRound, useCreateBracketSlot, useLinkBracketSlotMatch, useRemoveBracketRound,
   useRemoveBracketSlot, useSetBracketSlotWinner, useUnlinkBracketSlotMatch, useUpdateBracketRound, useUpdateBracketSlot,
 } from '../../../features/sports/queries'
-import { formatDateTime, hasKnockout } from '../../../features/sports/sportsUtils'
+import { MATCH_STATUS_LABELS, formatDateTime, hasKnockout } from '../../../features/sports/sportsUtils'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import { apiErrorCode, apiErrorMessage } from '../../../services/apiError'
@@ -118,10 +118,14 @@ export function BracketTab({ tournament, onRefetchTournament }: BracketTabProps)
     try {
       await write
       setErrorMessage('')
+      return 'clear' as const
     } catch (error) {
       const code = apiErrorCode(error)
       setErrorMessage(matchLinkErrorMessage(error))
       if (BRACKET_REFETCH_CODES.has(code ?? '')) refetch()
+      // Only a mismatch is fixable by looking at the pick; every other refusal
+      // rules the match out entirely, so the selection goes with it.
+      return code === 'MATCH_TEAMS_MISMATCH' ? ('keep' as const) : ('clear' as const)
     }
   }
 
@@ -151,7 +155,7 @@ export function BracketTab({ tournament, onRefetchTournament }: BracketTabProps)
       .map((match) => ({
         id: match.id,
         label: `${match.homeTeam.teamName} × ${match.awayTeam.teamName}`,
-        secondary: `${formatDateTime(match.scheduledAt)} · ${match.status}`,
+        secondary: `${formatDateTime(match.scheduledAt)} · ${MATCH_STATUS_LABELS[match.status]}`,
       }))
   }
 
@@ -195,9 +199,9 @@ export function BracketTab({ tournament, onRefetchTournament }: BracketTabProps)
       onFillSide={fillSide}
       onSearchMatches={searchMatches}
       onLinkMatch={(slotId, matchId) => runMatchLink(linkMatch.mutateAsync({ tournamentId: tournament.id, slotId, matchId }))}
-      onUnlinkMatch={(slot) => slot.match
-        ? runMatchLink(unlinkMatch.mutateAsync({ tournamentId: tournament.id, slotId: slot.id, matchId: slot.match.id }))
-        : Promise.resolve()}
+      onUnlinkMatch={async (slot) => {
+        if (slot.match) await runMatchLink(unlinkMatch.mutateAsync({ tournamentId: tournament.id, slotId: slot.id, matchId: slot.match.id }))
+      }}
       onSetWinner={(slotId, matchId, winnerTournamentTeamId) =>
         runWinner(setWinner.mutateAsync({ tournamentId: tournament.id, slotId, matchId, winnerTournamentTeamId }))} />
   </div>

@@ -134,7 +134,7 @@ describe('BracketCanvas', () => {
         </MemoryRouter>,
       )
       expect(screen.getByRole('link', { name: /Partida #501/ })).toHaveAttribute('href', '/matches/501')
-      expect(screen.getByText('FINISHED')).toBeInTheDocument()
+      expect(screen.getByText('Finalizada')).toBeInTheDocument()
       expect(screen.getByText(formatDateTime(linkedMatch.date!))).toBeInTheDocument()
       expect(screen.getByText('72 × 68')).toBeInTheDocument()
     })
@@ -200,6 +200,41 @@ describe('BracketCanvas', () => {
     it('disables linking until a match is selected', () => {
       renderEmptySlot()
       expect(screen.getByRole('button', { name: 'Vincular partida' })).toBeDisabled()
+    })
+
+    it('clears the selection once the link is accepted', async () => {
+      renderEmptySlot({
+        onSearchMatches: vi.fn().mockResolvedValue([{ id: 501, label: 'Alfa × Beta' }]),
+        onLinkMatch: vi.fn().mockResolvedValue('clear'),
+      })
+      await userEvent.type(screen.getByPlaceholderText('Buscar partida…'), 'Alfa')
+      await userEvent.click(await screen.findByRole('option', { name: 'Alfa × Beta' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Vincular partida' }))
+
+      expect(await screen.findByRole('button', { name: 'Vincular partida' })).toBeDisabled()
+    })
+
+    it('keeps the selection when the refusal is fixable by reviewing the pick', async () => {
+      renderEmptySlot({
+        onSearchMatches: vi.fn().mockResolvedValue([{ id: 501, label: 'Alfa × Beta' }]),
+        onLinkMatch: vi.fn().mockResolvedValue('keep'),
+      })
+      await userEvent.type(screen.getByPlaceholderText('Buscar partida…'), 'Alfa')
+      await userEvent.click(await screen.findByRole('option', { name: 'Alfa × Beta' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Vincular partida' }))
+
+      expect(screen.getByRole('button', { name: 'Vincular partida' })).not.toBeDisabled()
+    })
+
+    it('leaves another slot usable while one slot is writing', () => {
+      const props = { ...handlers(), busySlotId: 11 }
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ id: 11 }), slot({ id: 12, position: 2, label: 'Semifinal 2' })]} teams={teams} {...props} />
+        </MemoryRouter>,
+      )
+
+      expect(screen.getAllByPlaceholderText('Buscar partida…')[1]).not.toBeDisabled()
     })
 
     it('hides search and link controls for a reader without structure edit rights', () => {

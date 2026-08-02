@@ -194,8 +194,17 @@ export function useRosterQuery(tournamentTeamId: number | undefined) {
   })
 }
 
-const retryConcurrentOnce = (failureCount: number, error: Error) =>
-  apiErrorCode(error) === 'CONCURRENT_MODIFICATION' && failureCount < 1
+const isConcurrent = (error: Error) => apiErrorCode(error) === 'CONCURRENT_MODIFICATION'
+
+const retryConcurrentOnce = (failureCount: number, error: Error) => isConcurrent(error) && failureCount < 1
+
+/**
+ * Only a losing concurrency race means our cache is behind the server. Every other
+ * refusal leaves the server unchanged, so refetching would be pure noise.
+ */
+const onConcurrentFailure = (error: Error, invalidate: () => void) => {
+  if (isConcurrent(error)) invalidate()
+}
 
 export function useMatchesInfiniteQuery(
   filters: Omit<ListMatchesParams, 'page' | 'limit'>,
@@ -413,7 +422,7 @@ export function useLinkBracketSlotMatch() {
     retry: retryConcurrentOnce,
     retryDelay: 0,
     onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
-    onError: (_error, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketMatchLink(queryClient, variables)),
   })
 }
 
@@ -425,7 +434,7 @@ export function useUnlinkBracketSlotMatch() {
     retry: retryConcurrentOnce,
     retryDelay: 0,
     onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
-    onError: (_error, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketMatchLink(queryClient, variables)),
   })
 }
 
@@ -450,7 +459,7 @@ export function useSetBracketSlotWinner() {
     retry: retryConcurrentOnce,
     retryDelay: 0,
     onSuccess: (_data, variables) => invalidateBracketWinner(queryClient, variables),
-    onError: (_error, variables) => invalidateBracketWinner(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketWinner(queryClient, variables)),
   })
 }
 
@@ -502,9 +511,9 @@ export function useCreateMatch() {
       queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
     },
-    onError: () => {
+    onError: (error) => onConcurrentFailure(error, () => {
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    },
+    }),
   })
 }
 
@@ -518,10 +527,10 @@ export function useUpdateMatch() {
       queryClient.setQueryData(matchKeys.detail(data.id), data)
       invalidateMatchReads(queryClient, data)
     },
-    onError: (_error, variables) => {
+    onError: (error, variables) => onConcurrentFailure(error, () => {
       queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    },
+    }),
   })
 }
 
@@ -535,10 +544,10 @@ export function usePostponeMatch() {
       queryClient.setQueryData(matchKeys.detail(data.id), data)
       invalidateMatchReads(queryClient, data)
     },
-    onError: (_error, id) => {
+    onError: (error, id) => onConcurrentFailure(error, () => {
       queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    },
+    }),
   })
 }
 
@@ -552,10 +561,10 @@ export function useCancelMatch() {
       queryClient.setQueryData(matchKeys.detail(data.id), data)
       invalidateMatchReads(queryClient, data)
     },
-    onError: (_error, id) => {
+    onError: (error, id) => onConcurrentFailure(error, () => {
       queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    },
+    }),
   })
 }
 

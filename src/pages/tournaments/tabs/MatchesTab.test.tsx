@@ -115,6 +115,20 @@ describe('MatchesTab', () => {
     expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/102')
   })
 
+  it('does not blame the filters when the championship simply has no matches', () => {
+    renderTab({ matches: [] })
+
+    expect(screen.getByText('Nenhuma partida agendada.')).toBeInTheDocument()
+  })
+
+  it('points at the filters when they are what hid every match', async () => {
+    renderTab()
+
+    await userEvent.type(screen.getByLabelText('Buscar partida por equipe'), 'zzz')
+
+    expect(screen.getByText('Nenhuma partida encontrada com os filtros atuais.')).toBeInTheDocument()
+  })
+
   it('shows a skeleton while matches are loading', () => {
     renderTab({ isPending: true })
 

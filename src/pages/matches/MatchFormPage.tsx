@@ -8,6 +8,7 @@ import { Field } from '../../components/ui/Field/Field'
 import { NumberField } from '../../components/ui/NumberField/NumberField'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
+import { hasKnockout } from '../../features/sports/sportsUtils'
 import {
   useBracketQuery,
   useCreateMatch,
@@ -114,7 +115,9 @@ export function MatchFormPage() {
   const hasGroupStage = tournamentQuery.data?.format === 'GROUP_STAGE' || tournamentQuery.data?.format === 'GROUP_STAGE_KNOCKOUT'
   const groupsQuery = useGroupsQuery(hasGroupStage ? lookupTournamentId : undefined)
   const tournamentTeamsQuery = useTournamentTeamsQuery(lookupTournamentId)
-  const bracketQuery = useBracketQuery(isEdit ? lookupTournamentId : undefined)
+  // Only a knockout format can answer MATCH_IN_BRACKET, so nothing else needs the read.
+  const hasBracket = tournamentQuery.data !== undefined && hasKnockout(tournamentQuery.data.format)
+  const bracketQuery = useBracketQuery(isEdit && hasBracket ? lookupTournamentId : undefined)
 
   const createMutation = useCreateMatch()
   const updateMutation = useUpdateMatch()

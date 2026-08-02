@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
+import { MATCH_STATUS_LABELS, formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 import { Badge, Button, Combobox, Input, SearchSelect } from '../../../components/ui'
 import type { SearchSelectOption } from '../../../components/ui/SearchSelect'
 import { parsePositiveId } from '../parsePositiveId'
@@ -17,9 +17,9 @@ interface LinkedMatchProps { match: BracketMatchView }
 function LinkedMatch({ match }: LinkedMatchProps) {
   const hasScore = match.homeScore !== null && match.awayScore !== null
   return (
-    <div className={s.linkedMatch} aria-label="Partida vinculada">
+    <div className={s.linkedMatch} role="group" aria-label="Partida vinculada">
       <Link to={`/matches/${match.id}`}>Partida #{match.id}</Link>
-      <Badge>{match.status}</Badge>
+      <Badge>{MATCH_STATUS_LABELS[match.status]}</Badge>
       <span>{match.date ? formatDateTime(match.date) : 'Data não informada'}</span>
       <strong>{hasScore ? `${match.homeScore} × ${match.awayScore}` : 'Placar indisponível'}</strong>
     </div>
@@ -44,7 +44,8 @@ export interface BracketCanvasProps {
   onRenameRound: (roundId: number, label: string | null) => Promise<void>
   onRemoveRound: (roundId: number) => Promise<void>
   onSearchMatches: (slot: BracketSlotView, query: string) => Promise<SearchSelectOption[]>
-  onLinkMatch: (slotId: number, matchId: number) => Promise<void>
+  /** Resolves `'keep'` when the picked match must stay selected so the admin can correct it. */
+  onLinkMatch: (slotId: number, matchId: number) => Promise<'keep' | 'clear'>
   onUnlinkMatch: (slot: BracketSlotView) => Promise<void>
   onSetWinner: (slotId: number, matchId: number | null, winnerTournamentTeamId: number | null) => Promise<void>
   errorMessage?: string
@@ -121,7 +122,7 @@ export function BracketCanvas({
       placeholder="Definir vencedor"
       options={[NO_WINNER_OPTION, ...options]}
       value={slot.winnerTournamentTeamId !== null ? String(slot.winnerTournamentTeamId) : null}
-      disabled={busySlotId !== null}
+      disabled={busy}
       onChange={(raw) => {
         const winnerTournamentTeamId = parsePositiveId(raw)
         if (winnerTournamentTeamId === slot.winnerTournamentTeamId) return
@@ -157,7 +158,7 @@ export function BracketCanvas({
           </div>
         </div>
       }
-      return <Button type="button" variant="ghost" size="sm" disabled={busySlotId !== null}
+      return <Button type="button" variant="ghost" size="sm" disabled={busy}
         onClick={() => setConfirmingUnlinkSlotId(slot.id)}>
         Desvincular partida
       </Button>
@@ -170,12 +171,14 @@ export function BracketCanvas({
         onChange={(option) => setPendingMatchBySlot((prev) => ({ ...prev, [slot.id]: option }))}
         onSearch={(query) => onSearchMatches(slot, query)}
         placeholder="Buscar partida…"
-        disabled={busySlotId !== null}
+        disabled={busy}
       />
-      <Button type="button" variant="secondary" size="sm" loading={busy} disabled={!selected || busySlotId !== null}
+      <Button type="button" variant="secondary" size="sm" loading={busy} disabled={!selected || busy}
         onClick={() => {
           if (!selected) return
-          void onLinkMatch(slot.id, selected.id).then(() => setPendingMatchBySlot((prev) => ({ ...prev, [slot.id]: null })))
+          void onLinkMatch(slot.id, selected.id).then((outcome) => {
+            if (outcome !== 'keep') setPendingMatchBySlot((prev) => ({ ...prev, [slot.id]: null }))
+          })
         }}>
         Vincular partida
       </Button>

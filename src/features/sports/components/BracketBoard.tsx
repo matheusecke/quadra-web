@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui'
 import { cn } from '../../../components/ui/cn'
 import { bracketLayout } from '../bracketLayout'
-import { formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
+import { MATCH_STATUS_LABELS, formatDateTime, roundDisplayName, slotDisplayName } from '../sportsUtils'
 
 import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
 import s from './BracketBoard.module.css'
@@ -21,9 +21,9 @@ interface LinkedMatchProps { match: BracketMatchView }
 function LinkedMatch({ match }: LinkedMatchProps) {
   const hasScore = match.homeScore !== null && match.awayScore !== null
   return (
-    <div className={s.linkedMatch} aria-label="Partida vinculada">
+    <div className={s.linkedMatch} role="group" aria-label="Partida vinculada">
       <Link to={`/matches/${match.id}`}>Partida #{match.id}</Link>
-      <Badge>{match.status}</Badge>
+      <Badge>{MATCH_STATUS_LABELS[match.status]}</Badge>
       <span>{match.date ? formatDateTime(match.date) : 'Data não informada'}</span>
       <strong>{hasScore ? `${match.homeScore} × ${match.awayScore}` : 'Placar indisponível'}</strong>
     </div>

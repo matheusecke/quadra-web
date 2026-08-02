@@ -302,6 +302,16 @@ describe('bracket match link', () => {
       tournamentKeys.detail(12),
     ])
   })
+
+  it('leaves the cache alone when the unlink is refused for a reason other than concurrency', async () => {
+    vi.spyOn(sportsApi, 'unlinkBracketSlotMatch').mockRejectedValue(apiFailure('MATCH_ALREADY_FINISHED'))
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useUnlinkBracketSlotMatch(), { wrapper: Wrapper })
+    result.current.mutate({ tournamentId: 12, slotId: 71, matchId: 501 })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(invalidateSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('bracket slot winner', () => {

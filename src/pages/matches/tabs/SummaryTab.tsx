@@ -1,3 +1,4 @@
+import { EmptyState } from '../../../components/ui'
 import type { MatchDetail } from '../../../features/sports/types'
 import { getPeriodLabel } from '../../../features/sports/sportsUtils'
 import s from '../matches.module.css'
@@ -7,6 +8,10 @@ interface SummaryTabProps {
 }
 
 export function SummaryTab({ match }: SummaryTabProps) {
+  if (match.periods.length === 0 && match.mvp === null) {
+    return <EmptyState title="Nenhum resumo disponível." description="O placar por período e o MVP aparecem após a súmula." />
+  }
+
   return (
     <>
       {match.periods.length > 0 && (

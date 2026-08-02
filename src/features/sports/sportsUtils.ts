@@ -152,7 +152,6 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
 // ── Date formatting (pt-BR) ─────────────────────────────────────────────────────
 
 const dateFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-const dateShortFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
 const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: 'short',
@@ -162,10 +161,6 @@ const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
 
 export function formatDate(iso: string): string {
   return dateFmt.format(new Date(iso))
-}
-
-export function formatDateShort(iso: string): string {
-  return dateShortFmt.format(new Date(iso))
 }
 
 export function formatDateTime(iso: string): string {
