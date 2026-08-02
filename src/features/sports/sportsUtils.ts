@@ -13,10 +13,10 @@ import type {
   TournamentFormat,
   TournamentStatus,
   LeaderStat,
-  Match,
+  MatchPeriod,
   MatchStatus,
+  MatchSummary,
   PlayerMatchStats,
-  PeriodScore,
   StandingRow,
   Team,
   TournamentTeam,
@@ -41,22 +41,13 @@ export function formatDiff(row: StandingRow): string {
 
 // ── Match helpers ─────────────────────────────────────────────────────────────
 
-/** Most recent first. */
-export function sortMatchesByDateDesc(matches: Match[]): Match[] {
-  return [...matches].sort((a, b) => +new Date(b.date) - +new Date(a.date))
-}
-
-export function isFinished(match: Match): boolean {
-  return match.status === 'FINISHED'
-}
-
 export function hasKnockout(format: TournamentFormat): boolean {
   return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
 /** Phase label derived from the real links — never free text on the match. */
 export function matchPhaseName(
-  match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
+  match: Pick<MatchSummary, 'bracketRound' | 'tournamentGroupId'>,
 ): string | null {
   if (match.bracketRound) return match.bracketRound.label
   return match.tournamentGroupId ? 'Fase de grupos' : null
@@ -160,7 +151,6 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
 // ── Date formatting (pt-BR) ─────────────────────────────────────────────────────
 
 const dateFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-const dateShortFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
 const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: 'short',
@@ -170,10 +160,6 @@ const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
 
 export function formatDate(iso: string): string {
   return dateFmt.format(new Date(iso))
-}
-
-export function formatDateShort(iso: string): string {
-  return dateShortFmt.format(new Date(iso))
 }
 
 export function formatDateTime(iso: string): string {
@@ -214,18 +200,9 @@ export function formatTime(iso: string): string {
 }
 
 /** Derives the column label for a period: 1Q-4Q for regular, OT / 2OT / 3OT for overtime. */
-export function getPeriodLabel(period: PeriodScore): string {
-  if (period.label) return period.label
-  if (period.type === 'REGULAR') return `${period.periodNumber}Q`
-  const overtimeNumber = period.overtimeNumber ?? 1
-  return overtimeNumber === 1 ? 'OT' : `${overtimeNumber}OT`
-}
-
-/** Safely totals one side from the dynamic period score list, ignoring null periods. */
-export function calculatePeriodTotal(periods: PeriodScore[] | null, side: 'home' | 'away'): number | null {
-  if (!periods?.length) return null
-  const key = side === 'home' ? 'homePoints' : 'awayPoints'
-  return periods.reduce<number>((sum, period) => sum + (period[key] ?? 0), 0)
+export function getPeriodLabel(period: MatchPeriod): string {
+  if (period.periodType === 'REGULAR') return `${period.periodNumber}Q`
+  return period.periodNumber === 1 ? 'OT' : `${period.periodNumber}OT`
 }
 
 // ── Per-match stat helpers ─────────────────────────────────────────────────────
@@ -294,18 +271,6 @@ export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatT
 
 export function perGame(value: number | null, measuredGames: number): number | null {
   return value === null || measuredGames === 0 ? null : value / measuredGames
-}
-
-export interface TeamStatTotals {
-  minutesSeconds: number | null; pts: number | null; reb: number | null; ast: number | null; stl: number | null; blk: number | null
-  tov: number | null; pf: number | null; fgm: number | null; fga: number | null; threeFgm: number | null; threeFga: number | null
-  ftm: number | null; fta: number | null
-}
-
-export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
-  return Object.fromEntries(
-    STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
-  ) as Record<StatField, number | null>
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

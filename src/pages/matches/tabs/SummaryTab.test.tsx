@@ -1,65 +1,61 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
 import { SummaryTab } from './SummaryTab'
-import { getMatchDetailById } from '../../../features/sports/mock-sports-data'
-import type { Athlete, MatchDetail } from '../../../features/sports/types'
+import type { MatchDetail } from '../../../features/sports/types'
 
-const baseMatch = getMatchDetailById(131) as MatchDetail
-
-const athlete: Athlete = {
-  id: 999,
-  name: 'Bruno Castro',
-  number: 44,
-  position: 'C',
-  currentTeamId: 1,
-  status: 'ACTIVE',
+const baseMatch: MatchDetail = {
+  id: 501,
+  tournamentId: 31,
+  tournamentGroupId: null,
+  matchNumber: 4,
+  status: 'FINISHED',
+  scheduledAt: '2026-08-01T22:00:00.000Z',
+  startedAt: '2026-08-01T22:05:00.000Z',
+  endedAt: '2026-08-01T23:40:00.000Z',
+  venueName: 'Quadra 1',
+  bracketRound: null,
+  scoreSource: 'PERIODS',
+  homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
+  periods: [
+    { periodNumber: 2, periodType: 'REGULAR', homePoints: 22, awayPoints: 19, startedAt: null, endedAt: null },
+    { periodNumber: 1, periodType: 'REGULAR', homePoints: 20, awayPoints: 18, startedAt: null, endedAt: null },
+    { periodNumber: 1, periodType: 'OVERTIME', homePoints: 8, awayPoints: 6, startedAt: null, endedAt: null },
+  ],
+  playerStats: [],
+  mvp: { tournamentRosterId: 901, displayName: 'Rafael Moura' },
 }
 
-const athletes = new Map<number, Athlete>([[athlete.id, athlete]])
+describe('SummaryTab', () => {
+  it('shows the curated MVP as plain text, not a link', () => {
+    render(<SummaryTab match={baseMatch} />)
 
-const tournamentTeams = new Map([
-  [baseMatch.homeTournamentTeamId, { name: 'Time 1', shortName: 'T01' }],
-  [baseMatch.awayTournamentTeamId, { name: 'Time 2', shortName: 'T02' }],
-])
+    expect(screen.getByText('Rafael Moura')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Rafael Moura' })).not.toBeInTheDocument()
+  })
 
-const renderTab = (match: MatchDetail) =>
-  render(
-    <MemoryRouter>
-      <SummaryTab match={match} tournamentTeams={tournamentTeams} athletes={athletes} />
-    </MemoryRouter>,
-  )
+  it('announces an empty summary when the match has neither periods nor an MVP', () => {
+    render(<SummaryTab match={{ ...baseMatch, periods: [], mvp: null }} />)
 
-describe('SummaryTab — MVP', () => {
-  it('shows the curated MVP when the match has one', () => {
-    renderTab({ ...baseMatch, mvp: { tournamentRosterId: 1, athleteId: athlete.id } })
-
-    expect(screen.getByText(athlete.name)).toBeInTheDocument()
+    expect(screen.getByText('Nenhum resumo disponível.')).toBeInTheDocument()
   })
 
   it('shows no MVP section when the match has none', () => {
-    renderTab({ ...baseMatch, mvp: null })
+    render(<SummaryTab match={{ ...baseMatch, mvp: null }} />)
 
     expect(screen.queryByText(/melhor em quadra/i)).not.toBeInTheDocument()
   })
-})
 
-describe('SummaryTab — leaders', () => {
-  it('does not elect a leader when a category was never tracked', () => {
-    renderTab({
-      ...baseMatch,
-      homeStats: {
-        ...baseMatch.homeStats,
-        players: baseMatch.homeStats.players.map((player) => ({ ...player, reb: null })),
-      },
-      awayStats: {
-        ...baseMatch.awayStats,
-        players: baseMatch.awayStats.players.map((player) => ({ ...player, reb: null })),
-      },
-    })
+  it('renders period columns in the order the backend returned them', () => {
+    render(<SummaryTab match={baseMatch} />)
 
-    const rebLeaderCard = screen.getByText('REB').closest('div')?.parentElement
-    expect(rebLeaderCard).not.toBeNull()
-    expect(rebLeaderCard).not.toHaveTextContent(/^[0-9]+$/)
+    const headers = screen.getAllByRole('columnheader').map((cell) => cell.textContent)
+    expect(headers).toEqual(['Equipe', '2Q', '1Q', 'OT', 'Total'])
+  })
+
+  it('renders no period table when the match has no periods', () => {
+    render(<SummaryTab match={{ ...baseMatch, periods: [] }} />)
+
+    expect(screen.queryByText('Placar por período')).not.toBeInTheDocument()
   })
 })

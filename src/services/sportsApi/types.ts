@@ -1,5 +1,4 @@
-import type { PeriodScore, TournamentFormat, TournamentStatus } from '../../features/sports/types'
-import type { PlayerStatInput } from '../../features/sports/statistics'
+import type { TournamentFormat, TournamentStatus } from '../../features/sports/types'
 
 export interface CreateSeasonInput {
   label: string
@@ -100,6 +99,14 @@ export interface UpdateGroupInput {
   name: string
 }
 
+export interface LinkBracketSlotMatchInput {
+  matchId: number
+}
+
+export interface SetBracketSlotWinnerInput {
+  winnerTournamentTeamId: number | null
+}
+
 export interface AssignGroupTeamInput {
   tournamentGroupId: number
   tournamentTeamId: number
@@ -117,18 +124,6 @@ export interface UpdateTournamentRosterInput {
   jerseyNumber?: number | null
 }
 
-export interface ScheduleMatchInput {
-  tournamentId: number
-  homeTournamentTeamId: number
-  awayTournamentTeamId: number
-  scheduledAt: string
-  venue?: string
-  groupId?: number | null
-}
-
-/** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
-export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: number }
-
 /** The whole tied block, every time: `order` is a complete permutation of `1..n`. */
 export interface SetTiebreakOrderInput {
   tournamentId: number
@@ -139,24 +134,3 @@ export interface ClearTiebreakOrderInput {
   tournamentId: number
   blockKey: string
 }
-
-interface PlayedResultInput {
-  matchId: number
-  periods: PeriodScore[]
-  playerStats: PlayerBoxScoreInput[]
-  mvpTournamentRosterId?: number | null
-}
-
-/**
- * Discriminated by resultType (§8.9). The client sends what happened on court and how it
- * ended; the server derives finalScore, result and lossType. The client never sends a score.
- */
-export type SubmitMatchResultInput =
-  | ({ resultType?: 'NORMAL' } & PlayedResultInput)
-  | ({ resultType: 'DEFAULT'; offendingTournamentTeamId: number } & PlayedResultInput)
-  | {
-      // A W.O. has no game: no periods, no box score, no MVP. Not optional — forbidden.
-      resultType: 'FORFEIT'
-      matchId: number
-      offendingTournamentTeamId: number
-    }

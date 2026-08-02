@@ -1,8 +1,16 @@
 import axios from 'axios'
 
-/** Código do envelope de erro do tcc-api (`{ error: { code } }`), quando a falha veio da API. */
-export function apiErrorCode(error: unknown): string | undefined {
-  if (!axios.isAxiosError(error)) return undefined
-  const payload = error.response?.data as { error?: { code?: string } } | undefined
-  return payload?.error?.code
+interface ApiErrorEnvelope {
+  error?: {
+    code?: string
+    message?: string
+    data?: Record<string, string[]>
+  }
 }
+
+const envelope = (error: unknown) =>
+  axios.isAxiosError<ApiErrorEnvelope>(error) ? error.response?.data.error : undefined
+
+export const apiErrorCode = (error: unknown) => envelope(error)?.code
+export const apiErrorMessage = (error: unknown) => envelope(error)?.message
+export const apiErrorData = (error: unknown) => envelope(error)?.data

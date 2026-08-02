@@ -21,7 +21,7 @@ describe('useBracketQuery', () => {
   it('reads the whole bracket in a single call', async () => {
     const getBracket = vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({
       rounds: [round],
-      slots: [{ id: 101, roundId: 10, position: 1, label: null, homeTeam: null, awayTeam: null, winnerTournamentTeamId: null }],
+      slots: [{ id: 101, roundId: 10, position: 1, label: null, homeTeam: null, awayTeam: null, match: null, winnerTournamentTeamId: null }],
     })
     const { result } = renderHook(() => useBracketQuery(12), { wrapper })
     await waitFor(() => expect(result.current.data?.slots).toHaveLength(1))

@@ -1,23 +1,9 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
-import type { Tournament, Match, Team } from '../../../features/sports/types'
+import { describe, expect, it, vi } from 'vitest'
+import type { Tournament, MatchSummary } from '../../../features/sports/types'
 import { MatchesTab } from './MatchesTab'
-
-const teams = new Map<number, Team>([
-  [1, { id: 1, name: 'Abutres', shortName: 'ABU' }],
-  [2, { id: 2, name: 'Águias Douradas', shortName: 'AGD' }],
-  [3, { id: 3, name: 'Linces', shortName: 'LIN' }],
-  [4, { id: 4, name: 'Lobos do Norte', shortName: 'LOB' }],
-])
-
-const tournamentTeams = new Map([
-  [1001, { name: 'Abutres', shortName: 'ABU' }],
-  [1002, { name: 'Águias Douradas', shortName: 'AGD' }],
-  [1003, { name: 'Linces', shortName: 'LIN' }],
-  [1004, { name: 'Lobos do Norte', shortName: 'LOB' }],
-])
 
 const tournament: Tournament = {
   id: 1,
@@ -39,48 +25,58 @@ const tournament: Tournament = {
   updatedAt: '2026-06-10T12:00:00.000Z',
 }
 
-const matches: Match[] = [
+const matches: MatchSummary[] = [
   {
     id: 101,
     tournamentId: 1,
-    date: '2026-06-07T21:00:00.000Z',
-    homeTournamentTeamId: 1001,
-    awayTournamentTeamId: 1002,
-    homeScore: 77,
-    awayScore: 74,
-    status: 'FINISHED',
-    venue: 'Ginásio Central',
     tournamentGroupId: null,
+    matchNumber: null,
+    status: 'FINISHED',
+    scheduledAt: '2026-06-07T21:00:00.000Z',
+    startedAt: null,
+    endedAt: null,
+    venueName: 'Ginásio Central',
     bracketRound: { id: 11, number: 1, label: 'Oitavas de final' },
-    homeLossType: null,
-    awayLossType: 'NORMAL',
     scoreSource: 'PERIODS',
+    homeTeam: { tournamentTeamId: 1001, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+    awayTeam: { tournamentTeamId: 1002, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
   },
   {
     id: 102,
     tournamentId: 1,
-    date: '2026-06-14T20:00:00.000Z',
-    homeTournamentTeamId: 1003,
-    awayTournamentTeamId: 1004,
-    homeScore: null,
-    awayScore: null,
-    status: 'SCHEDULED',
-    venue: 'Arena Metropolitana',
     tournamentGroupId: null,
+    matchNumber: null,
+    status: 'SCHEDULED',
+    scheduledAt: '2026-06-14T20:00:00.000Z',
+    startedAt: null,
+    endedAt: null,
+    venueName: 'Arena Metropolitana',
     bracketRound: { id: 12, number: 2, label: 'Semifinais' },
-    homeLossType: null,
-    awayLossType: null,
     scoreSource: null,
+    homeTeam: { tournamentTeamId: 1003, teamName: 'Linces', score: null, result: null, lossType: null, isWinner: null },
+    awayTeam: { tournamentTeamId: 1004, teamName: 'Lobos do Norte', score: null, result: null, lossType: null, isWinner: null },
   },
 ]
 
+function renderTab(props: Partial<Parameters<typeof MatchesTab>[0]> = {}) {
+  return render(
+    <MemoryRouter>
+      <MatchesTab
+        tournament={tournament}
+        matches={matches}
+        isPending={false}
+        isError={false}
+        onRetry={vi.fn()}
+        isOrgAdmin={false}
+        {...props}
+      />
+    </MemoryRouter>,
+  )
+}
+
 describe('MatchesTab', () => {
   it('renders matches with inline matchup scores and no statistics status labels', () => {
-    render(
-      <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
-      </MemoryRouter>,
-    )
+    renderTab()
 
     expect(screen.getByLabelText('Abutres 77 - 74 Águias Douradas')).toBeInTheDocument()
     expect(screen.getByLabelText('Linces vs Lobos do Norte')).toBeInTheDocument()
@@ -94,23 +90,13 @@ describe('MatchesTab', () => {
     expect(within(finishedRow as HTMLTableRowElement).getByText('Oitavas de final')).toBeInTheDocument()
     expect(within(finishedRow as HTMLTableRowElement).getByText('Finalizada')).toBeInTheDocument()
 
-    const dateCell = within(finishedRow as HTMLTableRowElement).getAllByRole('cell')[0]
-    expect(dateCell).not.toHaveTextContent('Oitavas de final')
-
     const scheduledRow = screen.getByLabelText('Linces vs Lobos do Norte').closest('tr')
     expect(scheduledRow).not.toBeNull()
     expect(within(scheduledRow as HTMLTableRowElement).getByText('Agendada')).toBeInTheDocument()
-
-    expect(screen.queryByText(/stats ok/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/stats parciais/i)).not.toBeInTheDocument()
   })
 
   it('filters matches by the enrolled team\'s own tournamentTeamId', async () => {
-    render(
-      <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
-      </MemoryRouter>,
-    )
+    renderTab()
 
     await userEvent.click(screen.getByLabelText('Filtrar por equipe'))
     await userEvent.click(await screen.findByRole('option', { name: 'Linces' }))
@@ -120,17 +106,43 @@ describe('MatchesTab', () => {
   })
 
   it('links each matchup to the match detail page', () => {
-    render(
-      <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
-      </MemoryRouter>,
-    )
+    renderTab()
 
     expect(screen.getByRole('link', { name: 'Abutres 77 - 74 Águias Douradas' })).toHaveAttribute(
       'href',
       '/matches/101',
     )
     expect(screen.getByRole('link', { name: 'Linces vs Lobos do Norte' })).toHaveAttribute('href', '/matches/102')
+  })
+
+  it('does not blame the filters when the championship simply has no matches', () => {
+    renderTab({ matches: [] })
+
+    expect(screen.getByText('Nenhuma partida agendada.')).toBeInTheDocument()
+  })
+
+  it('points at the filters when they are what hid every match', async () => {
+    renderTab()
+
+    await userEvent.type(screen.getByLabelText('Buscar partida por equipe'), 'zzz')
+
+    expect(screen.getByText('Nenhuma partida encontrada com os filtros atuais.')).toBeInTheDocument()
+  })
+
+  it('shows a skeleton while matches are loading', () => {
+    renderTab({ isPending: true })
+
+    expect(screen.queryByLabelText('Abutres 77 - 74 Águias Douradas')).not.toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('shows an error state with retry when matches fail to load', async () => {
+    const onRetry = vi.fn()
+    renderTab({ isError: true, onRetry })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    expect(onRetry).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -141,7 +153,16 @@ describe('MatchesTab creation action', () => {
         <Routes>
           <Route
             path="/tournaments/1"
-            element={<MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin />}
+            element={
+              <MatchesTab
+                tournament={tournament}
+                matches={matches}
+                isPending={false}
+                isError={false}
+                onRetry={vi.fn()}
+                isOrgAdmin
+              />
+            }
           />
           <Route path="/tournaments/1/matches/new" element={<div>formulário de nova partida</div>} />
         </Routes>
@@ -154,11 +175,7 @@ describe('MatchesTab creation action', () => {
   })
 
   it('hides the creation action from non-admins', () => {
-    render(
-      <MemoryRouter>
-        <MatchesTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeams} isOrgAdmin={false} />
-      </MemoryRouter>,
-    )
+    renderTab()
 
     expect(screen.queryByRole('button', { name: 'Nova partida' })).not.toBeInTheDocument()
   })

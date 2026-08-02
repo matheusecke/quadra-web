@@ -1,7 +1,16 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
-import type { EntityStatus } from '../../types/admin'
-import type { SeasonStatus, TournamentStatus } from './types'
+import { apiErrorCode } from '../../services/apiError'
+import { collectPages } from '../../services/sportsApi/pagination'
+import type {
+  CreateMatchInput,
+  ListMatchesParams,
+  ListTournamentMatchesParams,
+  UpdateMatchInput,
+} from '../../services/sportsApi'
+import type { EntityStatus, PaginatedResponse } from '../../types/admin'
+import type { MatchDetail, MatchSummary, SeasonStatus, TournamentStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -15,9 +24,7 @@ import type {
   CreateTournamentRosterInput,
   EnrollTeamInput,
   ReopenTournamentInput,
-  ScheduleMatchInput,
   SetTiebreakOrderInput,
-  SubmitMatchResultInput,
   UpdateGroupInput,
   UpdateTournamentInput,
   UpdateBracketRoundInput,
@@ -49,7 +56,11 @@ export const tournamentKeys = {
 
 export const matchKeys = {
   all: ['matches'] as const,
-  list: (tournamentId?: number) => [...matchKeys.all, 'list', tournamentId ?? 'all'] as const,
+  lists: () => [...matchKeys.all, 'list'] as const,
+  list: (params: Omit<ListMatchesParams, 'page' | 'limit'>) => [...matchKeys.lists(), params] as const,
+  tournamentLists: (tournamentId: number) => [...matchKeys.all, 'tournament', tournamentId, 'list'] as const,
+  tournamentList: (tournamentId: number, params: ListTournamentMatchesParams) =>
+    [...matchKeys.tournamentLists(tournamentId), params] as const,
   detail: (id: number) => [...matchKeys.all, 'detail', id] as const,
 }
 
@@ -183,18 +194,43 @@ export function useRosterQuery(tournamentTeamId: number | undefined) {
   })
 }
 
-export function useMatchesQuery(filter?: { tournamentId?: number }) {
+const isConcurrent = (error: Error) => apiErrorCode(error) === 'CONCURRENT_MODIFICATION'
+
+const retryConcurrentOnce = (failureCount: number, error: Error) => isConcurrent(error) && failureCount < 1
+
+/**
+ * Only a losing concurrency race means our cache is behind the server. Every other
+ * refusal leaves the server unchanged, so refetching would be pure noise.
+ */
+const onConcurrentFailure = (error: Error, invalidate: () => void) => {
+  if (isConcurrent(error)) invalidate()
+}
+
+export function useMatchesInfiniteQuery(
+  filters: Omit<ListMatchesParams, 'page' | 'limit'>,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<MatchSummary>>> {
+  return useInfiniteQuery({
+    queryKey: matchKeys.list(filters),
+    queryFn: ({ pageParam }) => sportsApi.listMatchesPage({ ...filters, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: PaginatedResponse<MatchSummary>) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+  })
+}
+
+export function useTournamentMatchesQuery(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: matchKeys.list(filter?.tournamentId),
-    queryFn: () => sportsApi.getMatches(filter),
+    queryKey: tournamentId === undefined ? matchKeys.tournamentLists(0) : matchKeys.tournamentList(tournamentId, {}),
+    queryFn: () => collectPages((page) => sportsApi.listTournamentMatchesPage(tournamentId!, { page, limit: 100 })),
+    enabled: tournamentId !== undefined,
   })
 }
 
 export function useMatchDetailQuery(id: number | undefined) {
   return useQuery({
-    queryKey: matchKeys.detail(id ?? -1),
-    queryFn: () => sportsApi.getMatchDetail(id!),
-    enabled: id != null,
+    queryKey: matchKeys.detail(id ?? 0),
+    queryFn: () => sportsApi.getMatch(id!),
+    enabled: id !== undefined,
   })
 }
 
@@ -368,6 +404,65 @@ export function useRemoveBracketSlot() {
   })
 }
 
+function invalidateBracketMatchLink(
+  queryClient: ReturnType<typeof useQueryClient>,
+  variables: { tournamentId: number; matchId: number },
+) {
+  queryClient.invalidateQueries({ queryKey: bracketKeys.list(variables.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+  queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.matchId) })
+  queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(variables.tournamentId) })
+}
+
+export function useLinkBracketSlotMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId, matchId }: { tournamentId: number; slotId: number; matchId: number }) =>
+      sportsApi.linkBracketSlotMatch(slotId, { matchId }),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketMatchLink(queryClient, variables)),
+  })
+}
+
+export function useUnlinkBracketSlotMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId }: { tournamentId: number; slotId: number; matchId: number }) =>
+      sportsApi.unlinkBracketSlotMatch(slotId),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketMatchLink(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketMatchLink(queryClient, variables)),
+  })
+}
+
+function invalidateBracketWinner(
+  queryClient: ReturnType<typeof useQueryClient>,
+  variables: { tournamentId: number; matchId: number | null },
+) {
+  queryClient.invalidateQueries({ queryKey: bracketKeys.list(variables.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(variables.tournamentId) })
+  if (variables.matchId !== null) queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.matchId) })
+}
+
+export function useSetBracketSlotWinner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId, winnerTournamentTeamId }: {
+      tournamentId: number
+      slotId: number
+      matchId: number | null
+      winnerTournamentTeamId: number | null
+    }) => sportsApi.setBracketSlotWinner(slotId, { winnerTournamentTeamId }),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (_data, variables) => invalidateBracketWinner(queryClient, variables),
+    onError: (error, variables) => onConcurrentFailure(error, () => invalidateBracketWinner(queryClient, variables)),
+  })
+}
+
 export function useAddRosterEntry() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -396,25 +491,80 @@ export function useRemoveRosterEntry() {
   })
 }
 
-export function useScheduleMatch() {
+function invalidateMatchReads(queryClient: ReturnType<typeof useQueryClient>, data: MatchDetail) {
+  queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+  queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
+  queryClient.invalidateQueries({ queryKey: bracketKeys.list(data.tournamentId) })
+}
+
+export function useCreateMatch() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: ScheduleMatchInput) => sportsApi.scheduleMatch(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.all })
-      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    mutationFn: (input: CreateMatchInput) => sportsApi.createMatch(input),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
+      queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
     },
+    onError: (error) => onConcurrentFailure(error, () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+    }),
   })
 }
 
-export function useSubmitMatchResult() {
+export function useUpdateMatch() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: SubmitMatchResultInput) => sportsApi.submitMatchResult(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.all })
-      queryClient.invalidateQueries({ queryKey: standingsKeys.all })
+    mutationFn: ({ id, input }: { id: number; input: UpdateMatchInput }) => sportsApi.updateMatch(id, input),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => {
+      queryClient.setQueryData(matchKeys.detail(data.id), data)
+      invalidateMatchReads(queryClient, data)
     },
+    onError: (error, variables) => onConcurrentFailure(error, () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+    }),
+  })
+}
+
+export function usePostponeMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => sportsApi.postponeMatch(id),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => {
+      queryClient.setQueryData(matchKeys.detail(data.id), data)
+      invalidateMatchReads(queryClient, data)
+    },
+    onError: (error, id) => onConcurrentFailure(error, () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+    }),
+  })
+}
+
+export function useCancelMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => sportsApi.cancelMatch(id),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => {
+      queryClient.setQueryData(matchKeys.detail(data.id), data)
+      invalidateMatchReads(queryClient, data)
+    },
+    onError: (error, id) => onConcurrentFailure(error, () => {
+      queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+    }),
   })
 }
 

@@ -54,6 +54,7 @@ export const router = createBrowserRouter([
               { path: '/tournaments/:tournamentId/edit', element: <TournamentFormPage /> },
               { path: '/tournaments/:tournamentId/matches/new', element: <MatchFormPage /> },
               { path: '/matches/new', element: <MatchFormPage /> },
+              { path: '/matches/:matchId/edit', element: <MatchFormPage /> },
               { path: '/matches/:matchId/sumula', element: <MatchSumulaPage /> },
             ],
           },

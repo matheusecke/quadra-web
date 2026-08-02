@@ -1,37 +1,43 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatchDetailPage } from './MatchDetailPage'
 import * as sportsApi from '../../services/sportsApi'
-import { getTeams as getMockTeams } from '../../features/sports/mock-sports-data'
-import type { TournamentTeam } from '../../features/sports/types'
+import type { MatchDetail } from '../../features/sports/types'
 
-vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => false }))
+vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => true }))
 
-beforeEach(() => {
-  vi.spyOn(sportsApi, 'getTeams').mockResolvedValue(getMockTeams())
+afterEach(() => vi.restoreAllMocks())
+
+const buildMatch = (overrides: Partial<MatchDetail> = {}): MatchDetail => ({
+  id: 501,
+  tournamentId: 31,
+  tournamentGroupId: null,
+  matchNumber: 4,
+  status: 'SCHEDULED',
+  scheduledAt: '2026-08-01T22:00:00.000Z',
+  startedAt: null,
+  endedAt: null,
+  venueName: 'Quadra 1',
+  bracketRound: null,
+  scoreSource: null,
+  homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: null, result: null, lossType: null, isWinner: null },
+  periods: [],
+  playerStats: [],
+  mvp: null,
+  ...overrides,
 })
 
-// GERAL tournament (id 1) enrollment snapshot naming Time 1 "Titans FC" — proves the score hero
-// resolves via the enrollment snapshot, not a live re-lookup in the global team catalog.
-vi.mock('../../features/sports/queries', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../features/sports/queries')>()
-  const renamedGeralTeams: TournamentTeam[] = [
-    { id: 1001, tournamentId: 1, teamId: 1, displayNameSnapshot: 'Titans FC', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
-    { id: 1002, tournamentId: 1, teamId: 2, displayNameSnapshot: 'Time 2', seed: null, tiebreakOrder: null, tiebreakBlockKey: null },
-  ]
-  return {
-    ...actual,
-    useTournamentTeamsQuery: (tournamentId: number | undefined) => {
-      const real = actual.useTournamentTeamsQuery(tournamentId)
-      return tournamentId === 1 ? { ...real, data: renamedGeralTeams } : real
-    },
-  }
-})
+const apiFailure = (code: string, message: string) =>
+  Object.assign(new Error(message), {
+    isAxiosError: true,
+    response: { data: { error: { code, message } } },
+  })
 
-const renderDetail = (matchId: string) => {
+const renderDetail = (matchId = '501') => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -44,61 +50,227 @@ const renderDetail = (matchId: string) => {
   )
 }
 
-describe('MatchDetailPage', () => {
-  it('explains an awarded score on a freshly loaded page, not just after submitting', async () => {
-    renderDetail('217')
-    expect(await screen.findByText(/placar atribuído por abandono/i)).toBeInTheDocument()
+describe('MatchDetailPage — read', () => {
+  it('shows a not-found message for a match that does not exist', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockRejectedValue(apiFailure('RECORD_NOT_FOUND', 'Match not found'))
+
+    renderDetail()
+
+    expect(await screen.findByText('Partida não encontrada.')).toBeInTheDocument()
   })
 
-  it('marks a W.O. and does not show an empty súmula as if it were missing data', async () => {
-    renderDetail('218')
-    expect(await screen.findByText(/vitória por w\.o\./i)).toBeInTheDocument()
-    expect(await screen.findByText('Finalizada')).toBeInTheDocument()
-    expect(screen.queryByText(/aguardando estatísticas/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/placar por período/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/partida não disputada\. não há súmula/i)).toBeInTheDocument()
-  })
-
-  it('renders stored playing time as MM:SS in the stats tab', async () => {
+  it('offers a retry on an unrelated load error', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    const getMatch = vi.spyOn(sportsApi, 'getMatch').mockRejectedValue(new Error('network down'))
     const user = userEvent.setup()
-    renderDetail('131')
 
-    await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
-    const player = await screen.findByRole('link', { name: 'Rafael Moura' })
-    const row = player.closest('tr')
-    expect(row).not.toBeNull()
-    expect(within(row as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Tentar novamente' }))
+
+    expect(getMatch).toHaveBeenCalledTimes(2)
   })
 
-  it('labels box score turnovers as TOV', async () => {
+  it('renders the team names straight from the match sides, without a catalog lookup', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    const getTeams = vi.spyOn(sportsApi, 'getTeams')
+
+    renderDetail()
+
+    expect(await screen.findByText('Águias')).toBeInTheDocument()
+    expect(screen.getByText('Falcões')).toBeInTheDocument()
+    expect(getTeams).not.toHaveBeenCalled()
+  })
+
+  it('hides the score when either side has not been recorded', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+
+    renderDetail()
+
+    expect(await screen.findByText('× × ×')).toBeInTheDocument()
+  })
+
+  it('shows the official score once both sides are recorded', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({
+      status: 'FINISHED',
+      scoreSource: 'PERIODS',
+      homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
+      awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
+    }))
+
+    renderDetail()
+
+    expect(await screen.findByText('80')).toBeInTheDocument()
+    expect(screen.getByText('75')).toBeInTheDocument()
+  })
+
+  it('labels a periods-sourced score as "Placar por períodos"', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ scoreSource: 'PERIODS' }))
+
+    renderDetail()
+
+    expect(await screen.findByText('Placar por períodos')).toBeInTheDocument()
+  })
+
+  it('labels an awarded score as "Placar atribuído"', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ scoreSource: 'AWARDED' }))
+
+    renderDetail()
+
+    expect(await screen.findByText('Placar atribuído')).toBeInTheDocument()
+  })
+
+  it('does not show a derived match-leaders section', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+
+    renderDetail()
+
+    await screen.findByText('Águias')
+    expect(screen.queryByText(/líderes da partida/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('MatchDetailPage — admin actions', () => {
+  it('links to the edit page', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+
+    renderDetail()
+
+    expect(await screen.findByRole('link', { name: 'Editar partida' })).toHaveAttribute('href', '/matches/501/edit')
+  })
+
+  it('offers Adiar for a scheduled match', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+
+    renderDetail()
+
+    expect(await screen.findByRole('button', { name: 'Adiar' })).toBeInTheDocument()
+  })
+
+  it('hides Adiar once a match is finished', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+
+    renderDetail()
+
+    await screen.findByText('Águias')
+    expect(screen.queryByRole('button', { name: 'Adiar' })).not.toBeInTheDocument()
+  })
+
+  it('offers Cancelar for a postponed match', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'POSTPONED' }))
+
+    renderDetail()
+
+    expect(await screen.findByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+  })
+
+  it('hides Cancelar once a match is finished', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+
+    renderDetail()
+
+    await screen.findByText('Águias')
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
+  })
+
+  it('shows Phase 9 unavailability with a disabled Lançar resultado control', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+
+    renderDetail()
+
+    expect(await screen.findByRole('button', { name: 'Lançar resultado' })).toBeDisabled()
+    expect(screen.getByText('Lançamento de resultado estará disponível após a integração da Fase 9.')).toBeInTheDocument()
+  })
+
+  it('asks for inline confirmation before postponing', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
     const user = userEvent.setup()
-    renderDetail('131')
 
-    await user.click(await screen.findByRole('tab', { name: 'Estatísticas' }))
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
 
-    expect(await screen.findByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('A partida ficará Adiada até que uma nova data seja salva.')
   })
 
-  it('sends the back button to the championship matches list, not the global one', async () => {
-    renderDetail('131')
+  it('asks for inline confirmation before cancelling', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    const user = userEvent.setup()
 
-    await screen.findByText('Mandante')
-    const back = screen.getByRole('link', { name: 'Partidas' })
-    expect(back).toHaveAttribute('href', '/tournaments/1?tab=matches')
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('A partida será cancelada e não poderá ser reativada nesta fase.')
   })
 
-  it('shows the enrollment snapshot name in the score hero, not the live global team name', async () => {
-    renderDetail('131')
+  it('disables the other action while a status mutation is in flight', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    vi.spyOn(sportsApi, 'postponeMatch').mockReturnValue(new Promise(() => {}))
+    const user = userEvent.setup()
 
-    expect((await screen.findAllByText('Titans FC')).length).toBeGreaterThan(0)
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar adiamento' }))
+
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
   })
 
-  it('resolves the MVP from the queried athlete catalog', async () => {
-    const athletes = await sportsApi.getAthletes()
-    vi.spyOn(sportsApi, 'getAthletes').mockResolvedValueOnce(
-      athletes.map((athlete) => athlete.id === 101 ? { ...athlete, name: 'MVP via seam' } : athlete),
-    )
-    renderDetail('131')
-    expect(await screen.findByText('MVP via seam')).toBeInTheDocument()
+  it('keeps the page and shows the returned status after a successful postpone', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    vi.spyOn(sportsApi, 'postponeMatch').mockResolvedValue(buildMatch({ status: 'POSTPONED' }))
+    const user = userEvent.setup()
+
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar adiamento' }))
+
+    expect(await screen.findByText('Adiada')).toBeInTheDocument()
+  })
+
+  it('re-reads the match and reports its current status on a stale transition', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    const getMatch = vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    const postponeMatch = vi.spyOn(sportsApi, 'postponeMatch')
+      .mockRejectedValue(apiFailure('INVALID_STATUS_TRANSITION', 'Only a scheduled or live match can be postponed.'))
+    const user = userEvent.setup()
+
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
+    getMatch.mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar adiamento' }))
+
+    expect(await screen.findByText('A partida está com status Finalizada e não pode mais ser adiada.')).toBeInTheDocument()
+    expect(postponeMatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes the confirmation after a stale transition so the obsolete action cannot be retried', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    const getMatch = vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    vi.spyOn(sportsApi, 'postponeMatch')
+      .mockRejectedValue(apiFailure('INVALID_STATUS_TRANSITION', 'Only a scheduled or live match can be postponed.'))
+    const user = userEvent.setup()
+
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
+    getMatch.mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar adiamento' }))
+    await screen.findByText('A partida está com status Finalizada e não pode mais ser adiada.')
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 })

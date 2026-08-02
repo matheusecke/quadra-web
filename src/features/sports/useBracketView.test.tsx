@@ -36,13 +36,13 @@ const DEMO_BRACKET: sportsApi.BracketRead = {
     { id: 3, tournamentId: SEED_TOURNAMENT.GERAL, number: 3, label: 'Final' },
   ],
   slots: [
-    { id: 1, roundId: 1, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(5), winnerTournamentTeamId: teamRef(1).tournamentTeamId },
-    { id: 2, roundId: 1, position: 2, label: null, homeTeam: teamRef(13), awayTeam: teamRef(10), winnerTournamentTeamId: teamRef(13).tournamentTeamId },
-    { id: 3, roundId: 1, position: 3, label: null, homeTeam: teamRef(6), awayTeam: teamRef(2), winnerTournamentTeamId: teamRef(2).tournamentTeamId },
-    { id: 4, roundId: 1, position: 4, label: null, homeTeam: teamRef(9), awayTeam: teamRef(14), winnerTournamentTeamId: teamRef(9).tournamentTeamId },
-    { id: 5, roundId: 2, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(13), winnerTournamentTeamId: teamRef(1).tournamentTeamId },
-    { id: 6, roundId: 2, position: 2, label: null, homeTeam: teamRef(2), awayTeam: teamRef(9), winnerTournamentTeamId: teamRef(2).tournamentTeamId },
-    { id: 7, roundId: 3, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(2), winnerTournamentTeamId: teamRef(1).tournamentTeamId },
+    { id: 1, roundId: 1, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(5), match: null, winnerTournamentTeamId: teamRef(1).tournamentTeamId },
+    { id: 2, roundId: 1, position: 2, label: null, homeTeam: teamRef(13), awayTeam: teamRef(10), match: null, winnerTournamentTeamId: teamRef(13).tournamentTeamId },
+    { id: 3, roundId: 1, position: 3, label: null, homeTeam: teamRef(6), awayTeam: teamRef(2), match: null, winnerTournamentTeamId: teamRef(2).tournamentTeamId },
+    { id: 4, roundId: 1, position: 4, label: null, homeTeam: teamRef(9), awayTeam: teamRef(14), match: null, winnerTournamentTeamId: teamRef(9).tournamentTeamId },
+    { id: 5, roundId: 2, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(13), match: null, winnerTournamentTeamId: teamRef(1).tournamentTeamId },
+    { id: 6, roundId: 2, position: 2, label: null, homeTeam: teamRef(2), awayTeam: teamRef(9), match: null, winnerTournamentTeamId: teamRef(2).tournamentTeamId },
+    { id: 7, roundId: 3, position: 1, label: null, homeTeam: teamRef(1), awayTeam: teamRef(2), match: null, winnerTournamentTeamId: teamRef(1).tournamentTeamId },
   ],
 }
 

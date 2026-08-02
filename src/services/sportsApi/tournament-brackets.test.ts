@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() }))
+const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() }))
 vi.mock('../api', () => ({ default: apiMock }))
 
 import {
   createBracketRound,
   createBracketSlot,
   getBracket,
+  linkBracketSlotMatch,
   removeBracketRound,
   removeBracketSlot,
+  setBracketSlotWinner,
+  unlinkBracketSlotMatch,
   updateBracketRound,
   updateBracketSlot,
 } from './tournament-brackets'
@@ -30,7 +33,9 @@ const readEnvelope = {
           {
             id: 102, position: 2, label: null,
             homeTeam: { tournamentTeamId: 23, name: 'Direito', shortName: 'DIR' },
-            awayTeam: null, match: null, winnerTournamentTeamId: null,
+            awayTeam: null,
+            match: { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 78, awayScore: 65 },
+            winnerTournamentTeamId: null,
           },
         ],
       },
@@ -38,6 +43,12 @@ const readEnvelope = {
     ],
   },
   statusCode: 200,
+}
+
+const bracketSlotRow = {
+  id: 102, tournamentId: 12, roundId: 10, position: 2, label: null,
+  homeTournamentTeamId: 23, awayTournamentTeamId: null, matchId: 501, winnerTournamentTeamId: null,
+  createdAt: '2026-07-28T18:05:00.000Z', updatedAt: '2026-07-28T18:05:00.000Z',
 }
 
 const roundRow = {
@@ -54,6 +65,7 @@ const slotRow = {
 beforeEach(() => {
   apiMock.get.mockReset()
   apiMock.post.mockReset()
+  apiMock.put.mockReset()
   apiMock.patch.mockReset()
   apiMock.delete.mockReset()
 })
@@ -80,15 +92,21 @@ describe('getBracket', () => {
     expect(slots.map((slot) => [slot.id, slot.roundId])).toEqual([[101, 10], [102, 10]])
   })
 
-  it('keeps the embedded team names on the slot and drops the always-null match', async () => {
+  it('keeps the embedded team names on the slot and preserves a null match', async () => {
     apiMock.get.mockResolvedValue({ data: readEnvelope })
     const { slots } = await getBracket(12)
     expect(slots[0]).toEqual({
       id: 101, roundId: 10, position: 1, label: null,
       homeTeam: { tournamentTeamId: 21, name: 'Engenharia', shortName: 'ENG' },
       awayTeam: { tournamentTeamId: 22, name: 'Medicina', shortName: 'MED' },
-      winnerTournamentTeamId: null,
+      match: null, winnerTournamentTeamId: null,
     })
+  })
+
+  it('preserves a linked match view unchanged', async () => {
+    apiMock.get.mockResolvedValue({ data: readEnvelope })
+    const { slots } = await getBracket(12)
+    expect(slots[1].match).toEqual({ id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 78, awayScore: 65 })
   })
 
   it('answers an empty bracket with two empty lists', async () => {
@@ -146,5 +164,36 @@ describe('bracket slots', () => {
     apiMock.delete.mockResolvedValue({ status: 204 })
     expect(await removeBracketSlot(102)).toBeUndefined()
     expect(apiMock.delete).toHaveBeenCalledWith('/tournament-bracket-slots/102')
+  })
+})
+
+describe('bracket slot match link', () => {
+  it('posts only the match id to the link-match route', async () => {
+    apiMock.post.mockResolvedValue({ data: { data: bracketSlotRow, statusCode: 200 } })
+    await linkBracketSlotMatch(71, { matchId: 501 })
+    expect(apiMock.post).toHaveBeenCalledWith('/tournament-bracket-slots/71/link-match', { matchId: 501 })
+  })
+
+  it('unwraps the linked slot row', async () => {
+    apiMock.post.mockResolvedValue({ data: { data: bracketSlotRow, statusCode: 200 } })
+    expect(await linkBracketSlotMatch(71, { matchId: 501 })).toEqual(bracketSlotRow)
+  })
+
+  it('resolves undefined on unlink without a body or query', async () => {
+    apiMock.delete.mockResolvedValue({ status: 204 })
+    expect(await unlinkBracketSlotMatch(71)).toBeUndefined()
+    expect(apiMock.delete).toHaveBeenCalledWith('/tournament-bracket-slots/71/link-match')
+  })
+
+  it('puts the chosen winner to the winner route', async () => {
+    apiMock.put.mockResolvedValue({ data: { data: { ...bracketSlotRow, winnerTournamentTeamId: 41 }, statusCode: 200 } })
+    await setBracketSlotWinner(71, { winnerTournamentTeamId: 41 })
+    expect(apiMock.put).toHaveBeenCalledWith('/tournament-bracket-slots/71/winner', { winnerTournamentTeamId: 41 })
+  })
+
+  it('puts null to clear the winner', async () => {
+    apiMock.put.mockResolvedValue({ data: { data: { ...bracketSlotRow, winnerTournamentTeamId: null }, statusCode: 200 } })
+    await setBracketSlotWinner(71, { winnerTournamentTeamId: null })
+    expect(apiMock.put).toHaveBeenCalledWith('/tournament-bracket-slots/71/winner', { winnerTournamentTeamId: null })
   })
 })

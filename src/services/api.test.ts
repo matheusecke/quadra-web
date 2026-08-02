@@ -134,4 +134,9 @@ describe('serialização de query params', () => {
   it('mantém um parâmetro escalar intacto', () => {
     expect(buildURL('/seasons', { q: 'copa' }, PARAMS_SERIALIZER)).toBe('/seasons?q=copa')
   })
+
+  it('serializes match id filters as repeated query params', () => {
+    expect(buildURL('/matches', { ids: [501, 508], tournamentTeamIds: [41, 52] }, PARAMS_SERIALIZER))
+      .toBe('/matches?ids=501&ids=508&tournamentTeamIds=41&tournamentTeamIds=52')
+  })
 })

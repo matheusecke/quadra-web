@@ -116,35 +116,47 @@ export interface StatLeaders {
 /** Why the loser lost. Drives FIBA classification points: NORMAL/DEFAULT = 1, FORFEIT = 0. */
 export type LossType = 'NORMAL' | 'DEFAULT' | 'FORFEIT'
 
-/**
- * Where the final score came from (DB spec §8.9).
- * 'PERIODS' is the sum of the periods; 'AWARDED' is assigned by the rules.
- * null means the match is not finished yet.
- */
-export type ScoreSource = 'PERIODS' | 'AWARDED' | null
+export type MatchSideResult = 'WIN' | 'LOSS'
+export type MatchScoreSource = 'PERIODS' | 'AWARDED'
 
-export interface Match {
+export interface MatchSide {
+  tournamentTeamId: number
+  teamName: string
+  score: number | null
+  result: MatchSideResult | null
+  lossType: LossType | null
+  isWinner: boolean | null
+}
+
+export interface MatchBracketRound {
+  id: number
+  number: number
+  label: string | null
+}
+
+export interface MatchSummary {
   id: number
   tournamentId: number
-  date: string // ISO datetime
-  homeTournamentTeamId: number
-  awayTournamentTeamId: number
-  homeScore: number | null
-  awayScore: number | null
-  status: MatchStatus
-  venue?: string
-  /** Set when the match belongs to a group stage; null for league and knockout games. */
   tournamentGroupId: number | null
-  /**
-   * Knockout round derived via match → bracket slot → round. Null outside the bracket.
-   * Mutually exclusive with tournamentGroupId by construction.
-   */
-  bracketRound: { id: number; number: number; label: string | null } | null
-  /** Set on the losing side only; null on the winner and while unfinished. §8.10 */
-  homeLossType: LossType | null
-  awayLossType: LossType | null
-  /** null while the match is not FINISHED. §8.9 */
-  scoreSource: ScoreSource
+  matchNumber: number | null
+  status: MatchStatus
+  scheduledAt: string
+  startedAt: string | null
+  endedAt: string | null
+  venueName: string | null
+  bracketRound: MatchBracketRound | null
+  scoreSource: MatchScoreSource | null
+  homeTeam: MatchSide
+  awayTeam: MatchSide
+}
+
+export interface MatchPeriod {
+  periodNumber: number
+  periodType: 'REGULAR' | 'OVERTIME'
+  homePoints: number
+  awayPoints: number
+  startedAt: string | null
+  endedAt: string | null
 }
 
 export type TournamentFormat =
@@ -277,6 +289,14 @@ export interface BracketSlotTeam {
   shortName: string
 }
 
+export interface BracketMatchView {
+  id: number
+  status: MatchStatus
+  date: string | null
+  homeScore: number | null
+  awayScore: number | null
+}
+
 export interface BracketSlotView {
   id: number
   /** Copied from the parent round while flattening. */
@@ -285,6 +305,7 @@ export interface BracketSlotView {
   label: string | null
   homeTeam: BracketSlotTeam | null
   awayTeam: BracketSlotTeam | null
+  match: BracketMatchView | null
   winnerTournamentTeamId: number | null
 }
 
@@ -293,34 +314,23 @@ export interface BracketSlotView {
 /** Individual player box-score line for a single match. */
 export interface PlayerMatchStats {
   tournamentRosterId: number
-  athleteId: number
-  athleteName: string
-  number: number
-  minutesSeconds: number | null
+  tournamentTeamId: number
+  displayName: string
   pts: number | null
+  fgm: number | null
+  fga: number | null
+  threeFgm: number | null
+  threeFga: number | null
+  ftm: number | null
+  fta: number | null
   reb: number | null
   ast: number | null
   stl: number | null
   blk: number | null
   tov: number | null
   pf: number | null
-  fgm: number | null
-  fga: number | null
-  threeFgm: number | null  // 3-pointers made
-  threeFga: number | null  // 3-pointers attempted
-  ftm: number | null
-  fta: number | null
+  minutesSeconds: number | null
 }
-
-export type PlayerBoxScore = PlayerMatchStats
-
-/** Aggregated stats for one team in a match. */
-export interface TeamMatchStats {
-  tournamentTeamId: number
-  players: PlayerMatchStats[]
-}
-
-export type TeamStats = TeamMatchStats
 
 export interface AthleteStatTotals {
   games: number
@@ -342,7 +352,10 @@ export interface AthleteStatTotals {
 }
 
 export interface AthleteMatchStatsRow {
-  match: Match
+  match: {
+    id: number
+    scheduledAt: string
+  }
   tournament: Tournament
   tournamentTeamId: number
   /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
@@ -375,30 +388,16 @@ export interface PeriodScore {
   awayPoints: number | null
 }
 
-export interface MatchLeader {
-  metric: 'PTS' | 'REB' | 'AST' | 'STL' | 'BLK'
-  label: string
-  value: number
-  athleteId: number
-  athleteName: string
-  tournamentTeamId: number
-  /** Global team id — legit catalog metadata, kept alongside the identity field. */
-  teamId: number
-}
-
 /** Curated award, chosen by the ORG_ADMIN — not derived from statistics. DB spec §8.10. */
 export interface MatchMvp {
   tournamentRosterId: number
-  athleteId: number
+  displayName: string
 }
 
 /** Match with full box score data. */
-export interface MatchDetail extends Match {
-  /** Dynamic per-period scores. Drives the "Placar por período" table.
-   *  Null when no period data has been recorded yet. */
-  periodScores: PeriodScore[] | null
-  homeStats: TeamMatchStats
-  awayStats: TeamMatchStats
+export interface MatchDetail extends MatchSummary {
+  periods: MatchPeriod[]
+  playerStats: PlayerMatchStats[]
   /** null on a W.O. and until the admin picks one. §8.10 */
   mvp: MatchMvp | null
 }

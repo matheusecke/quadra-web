@@ -170,5 +170,19 @@ describe('AthleteDetailPage', () => {
 
     await waitForAthletePage()
   })
+
+  it('renders an athlete match using the scheduledAt slice', async () => {
+    const [row] = await sportsApi.getAthleteMatches(RAFAEL_ID)
+    vi.spyOn(sportsApi, 'getAthleteMatches').mockResolvedValue([
+      { ...row, match: { id: row.match.id, scheduledAt: '2026-08-01T22:00:00.000Z' } },
+    ])
+    const user = userEvent.setup()
+
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(screen.getByText('01/08/2026')).toBeInTheDocument()
+  })
 })
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

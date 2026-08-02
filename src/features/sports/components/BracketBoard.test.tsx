@@ -3,7 +3,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { BracketBoard } from './BracketBoard'
-import type { BracketRound, BracketSlotView } from '../types'
+import { formatDateTime } from '../sportsUtils'
+import type { BracketMatchView, BracketRound, BracketSlotView } from '../types'
 
 const rounds: BracketRound[] = [
   { id: 1, tournamentId: 1, number: 1, label: 'Semifinais' },
@@ -16,6 +17,7 @@ const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'rou
   label: null,
   homeTeam: null,
   awayTeam: null,
+  match: null,
   winnerTournamentTeamId: null,
   ...over,
 })
@@ -128,5 +130,41 @@ describe('BracketBoard', () => {
   it('renders no control that writes', () => {
     renderBoard()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  describe('linked match', () => {
+    const linkedMatch: BracketMatchView = { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 72, awayScore: 68 }
+
+    it('shows no linked match block when the slot has none', () => {
+      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1 })] })
+      expect(screen.queryByLabelText('Partida vinculada')).not.toBeInTheDocument()
+    })
+
+    it('links to the linked match, with its status, date and score', () => {
+      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, match: linkedMatch })] })
+      expect(screen.getByRole('link', { name: /Partida #501/ })).toHaveAttribute('href', '/matches/501')
+      expect(screen.getByText('Finalizada')).toBeInTheDocument()
+      expect(screen.getByText(formatDateTime(linkedMatch.date!))).toBeInTheDocument()
+      expect(screen.getByText('72 × 68')).toBeInTheDocument()
+    })
+
+    it('keeps the score in its own block, not attached to either side name', () => {
+      renderBoard({
+        slots: [slot({
+          id: 11, roundId: 1, position: 1,
+          homeTeam: team(1, 'Alfa', 'T01'), awayTeam: team(2, 'Beta', 'T02'),
+          match: linkedMatch,
+        })],
+      })
+      expect(screen.getByText('Alfa')).toBeInTheDocument()
+      expect(screen.getByText('Beta')).toBeInTheDocument()
+      expect(screen.getByText('72 × 68').closest('article')).toContainElement(screen.getByText('Alfa'))
+    })
+
+    it('shows a placeholder when the linked match has no date or score yet', () => {
+      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })] })
+      expect(screen.getByText('Data não informada')).toBeInTheDocument()
+      expect(screen.getByText('Placar indisponível')).toBeInTheDocument()
+    })
   })
 })

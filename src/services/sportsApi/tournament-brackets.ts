@@ -1,20 +1,22 @@
 import api from '../api'
 import type { ApiResponse } from '../../types/api'
-import type { BracketRound, BracketSlot, BracketSlotTeam, BracketSlotView } from '../../features/sports/types'
+import type { BracketMatchView, BracketRound, BracketSlot, BracketSlotTeam, BracketSlotView } from '../../features/sports/types'
 import type {
   CreateBracketRoundInput,
   CreateBracketSlotInput,
+  LinkBracketSlotMatchInput,
+  SetBracketSlotWinnerInput,
   UpdateBracketRoundInput,
   UpdateBracketSlotInput,
 } from './types'
 
-/** `match` is always null in Phase 6; Phase 7 is what starts filling it. */
 interface ReadSlot {
   id: number
   position: number
   label: string | null
   homeTeam: BracketSlotTeam | null
   awayTeam: BracketSlotTeam | null
+  match: BracketMatchView | null
   winnerTournamentTeamId: number | null
 }
 
@@ -32,7 +34,7 @@ export interface BracketRead {
 
 /**
  * The read is a tree; every consumer wants two ordered lists. Flattening copies `roundId`
- * from the parent and drops the always-null `match` — no recomputation, no re-sorting.
+ * from the parent and passes the slot through as-is — no recomputation, no re-sorting.
  * The route takes no query string: anything appended is a 400.
  */
 export const getBracket = (tournamentId: number): Promise<BracketRead> =>
@@ -51,6 +53,7 @@ export const getBracket = (tournamentId: number): Promise<BracketRead> =>
         label: slot.label,
         homeTeam: slot.homeTeam,
         awayTeam: slot.awayTeam,
+        match: slot.match,
         winnerTournamentTeamId: slot.winnerTournamentTeamId,
       })),
     ),
@@ -75,3 +78,12 @@ export const updateBracketSlot = (id: number, input: UpdateBracketSlotInput) =>
 
 export const removeBracketSlot = (id: number) =>
   api.delete(`/tournament-bracket-slots/${id}`).then(() => undefined)
+
+export const linkBracketSlotMatch = (slotId: number, input: LinkBracketSlotMatchInput) =>
+  api.post<ApiResponse<BracketSlot>>(`/tournament-bracket-slots/${slotId}/link-match`, input).then(({ data }) => data.data)
+
+export const unlinkBracketSlotMatch = (slotId: number) =>
+  api.delete(`/tournament-bracket-slots/${slotId}/link-match`).then(() => undefined)
+
+export const setBracketSlotWinner = (slotId: number, input: SetBracketSlotWinnerInput) =>
+  api.put<ApiResponse<BracketSlot>>(`/tournament-bracket-slots/${slotId}/winner`, input).then(({ data }) => data.data)

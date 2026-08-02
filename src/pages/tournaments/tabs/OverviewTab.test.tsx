@@ -2,11 +2,12 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getTournamentById, getMatchesByTournament, getTeams } from '../../../features/sports/mock-sports-data'
+import { getTournamentById, getTeams } from '../../../features/sports/mock-sports-data'
 import * as sportsApi from '../../../services/sportsApi'
-import { tournamentTeamMap } from '../../../features/sports/sportsUtils'
 import { OverviewTab } from './OverviewTab'
-import type { StandingsEnvelope } from '../../../features/sports/types'
+import type { MatchSummary, StandingsEnvelope } from '../../../features/sports/types'
+
+const teams = new Map(getTeams().map((team) => [team.id, team]))
 
 const { isOrgAdmin } = vi.hoisted(() => ({ isOrgAdmin: { value: false } }))
 vi.mock('../../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => isOrgAdmin.value }))
@@ -18,16 +19,40 @@ const groupTable = (id: number, name: string): StandingsEnvelope => ({
   rows: [],
 })
 
-const renderGeral = (tournament = getTournamentById(1)!, onSeeBracket = vi.fn()) => {
+const matches: MatchSummary[] = [
+  {
+    id: 101,
+    tournamentId: 1,
+    tournamentGroupId: null,
+    matchNumber: null,
+    status: 'FINISHED',
+    scheduledAt: '2026-06-07T21:00:00.000Z',
+    startedAt: null,
+    endedAt: null,
+    venueName: 'Ginásio Central',
+    bracketRound: null,
+    scoreSource: 'PERIODS',
+    homeTeam: { tournamentTeamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+    awayTeam: { tournamentTeamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
+  },
+]
 
-  const teams = new Map(getTeams().map((team) => [team.id, team]))
-  const matches = getMatchesByTournament(1)
+const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Parameters<typeof OverviewTab>[0]> = {}) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <OverviewTab tournament={tournament} matches={matches} teams={teams} tournamentTeams={tournamentTeamMap([], teams)} onSeeBracket={onSeeBracket} />
+        <OverviewTab
+          tournament={tournament}
+          matches={matches}
+          matchesPending={false}
+          matchesError={false}
+          onRetryMatches={vi.fn()}
+          teams={teams}
+          onSeeBracket={vi.fn()}
+          {...props}
+        />
       </QueryClientProvider>
     </MemoryRouter>,
   )
@@ -97,5 +122,24 @@ describe('OverviewTab', () => {
 
     await waitFor(() => expect(screen.getByText(/não foi possível carregar a classificação/i)).toBeInTheDocument())
     expect(screen.queryByText(/grupos ainda não definidos/i)).not.toBeInTheDocument()
+  })
+
+  it('shows a matches skeleton while the tournament match collection loads', () => {
+    renderGeral(getTournamentById(1)!, { matchesPending: true })
+
+    expect(screen.queryByLabelText('Abutres 77 - 74 Águias Douradas')).not.toBeInTheDocument()
+  })
+
+  it('shows a matches error state with retry instead of an empty list', async () => {
+    const onRetryMatches = vi.fn()
+    renderGeral(getTournamentById(1)!, { matchesError: true, onRetryMatches })
+
+    expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
+  })
+
+  it('renders the tournament matches without a client-side resort', () => {
+    renderGeral()
+
+    expect(screen.getByLabelText('Abutres 77 - 74 Águias Douradas')).toBeInTheDocument()
   })
 })

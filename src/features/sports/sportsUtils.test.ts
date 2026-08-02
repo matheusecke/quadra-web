@@ -110,7 +110,7 @@ describe('matchPhaseName', () => {
 })
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 701001, athleteId: 101, athleteName: 'A', number: 1,
+  tournamentRosterId: 701001, tournamentTeamId: 1, displayName: 'A',
   minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
   fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, ...over,
 })
