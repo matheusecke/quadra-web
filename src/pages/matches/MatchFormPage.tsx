@@ -193,7 +193,6 @@ export function MatchFormPage() {
     }
     if (code === 'TOURNAMENT_NOT_MUTABLE') {
       void tournamentQuery.refetch()
-      if (lookupTournamentId) navigate(`/tournaments/${lookupTournamentId}?tab=matches`)
       setFormError('Este campeonato não aceita novas partidas.')
       return
     }
@@ -329,7 +328,7 @@ export function MatchFormPage() {
         </Field>
 
         <div className={s.teams}>
-          <Field label="Mandante" id="match-home" error={fieldErrors?.homeTournamentTeamId?.[0]}>
+          <Field label="Mandante" id="match-home" error={sameTeams ? 'Selecione equipes diferentes.' : fieldErrors?.homeTournamentTeamId?.[0]}>
             <Combobox
               id="match-home"
               options={teamOptions.map((team) => ({ value: String(team.id), label: team.name }))}

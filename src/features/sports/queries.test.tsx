@@ -181,7 +181,7 @@ describe('match queries', () => {
     expect(sportsApi.postponeMatch).toHaveBeenCalledTimes(1)
   })
 
-  it('invalidates match lists, the tournament detail and standings after create', async () => {
+  it('invalidates match lists, the tournament match list, the tournament detail and standings after create', async () => {
     vi.spyOn(sportsApi, 'createMatch').mockResolvedValue(matchDetail)
     const { client, Wrapper } = createWrapper()
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
@@ -195,6 +195,7 @@ describe('match queries', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
+      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
     ])

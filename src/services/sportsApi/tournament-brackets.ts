@@ -34,7 +34,7 @@ export interface BracketRead {
 
 /**
  * The read is a tree; every consumer wants two ordered lists. Flattening copies `roundId`
- * from the parent and drops the always-null `match` — no recomputation, no re-sorting.
+ * from the parent and passes the slot through as-is — no recomputation, no re-sorting.
  * The route takes no query string: anything appended is a 400.
  */
 export const getBracket = (tournamentId: number): Promise<BracketRead> =>

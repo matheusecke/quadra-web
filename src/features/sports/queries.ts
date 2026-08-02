@@ -498,6 +498,7 @@ export function useCreateMatch() {
     retryDelay: 0,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
     },

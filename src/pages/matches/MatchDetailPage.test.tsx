@@ -257,4 +257,20 @@ describe('MatchDetailPage — admin actions', () => {
     expect(await screen.findByText('A partida está com status Finalizada e não pode mais ser adiada.')).toBeInTheDocument()
     expect(postponeMatch).toHaveBeenCalledTimes(1)
   })
+
+  it('closes the confirmation after a stale transition so the obsolete action cannot be retried', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    const getMatch = vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'SCHEDULED' }))
+    vi.spyOn(sportsApi, 'postponeMatch')
+      .mockRejectedValue(apiFailure('INVALID_STATUS_TRANSITION', 'Only a scheduled or live match can be postponed.'))
+    const user = userEvent.setup()
+
+    renderDetail()
+    await user.click(await screen.findByRole('button', { name: 'Adiar' }))
+    getMatch.mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar adiamento' }))
+    await screen.findByText('A partida está com status Finalizada e não pode mais ser adiada.')
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
 })

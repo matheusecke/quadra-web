@@ -192,8 +192,29 @@ describe('MatchFormPage create', () => {
     await userEvent.click(screen.getByLabelText(/visitante/i))
     await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
 
-    expect(screen.getAllByText('Selecione equipes diferentes.')).toHaveLength(1)
+    expect(screen.getAllByText('Selecione equipes diferentes.')).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Agendar partida' })).toBeDisabled()
+  })
+
+  it('keeps the form and explains the refusal when the championship no longer accepts matches', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([buildTournament()])
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue(buildTournament())
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(buildTournamentTeams(1))
+    vi.spyOn(sportsApi, 'createMatch').mockRejectedValue(
+      apiFailure('TOURNAMENT_NOT_MUTABLE', 'Matches cannot be created for a completed or cancelled tournament.'),
+    )
+    renderNew()
+
+    await userEvent.click(await screen.findByLabelText(/campeonato/i))
+    await userEvent.click(await screen.findByRole('option', { name: 'Copa Teste' }))
+    await userEvent.click(await screen.findByLabelText(/mandante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
+    await userEvent.click(screen.getByLabelText(/visitante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 2' }))
+    fireEvent.change(screen.getByLabelText('Data e hora'), { target: { value: '01/08/2026 22:00' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Agendar partida' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Este campeonato não aceita novas partidas.')
   })
 })
 
@@ -324,6 +345,73 @@ describe('MatchFormPage edit', () => {
     expect(screen.getByLabelText(/mandante/i)).toBeDisabled()
     expect(screen.getByLabelText('Data e hora')).toBeDisabled()
     expect(screen.getByLabelText('Local')).not.toBeDisabled()
+  })
+
+  it('locks participants but keeps the date editable while the match is live', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatchDetail({ status: 'LIVE' }))
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue(buildTournament())
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(buildTournamentTeams(1))
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    renderEdit()
+    await waitFor(() => expect(screen.getByLabelText('Local')).toHaveValue('Quadra 1'))
+
+    expect(screen.getByLabelText(/mandante/i)).toBeDisabled()
+    expect(screen.getByLabelText('Data e hora')).not.toBeDisabled()
+  })
+
+  it('blocks Salvar when a touched required field is cleared', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatchDetail())
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue(buildTournament())
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(buildTournamentTeams(1))
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    renderEdit()
+    await waitFor(() => expect(screen.getByLabelText('Local')).toHaveValue('Quadra 1'))
+
+    fireEvent.change(screen.getByLabelText('Data e hora'), { target: { value: '' } })
+
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
+  })
+
+  it('disables the participants after the API reports an existing scoresheet', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatchDetail())
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue(buildTournament())
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(buildTournamentTeams(1))
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    vi.spyOn(sportsApi, 'updateMatch').mockRejectedValue(
+      apiFailure('MATCH_HAS_SCORESHEET', 'Participants cannot be changed after the scoresheet is recorded.'),
+    )
+    renderEdit()
+    await waitFor(() => expect(screen.getByLabelText('Local')).toHaveValue('Quadra 1'))
+
+    await userEvent.click(screen.getByLabelText(/mandante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 2' }))
+    await userEvent.click(screen.getByLabelText(/visitante/i))
+    await userEvent.click(screen.getByRole('option', { name: 'Time 1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await screen.findByText('Os participantes não podem ser alterados após o registro da súmula.')
+
+    expect(screen.getByLabelText(/mandante/i)).toBeDisabled()
+  })
+
+  it('disables the group after the API reports the match belongs to the bracket', async () => {
+    const groupStage = buildTournament({ format: 'GROUP_STAGE' })
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatchDetail())
+    vi.spyOn(sportsApi, 'getTournament').mockResolvedValue(groupStage)
+    vi.spyOn(sportsApi, 'getTournamentTeams').mockResolvedValue(buildTournamentTeams(1))
+    vi.spyOn(sportsApi, 'getGroups').mockResolvedValue([{ id: 9, tournamentId: 1, name: 'Grupo A', sortOrder: 1 } as TournamentGroup])
+    vi.spyOn(sportsApi, 'getBracket').mockResolvedValue({ rounds: [], slots: [] })
+    vi.spyOn(sportsApi, 'updateMatch').mockRejectedValue(
+      apiFailure('MATCH_IN_BRACKET', 'A match linked to a bracket slot cannot belong to a group.'),
+    )
+    renderEdit()
+    await waitFor(() => expect(screen.getByLabelText('Local')).toHaveValue('Quadra 1'))
+
+    await userEvent.click(await screen.findByLabelText('Grupo'))
+    await userEvent.click(screen.getByRole('option', { name: 'Grupo A' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await screen.findByText('Uma partida vinculada ao chaveamento não pode pertencer a um grupo.')
+
+    expect(screen.getByLabelText('Grupo')).toBeDisabled()
   })
 
   it('shows the field-level message from a VALIDATION_ERROR next to the field', async () => {

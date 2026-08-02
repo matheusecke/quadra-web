@@ -151,6 +151,7 @@ export function MatchDetailPage() {
       return
     }
     if (code === 'INVALID_STATUS_TRANSITION') {
+      setConfirmingAction(null)
       const refreshed = await matchQuery.refetch()
       const label = refreshed.data ? MATCH_STATUS_LABELS[refreshed.data.status] : ''
       setActionError(
