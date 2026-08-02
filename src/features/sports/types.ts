@@ -388,17 +388,6 @@ export interface PeriodScore {
   awayPoints: number | null
 }
 
-export interface MatchLeader {
-  metric: 'PTS' | 'REB' | 'AST' | 'STL' | 'BLK'
-  label: string
-  value: number
-  athleteId: number
-  athleteName: string
-  tournamentTeamId: number
-  /** Global team id — legit catalog metadata, kept alongside the identity field. */
-  teamId: number
-}
-
 /** Curated award, chosen by the ORG_ADMIN — not derived from statistics. DB spec §8.10. */
 export interface MatchMvp {
   tournamentRosterId: number

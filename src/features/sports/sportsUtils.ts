@@ -17,7 +17,6 @@ import type {
   MatchStatus,
   MatchSummary,
   PlayerMatchStats,
-  PeriodScore,
   StandingRow,
   Team,
   TournamentTeam,
@@ -206,13 +205,6 @@ export function getPeriodLabel(period: MatchPeriod): string {
   return period.periodNumber === 1 ? 'OT' : `${period.periodNumber}OT`
 }
 
-/** Safely totals one side from the dynamic period score list, ignoring null periods. */
-export function calculatePeriodTotal(periods: PeriodScore[] | null, side: 'home' | 'away'): number | null {
-  if (!periods?.length) return null
-  const key = side === 'home' ? 'homePoints' : 'awayPoints'
-  return periods.reduce<number>((sum, period) => sum + (period[key] ?? 0), 0)
-}
-
 // ── Per-match stat helpers ─────────────────────────────────────────────────────
 
 /** Percentage with 1 decimal. Returns '—' when denominator is 0. */
@@ -279,18 +271,6 @@ export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatT
 
 export function perGame(value: number | null, measuredGames: number): number | null {
   return value === null || measuredGames === 0 ? null : value / measuredGames
-}
-
-export interface TeamStatTotals {
-  minutesSeconds: number | null; pts: number | null; reb: number | null; ast: number | null; stl: number | null; blk: number | null
-  tov: number | null; pf: number | null; fgm: number | null; fga: number | null; threeFgm: number | null; threeFga: number | null
-  ftm: number | null; fta: number | null
-}
-
-export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
-  return Object.fromEntries(
-    STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
-  ) as Record<StatField, number | null>
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {
