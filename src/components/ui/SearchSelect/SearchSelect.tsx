@@ -30,6 +30,10 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
     setInputText(value?.label ?? '')
   }, [value])
 
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+  }, [])
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
