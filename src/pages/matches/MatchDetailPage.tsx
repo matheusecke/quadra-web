@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -8,8 +8,9 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
+import { matchWriteErrorMessage } from '../../features/sports/matchWriteErrorMessage'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useCancelMatch, useMatchDetailQuery, usePostponeMatch, useTournamentsQuery } from '../../features/sports/queries'
+import { useCancelMatch, useMatchDetailQuery, usePostponeMatch, useReopenMatch, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import {
   formatDate,
@@ -28,17 +29,25 @@ const TABS: TabItem[] = [
   { id: 'stats',   label: 'Estatísticas' },
 ]
 
-type PendingAction = 'postpone' | 'cancel'
+type PendingAction = 'postpone' | 'cancel' | 'reopen'
 
 const CONFIRM_COPY: Record<PendingAction, string> = {
   postpone: 'A partida ficará Adiada até que uma nova data seja salva.',
   cancel: 'A partida será cancelada e não poderá ser reativada nesta fase.',
+  reopen: 'O placar oficial será limpo. Períodos, estatísticas e MVP serão preservados para correção.',
+}
+
+const CONFIRM_LABEL: Record<PendingAction, string> = {
+  postpone: 'Confirmar adiamento',
+  cancel: 'Confirmar cancelamento',
+  reopen: 'Confirmar reabertura',
 }
 
 export function MatchDetailPage() {
   const { matchId: rawMatchId } = useParams<{ matchId: string }>()
   const matchId = parsePositiveId(rawMatchId)
   const isOrgAdmin = useIsOrgAdmin()
+  const navigate = useNavigate()
   const matchQuery = useMatchDetailQuery(matchId ?? undefined)
   const match = matchQuery.data
   const { data: tournaments } = useTournamentsQuery()
@@ -48,7 +57,10 @@ export function MatchDetailPage() {
 
   const postponeMutation = usePostponeMatch()
   const cancelMutation = useCancelMatch()
-  const actionPending = postponeMutation.isPending || cancelMutation.isPending
+  const reopenMutation = useReopenMatch()
+  const actionPending = postponeMutation.isPending
+    || cancelMutation.isPending
+    || reopenMutation.isPending
 
   // ── Invalid route param ────────────────────────────────────────────────────
   if (matchId == null) {
@@ -145,6 +157,12 @@ export function MatchDetailPage() {
     const code = apiErrorCode(error)
     const message = apiErrorMessage(error)
 
+    if (action === 'reopen') {
+      setConfirmingAction(null)
+      setActionError(matchWriteErrorMessage(error, 'reopen'))
+      if (code === 'INVALID_STATUS_TRANSITION') await matchQuery.refetch()
+      return
+    }
     if (code === 'RECORD_NOT_FOUND' && message === 'Match not found') {
       setConfirmingAction(null)
       setActionError('Partida não encontrada.')
@@ -173,6 +191,12 @@ export function MatchDetailPage() {
     if (!confirmingAction) return
     setActionError('')
     try {
+      if (confirmingAction === 'reopen') {
+        await reopenMutation.mutateAsync(match.id)
+        setConfirmingAction(null)
+        navigate(`/matches/${match.id}/sumula`)
+        return
+      }
       if (confirmingAction === 'postpone') {
         await postponeMutation.mutateAsync(match.id)
       } else {
@@ -203,7 +227,27 @@ export function MatchDetailPage() {
               <Link to={`/matches/${match.id}/edit`}>
                 <Button type="button" variant="secondary" size="sm">Editar partida</Button>
               </Link>
-              <Button type="button" variant="secondary" size="sm" disabled>Lançar resultado</Button>
+              {(match.status === 'SCHEDULED' || match.status === 'LIVE') && (
+                <Link to={`/matches/${match.id}/sumula`}>
+                  <Button type="button" variant="secondary" size="sm">
+                    {match.status === 'SCHEDULED' ? 'Lançar resultado' : 'Continuar súmula'}
+                  </Button>
+                </Link>
+              )}
+              {match.status === 'FINISHED' && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={actionPending}
+                  onClick={() => {
+                    setActionError('')
+                    setConfirmingAction('reopen')
+                  }}
+                >
+                  Reabrir resultado
+                </Button>
+              )}
               {canPostpone && (
                 <Button
                   type="button"
@@ -227,11 +271,6 @@ export function MatchDetailPage() {
                 </Button>
               )}
             </div>
-          )}
-          {isOrgAdmin && (
-            <p className={s.phaseNineNotice}>
-              Lançamento de resultado estará disponível após a integração da Fase 9.
-            </p>
           )}
         </div>
 
@@ -300,11 +339,17 @@ export function MatchDetailPage() {
           <div
             className={s.confirm}
             role="alertdialog"
-            aria-label={confirmingAction === 'postpone' ? 'Confirmar adiamento' : 'Confirmar cancelamento'}
+            aria-label={CONFIRM_LABEL[confirmingAction]}
           >
             <p>{CONFIRM_COPY[confirmingAction]}</p>
             <div className={s.confirmActions}>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingAction(null)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={actionPending}
+                onClick={() => setConfirmingAction(null)}
+              >
                 Voltar
               </Button>
               <Button
@@ -314,7 +359,7 @@ export function MatchDetailPage() {
                 loading={actionPending}
                 onClick={() => void handleConfirm()}
               >
-                {confirmingAction === 'postpone' ? 'Confirmar adiamento' : 'Confirmar cancelamento'}
+                {CONFIRM_LABEL[confirmingAction]}
               </Button>
             </div>
           </div>
