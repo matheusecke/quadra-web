@@ -140,3 +140,27 @@
 .error {
   color: var(--status-live);
 }
+
+.resultControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 240px));
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.modeNotice {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .resultControls {
+    grid-template-columns: 1fr;
+  }
+}

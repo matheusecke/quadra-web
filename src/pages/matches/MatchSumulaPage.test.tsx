@@ -466,3 +466,170 @@ describe('MatchSumulaPage — NORMAL result and warning', () => {
     expect(await screen.findByText('detalhe da partida')).toBeInTheDocument()
   })
 })
+
+const selectResultType = async (label: 'Normal' | 'Abandono' | 'W.O.') => {
+  await userEvent.click(screen.getByLabelText('Tipo de resultado'))
+  await userEvent.click(screen.getByRole('option', { name: label }))
+}
+
+const selectOffender = async (teamName: 'Engenharia' | 'Direito') => {
+  await userEvent.click(screen.getByLabelText('Equipe infratora'))
+  await userEvent.click(screen.getByRole('option', { name: teamName }))
+}
+
+describe('MatchSumulaPage — DEFAULT', () => {
+  it('keeps played fields and draft available in DEFAULT mode', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    renderSumula()
+
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('Abandono')
+
+    expect(screen.getByLabelText('Equipe infratora')).toBeInTheDocument()
+    expect(screen.getByLabelText('Engenharia — 1º período')).toBeInTheDocument()
+    expect(screen.getByLabelText('MVP da partida')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Salvar rascunho' })).toBeInTheDocument()
+  })
+
+  it('saves a DEFAULT-screen draft without result type or offender', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const saveDraft = vi.spyOn(sportsApi, 'saveMatchDraft').mockResolvedValue(
+      buildMatch({ status: 'LIVE' }),
+    )
+    renderSumula()
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('Abandono')
+    await selectOffender('Direito')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledWith(501, {
+      periods: zeroPeriods,
+      playerStats: zeroPlayerStats,
+      mvpTournamentRosterId: null,
+    }))
+    const body = saveDraft.mock.calls[0][1]
+    expect(body).not.toHaveProperty('resultType')
+    expect(body).not.toHaveProperty('offendingTournamentTeamId')
+  })
+
+  it('requires an offending participant before DEFAULT confirmation', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult')
+    renderSumula()
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('Abandono')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecione a equipe infratora.')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(submitResult).not.toHaveBeenCalled()
+  })
+
+  it('allows a tied court score and submits the complete DEFAULT body', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult').mockResolvedValue(
+      buildMatch({ status: 'FINISHED', scoreSource: 'AWARDED' }),
+    )
+    renderSumula()
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('Abandono')
+    await selectOffender('Direito')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(submitResult).toHaveBeenCalledWith(501, {
+      resultType: 'DEFAULT',
+      offendingTournamentTeamId: 52,
+      periods: zeroPeriods,
+      playerStats: zeroPlayerStats,
+      mvpTournamentRosterId: null,
+    }))
+    expect(await screen.findByText('detalhe da partida')).toBeInTheDocument()
+  })
+})
+
+describe('MatchSumulaPage — FORFEIT', () => {
+  it('hides played fields, warning and draft without previewing an awarded score', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    renderSumula()
+    fireEvent.change(await screen.findByLabelText('Engenharia — 1º período'), {
+      target: { value: '7' },
+    })
+    expect(screen.getByText(
+      'A soma dos pontos de Engenharia não confere com o placar por períodos.',
+    )).toBeInTheDocument()
+
+    await selectResultType('W.O.')
+
+    expect(screen.queryByLabelText('Engenharia — 1º período')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('MVP da partida')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salvar rascunho' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/não confere com o placar por períodos/i)).not.toBeInTheDocument()
+    expect(screen.getByText('Placar de quadra')).toBeInTheDocument()
+    expect(screen.getByTestId('home-score')).toHaveTextContent('7')
+    expect(screen.getByTestId('away-score')).toHaveTextContent('0')
+    expect(screen.queryByText('20')).not.toBeInTheDocument()
+  })
+
+  it('restores untouched reducer values when returning from FORFEIT', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    renderSumula()
+    fireEvent.change(await screen.findByLabelText('Engenharia — 1º período'), {
+      target: { value: '7' },
+    })
+
+    await selectResultType('W.O.')
+    await selectResultType('Normal')
+
+    expect(screen.getByLabelText('Engenharia — 1º período')).toHaveValue(7)
+  })
+
+  it('requires an offending participant before FORFEIT confirmation', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult')
+    renderSumula()
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('W.O.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecione a equipe infratora.')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(submitResult).not.toHaveBeenCalled()
+  })
+
+  it('submits only resultType and offendingTournamentTeamId for FORFEIT', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult').mockResolvedValue(
+      buildMatch({ status: 'FINISHED', scoreSource: 'AWARDED' }),
+    )
+    renderSumula()
+    await screen.findByRole('heading', { name: 'Súmula da partida' })
+    await selectResultType('W.O.')
+    await selectOffender('Engenharia')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(submitResult).toHaveBeenCalledWith(501, {
+      resultType: 'FORFEIT',
+      offendingTournamentTeamId: 41,
+    }))
+    expect(Object.keys(submitResult.mock.calls[0][1]).sort()).toEqual([
+      'offendingTournamentTeamId',
+      'resultType',
+    ])
+    expect(await screen.findByText('detalhe da partida')).toBeInTheDocument()
+  })
+})

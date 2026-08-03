@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
+import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
+import { Field } from '../../components/ui/Field/Field'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { BoxScoreState } from '../../features/sports/boxScore.reducer'
@@ -344,6 +346,8 @@ function ScoresheetForm({
   const navigate = useNavigate()
   const draftMutation = useSaveMatchDraft()
   const resultMutation = useSubmitMatchResult()
+  const [resultType, setResultType] = useState<'NORMAL' | 'DEFAULT' | 'FORFEIT'>('NORMAL')
+  const [offendingTournamentTeamId, setOffendingTournamentTeamId] = useState<number | null>(null)
   const homeIds = homeRoster.map((entry) => entry.tournamentRosterId)
   const awayIds = awayRoster.map((entry) => entry.tournamentRosterId)
   const initialLines = Object.fromEntries(
@@ -393,6 +397,17 @@ function ScoresheetForm({
   ].filter((message): message is string => message !== null)
   const writePending = draftMutation.isPending || resultMutation.isPending
 
+  const isForfeit = resultType === 'FORFEIT'
+  const validateOffender = () => {
+    if (resultType === 'NORMAL') return null
+    if (offendingTournamentTeamId === null) return 'Selecione a equipe infratora.'
+    if (offendingTournamentTeamId !== match.homeTeam.tournamentTeamId
+      && offendingTournamentTeamId !== match.awayTeam.tournamentTeamId) {
+      return 'A equipe infratora deve ser uma das participantes da partida.'
+    }
+    return null
+  }
+
   const showValidation = (requireWinner: boolean) => {
     const message = validatePlayedScoresheet(state, allRoster, requireWinner)
     if (message) onFeedback({ type: 'error', message })
@@ -415,23 +430,51 @@ function ScoresheetForm({
   }
 
   const requestResultConfirmation = () => {
-    if (showValidation(true)) return
+    const offenderError = validateOffender()
+    if (offenderError) {
+      onFeedback({ type: 'error', message: offenderError })
+      return
+    }
+    if (!isForfeit && showValidation(resultType === 'NORMAL')) return
     onFeedback(null)
     setConfirming(true)
   }
 
-  const handleNormalResult = async () => {
-    if (showValidation(true)) {
+  const handleResult = async () => {
+    const offenderError = validateOffender()
+    if (offenderError) {
+      setConfirming(false)
+      onFeedback({ type: 'error', message: offenderError })
+      return
+    }
+    if (!isForfeit && showValidation(resultType === 'NORMAL')) {
       setConfirming(false)
       return
     }
+
     onFeedback(null)
     try {
-      const snapshot = buildPlayedSnapshot(state, allRoster)
-      await resultMutation.mutateAsync({
-        id: match.id,
-        input: { resultType: 'NORMAL', ...snapshot },
-      })
+      if (resultType === 'FORFEIT') {
+        await resultMutation.mutateAsync({
+          id: match.id,
+          input: {
+            resultType: 'FORFEIT',
+            offendingTournamentTeamId: offendingTournamentTeamId!,
+          },
+        })
+      } else {
+        const snapshot = buildPlayedSnapshot(state, allRoster)
+        await resultMutation.mutateAsync({
+          id: match.id,
+          input: resultType === 'DEFAULT'
+            ? {
+                resultType: 'DEFAULT',
+                offendingTournamentTeamId: offendingTournamentTeamId!,
+                ...snapshot,
+              }
+            : { resultType: 'NORMAL', ...snapshot },
+        })
+      }
       navigate(`/matches/${match.id}`)
     } catch (error) {
       setConfirming(false)
@@ -453,6 +496,57 @@ function ScoresheetForm({
         </Badge>
       </div>
 
+      <section className={s.resultControls} aria-label="Configuração do resultado">
+        <Field label="Tipo de resultado" id="result-type">
+          <Combobox
+            id="result-type"
+            options={[
+              { value: 'NORMAL', label: 'Normal' },
+              { value: 'DEFAULT', label: 'Abandono' },
+              { value: 'FORFEIT', label: 'W.O.' },
+            ]}
+            value={resultType}
+            onChange={(next) => {
+              if (next !== 'NORMAL' && next !== 'DEFAULT' && next !== 'FORFEIT') return
+              setResultType(next)
+              setOffendingTournamentTeamId(null)
+              setConfirming(false)
+              onFeedback(null)
+            }}
+          />
+        </Field>
+
+        {resultType !== 'NORMAL' && (
+          <Field label="Equipe infratora" id="offending-team">
+            <Combobox
+              id="offending-team"
+              options={[
+                { value: '', label: '— selecione —' },
+                { value: String(match.homeTeam.tournamentTeamId), label: match.homeTeam.teamName },
+                { value: String(match.awayTeam.tournamentTeamId), label: match.awayTeam.teamName },
+              ]}
+              value={offendingTournamentTeamId === null
+                ? null
+                : String(offendingTournamentTeamId)}
+              onChange={(next) => setOffendingTournamentTeamId(parsePositiveId(next))}
+            />
+          </Field>
+        )}
+
+        {resultType === 'DEFAULT' && (
+          <p className={s.modeNotice}>
+            Se a equipe não infratora já estiver à frente, o servidor manterá o placar de quadra;
+            caso contrário, atribuirá 2 × 0.
+          </p>
+        )}
+        {resultType === 'FORFEIT' && (
+          <p className={s.modeNotice}>
+            O servidor atribuirá 20 × 0 à equipe não infratora e limpará períodos,
+            estatísticas e MVP anteriores.
+          </p>
+        )}
+      </section>
+
       <header className={s.scoreHeader}>
         <span className={s.scoreLabel}>Placar de quadra</span>
         <div className={s.teamScore}>
@@ -466,58 +560,62 @@ function ScoresheetForm({
         </div>
       </header>
 
-      <section className={s.section}>
-        <h2 className={s.sectionTitle}>Placar por período</h2>
-        <PeriodScoreEditor
-          periods={state.periods}
-          homeName={match.homeTeam.teamName}
-          awayName={match.awayTeam.teamName}
-          onChange={(index, side, value) =>
-            dispatch({ type: 'setPeriod', index, side, value })}
-          onAddOvertime={() => dispatch({ type: 'addOvertime' })}
-          onRemoveOvertime={() => dispatch({ type: 'removeOvertime' })}
-        />
-      </section>
+      {!isForfeit && (
+        <>
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Placar por período</h2>
+            <PeriodScoreEditor
+              periods={state.periods}
+              homeName={match.homeTeam.teamName}
+              awayName={match.awayTeam.teamName}
+              onChange={(index, side, value) =>
+                dispatch({ type: 'setPeriod', index, side, value })}
+              onAddOvertime={() => dispatch({ type: 'addOvertime' })}
+              onRemoveOvertime={() => dispatch({ type: 'removeOvertime' })}
+            />
+          </section>
 
-      <section className={s.section}>
-        <h2 className={s.sectionTitle}>Estatísticas</h2>
-        <Tabs
-          tabs={[
-            { id: String(match.homeTeam.tournamentTeamId), label: match.homeTeam.teamName },
-            { id: String(match.awayTeam.tournamentTeamId), label: match.awayTeam.teamName },
-          ]}
-          activeTab={String(activeTeamId)}
-          onChange={(raw) => {
-            const next = parsePositiveId(raw)
-            if (next !== null) setActiveTeamId(next)
-          }}
-          variant="line"
-        />
-        <StatColumnsConfig
-          disabledColumns={state.disabledColumns}
-          groupHasData={(fields) => columnHasData(state, fields)}
-          onToggle={(fields, enabled) =>
-            dispatch({ type: 'setColumnEnabled', fields, enabled })}
-        />
-        <BoxScoreTable
-          roster={activeRoster}
-          lines={state.lines}
-          disabledColumns={state.disabledColumns}
-          onStatChange={(tournamentRosterId, field, value) =>
-            dispatch({ type: 'setStat', tournamentRosterId, field, value })}
-        />
-      </section>
+          <section className={s.section}>
+            <h2 className={s.sectionTitle}>Estatísticas</h2>
+            <Tabs
+              tabs={[
+                { id: String(match.homeTeam.tournamentTeamId), label: match.homeTeam.teamName },
+                { id: String(match.awayTeam.tournamentTeamId), label: match.awayTeam.teamName },
+              ]}
+              activeTab={String(activeTeamId)}
+              onChange={(raw) => {
+                const next = parsePositiveId(raw)
+                if (next !== null) setActiveTeamId(next)
+              }}
+              variant="line"
+            />
+            <StatColumnsConfig
+              disabledColumns={state.disabledColumns}
+              groupHasData={(fields) => columnHasData(state, fields)}
+              onToggle={(fields, enabled) =>
+                dispatch({ type: 'setColumnEnabled', fields, enabled })}
+            />
+            <BoxScoreTable
+              roster={activeRoster}
+              lines={state.lines}
+              disabledColumns={state.disabledColumns}
+              onStatChange={(tournamentRosterId, field, value) =>
+                dispatch({ type: 'setStat', tournamentRosterId, field, value })}
+            />
+          </section>
 
-      <section className={s.section}>
-        <MvpSelect
-          candidates={mvpCandidates}
-          value={state.mvpTournamentRosterId}
-          onChange={(tournamentRosterId) =>
-            dispatch({ type: 'setMvp', tournamentRosterId })}
-        />
-      </section>
+          <section className={s.section}>
+            <MvpSelect
+              candidates={mvpCandidates}
+              value={state.mvpTournamentRosterId}
+              onChange={(tournamentRosterId) =>
+                dispatch({ type: 'setMvp', tournamentRosterId })}
+            />
+          </section>
+        </>
+      )}
 
-      {pointWarnings.length > 0 && (
+      {!isForfeit && pointWarnings.length > 0 && (
         <div className={s.warning} role="status" aria-label="Conferência de pontos">
           <ul className={s.warningList}>
             {pointWarnings.map((message) => <li key={message}>{message}</li>)}
@@ -533,15 +631,17 @@ function ScoresheetForm({
       )}
 
       <footer className={s.footer}>
-        <Button
-          type="button"
-          variant="ghost"
-          loading={draftMutation.isPending}
-          disabled={writePending}
-          onClick={() => void handleDraft()}
-        >
-          Salvar rascunho
-        </Button>
+        {!isForfeit && (
+          <Button
+            type="button"
+            variant="ghost"
+            loading={draftMutation.isPending}
+            disabled={writePending}
+            onClick={() => void handleDraft()}
+          >
+            Salvar rascunho
+          </Button>
+        )}
         {!confirming ? (
           <Button
             type="button"
@@ -553,7 +653,13 @@ function ScoresheetForm({
           </Button>
         ) : (
           <div className={s.confirm} role="alertdialog" aria-label="Confirmar resultado">
-            <span className={s.confirmText}>Confirmar o encerramento da partida?</span>
+            <span className={s.confirmText}>
+              {resultType === 'FORFEIT'
+                ? 'Confirmar resultado por W.O.? Os dados jogados anteriores serão limpos.'
+                : resultType === 'DEFAULT'
+                  ? 'Confirmar resultado por abandono?'
+                  : 'Confirmar o encerramento da partida?'}
+            </span>
             <Button
               type="button"
               variant="ghost"
@@ -567,7 +673,7 @@ function ScoresheetForm({
               variant="primary"
               loading={resultMutation.isPending}
               disabled={writePending}
-              onClick={() => void handleNormalResult()}
+              onClick={() => void handleResult()}
             >
               Confirmar
             </Button>
