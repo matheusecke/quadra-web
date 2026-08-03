@@ -10,7 +10,16 @@ import {
   listMatchesPage,
   listTournamentMatchesPage,
   postponeMatch,
+  reopenMatch,
+  saveMatchDraft,
+  submitMatchResult,
   updateMatch,
+} from './matches'
+import type {
+  MatchPlayerStatisticInput,
+  MatchPeriodInput,
+  SaveMatchDraftInput,
+  SubmitMatchResultInput,
 } from './matches'
 
 const matchSummary = {
@@ -65,6 +74,61 @@ const createInput = {
   venueName: 'Quadra 1',
   homeTournamentTeamId: 41,
   awayTournamentTeamId: 52,
+}
+
+const periods: MatchPeriodInput[] = [
+  {
+    periodNumber: 1,
+    periodType: 'REGULAR',
+    homePoints: 18,
+    awayPoints: 22,
+  },
+]
+
+const playerStats: MatchPlayerStatisticInput[] = [
+  {
+    tournamentRosterId: 88,
+    pts: 18,
+    fgm: null,
+    fga: null,
+    threeFgm: null,
+    threeFga: null,
+    ftm: null,
+    fta: null,
+    reb: null,
+    ast: null,
+    stl: null,
+    blk: null,
+    tov: null,
+    pf: null,
+    minutesSeconds: null,
+  },
+]
+
+const draftInput: SaveMatchDraftInput = {
+  periods,
+  playerStats,
+  mvpTournamentRosterId: 88,
+}
+
+const normalInput: SubmitMatchResultInput = {
+  resultType: 'NORMAL',
+  periods,
+  playerStats,
+  mvpTournamentRosterId: 88,
+}
+
+const defaultInput: SubmitMatchResultInput = {
+  resultType: 'DEFAULT',
+  offendingTournamentTeamId: 52,
+  periods,
+  playerStats,
+  mvpTournamentRosterId: 88,
+}
+
+const forfeitInput: SubmitMatchResultInput = {
+  resultType: 'FORFEIT',
+  offendingTournamentTeamId: 52,
 }
 
 beforeEach(() => {
@@ -126,5 +190,81 @@ describe('matches adapter', () => {
     apiMock.post.mockResolvedValue({ data: { data: { ...matchDetail, status: 'CANCELLED' }, statusCode: 200 } })
     await cancelMatch(501)
     expect(apiMock.post).toHaveBeenCalledWith('/matches/501/cancel')
+  })
+
+  it('saves an empty draft body literally', async () => {
+    apiMock.post.mockResolvedValue({
+      data: { data: { ...matchDetail, status: 'LIVE' }, statusCode: 200 },
+    })
+
+    await saveMatchDraft(501, {})
+
+    expect(apiMock.post).toHaveBeenCalledWith('/matches/501/draft', {})
+  })
+
+  it('saves the complete draft body without renaming or dropping nullable fields', async () => {
+    apiMock.post.mockResolvedValue({
+      data: { data: { ...matchDetail, status: 'LIVE' }, statusCode: 200 },
+    })
+
+    await saveMatchDraft(501, draftInput)
+
+    expect(apiMock.post).toHaveBeenCalledWith('/matches/501/draft', draftInput)
+  })
+
+  it.each([
+    ['NORMAL', normalInput],
+    ['DEFAULT', defaultInput],
+    ['FORFEIT', forfeitInput],
+  ] as const)('submits the literal %s result body', async (_name, input) => {
+    apiMock.post.mockResolvedValue({
+      data: { data: { ...matchDetail, status: 'FINISHED' }, statusCode: 200 },
+    })
+
+    await submitMatchResult(501, input)
+
+    expect(apiMock.post).toHaveBeenCalledWith('/matches/501/result', input)
+  })
+
+  it('reopens without sending a body or query', async () => {
+    apiMock.post.mockResolvedValue({
+      data: { data: { ...matchDetail, status: 'LIVE' }, statusCode: 200 },
+    })
+
+    await reopenMatch(501)
+
+    expect(apiMock.post).toHaveBeenCalledWith('/matches/501/reopen')
+  })
+
+  it.each([
+    ['draft', () => saveMatchDraft(501, draftInput)],
+    ['result', () => submitMatchResult(501, normalInput)],
+    ['reopen', () => reopenMatch(501)],
+  ] as const)('unwraps the %s detail envelope', async (_name, request) => {
+    const response = { ...matchDetail, status: 'LIVE' as const }
+    apiMock.post.mockResolvedValue({ data: { data: response, statusCode: 200 } })
+
+    await expect(request()).resolves.toEqual(response)
+  })
+
+  it.each([
+    ['draft', () => saveMatchDraft(501, draftInput)],
+    ['result', () => submitMatchResult(501, normalInput)],
+    ['reopen', () => reopenMatch(501)],
+  ] as const)('preserves the original %s rejection object', async (_name, request) => {
+    const failure = Object.assign(new Error('request failed'), {
+      response: {
+        status: 422,
+        data: {
+          error: {
+            code: 'INVALID_PLAYER_STATS',
+            message: 'Made shots cannot exceed attempted shots.',
+          },
+        },
+      },
+    })
+    apiMock.post.mockRejectedValue(failure)
+
+    await expect(request()).rejects.toBe(failure)
   })
 })

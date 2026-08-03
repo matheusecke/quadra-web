@@ -86,12 +86,19 @@ export {
   listMatchesPage,
   listTournamentMatchesPage,
   postponeMatch,
+  reopenMatch,
+  saveMatchDraft,
+  submitMatchResult,
   updateMatch,
 } from './matches'
 export type {
   CreateMatchInput,
   ListMatchesParams,
   ListTournamentMatchesParams,
+  MatchPeriodInput,
+  MatchPlayerStatisticInput,
+  SaveMatchDraftInput,
+  SubmitMatchResultInput,
   UpdateMatchInput,
 } from './matches'
 
