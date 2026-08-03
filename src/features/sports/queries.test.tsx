@@ -12,9 +12,12 @@ import {
   useLinkBracketSlotMatch,
   usePostponeMatch,
   useMatchesInfiniteQuery,
+  useReopenMatch,
+  useSaveMatchDraft,
   useSeasonsInfiniteQuery,
   useSeasonsQuery,
   useSetBracketSlotWinner,
+  useSubmitMatchResult,
   useTeamsQuery,
   useAthletesQuery,
   useTournamentMatchesQuery,
@@ -244,6 +247,178 @@ describe('match queries', () => {
     result.current.mutate(matchDetail.id)
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(client.getQueryData(matchKeys.detail(matchDetail.id))).toEqual(cancelled)
+  })
+
+  it('forwards a complete draft snapshot to the adapter', async () => {
+    const input = {
+      periods: [
+        {
+          periodNumber: 1,
+          periodType: 'REGULAR' as const,
+          homePoints: 18,
+          awayPoints: 22,
+        },
+      ],
+      playerStats: [],
+      mvpTournamentRosterId: null,
+    }
+    const saveMatchDraft = vi
+      .spyOn(sportsApi, 'saveMatchDraft')
+      .mockResolvedValue({ ...matchDetail, status: 'LIVE' })
+    const { result } = renderHook(() => useSaveMatchDraft(), { wrapper })
+
+    result.current.mutate({ id: 501, input })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(saveMatchDraft).toHaveBeenCalledWith(501, input)
+  })
+
+  it('retries a concurrent result submission exactly once', async () => {
+    const input = {
+      resultType: 'NORMAL' as const,
+      periods: [
+        {
+          periodNumber: 1,
+          periodType: 'REGULAR' as const,
+          homePoints: 18,
+          awayPoints: 15,
+        },
+      ],
+      playerStats: [],
+      mvpTournamentRosterId: null,
+    }
+    const submitMatchResult = vi
+      .spyOn(sportsApi, 'submitMatchResult')
+      .mockRejectedValueOnce(apiFailure('CONCURRENT_MODIFICATION'))
+      .mockResolvedValueOnce({ ...matchDetail, status: 'FINISHED' })
+    const { result } = renderHook(() => useSubmitMatchResult(), { wrapper })
+
+    result.current.mutate({ id: 501, input })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(submitMatchResult).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a result validation error', async () => {
+    const submitMatchResult = vi
+      .spyOn(sportsApi, 'submitMatchResult')
+      .mockRejectedValue(apiFailure('INVALID_MATCH_PERIODS'))
+    const { result } = renderHook(() => useSubmitMatchResult(), { wrapper })
+
+    result.current.mutate({
+      id: 501,
+      input: {
+        resultType: 'NORMAL',
+        periods: [],
+        playerStats: [],
+        mvpTournamentRosterId: null,
+      },
+    })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(submitMatchResult).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards reopen using only the match id', async () => {
+    const reopenMatch = vi
+      .spyOn(sportsApi, 'reopenMatch')
+      .mockResolvedValue({ ...matchDetail, status: 'LIVE' })
+    const { result } = renderHook(() => useReopenMatch(), { wrapper })
+
+    result.current.mutate(501)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(reopenMatch).toHaveBeenCalledWith(501)
+  })
+
+  it('writes the returned draft detail and invalidates every affected read', async () => {
+    const liveMatch = { ...matchDetail, status: 'LIVE' as const }
+    vi.spyOn(sportsApi, 'saveMatchDraft').mockResolvedValue(liveMatch)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSaveMatchDraft(), {
+      wrapper: Wrapper,
+    })
+
+    result.current.mutate({ id: 501, input: {} })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(client.getQueryData(matchKeys.detail(501))).toEqual(liveMatch)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      matchKeys.lists(),
+      matchKeys.tournamentLists(matchDetail.tournamentId),
+      tournamentKeys.detail(matchDetail.tournamentId),
+      standingsKeys.list(matchDetail.tournamentId),
+      bracketKeys.list(matchDetail.tournamentId),
+    ])
+  })
+
+  it('writes the returned result detail and invalidates every affected read', async () => {
+    const finishedMatch = { ...matchDetail, status: 'FINISHED' as const }
+    vi.spyOn(sportsApi, 'submitMatchResult').mockResolvedValue(finishedMatch)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSubmitMatchResult(), {
+      wrapper: Wrapper,
+    })
+
+    result.current.mutate({
+      id: 501,
+      input: {
+        resultType: 'FORFEIT',
+        offendingTournamentTeamId: 52,
+      },
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(client.getQueryData(matchKeys.detail(501))).toEqual(finishedMatch)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      matchKeys.lists(),
+      matchKeys.tournamentLists(matchDetail.tournamentId),
+      tournamentKeys.detail(matchDetail.tournamentId),
+      standingsKeys.list(matchDetail.tournamentId),
+      bracketKeys.list(matchDetail.tournamentId),
+    ])
+  })
+
+  it('writes the reopened detail and invalidates every affected read', async () => {
+    const liveMatch = { ...matchDetail, status: 'LIVE' as const }
+    vi.spyOn(sportsApi, 'reopenMatch').mockResolvedValue(liveMatch)
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useReopenMatch(), { wrapper: Wrapper })
+
+    result.current.mutate(501)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(client.getQueryData(matchKeys.detail(501))).toEqual(liveMatch)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      matchKeys.lists(),
+      matchKeys.tournamentLists(matchDetail.tournamentId),
+      tournamentKeys.detail(matchDetail.tournamentId),
+      standingsKeys.list(matchDetail.tournamentId),
+      bracketKeys.list(matchDetail.tournamentId),
+    ])
+  })
+
+  it('invalidates the stale match reads after a second concurrency failure', async () => {
+    vi.spyOn(sportsApi, 'saveMatchDraft').mockRejectedValue(
+      apiFailure('CONCURRENT_MODIFICATION'),
+    )
+    const { client, Wrapper } = createWrapper()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useSaveMatchDraft(), {
+      wrapper: Wrapper,
+    })
+
+    result.current.mutate({ id: 501, input: {} })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(sportsApi.saveMatchDraft).toHaveBeenCalledTimes(2)
+    expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
+      matchKeys.detail(501),
+      matchKeys.lists(),
+    ])
   })
 })
 

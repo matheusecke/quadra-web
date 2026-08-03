@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BoxScoreTable } from './BoxScoreTable'
 import type { BoxScoreTableProps } from './BoxScoreTable'
@@ -92,5 +92,23 @@ describe('BoxScoreTable', () => {
     )
 
     expect(screen.getByLabelText(/r\. albuquerque.*reb/i)).toBeInTheDocument()
+  })
+
+  it('normalizes a cleared enabled metric to zero', () => {
+    const onStatChange = vi.fn()
+    render(
+      <BoxScoreTable
+        roster={[{ tournamentRosterId: 1, name: 'R. Albuquerque', number: 7 }]}
+        lines={{ 1: { ...zero, pts: 12 } }}
+        disabledColumns={[]}
+        onStatChange={onStatChange}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/r\. albuquerque.*pts/i), {
+      target: { value: '' },
+    })
+
+    expect(onStatChange).toHaveBeenLastCalledWith(1, 'pts', 0)
   })
 })

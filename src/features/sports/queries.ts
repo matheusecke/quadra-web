@@ -7,6 +7,8 @@ import type {
   CreateMatchInput,
   ListMatchesParams,
   ListTournamentMatchesParams,
+  SaveMatchDraftInput,
+  SubmitMatchResultInput,
   UpdateMatchInput,
 } from '../../services/sportsApi'
 import type { EntityStatus, PaginatedResponse } from '../../types/admin'
@@ -499,6 +501,22 @@ function invalidateMatchReads(queryClient: ReturnType<typeof useQueryClient>, da
   queryClient.invalidateQueries({ queryKey: bracketKeys.list(data.tournamentId) })
 }
 
+function updateMatchReads(
+  queryClient: ReturnType<typeof useQueryClient>,
+  data: MatchDetail,
+) {
+  queryClient.setQueryData(matchKeys.detail(data.id), data)
+  invalidateMatchReads(queryClient, data)
+}
+
+function invalidateFailedMatchWrite(
+  queryClient: ReturnType<typeof useQueryClient>,
+  id: number,
+) {
+  queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
+  queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
+}
+
 export function useCreateMatch() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -523,14 +541,9 @@ export function useUpdateMatch() {
     mutationFn: ({ id, input }: { id: number; input: UpdateMatchInput }) => sportsApi.updateMatch(id, input),
     retry: retryConcurrentOnce,
     retryDelay: 0,
-    onSuccess: (data) => {
-      queryClient.setQueryData(matchKeys.detail(data.id), data)
-      invalidateMatchReads(queryClient, data)
-    },
-    onError: (error, variables) => onConcurrentFailure(error, () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.detail(variables.id) })
-      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    }),
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, variables) =>
+      onConcurrentFailure(error, () => invalidateFailedMatchWrite(queryClient, variables.id)),
   })
 }
 
@@ -540,14 +553,8 @@ export function usePostponeMatch() {
     mutationFn: (id: number) => sportsApi.postponeMatch(id),
     retry: retryConcurrentOnce,
     retryDelay: 0,
-    onSuccess: (data) => {
-      queryClient.setQueryData(matchKeys.detail(data.id), data)
-      invalidateMatchReads(queryClient, data)
-    },
-    onError: (error, id) => onConcurrentFailure(error, () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
-      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    }),
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, id) => onConcurrentFailure(error, () => invalidateFailedMatchWrite(queryClient, id)),
   })
 }
 
@@ -557,14 +564,52 @@ export function useCancelMatch() {
     mutationFn: (id: number) => sportsApi.cancelMatch(id),
     retry: retryConcurrentOnce,
     retryDelay: 0,
-    onSuccess: (data) => {
-      queryClient.setQueryData(matchKeys.detail(data.id), data)
-      invalidateMatchReads(queryClient, data)
-    },
-    onError: (error, id) => onConcurrentFailure(error, () => {
-      queryClient.invalidateQueries({ queryKey: matchKeys.detail(id) })
-      queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-    }),
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, id) => onConcurrentFailure(error, () => invalidateFailedMatchWrite(queryClient, id)),
+  })
+}
+
+export function useSaveMatchDraft() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: SaveMatchDraftInput }) =>
+      sportsApi.saveMatchDraft(id, input),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, variables) =>
+      onConcurrentFailure(error, () =>
+        invalidateFailedMatchWrite(queryClient, variables.id),
+      ),
+  })
+}
+
+export function useSubmitMatchResult() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: SubmitMatchResultInput }) =>
+      sportsApi.submitMatchResult(id, input),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, variables) =>
+      onConcurrentFailure(error, () =>
+        invalidateFailedMatchWrite(queryClient, variables.id),
+      ),
+  })
+}
+
+export function useReopenMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => sportsApi.reopenMatch(id),
+    retry: retryConcurrentOnce,
+    retryDelay: 0,
+    onSuccess: (data) => updateMatchReads(queryClient, data),
+    onError: (error, id) =>
+      onConcurrentFailure(error, () =>
+        invalidateFailedMatchWrite(queryClient, id),
+      ),
   })
 }
 

@@ -78,6 +78,9 @@ export function validatePlayerStatLine(line: PlayerStatInput): StatValidationErr
   const nonNeg: (keyof PlayerStatInput)[] = ['pts', 'fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf', 'minutesSeconds']
   for (const field of nonNeg) {
     const value = line[field]
+    if (value !== null && !Number.isInteger(value)) {
+      errors.push({ field, message: 'Deve ser um número inteiro' })
+    }
     if (value !== null && value < 0) errors.push({ field, message: 'Não pode ser negativo' })
   }
   const pair = (first: keyof PlayerStatInput, second: keyof PlayerStatInput) =>

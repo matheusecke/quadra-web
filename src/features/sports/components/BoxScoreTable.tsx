@@ -93,7 +93,7 @@ export const BoxScoreTable = memo(function BoxScoreTable({ roster, lines, disabl
                         controlLabel={column.label}
                         value={value}
                         onValueChange={(next) => {
-                          const nextValue = next === '' ? null : isPlayingTime ? next * 60 : next
+                          const nextValue = next === '' ? 0 : isPlayingTime ? next * 60 : next
                           onStatChange(entry.tournamentRosterId, column.field, nextValue)
                         }}
                         min={0}

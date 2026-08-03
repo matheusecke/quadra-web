@@ -1,4 +1,4 @@
-import type { PeriodScore } from './types'
+import type { MatchPeriod, PeriodScore } from './types'
 import type { PlayerStatInput, StatField, StatValidationError } from './statistics'
 import { STAT_FIELDS, sumNullable, validatePlayerStatLine } from './statistics'
 
@@ -24,27 +24,63 @@ const zeroLine = (): PlayerStatInput => ({
 
 export function initBoxScoreState({
   tournamentRosterIds,
-  regularPeriods,
+  regularPeriods = 4,
+  initialPeriods = [],
   mvpTournamentRosterId = null,
   initialLines,
 }: {
   tournamentRosterIds: number[]
-  regularPeriods: number
+  regularPeriods?: number
+  initialPeriods?: MatchPeriod[]
   mvpTournamentRosterId?: number | null
   initialLines?: Record<number, PlayerStatInput>
 }): BoxScoreState {
-  const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, i) => ({
-    periodNumber: i + 1,
-    type: 'REGULAR',
-    overtimeNumber: null,
-    homePoints: null,
-    awayPoints: null,
-  }))
+  const savedRegularPeriods = new Map(
+    initialPeriods
+      .filter((period) => period.periodType === 'REGULAR')
+      .map((period) => [period.periodNumber, period]),
+  )
+  const periods: PeriodScore[] = Array.from({ length: regularPeriods }, (_, index) => {
+    const periodNumber = index + 1
+    const saved = savedRegularPeriods.get(periodNumber)
+    return {
+      periodNumber,
+      type: 'REGULAR',
+      overtimeNumber: null,
+      homePoints: saved?.homePoints ?? 0,
+      awayPoints: saved?.awayPoints ?? 0,
+    }
+  })
+  periods.push(
+    ...initialPeriods
+      .filter((period) => period.periodType === 'OVERTIME')
+      .map((period) => ({
+        periodNumber: period.periodNumber,
+        type: 'OVERTIME' as const,
+        overtimeNumber: period.periodNumber - regularPeriods,
+        homePoints: period.homePoints,
+        awayPoints: period.awayPoints,
+      })),
+  )
+
+  const savedLines = Object.values(initialLines ?? {})
+  const defaultLine: PlayerStatInput = Object.fromEntries(
+    STAT_FIELDS.map((field) => [
+      field,
+      savedLines.length > 0 && savedLines.every((line) => line[field] === null)
+        ? null
+        : 0,
+    ]),
+  ) as Record<StatField, number | null>
   const lines: Record<number, PlayerStatInput> = {}
-  for (const id of tournamentRosterIds) lines[id] = initialLines?.[id] ?? zeroLine()
+  for (const id of tournamentRosterIds) {
+    lines[id] = { ...defaultLine, ...initialLines?.[id] }
+  }
   const disabledColumns = tournamentRosterIds.length === 0
     ? []
-    : STAT_FIELDS.filter((field) => tournamentRosterIds.every((id) => lines[id][field] === null))
+    : STAT_FIELDS.filter((field) =>
+      tournamentRosterIds.every((id) => lines[id][field] === null),
+    )
   return { periods, lines, disabledColumns, mvpTournamentRosterId }
 }
 
@@ -64,8 +100,8 @@ export function boxScoreReducer(state: BoxScoreState, action: BoxScoreAction): B
         periodNumber: state.periods.length + 1,
         type: 'OVERTIME',
         overtimeNumber: overtimeCount + 1,
-        homePoints: null,
-        awayPoints: null,
+        homePoints: 0,
+        awayPoints: 0,
       }
       return { ...state, periods: [...state.periods, period] }
     }
