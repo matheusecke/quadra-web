@@ -310,6 +310,16 @@ describe('MatchDetailPage — admin actions', () => {
     expect(reopenMatch).not.toHaveBeenCalled()
   })
 
+  it('moves focus to the confirmation button when the reopen dialog opens', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))
+    renderDetail()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reabrir resultado' }))
+
+    expect(screen.getByRole('button', { name: 'Confirmar reabertura' })).toHaveFocus()
+  })
+
   it('shows loading while reopen is pending', async () => {
     vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
     vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({ status: 'FINISHED' }))

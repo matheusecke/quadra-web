@@ -533,16 +533,10 @@ function ScoresheetForm({
           </Field>
         )}
 
-        {resultType === 'DEFAULT' && (
-          <p className={s.modeNotice}>
-            Se a equipe não infratora já estiver à frente, o servidor manterá o placar de quadra;
-            caso contrário, atribuirá 2 × 0.
-          </p>
-        )}
         {resultType === 'FORFEIT' && (
           <p className={s.modeNotice}>
-            O servidor atribuirá 20 × 0 à equipe não infratora e limpará períodos,
-            estatísticas e MVP anteriores.
+            O servidor atribuirá o resultado regulamentar à equipe não infratora e limpará
+            períodos, estatísticas e MVP anteriores.
           </p>
         )}
       </section>
@@ -671,6 +665,7 @@ function ScoresheetForm({
             <Button
               type="button"
               variant="primary"
+              autoFocus
               loading={resultMutation.isPending}
               disabled={writePending}
               onClick={() => void handleResult()}

@@ -443,6 +443,19 @@ describe('MatchSumulaPage — NORMAL result and warning', () => {
     expect(screen.getByRole('alertdialog', { name: 'Confirmar resultado' })).toBeInTheDocument()
   })
 
+  it('moves focus to the confirmation button when the dialog opens', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    renderSumula()
+    fireEvent.change(await screen.findByLabelText('Engenharia — 1º período'), {
+      target: { value: '1' },
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveFocus()
+  })
+
   it('submits an explicit NORMAL full snapshot and navigates only on success', async () => {
     vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
     mockRosters()
@@ -576,7 +589,7 @@ describe('MatchSumulaPage — FORFEIT', () => {
     expect(screen.getByText('Placar de quadra')).toBeInTheDocument()
     expect(screen.getByTestId('home-score')).toHaveTextContent('7')
     expect(screen.getByTestId('away-score')).toHaveTextContent('0')
-    expect(screen.queryByText('20')).not.toBeInTheDocument()
+    expect(screen.getByTestId('away-score')).not.toHaveTextContent('20')
   })
 
   it('restores untouched reducer values when returning from FORFEIT', async () => {

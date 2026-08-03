@@ -64,14 +64,14 @@ export function initBoxScoreState({
   )
 
   const savedLines = Object.values(initialLines ?? {})
-  const defaultLine = Object.fromEntries(
+  const defaultLine: PlayerStatInput = Object.fromEntries(
     STAT_FIELDS.map((field) => [
       field,
       savedLines.length > 0 && savedLines.every((line) => line[field] === null)
         ? null
         : 0,
     ]),
-  ) as unknown as PlayerStatInput
+  ) as Record<StatField, number | null>
   const lines: Record<number, PlayerStatInput> = {}
   for (const id of tournamentRosterIds) {
     lines[id] = { ...defaultLine, ...initialLines?.[id] }

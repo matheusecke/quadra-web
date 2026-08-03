@@ -356,6 +356,7 @@ export function MatchDetailPage() {
                 type="button"
                 variant={confirmingAction === 'cancel' ? 'danger' : 'primary'}
                 size="sm"
+                autoFocus
                 loading={actionPending}
                 onClick={() => void handleConfirm()}
               >
