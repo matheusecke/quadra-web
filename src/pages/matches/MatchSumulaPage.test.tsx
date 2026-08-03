@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MatchSumulaPage } from './MatchSumulaPage'
 import * as sportsApi from '../../services/sportsApi'
+import type {
+  MatchPeriodInput,
+  MatchPlayerStatisticInput,
+} from '../../services/sportsApi'
 import type {
   MatchDetail,
   MatchStatus,
@@ -103,6 +107,35 @@ export const awayRoster: TournamentRoster[] = [
     jerseyNumber: 11,
     displayNameSnapshot: 'Bia Souza',
   },
+]
+
+const zeroMetrics = {
+  pts: 0,
+  fgm: 0,
+  fga: 0,
+  threeFgm: 0,
+  threeFga: 0,
+  ftm: 0,
+  fta: 0,
+  reb: 0,
+  ast: 0,
+  stl: 0,
+  blk: 0,
+  tov: 0,
+  pf: 0,
+  minutesSeconds: 0,
+}
+
+const zeroPeriods: MatchPeriodInput[] = [1, 2, 3, 4].map((periodNumber) => ({
+  periodNumber,
+  periodType: 'REGULAR',
+  homePoints: 0,
+  awayPoints: 0,
+}))
+
+const zeroPlayerStats: MatchPlayerStatisticInput[] = [
+  { tournamentRosterId: 88, ...zeroMetrics },
+  { tournamentRosterId: 91, ...zeroMetrics },
 ]
 
 const apiFailure = (code: string, message: string) =>
@@ -274,5 +307,162 @@ describe('MatchSumulaPage — roster hydration', () => {
       'A súmula possui um atleta que não está disponível nos elencos.',
     )).toBeInTheDocument()
     expect(screen.queryByLabelText('Engenharia — 1º período')).not.toBeInTheDocument()
+  })
+})
+
+describe('MatchSumulaPage — draft', () => {
+  it('sends the complete zero-default snapshot, stays on the page and shows success', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const saveDraft = vi.spyOn(sportsApi, 'saveMatchDraft').mockResolvedValue(buildMatch({
+      status: 'LIVE',
+      startedAt: '2026-08-15T20:00:00.000Z',
+    }))
+    renderSumula()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar rascunho' }))
+
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledWith(501, {
+      periods: zeroPeriods,
+      playerStats: zeroPlayerStats,
+      mvpTournamentRosterId: null,
+    }))
+    expect(await screen.findByText('Rascunho salvo.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Súmula da partida' })).toBeInTheDocument()
+    expect(screen.getByText('Ao vivo')).toBeInTheDocument()
+  })
+
+  it('disables both write actions while a draft is pending', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    let resolveDraft!: (match: MatchDetail) => void
+    vi.spyOn(sportsApi, 'saveMatchDraft').mockReturnValue(
+      new Promise((resolve) => { resolveDraft = resolve }),
+    )
+    renderSumula()
+
+    const draftButton = await screen.findByRole('button', { name: 'Salvar rascunho' })
+    const resultButton = screen.getByRole('button', { name: 'Finalizar partida' })
+    await userEvent.click(draftButton)
+
+    expect(draftButton).toBeDisabled()
+    expect(resultButton).toBeDisabled()
+
+    resolveDraft(buildMatch({ status: 'LIVE' }))
+    expect(await screen.findByText('Rascunho salvo.')).toBeInTheDocument()
+  })
+
+  it('blocks invalid player statistics before calling the adapter', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const saveDraft = vi.spyOn(sportsApi, 'saveMatchDraft')
+    renderSumula()
+    const fgm = await screen.findByLabelText('Ana Silva — FGM')
+
+    fireEvent.change(fgm, { target: { value: '1' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+
+    expect(screen.getByText(
+      'Corrija as estatísticas dos atletas antes de continuar.',
+    )).toHaveAttribute('role', 'alert')
+    expect(saveDraft).not.toHaveBeenCalled()
+  })
+
+  it('blocks two tournament registrations belonging to the same user', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    vi.spyOn(sportsApi, 'getTournamentRoster').mockImplementation(async (teamId) =>
+      teamId === 41
+        ? homeRoster
+        : [{ ...awayRoster[0], userId: homeRoster[0].userId }],
+    )
+    const saveDraft = vi.spyOn(sportsApi, 'saveMatchDraft')
+    renderSumula()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar rascunho' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Os elencos possuem duas inscrições pertencentes à mesma pessoa.',
+    )
+    expect(saveDraft).not.toHaveBeenCalled()
+  })
+
+  it('shows the exact API error and preserves edited values', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    vi.spyOn(sportsApi, 'saveMatchDraft').mockRejectedValue(
+      apiFailure(
+        'INVALID_MATCH_MVP',
+        'The match MVP must be present in the resulting player statistics.',
+      ),
+    )
+    renderSumula()
+    const firstPeriod = await screen.findByLabelText('Engenharia — 1º período')
+    fireEvent.change(firstPeriod, { target: { value: '12' } })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'O MVP precisa estar entre os atletas enviados nas estatísticas.',
+    )
+    expect(firstPeriod).toHaveValue(12)
+  })
+})
+
+describe('MatchSumulaPage — NORMAL result and warning', () => {
+  it('blocks a tied NORMAL result before opening confirmation', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult')
+    renderSumula()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Finalizar partida' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'O resultado normal não pode terminar empatado. Adicione uma prorrogação.',
+    )
+    expect(screen.queryByRole('alertdialog', { name: 'Confirmar resultado' })).not.toBeInTheDocument()
+    expect(submitResult).not.toHaveBeenCalled()
+  })
+
+  it('lists a separate non-blocking points warning for each divergent side', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    renderSumula()
+    fireEvent.change(await screen.findByLabelText('Engenharia — 1º período'), {
+      target: { value: '1' },
+    })
+
+    expect(screen.getByText(
+      'A soma dos pontos de Engenharia não confere com o placar por períodos.',
+    )).toBeInTheDocument()
+    expect(screen.queryByText(
+      'A soma dos pontos de Direito não confere com o placar por períodos.',
+    )).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+    expect(screen.getByRole('alertdialog', { name: 'Confirmar resultado' })).toBeInTheDocument()
+  })
+
+  it('submits an explicit NORMAL full snapshot and navigates only on success', async () => {
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+    mockRosters()
+    const submitResult = vi.spyOn(sportsApi, 'submitMatchResult').mockResolvedValue(
+      buildMatch({ status: 'FINISHED' }),
+    )
+    renderSumula()
+    fireEvent.change(await screen.findByLabelText('Engenharia — 1º período'), {
+      target: { value: '1' },
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finalizar partida' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(submitResult).toHaveBeenCalledWith(501, {
+      resultType: 'NORMAL',
+      periods: [{ ...zeroPeriods[0], homePoints: 1 }, ...zeroPeriods.slice(1)],
+      playerStats: zeroPlayerStats,
+      mvpTournamentRosterId: null,
+    }))
+    expect(await screen.findByText('detalhe da partida')).toBeInTheDocument()
   })
 })

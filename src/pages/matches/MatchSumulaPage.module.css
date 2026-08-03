@@ -112,3 +112,31 @@
   font-size: 13px;
   color: var(--ink);
 }
+
+.warning {
+  padding: var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.warningList {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.success,
+.error {
+  margin: 0;
+  font-size: 13px;
+}
+
+.success {
+  color: var(--status-ok);
+}
+
+.error {
+  color: var(--status-live);
+}
