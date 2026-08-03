@@ -11,11 +11,29 @@ import {
   isScoreConsistent,
 } from './statistics'
 import type { PlayerMatchStats, PeriodScore } from './types'
+import type { PlayerStatInput } from './statistics'
 
 const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
   tournamentRosterId: 1, tournamentTeamId: 1, displayName: 'A', minutesSeconds: 600, pts: 10, reb: 5, ast: 2,
   stl: 1, blk: 0, tov: 1, pf: 2, fgm: 4, fga: 9, threeFgm: 1, threeFga: 3, ftm: 1, fta: 2, ...over,
 })
+
+const validStatInput: PlayerStatInput = {
+  pts: 5,
+  fgm: 2,
+  fga: 4,
+  threeFgm: 1,
+  threeFga: 2,
+  ftm: 1,
+  fta: 2,
+  reb: 3,
+  ast: 1,
+  stl: 0,
+  blk: 0,
+  tov: 1,
+  pf: 2,
+  minutesSeconds: 600,
+}
 
 describe('sumPlayerStats', () => {
   it('sums points across lines and counts games', () => {
@@ -39,20 +57,35 @@ describe('shootingPercentages', () => {
 })
 
 describe('validatePlayerStatLine', () => {
-  it('flags made greater than attempted', () => {
-    const errors = validatePlayerStatLine({ pts: 5, fgm: 9, fga: 4, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
-    expect(errors.map((e) => e.field)).toContain('fgm')
+  it.each([
+    ['fgm', { fgm: 5, fga: 4 }, 'FGM não pode exceder FGA'],
+    ['threeFga', { threeFga: 5, fga: 4 }, '3PA não pode exceder FGA'],
+    ['threeFgm', { threeFgm: 3, threeFga: 2, fgm: 3 }, '3PM não pode exceder 3PA'],
+    ['threeFgm', { threeFgm: 3, threeFga: 3, fgm: 2 }, '3PM não pode exceder FGM'],
+    ['ftm', { ftm: 3, fta: 2 }, 'FTM não pode exceder FTA'],
+  ] as const)('flags the %s relation', (field, override, message) => {
+    expect(validatePlayerStatLine({ ...validStatInput, ...override })).toContainEqual({
+      field,
+      message,
+    })
   })
-  it('flags three-point attempts greater than field-goal attempts', () => {
-    const errors = validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, threeFgm: 0, threeFga: 5, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
-    expect(errors.map((e) => e.field)).toContain('threeFga')
+
+  it('rejects a non-integer metric', () => {
+    expect(validatePlayerStatLine({ ...validStatInput, pts: 1.5 })).toContainEqual({
+      field: 'pts',
+      message: 'Deve ser um número inteiro',
+    })
   })
-  it('flags three-point makes greater than field-goal makes', () => {
-    const errors = validatePlayerStatLine({ pts: 9, fgm: 2, fga: 4, threeFgm: 3, threeFga: 4, ftm: 0, fta: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, minutesSeconds: 0 })
-    expect(errors.map((e) => e.field)).toContain('threeFgm')
+
+  it('rejects a negative metric', () => {
+    expect(validatePlayerStatLine({ ...validStatInput, reb: -1 })).toContainEqual({
+      field: 'reb',
+      message: 'Não pode ser negativo',
+    })
   })
+
   it('returns no errors for a consistent line', () => {
-    expect(validatePlayerStatLine({ pts: 5, fgm: 2, fga: 4, threeFgm: 1, threeFga: 2, ftm: 0, fta: 0, reb: 3, ast: 1, stl: 0, blk: 0, tov: 1, pf: 2, minutesSeconds: 600 })).toEqual([])
+    expect(validatePlayerStatLine(validStatInput)).toEqual([])
   })
 })
 
@@ -69,6 +102,10 @@ describe('periodsSum', () => {
 describe('isScoreConsistent', () => {
   it('is true when player points total equals the final score', () => {
     expect(isScoreConsistent(68, 68)).toBe(true)
+  })
+
+  it('is false when player points do not equal the period score', () => {
+    expect(isScoreConsistent(67, 68)).toBe(false)
   })
 })
 
