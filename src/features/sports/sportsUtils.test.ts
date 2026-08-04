@@ -14,6 +14,11 @@ import {
   tournamentStatusVariant,
   teamMap,
   tournamentTeamMap,
+  formatServerDecimal,
+  formatServerPercentage,
+  formatServerEfficiency,
+  formatMeasuredGames,
+  formatShootingLine,
 } from './sportsUtils'
 import type { PlayerMatchStats, StandingRow, TournamentTeam } from './types'
 
@@ -106,6 +111,41 @@ describe('matchPhaseName', () => {
       bracketRound: null,
       tournamentGroupId: null,
     })).toBeNull()
+  })
+})
+
+describe('Phase 10 server-value formatters', () => {
+  it('distinguishes unmeasured null from measured zero', () => {
+    expect(formatServerDecimal(null)).toBe('N/A')
+    expect(formatServerDecimal(0)).toBe('0')
+    expect(formatShootingLine(null, 0)).toBe('N/A')
+    expect(formatShootingLine(0, 0)).toBe('0/0')
+  })
+
+  it('keeps every server decimal instead of forcing a new precision', () => {
+    expect(formatServerDecimal(24)).toBe('24')
+    expect(formatServerDecimal(24.5)).toBe('24.5')
+    expect(formatServerDecimal(24.125)).toBe('24.125')
+  })
+
+  it('formats fractional percentages without clamping values above one', () => {
+    expect(formatServerPercentage(null)).toBe('N/A')
+    expect(formatServerPercentage(0)).toBe('0%')
+    expect(formatServerPercentage(0.429)).toBe('42.9%')
+    expect(formatServerPercentage(1.4)).toBe('140%')
+  })
+
+  it('adds a sign only to positive server-owned efficiency', () => {
+    expect(formatServerEfficiency(null)).toBe('N/A')
+    expect(formatServerEfficiency(-2.5)).toBe('-2.5')
+    expect(formatServerEfficiency(0)).toBe('0')
+    expect(formatServerEfficiency(3.125)).toBe('+3.125')
+  })
+
+  it('labels the metric-specific measurement count with correct plurality', () => {
+    expect(formatMeasuredGames(0)).toBe('em 0 jogos medidos')
+    expect(formatMeasuredGames(1)).toBe('em 1 jogo medido')
+    expect(formatMeasuredGames(4)).toBe('em 4 jogos medidos')
   })
 })
 

@@ -230,6 +230,31 @@ export function formatMinutesSeconds(totalSeconds: number | null): string {
   return `${minutes}:${seconds}`
 }
 
+/** Displays a server-owned number without imposing a new precision. */
+export function formatServerDecimal(value: number | null): string {
+  return value === null ? 'N/A' : String(value)
+}
+
+/** Phase 10 percentages are server-owned fractions and may exceed 1.0. */
+export function formatServerPercentage(value: number | null): string {
+  if (value === null) return 'N/A'
+  return `${Number((value * 100).toFixed(1))}%`
+}
+
+export function formatServerEfficiency(value: number | null): string {
+  if (value === null) return 'N/A'
+  const formatted = formatServerDecimal(value)
+  return value > 0 ? `+${formatted}` : formatted
+}
+
+export function formatMeasuredGames(count: number): string {
+  return count === 1 ? 'em 1 jogo medido' : `em ${count} jogos medidos`
+}
+
+export function formatShootingLine(made: number | null, attempted: number | null): string {
+  return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
+}
+
 /** EFF / EFI rating. */
 export function calcEff(p: PlayerMatchStats): number | null {
   const parts = [p.pts, p.reb, p.ast, p.stl, p.blk, p.fga, p.fgm, p.fta, p.ftm, p.tov]
