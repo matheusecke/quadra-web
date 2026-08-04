@@ -3,10 +3,13 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import {
+  athleteKeys,
   bracketKeys,
   matchKeys,
   standingsKeys,
   tournamentKeys,
+  useAthleteQuery,
+  useAthleteStatisticsQuery,
   useCancelMatch,
   useCreateMatch,
   useLinkBracketSlotMatch,
@@ -149,6 +152,55 @@ describe('catalog queries', () => {
   it('loads athletes through React Query', async () => {
     const list = renderHook(() => useAthletesQuery(), { wrapper })
     await waitFor(() => expect(list.result.current.data?.[0]?.name).toBe('Rafael Moura'))
+  })
+})
+
+const athleteProfile = {
+  id: 165,
+  name: 'Current Athlete',
+  currentTeamId: null,
+  jerseyNumber: null,
+  position: null,
+  status: 'INACTIVE' as const,
+}
+
+const metricCounts = {
+  minutesSeconds: 0, pts: 2, reb: 0, ast: 2, stl: 2, blk: 2, tov: 2, pf: 2,
+  fgm: 2, fga: 2, threeFgm: 2, threeFga: 2, ftm: 2, fta: 2,
+}
+
+const metricValues = {
+  minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
+  fgm: 8, fga: 6, threeFgm: 2, threeFga: 1, ftm: 4, fta: 3,
+}
+
+const athleteStatistics = {
+  gamesPlayed: 3,
+  measuredGames: metricCounts,
+  totals: metricValues,
+  perGame: { ...metricValues, ast: 1.5 },
+  shooting: { fgPct: 1.333, threeFgPct: 2, ftPct: 1.333, trueShootingPct: 1.4 },
+  efficiency: { measuredGames: 2, total: 7, perGame: 3.5 },
+}
+
+describe('athlete profile and statistics queries', () => {
+  it('uses separate detail and statistics cache keys', async () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockResolvedValue(athleteProfile)
+    vi.spyOn(sportsApi, 'getAthleteStatistics').mockResolvedValue(athleteStatistics)
+
+    const detail = renderHook(() => useAthleteQuery(165), { wrapper })
+    const statistics = renderHook(() => useAthleteStatisticsQuery(165), { wrapper })
+
+    await waitFor(() => expect(detail.result.current.data).toEqual(athleteProfile))
+    await waitFor(() => expect(statistics.result.current.data).toEqual(athleteStatistics))
+    expect(athleteKeys.detail(165)).toEqual(['athletes', 'detail', 165])
+    expect(athleteKeys.statistics(165)).toEqual(['athletes', 'statistics', 165])
+  })
+
+  it('does not request statistics while its tab is disabled', () => {
+    const getStatistics = vi.spyOn(sportsApi, 'getAthleteStatistics')
+    renderHook(() => useAthleteStatisticsQuery(165, false), { wrapper })
+    expect(getStatistics).not.toHaveBeenCalled()
   })
 })
 

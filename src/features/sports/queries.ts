@@ -75,7 +75,7 @@ export const athleteKeys = {
   all: ['athletes'] as const,
   list: () => [...athleteKeys.all, 'list'] as const,
   detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
-  summary: (id: number) => [...athleteKeys.all, 'summary', id] as const,
+  statistics: (id: number) => [...athleteKeys.all, 'statistics', id] as const,
   matches: (id: number) => [...athleteKeys.all, 'matches', id] as const,
   tournaments: (id: number) => [...athleteKeys.all, 'tournaments', id] as const,
 }
@@ -245,11 +245,19 @@ export function useAthletesQuery() {
 }
 
 export function useAthleteQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.detail(id ?? -1), queryFn: () => sportsApi.getAthlete(id!), enabled: id != null })
+  return useQuery({
+    queryKey: athleteKeys.detail(id ?? -1),
+    queryFn: () => sportsApi.getAthlete(id!),
+    enabled: id != null,
+  })
 }
 
-export function useAthleteSummaryQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.summary(id ?? -1), queryFn: () => sportsApi.getAthleteSummary(id!), enabled: id != null })
+export function useAthleteStatisticsQuery(id: number | undefined, enabled = true) {
+  return useQuery({
+    queryKey: athleteKeys.statistics(id ?? -1),
+    queryFn: () => sportsApi.getAthleteStatistics(id!),
+    enabled: id != null && enabled,
+  })
 }
 
 export function useAthleteMatchesQuery(id: number | undefined) {

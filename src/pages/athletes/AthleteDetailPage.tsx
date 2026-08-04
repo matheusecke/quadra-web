@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import axios from 'axios'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
@@ -12,22 +13,27 @@ import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useAthleteMatchesQuery,
   useAthleteQuery,
-  useAthleteSummaryQuery,
+  useAthleteStatisticsQuery,
   useAthleteTournamentStatsQuery,
   useSeasonsQuery,
   useTeamsQuery,
 } from '../../features/sports/queries'
 import type {
+  AthleteStatistics,
   AthleteTournamentStatsRow,
   AthleteMatchStatsRow,
-  AthleteStatTotals,
   PlayerMatchStats,
 } from '../../features/sports/types'
 import {
   ATHLETE_STATUS_LABELS,
   calcEff,
   calcEffFromTotals,
+  formatMeasuredGames,
   formatMinutesSeconds,
+  formatServerDecimal,
+  formatServerEfficiency,
+  formatServerPercentage,
+  formatShootingLine,
   formatStatPct,
   formatTsPct,
   perGame,
@@ -55,7 +61,14 @@ function formatEffAvg(value: number | null): string {
   return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)
 }
 
-function StatStrip({ title, stats }: { title: string; stats: Array<{ label: string; value: string | number; sm?: boolean }> }) {
+interface DisplayStat {
+  label: string
+  value: string | number
+  measuredGames?: number
+  sm?: boolean
+}
+
+function StatStrip({ title, stats }: { title: string; stats: DisplayStat[] }) {
   return (
     <section className={s.section}>
       <div className={s.sectionHead}>
@@ -63,10 +76,11 @@ function StatStrip({ title, stats }: { title: string; stats: Array<{ label: stri
       </div>
       <div className={s.statsBlock}>
         <div className={s.statsRow}>
-          {stats.map(({ label, value, sm }) => (
+          {stats.map(({ label, value, measuredGames: count, sm }) => (
             <div key={label} className={s.statItem}>
               <span className={sm ? s.statValueSm : s.statValue}>{value}</span>
               <span className={s.statLabel}>{label}</span>
+              {count !== undefined && <span className={s.statMeta}>{formatMeasuredGames(count)}</span>}
             </div>
           ))}
         </div>
@@ -75,49 +89,71 @@ function StatStrip({ title, stats }: { title: string; stats: Array<{ label: stri
   )
 }
 
-function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
-  const eff = calcEffFromTotals(summary)
+function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
+  if (statistics.gamesPlayed === 0) {
+    return (
+      <div className={s.tabEmpty}>
+        <EmptyState
+          title="Sem estatísticas registradas."
+          description="O resumo aparecerá após a primeira partida finalizada com box score."
+        />
+      </div>
+    )
+  }
+
+  const { totals, perGame: perGameStats, measuredGames, shooting, efficiency } = statistics
 
   return (
     <>
       <StatStrip
         title="Totais"
         stats={[
-          { label: 'J', value: summary.games },
-          { label: 'MIN', value: formatMinutesSeconds(summary.minutesSeconds) },
-          { label: 'PTS', value: summary.pts ?? 'N/A' },
-          { label: 'REB', value: summary.reb ?? 'N/A' },
-          { label: 'AST', value: summary.ast ?? 'N/A' },
-          { label: 'STL', value: summary.stl ?? 'N/A' },
-          { label: 'BLK', value: summary.blk ?? 'N/A' },
-          { label: 'TOV', value: summary.tov ?? 'N/A' },
-          { label: 'PF', value: summary.pf ?? 'N/A' },
+          { label: 'J', value: statistics.gamesPlayed },
+          { label: 'MIN', value: formatMinutesSeconds(totals.minutesSeconds) },
+          { label: 'PTS', value: formatServerDecimal(totals.pts) },
+          { label: 'REB', value: formatServerDecimal(totals.reb) },
+          { label: 'AST', value: formatServerDecimal(totals.ast) },
+          { label: 'STL', value: formatServerDecimal(totals.stl) },
+          { label: 'BLK', value: formatServerDecimal(totals.blk) },
+          { label: 'TOV', value: formatServerDecimal(totals.tov) },
+          { label: 'PF', value: formatServerDecimal(totals.pf) },
         ]}
       />
       <StatStrip
         title="Médias"
         stats={[
-          { label: 'MPG', value: formatMinutesSeconds(perGame(summary.minutesSeconds, summary.measuredGames.minutesSeconds)) },
-          { label: 'PPG', value: formatAvg(perGame(summary.pts, summary.measuredGames.pts)) },
-          { label: 'RPG', value: formatAvg(perGame(summary.reb, summary.measuredGames.reb)) },
-          { label: 'APG', value: formatAvg(perGame(summary.ast, summary.measuredGames.ast)) },
-          { label: 'STG', value: formatAvg(perGame(summary.stl, summary.measuredGames.stl)) },
-          { label: 'BPG', value: formatAvg(perGame(summary.blk, summary.measuredGames.blk)) },
-          { label: 'TOV', value: formatAvg(perGame(summary.tov, summary.measuredGames.tov)) },
-          { label: 'PF', value: formatAvg(perGame(summary.pf, summary.measuredGames.pf)) },
+          { label: 'MPG', value: formatMinutesSeconds(perGameStats.minutesSeconds), measuredGames: measuredGames.minutesSeconds },
+          { label: 'PPG', value: formatServerDecimal(perGameStats.pts), measuredGames: measuredGames.pts },
+          { label: 'RPG', value: formatServerDecimal(perGameStats.reb), measuredGames: measuredGames.reb },
+          { label: 'APG', value: formatServerDecimal(perGameStats.ast), measuredGames: measuredGames.ast },
+          { label: 'STG', value: formatServerDecimal(perGameStats.stl), measuredGames: measuredGames.stl },
+          { label: 'BPG', value: formatServerDecimal(perGameStats.blk), measuredGames: measuredGames.blk },
+          { label: 'TOV', value: formatServerDecimal(perGameStats.tov), measuredGames: measuredGames.tov },
+          { label: 'PF', value: formatServerDecimal(perGameStats.pf), measuredGames: measuredGames.pf },
         ]}
       />
       <StatStrip
-        title="Aproveitamento"
+        title="Aproveitamento e eficiência"
         stats={[
-          { label: 'FG', value: summary.fgm === null || summary.fga === null ? 'N/A' : `${summary.fgm}/${summary.fga}`, sm: true },
-          { label: 'FG%', value: formatStatPct(summary.fgm, summary.fga), sm: true },
-          { label: '3FG', value: summary.threeFgm === null || summary.threeFga === null ? 'N/A' : `${summary.threeFgm}/${summary.threeFga}`, sm: true },
-          { label: '3FG%', value: formatStatPct(summary.threeFgm, summary.threeFga), sm: true },
-          { label: 'FT', value: summary.ftm === null || summary.fta === null ? 'N/A' : `${summary.ftm}/${summary.fta}`, sm: true },
-          { label: 'FT%', value: formatStatPct(summary.ftm, summary.fta), sm: true },
-          { label: 'TS%', value: formatTsPct(summary.pts, summary.fga, summary.fta), sm: true },
-          { label: 'EFF/EFI', value: formatEff(eff), sm: true },
+          { label: 'FG', value: formatShootingLine(totals.fgm, totals.fga), sm: true },
+          { label: 'FG%', value: formatServerPercentage(shooting.fgPct), sm: true },
+          { label: '3FG', value: formatShootingLine(totals.threeFgm, totals.threeFga), sm: true },
+          { label: '3FG%', value: formatServerPercentage(shooting.threeFgPct), sm: true },
+          { label: 'FT', value: formatShootingLine(totals.ftm, totals.fta), sm: true },
+          { label: 'FT%', value: formatServerPercentage(shooting.ftPct), sm: true },
+          { label: 'TS%', value: formatServerPercentage(shooting.trueShootingPct), sm: true },
+          {
+            label: 'EFF',
+            value: formatServerEfficiency(efficiency.total),
+            measuredGames: efficiency.measuredGames,
+            sm: true,
+          },
+          {
+            label: 'EFF/J',
+            value: formatServerEfficiency(efficiency.perGame),
+            measuredGames: efficiency.measuredGames,
+            sm: true,
+          },
         ]}
       />
     </>
@@ -310,27 +346,17 @@ export function AthleteDetailPage() {
   const { athleteId: rawAthleteId } = useParams<{ athleteId: string }>()
   const athleteId = parsePositiveId(rawAthleteId)
   const navigate = useNavigate()
-  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch: refetchAthlete } = useAthleteQuery(athleteId ?? undefined)
-  const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId ?? undefined)
-  const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId ?? undefined)
-  const {
-    data: tournamentStats,
-    isPending: tournamentLoading,
-    isError: tournamentError,
-  } = useAthleteTournamentStatsQuery(athleteId ?? undefined)
+
+  const [activeTab, setActiveTab] = useState('summary')
+  const athleteQuery = useAthleteQuery(athleteId ?? undefined)
+  const statisticsQuery = useAthleteStatisticsQuery(
+    athleteId ?? undefined,
+    activeTab === 'summary',
+  )
+  const matchesQuery = useAthleteMatchesQuery(athleteId ?? undefined)
+  const tournamentQuery = useAthleteTournamentStatsQuery(athleteId ?? undefined)
   const teamsQuery = useTeamsQuery()
   const seasonsQuery = useSeasonsQuery()
-  const [activeTab, setActiveTab] = useState('summary')
-
-  const teams = teamMap(teamsQuery.data ?? [])
-  const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
-  const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading || teamsQuery.isPending || seasonsQuery.isPending
-  const isError = athleteError || summaryError || matchesError || tournamentError || teamsQuery.isError || seasonsQuery.isError
-  const refetch = () => {
-    refetchAthlete()
-    teamsQuery.refetch()
-    seasonsQuery.refetch()
-  }
 
   if (athleteId == null) {
     return (
@@ -347,7 +373,7 @@ export function AthleteDetailPage() {
     )
   }
 
-  if (isLoading) {
+  if (athleteQuery.isPending) {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -364,7 +390,9 @@ export function AthleteDetailPage() {
     )
   }
 
-  if (isError) {
+  if (athleteQuery.isError) {
+    const notFound = axios.isAxiosError(athleteQuery.error)
+      && athleteQuery.error.response?.status === 404
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -373,31 +401,24 @@ export function AthleteDetailPage() {
           </button>
         </div>
         <div className={s.bodyFill}>
-          <ErrorState title="Não foi possível carregar o atleta." onRetry={refetch} />
+          {notFound ? (
+            <EmptyState title="Atleta não encontrado." />
+          ) : (
+            <ErrorState title="Não foi possível carregar o atleta." onRetry={() => athleteQuery.refetch()} />
+          )}
         </div>
       </div>
     )
   }
 
-  if (!athlete || !summary) {
-    return (
-      <div className={s.page}>
-        <div className={s.detailHeader}>
-          <button type="button" className={s.backLink} onClick={() => navigate(-1)}>
-            <ArrowLeft size={12} strokeWidth={1.7} /> Voltar
-          </button>
-        </div>
-        <div className={s.bodyFill}>
-          <EmptyState
-            title="Atleta não encontrado."
-            description="O link pode estar incorreto ou o atleta não possui dados mockados."
-          />
-        </div>
-      </div>
-    )
-  }
+  const athlete = athleteQuery.data
+  if (!athlete) return null
 
-  const team = teams.get(athlete.currentTeamId)
+  const teams = teamMap(teamsQuery.data ?? [])
+  const teamName = athlete.currentTeamId === null
+    ? 'Sem equipe atual'
+    : teams.get(athlete.currentTeamId)?.name ?? `Equipe #${athlete.currentTeamId}`
+  const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
 
   return (
     <div className={s.page}>
@@ -407,11 +428,11 @@ export function AthleteDetailPage() {
         </button>
 
         <div className={s.heroRow}>
-          <div className={s.jersey}>#{athlete.number}</div>
+          <div className={s.jersey}>{athlete.jerseyNumber === null ? '—' : `#${athlete.jerseyNumber}`}</div>
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position ?? 'Não informada'} · {team?.name ?? String(athlete.currentTeamId)}</span>
+              <span>{athlete.position ?? 'Não informada'} · {teamName}</span>
             </div>
           </div>
           <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>
@@ -425,10 +446,47 @@ export function AthleteDetailPage() {
       </div>
 
       <div className={s.detailBody}>
-        {activeTab === 'summary' && <SummaryContent summary={summary} />}
-        {activeTab === 'matches' && <MatchesContent rows={matches ?? []} />}
+        {activeTab === 'summary' && (
+          statisticsQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
+          ) : statisticsQuery.isError ? (
+            <div className={s.tabEmpty}>
+              <ErrorState
+                title="Não foi possível carregar as estatísticas."
+                onRetry={() => statisticsQuery.refetch()}
+              />
+            </div>
+          ) : statisticsQuery.data ? (
+            <SummaryContent statistics={statisticsQuery.data} />
+          ) : null
+        )}
+        {activeTab === 'matches' && (
+          matchesQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
+          ) : matchesQuery.isError ? (
+            <div className={s.tabEmpty}>
+              <ErrorState
+                title="Não foi possível carregar as partidas."
+                onRetry={() => matchesQuery.refetch()}
+              />
+            </div>
+          ) : (
+            <MatchesContent rows={matchesQuery.data ?? []} />
+          )
+        )}
         {activeTab === 'tournaments' && (
-          <TournamentsContent rows={tournamentStats ?? []} seasonLabels={seasonLabels} />
+          tournamentQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
+          ) : tournamentQuery.isError ? (
+            <div className={s.tabEmpty}>
+              <ErrorState
+                title="Não foi possível carregar os campeonatos."
+                onRetry={() => tournamentQuery.refetch()}
+              />
+            </div>
+          ) : (
+            <TournamentsContent rows={tournamentQuery.data ?? []} seasonLabels={seasonLabels} />
+          )
         )}
       </div>
     </div>
