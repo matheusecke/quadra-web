@@ -59,6 +59,81 @@ export interface Athlete {
   status: AthleteStatus
 }
 
+export interface AthleteProfile {
+  id: number
+  name: string
+  currentTeamId: number | null
+  jerseyNumber: number | null
+  position: AthletePosition | null
+  status: AthleteStatus
+}
+
+export type AthleteMetricValues = Record<StatField, number | null>
+export type AthleteMetricMeasurements = Record<StatField, number>
+
+export interface AthleteStatistics {
+  gamesPlayed: number
+  measuredGames: AthleteMetricMeasurements
+  totals: AthleteMetricValues
+  perGame: AthleteMetricValues
+  shooting: {
+    fgPct: number | null
+    threeFgPct: number | null
+    ftPct: number | null
+    trueShootingPct: number | null
+  }
+  efficiency: {
+    measuredGames: number
+    total: number | null
+    perGame: number | null
+  }
+}
+
+export type AthleteResult = 'WIN' | 'LOSS'
+
+export interface AthleteMatchHistoryRow {
+  match: { id: number; scheduledAt: string }
+  tournament: { id: number; name: string }
+  athleteName: string
+  team: { tournamentTeamId: number; teamId: number; name: string }
+  opponent: { tournamentTeamId: number; teamId: number; name: string }
+  result: {
+    result: AthleteResult
+    lossType: LossType | null
+    pointsFor: number
+    pointsAgainst: number
+  }
+  stats: { tournamentRosterId: number } & AthleteMetricValues
+  derived: {
+    fgPct: number | null
+    threeFgPct: number | null
+    ftPct: number | null
+    trueShootingPct: number | null
+    efficiency: number | null
+  }
+}
+
+export interface AthleteTournamentHistoryRow {
+  tournament: { id: number; name: string; seasonId: number; startsAt: string | null }
+  team: { tournamentTeamId: number; teamId: number; name: string }
+  statistics: AthleteStatistics
+}
+
+export interface TournamentLeader {
+  athleteId: number
+  athleteName: string
+  tournamentTeamId: number
+  teamId: number
+  teamName: string
+  value: number
+  gamesPlayed: number
+}
+
+export interface TournamentLeaders {
+  perGame: Record<'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg', TournamentLeader[]>
+  totals: Record<'pts' | 'reb' | 'ast' | 'stl' | 'blk', TournamentLeader[]>
+}
+
 export type StandingsState = 'EMPTY' | 'PARTIAL' | 'FINAL'
 
 /** One row of a classification table, ranked by the server. The UI never re-orders it. §8.7 */
