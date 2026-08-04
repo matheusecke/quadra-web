@@ -5,6 +5,7 @@ import { apiErrorCode } from '../../services/apiError'
 import { collectPages } from '../../services/sportsApi/pagination'
 import type {
   CreateMatchInput,
+  ListAthleteMatchesParams,
   ListMatchesParams,
   ListTournamentMatchesParams,
   SaveMatchDraftInput,
@@ -12,7 +13,7 @@ import type {
   UpdateMatchInput,
 } from '../../services/sportsApi'
 import type { EntityStatus, PaginatedResponse } from '../../types/admin'
-import type { MatchDetail, MatchSummary, SeasonStatus, TournamentStatus } from './types'
+import type { AthleteMatchHistoryRow, MatchDetail, MatchSummary, SeasonStatus, TournamentStatus } from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -71,12 +72,15 @@ export const teamKeys = {
   list: () => [...teamKeys.all, 'list'] as const,
 }
 
+export type AthleteMatchFilters = Omit<ListAthleteMatchesParams, 'page' | 'limit'>
+
 export const athleteKeys = {
   all: ['athletes'] as const,
   list: () => [...athleteKeys.all, 'list'] as const,
   detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
   statistics: (id: number) => [...athleteKeys.all, 'statistics', id] as const,
-  matches: (id: number) => [...athleteKeys.all, 'matches', id] as const,
+  matches: (id: number, filters: AthleteMatchFilters) =>
+    [...athleteKeys.all, 'matches', id, 20, filters] as const,
   tournaments: (id: number) => [...athleteKeys.all, 'tournaments', id] as const,
 }
 
@@ -260,8 +264,22 @@ export function useAthleteStatisticsQuery(id: number | undefined, enabled = true
   })
 }
 
-export function useAthleteMatchesQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.matches(id ?? -1), queryFn: () => sportsApi.getAthleteMatches(id!), enabled: id != null })
+export function useAthleteMatchesInfiniteQuery(
+  id: number | undefined,
+  filters: AthleteMatchFilters = {},
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<AthleteMatchHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: athleteKeys.matches(id ?? -1, filters),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listAthleteMatchesPage(id!, { ...filters, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages
+        ? lastPage.meta.currentPage + 1
+        : undefined,
+    enabled: id != null && enabled,
+  })
 }
 
 export function useAthleteTournamentStatsQuery(id: number | undefined) {

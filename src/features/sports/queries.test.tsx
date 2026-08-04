@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import {
@@ -8,6 +8,7 @@ import {
   matchKeys,
   standingsKeys,
   tournamentKeys,
+  useAthleteMatchesInfiniteQuery,
   useAthleteQuery,
   useAthleteStatisticsQuery,
   useCancelMatch,
@@ -40,6 +41,19 @@ function createWrapper() {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
   return { client, Wrapper }
+}
+
+/**
+ * `renderHook` result snapshots don't reliably reflect an infinite query's merged
+ * pages right after a bare `fetchNextPage()` — the commit lands on a later tick than
+ * `waitFor`'s own polling flushes. Polling inside `act()` forces that tick each time.
+ */
+async function waitForPageCount(getResult: () => { data?: { pages: unknown[] } }, count: number) {
+  for (let attempt = 0; attempt < 30 && (getResult().data?.pages.length ?? 0) < count; attempt += 1) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+  }
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -201,6 +215,64 @@ describe('athlete profile and statistics queries', () => {
     const getStatistics = vi.spyOn(sportsApi, 'getAthleteStatistics')
     renderHook(() => useAthleteStatisticsQuery(165, false), { wrapper })
     expect(getStatistics).not.toHaveBeenCalled()
+  })
+})
+
+const athleteMatchRow = {
+  match: { id: 501, scheduledAt: '2026-08-15T19:30:00.000Z' },
+  tournament: { id: 12, name: 'Intercourses 2026' },
+  athleteName: 'Historical Athlete',
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
+  opponent: { tournamentTeamId: 52, teamId: 15, name: 'Historical Opponent' },
+  result: { result: 'LOSS' as const, lossType: 'FORFEIT' as const, pointsFor: 0, pointsAgainst: 20 },
+  stats: {
+    tournamentRosterId: 88,
+    minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
+    fgm: 8, fga: 6, threeFgm: 2, threeFga: 1, ftm: 4, fta: 3,
+  },
+  derived: { fgPct: 1.333, threeFgPct: 2, ftPct: 1.333, trueShootingPct: 1.4, efficiency: null },
+}
+
+const athleteMatchPage = (id: number, currentPage: number, totalPages: number) => ({
+  data: [{ ...athleteMatchRow, match: { ...athleteMatchRow.match, id } }],
+  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
+describe('athlete match history query', () => {
+  it('keeps filters in the key and requests successive pages of twenty', async () => {
+    vi.spyOn(sportsApi, 'listAthleteMatchesPage')
+      .mockResolvedValueOnce(athleteMatchPage(501, 1, 2))
+      .mockResolvedValueOnce(athleteMatchPage(502, 2, 2))
+    const filters = { ids: [501, 502], tournamentId: 12 }
+    const { result } = renderHook(
+      () => useAthleteMatchesInfiniteQuery(165, filters),
+      { wrapper },
+    )
+
+    await waitForPageCount(() => result.current, 1)
+    await act(async () => {
+      await result.current.fetchNextPage()
+    })
+    await waitForPageCount(() => result.current, 2)
+
+    expect(athleteKeys.matches(165, filters)).toEqual(['athletes', 'matches', 165, 20, filters])
+    expect(sportsApi.listAthleteMatchesPage).toHaveBeenNthCalledWith(1, 165, {
+      ids: [501, 502], tournamentId: 12, page: 1, limit: 20,
+    })
+    expect(sportsApi.listAthleteMatchesPage).toHaveBeenNthCalledWith(2, 165, {
+      ids: [501, 502], tournamentId: 12, page: 2, limit: 20,
+    })
+    expect(result.current.data?.pages.flatMap((page) => page.data).map((row) => row.match.id))
+      .toEqual([501, 502])
+    expect(result.current.hasNextPage).toBe(false)
+  })
+
+  it('does not request match history while its tab is disabled', () => {
+    const listMatches = vi.spyOn(sportsApi, 'listAthleteMatchesPage')
+    renderHook(() => useAthleteMatchesInfiniteQuery(165, {}, false), { wrapper })
+    expect(listMatches).not.toHaveBeenCalled()
   })
 })
 

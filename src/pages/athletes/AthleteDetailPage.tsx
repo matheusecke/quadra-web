@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -11,7 +12,7 @@ import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { toDisplay } from '../../components/ui/DateTimeField/dateDisplay'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
-  useAthleteMatchesQuery,
+  useAthleteMatchesInfiniteQuery,
   useAthleteQuery,
   useAthleteStatisticsQuery,
   useAthleteTournamentStatsQuery,
@@ -19,14 +20,12 @@ import {
   useTeamsQuery,
 } from '../../features/sports/queries'
 import type {
+  AthleteMatchHistoryRow,
   AthleteStatistics,
   AthleteTournamentStatsRow,
-  AthleteMatchStatsRow,
-  PlayerMatchStats,
 } from '../../features/sports/types'
 import {
   ATHLETE_STATUS_LABELS,
-  calcEff,
   calcEffFromTotals,
   formatMeasuredGames,
   formatMinutesSeconds,
@@ -49,11 +48,6 @@ const TABS: TabItem[] = [
 
 function formatAvg(value: number | null): string {
   return value === null ? 'N/A' : value.toFixed(1)
-}
-
-function formatEff(value: number | null): string {
-  if (value === null) return 'N/A'
-  return value > 0 ? `+${value}` : `${value}`
 }
 
 function formatEffAvg(value: number | null): string {
@@ -160,16 +154,53 @@ function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
   )
 }
 
-function shootingLine(stats: PlayerMatchStats, type: 'fg' | 'tp' | 'ft'): string {
-  const [made, attempted] = type === 'fg'
-    ? [stats.fgm, stats.fga]
-    : type === 'tp'
-      ? [stats.threeFgm, stats.threeFga]
-      : [stats.ftm, stats.fta]
-  return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
+interface HistoryFooterProps {
+  loaded: number
+  total: number
+  noun: 'partida' | 'campeonato'
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  nextPageErrorTitle: string
+  onLoadMore: () => void
 }
 
-function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
+function HistoryFooter({
+  loaded, total, noun, hasNextPage, isFetchingNextPage,
+  isFetchNextPageError, nextPageErrorTitle, onLoadMore,
+}: HistoryFooterProps) {
+  const plural = total === 1 ? noun : `${noun}s`
+  return (
+    <div className={s.historyFooter}>
+      <span className={s.historyCount}>
+        {loaded === total ? total : `${loaded} de ${total}`} {plural}
+      </span>
+      {isFetchNextPageError ? (
+        <ErrorState title={nextPageErrorTitle} onRetry={onLoadMore} />
+      ) : hasNextPage ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={isFetchingNextPage}
+          onClick={onLoadMore}
+        >
+          Carregar mais
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function MatchesContent({
+  rows, total, hasNextPage, isFetchingNextPage, isFetchNextPageError, onLoadMore,
+}: {
+  rows: AthleteMatchHistoryRow[]
+  total: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  onLoadMore: () => void
+}) {
   const navigate = useNavigate()
 
   if (rows.length === 0) {
@@ -184,73 +215,76 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
   }
 
   return (
-    <div className={s.tableWrap}>
-      <table className={s.table}>
-        <thead className={s.thead}>
-          <tr>
-            <th className={s.th}>Data</th>
-            <th className={s.th}>Campeonato</th>
-            <th className={s.th}>Partida</th>
-            <th className={s.th}>Resultado</th>
-            <th className={s.thNum}>MIN</th>
-            <th className={s.thNum}>PTS</th>
-            <th className={s.thNum}>REB</th>
-            <th className={s.thNum}>AST</th>
-            <th className={s.thNum}>STL</th>
-            <th className={s.thNum}>BLK</th>
-            <th className={s.thNum}>TOV</th>
-            <th className={s.thNum}>PF</th>
-            <th className={s.thNum}>FG</th>
-            <th className={s.thNum}>3FG</th>
-            <th className={s.thNum}>FT</th>
-            <th className={s.thNum}>TS%</th>
-            <th className={s.thNum}>EFF/EFI</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const efi = calcEff(row.stats)
-            return (
-              <tr
-                key={row.match.id}
-                className={s.tr}
-                tabIndex={0}
-                onClick={() => navigate(`/matches/${row.match.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') navigate(`/matches/${row.match.id}`)
-                }}
-              >
-                <td className={s.td}>{toDisplay(row.match.scheduledAt, 'date')}</td>
-                <td className={s.td}>{row.tournament.name}</td>
-                <td className={s.tdStrong}>
-                  <Link
-                    to={`/matches/${row.match.id}`}
-                    className={s.rowLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {row.matchup}
-                  </Link>
-                </td>
-                <td className={s.td}>{row.result}</td>
-                <td className={s.tdNum}>{formatMinutesSeconds(row.stats.minutesSeconds)}</td>
-                <td className={s.tdNum}>{row.stats.pts ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.reb ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.ast ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.stl ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.blk ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.tov ?? 'N/A'}</td>
-                <td className={s.tdNum}>{row.stats.pf ?? 'N/A'}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'fg')}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'tp')}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'ft')}</td>
-                <td className={s.tdNum}>{formatTsPct(row.stats.pts, row.stats.fga, row.stats.fta)}</td>
-                <td className={s.tdNum}>{formatEff(efi)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className={s.tableWrap}>
+        <table className={s.table}>
+          <thead className={s.thead}>
+            <tr>
+              {['Data', 'Campeonato', 'Atleta', 'Partida', 'Resultado'].map((label) => <th key={label} className={s.th}>{label}</th>)}
+              {['MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'FG', 'FG%', '3FG', '3FG%', 'FT', 'FT%', 'TS%', 'EFF/EFI']
+                .map((label) => <th key={label} className={s.thNum}>{label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const specialLoss = row.result.result === 'LOSS' && row.result.lossType !== 'NORMAL'
+                ? row.result.lossType === 'DEFAULT' ? 'Abandono' : 'W.O.'
+                : null
+              const open = () => navigate(`/matches/${row.match.id}`)
+              return (
+                <tr
+                  key={row.match.id}
+                  className={s.tr}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      open()
+                    }
+                  }}
+                >
+                  <td className={s.td}>{toDisplay(row.match.scheduledAt, 'date')}</td>
+                  <td className={s.td}>{row.tournament.name}</td>
+                  <td className={s.td}>{row.athleteName}</td>
+                  <td className={s.tdStrong}>
+                    <Link to={`/matches/${row.match.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
+                      {row.team.name} × {row.opponent.name}
+                    </Link>
+                  </td>
+                  <td className={s.td}>
+                    {row.result.result === 'WIN' ? 'Vitória' : 'Derrota'} {row.result.pointsFor}–{row.result.pointsAgainst}
+                    {specialLoss && <Badge variant="ghost">{specialLoss}</Badge>}
+                  </td>
+                  <td className={s.tdNum}>{formatMinutesSeconds(row.stats.minutesSeconds)}</td>
+                  {(['pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf'] as const).map((field) => (
+                    <td key={field} className={s.tdNum}>{formatServerDecimal(row.stats[field])}</td>
+                  ))}
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.fgm, row.stats.fga)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.fgPct)}</td>
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.threeFgm, row.stats.threeFga)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.threeFgPct)}</td>
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.ftm, row.stats.fta)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.ftPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.trueShootingPct)}</td>
+                  <td className={s.tdNum}>{formatServerEfficiency(row.derived.efficiency)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <HistoryFooter
+        loaded={rows.length}
+        total={total}
+        noun="partida"
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
+        nextPageErrorTitle="Não foi possível carregar mais partidas."
+        onLoadMore={onLoadMore}
+      />
+    </>
   )
 }
 
@@ -353,7 +387,11 @@ export function AthleteDetailPage() {
     athleteId ?? undefined,
     activeTab === 'summary',
   )
-  const matchesQuery = useAthleteMatchesQuery(athleteId ?? undefined)
+  const matchesQuery = useAthleteMatchesInfiniteQuery(
+    athleteId ?? undefined,
+    {},
+    activeTab === 'matches',
+  )
   const tournamentQuery = useAthleteTournamentStatsQuery(athleteId ?? undefined)
   const teamsQuery = useTeamsQuery()
   const seasonsQuery = useSeasonsQuery()
@@ -419,6 +457,8 @@ export function AthleteDetailPage() {
     ? 'Sem equipe atual'
     : teams.get(athlete.currentTeamId)?.name ?? `Equipe #${athlete.currentTeamId}`
   const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
+  const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const matchTotal = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
 
   return (
     <div className={s.page}>
@@ -462,16 +502,20 @@ export function AthleteDetailPage() {
         )}
         {activeTab === 'matches' && (
           matchesQuery.isPending ? (
-            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
-          ) : matchesQuery.isError ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+          ) : matchesQuery.isError && matches.length === 0 ? (
             <div className={s.tabEmpty}>
-              <ErrorState
-                title="Não foi possível carregar as partidas."
-                onRetry={() => matchesQuery.refetch()}
-              />
+              <ErrorState title="Não foi possível carregar as partidas." onRetry={() => matchesQuery.refetch()} />
             </div>
           ) : (
-            <MatchesContent rows={matchesQuery.data ?? []} />
+            <MatchesContent
+              rows={matches}
+              total={matchTotal}
+              hasNextPage={Boolean(matchesQuery.hasNextPage)}
+              isFetchingNextPage={matchesQuery.isFetchingNextPage}
+              isFetchNextPageError={matchesQuery.isFetchNextPageError}
+              onLoadMore={() => void matchesQuery.fetchNextPage()}
+            />
           )
         )}
         {activeTab === 'tournaments' && (

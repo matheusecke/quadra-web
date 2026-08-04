@@ -37,6 +37,28 @@ const statistics = {
   efficiency: { measuredGames: 2, total: 7, perGame: 3.5 },
 }
 
+const matchRow = {
+  match: { id: 501, scheduledAt: '2026-08-15T19:30:00.000Z' },
+  tournament: { id: 12, name: 'Historical Cup' },
+  athleteName: 'Historical Athlete',
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
+  opponent: { tournamentTeamId: 52, teamId: 15, name: 'Historical Opponent' },
+  result: { result: 'LOSS' as const, lossType: 'FORFEIT' as const, pointsFor: 0, pointsAgainst: 20 },
+  stats: {
+    tournamentRosterId: 88,
+    minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
+    fgm: 8, fga: 6, threeFgm: 2, threeFga: 1, ftm: 4, fta: 3,
+  },
+  derived: { fgPct: 1.333, threeFgPct: 2, ftPct: 1.333, trueShootingPct: 1.4, efficiency: null },
+}
+
+const matchPage = (data: typeof matchRow[], currentPage = 1, totalPages = 1, totalItems = data.length) => ({
+  data,
+  meta: { totalItems, itemCount: data.length, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
 function renderAthletePage(athleteId = RAFAEL_ID) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -44,6 +66,7 @@ function renderAthletePage(athleteId = RAFAEL_ID) {
       <MemoryRouter initialEntries={[`/athletes/${athleteId}`]}>
         <Routes>
           <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
+          <Route path="/matches/:matchId" element={<div>Match destination</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -63,6 +86,7 @@ beforeEach(() => {
   ])
   vi.spyOn(sportsApi, 'getAthlete').mockResolvedValue(athlete)
   vi.spyOn(sportsApi, 'getAthleteStatistics').mockResolvedValue(statistics)
+  vi.spyOn(sportsApi, 'listAthleteMatchesPage').mockResolvedValue(matchPage([matchRow]))
 })
 
 describe('AthleteDetailPage', () => {
@@ -162,34 +186,6 @@ describe('AthleteDetailPage', () => {
     expect(await screen.findByText('Atleta não encontrado.')).toBeInTheDocument()
   })
 
-  it('shows full matchup rows in Partidas and links rows to match details without an opponent column', async () => {
-    const user = userEvent.setup()
-    renderAthletePage(101)
-
-    await waitForAthletePage()
-    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
-
-    expect(screen.queryByRole('columnheader', { name: /adversário/i })).not.toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /partida/i })).toBeInTheDocument()
-    const finalLink = screen.getAllByRole('link', { name: /time 1 × time 2/i }).find(
-      (link) => link.getAttribute('href') === '/matches/131',
-    )
-    expect(finalLink).toBeDefined()
-    const finalRow = finalLink?.closest('tr')
-    expect(finalRow).not.toBeNull()
-    expect(within(finalRow as HTMLTableRowElement).getByText('38:00')).toBeInTheDocument()
-  })
-
-  it('labels match turnovers as TOV', async () => {
-    const user = userEvent.setup()
-    renderAthletePage(101)
-
-    await waitForAthletePage()
-    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
-
-    expect(screen.getByRole('columnheader', { name: 'TOV' })).toBeInTheDocument()
-  })
-
   it('shows team context in Campeonatos and links rows to tournament details', async () => {
     const user = userEvent.setup()
     renderAthletePage(101)
@@ -246,10 +242,9 @@ describe('AthleteDetailPage', () => {
   })
 
   it('renders an athlete match using the scheduledAt slice', async () => {
-    const [row] = await sportsApi.getAthleteMatches(RAFAEL_ID)
-    vi.spyOn(sportsApi, 'getAthleteMatches').mockResolvedValue([
-      { ...row, match: { id: row.match.id, scheduledAt: '2026-08-01T22:00:00.000Z' } },
-    ])
+    vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(
+      matchPage([{ ...matchRow, match: { id: matchRow.match.id, scheduledAt: '2026-08-01T22:00:00.000Z' } }]),
+    )
     const user = userEvent.setup()
 
     renderAthletePage()
@@ -257,5 +252,89 @@ describe('AthleteDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Partidas' }))
 
     expect(screen.getByText('01/08/2026')).toBeInTheDocument()
+  })
+
+  it('does not request match history before the Matches tab opens', async () => {
+    renderAthletePage()
+    await waitForAthletePage()
+    expect(sportsApi.listAthleteMatchesPage).not.toHaveBeenCalled()
+  })
+
+  it('renders historical snapshots, result metadata, null, zero and server-derived values', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const row = await screen.findByRole('row', { name: /historical cup/i })
+    expect(within(row).getByText('Historical Athlete')).toBeInTheDocument()
+    expect(within(row).getByRole('link', { name: 'Historical Team × Historical Opponent' }))
+      .toHaveAttribute('href', '/matches/501')
+    expect(within(row).getByText('Derrota 0–20')).toBeInTheDocument()
+    expect(within(row).getByText('W.O.')).toBeInTheDocument()
+    expect(within(row).getByText('140%')).toBeInTheDocument()
+    expect(within(row).getAllByText('N/A').length).toBeGreaterThan(0)
+    expect(within(row).getAllByText('0').length).toBeGreaterThan(0)
+  })
+
+  it('uses only match metadata for its visible count even when Summary games differ', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(matchPage([matchRow], 1, 1, 1))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(await screen.findByText('1 partida')).toBeInTheDocument()
+    expect(screen.queryByText(/diverg|inconsist|3 partidas/i)).not.toBeInTheDocument()
+  })
+
+  it('appends the next server page without changing row order', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage)
+      .mockResolvedValueOnce(matchPage([matchRow], 1, 2, 2))
+      .mockResolvedValueOnce(matchPage([{ ...matchRow, match: { ...matchRow.match, id: 500 }, tournament: { id: 11, name: 'Older Cup' } }], 2, 2, 2))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    await user.click(await screen.findByRole('button', { name: 'Carregar mais' }))
+
+    expect(screen.getAllByRole('link', { name: /historical team × historical opponent/i }).map((link) => link.getAttribute('href')))
+      .toEqual(['/matches/501', '/matches/500'])
+    expect(sportsApi.listAthleteMatchesPage).toHaveBeenLastCalledWith(RAFAEL_ID, { page: 2, limit: 20 })
+    expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument()
+  })
+
+  it('keeps first-page and next-page retries inside Matches', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage)
+      .mockRejectedValueOnce(new Error('first page unavailable'))
+      .mockResolvedValueOnce(matchPage([matchRow], 1, 2, 2))
+      .mockRejectedValueOnce(new Error('next page unavailable'))
+      .mockResolvedValueOnce(matchPage([{ ...matchRow, match: { ...matchRow.match, id: 500 } }], 2, 2, 2))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    await user.click(await screen.findByRole('button', { name: 'Carregar mais' }))
+    expect(await screen.findByText('Não foi possível carregar mais partidas.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('2 partidas')).toBeInTheDocument()
+    expect(sportsApi.getAthlete).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['Enter', '{Enter}'],
+    ['Space', ' '],
+  ])('opens a match row with %s', async (_label, key) => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    const row = await screen.findByRole('row', { name: /historical cup/i })
+    row.focus()
+    await user.keyboard(key)
+    expect(await screen.findByText('Match destination')).toBeInTheDocument()
   })
 })
