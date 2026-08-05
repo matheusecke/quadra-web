@@ -1,6 +1,5 @@
 import {
   getAthletes as getMockAthletes,
-  getAthleteTournamentStats as getMockAthleteTournamentStats,
   getTournamentLeaders as getMockTournamentLeaders,
 } from '../../features/sports/mock-sports-data'
 
@@ -73,10 +72,10 @@ export {
   getAthlete,
   getAthleteStatistics,
   listAthleteMatchesPage,
+  listAthleteTournamentsPage,
 } from './athletes'
 export type { ListAthleteMatchesParams, ListAthleteTournamentsParams } from './athletes'
 export const getAthletes = () => Promise.resolve(getMockAthletes())
-export const getAthleteTournamentStats = (id: number) => Promise.resolve(getMockAthleteTournamentStats(id))
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
 export {

@@ -59,6 +59,24 @@ const matchPage = (data: typeof matchRow[], currentPage = 1, totalPages = 1, tot
   statusCode: 200,
 })
 
+const tournamentRow = {
+  tournament: { id: 12, name: 'Historical Cup', seasonId: 7, startsAt: null },
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Snapshot Team' },
+  statistics,
+}
+
+const tournamentPage = (
+  data: typeof tournamentRow[],
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = data.length,
+) => ({
+  data,
+  meta: { totalItems, itemCount: data.length, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
 function renderAthletePage(athleteId = RAFAEL_ID) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -87,6 +105,7 @@ beforeEach(() => {
   vi.spyOn(sportsApi, 'getAthlete').mockResolvedValue(athlete)
   vi.spyOn(sportsApi, 'getAthleteStatistics').mockResolvedValue(statistics)
   vi.spyOn(sportsApi, 'listAthleteMatchesPage').mockResolvedValue(matchPage([matchRow]))
+  vi.spyOn(sportsApi, 'listAthleteTournamentsPage').mockResolvedValue(tournamentPage([tournamentRow]))
 })
 
 describe('AthleteDetailPage', () => {
@@ -186,59 +205,90 @@ describe('AthleteDetailPage', () => {
     expect(await screen.findByText('Atleta não encontrado.')).toBeInTheDocument()
   })
 
-  it('shows team context in Campeonatos and links rows to tournament details', async () => {
-    const user = userEvent.setup()
-    renderAthletePage(101)
-
+  it('does not request tournament history or seasons before Campeonatos opens', async () => {
+    renderAthletePage()
     await waitForAthletePage()
-    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
-
-    expect(screen.getByRole('columnheader', { name: /equipe/i })).toBeInTheDocument()
-    expect(screen.getByText('Time 1')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /campeonato geral da puc 2026/i })).toHaveAttribute(
-      'href',
-      '/tournaments/1',
-    )
+    expect(sportsApi.listAthleteTournamentsPage).not.toHaveBeenCalled()
+    expect(sportsApi.getSeasons).not.toHaveBeenCalled()
   })
 
-  it('shows the enrollment snapshot team name in Campeonatos, not a live catalog lookup', async () => {
+  it('renders snapshot team, season fallback, server values and measured-game labels', async () => {
+    vi.mocked(sportsApi.getSeasons).mockRejectedValueOnce(new Error('catalog unavailable'))
     const user = userEvent.setup()
-    const rows = await sportsApi.getAthleteTournamentStats(RAFAEL_ID)
-    vi.spyOn(sportsApi, 'getAthleteTournamentStats').mockResolvedValue(
-      rows.map((row) => ({ ...row, tournamentTeamId: 9999, teamName: 'Snapshot FC' })),
-    )
-
     renderAthletePage()
-
     await waitForAthletePage()
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
 
-    expect(screen.getByText('Snapshot FC')).toBeInTheDocument()
+    const row = await screen.findByRole('row', { name: /historical cup/i })
+    expect(within(row).getByText('Snapshot Team')).toBeInTheDocument()
+    expect(within(row).getByText('Temporada #7')).toBeInTheDocument()
+    expect(within(row).getByText('140%')).toBeInTheDocument()
+    expect(within(row).getByText('+3.5')).toBeInTheDocument()
+    expect(within(row).getByText('em 0 jogos medidos')).toBeInTheDocument()
+    expect(screen.queryByText('Não foi possível carregar o atleta.')).not.toBeInTheDocument()
   })
 
   it('renders tournament seasons from the queried catalog', async () => {
-    vi.spyOn(sportsApi, 'getSeasons').mockResolvedValueOnce([
-      { id: 1, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
+    vi.mocked(sportsApi.getSeasons).mockResolvedValueOnce([
+      { id: 7, label: 'Temporada via seam', startDate: '2025-08-01', endDate: '2026-07-31', status: 'ACTIVE' },
     ])
     const user = userEvent.setup()
     renderAthletePage()
     await waitForAthletePage()
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
-    expect(screen.getByText('Temporada via seam')).toBeInTheDocument()
+    expect(await screen.findByText('Temporada via seam')).toBeInTheDocument()
   })
 
-  it('keeps the page usable when the season catalog fails', async () => {
-    vi.spyOn(sportsApi, 'getSeasons').mockRejectedValueOnce(new Error('seasons unavailable'))
+  it('keeps transfer rows separate with stable tournament and enrollment identity', async () => {
+    vi.mocked(sportsApi.listAthleteTournamentsPage).mockResolvedValueOnce(tournamentPage([
+      tournamentRow,
+      { ...tournamentRow, team: { tournamentTeamId: 42, teamId: 9, name: 'Second Snapshot Team' } },
+    ]))
     const user = userEvent.setup()
-    renderAthletePage(101)
-
+    renderAthletePage()
     await waitForAthletePage()
-    expect(screen.queryByText('Não foi possível carregar o atleta.')).not.toBeInTheDocument()
-
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
-    const tournamentLink = screen.getByRole('link', { name: /campeonato geral da puc 2026/i })
-    const row = tournamentLink.closest('tr') as HTMLTableRowElement
-    expect(within(row).getAllByRole('cell')[2]).toHaveTextContent('1')
+
+    const tournamentLinks = await screen.findAllByRole('link', { name: 'Historical Cup' })
+    expect(tournamentLinks).toHaveLength(2)
+    expect(tournamentLinks.map((link) => link.getAttribute('href'))).toEqual(['/tournaments/12', '/tournaments/12'])
+    expect(screen.getByText('Snapshot Team')).toBeInTheDocument()
+    expect(screen.getByText('Second Snapshot Team')).toBeInTheDocument()
+  })
+
+  it('appends tournament pages and retries only the failed next page', async () => {
+    vi.mocked(sportsApi.listAthleteTournamentsPage)
+      .mockResolvedValueOnce(tournamentPage([tournamentRow], 1, 2, 2))
+      .mockRejectedValueOnce(new Error('next page unavailable'))
+      .mockResolvedValueOnce(tournamentPage([{ ...tournamentRow, tournament: { ...tournamentRow.tournament, id: 11, name: 'Older Cup' } }], 2, 2, 2))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+    await user.click(await screen.findByRole('button', { name: 'Carregar mais' }))
+
+    expect(await screen.findByText('Não foi possível carregar mais campeonatos.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('2 campeonatos')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /cup/i }).map((link) => link.textContent))
+      .toEqual(['Historical Cup', 'Older Cup'])
+    expect(sportsApi.getAthlete).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries a first-page tournament failure without refetching the profile', async () => {
+    vi.mocked(sportsApi.listAthleteTournamentsPage)
+      .mockRejectedValueOnce(new Error('history unavailable'))
+      .mockResolvedValueOnce(tournamentPage([tournamentRow]))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Não foi possível carregar os campeonatos.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Snapshot Team')).toBeInTheDocument()
+    expect(sportsApi.listAthleteTournamentsPage).toHaveBeenCalledTimes(2)
+    expect(sportsApi.getAthlete).toHaveBeenCalledTimes(1)
   })
 
   it('renders an athlete match using the scheduledAt slice', async () => {

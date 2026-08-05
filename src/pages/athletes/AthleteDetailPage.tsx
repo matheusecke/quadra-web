@@ -15,27 +15,23 @@ import {
   useAthleteMatchesInfiniteQuery,
   useAthleteQuery,
   useAthleteStatisticsQuery,
-  useAthleteTournamentStatsQuery,
+  useAthleteTournamentsInfiniteQuery,
   useSeasonsQuery,
   useTeamsQuery,
 } from '../../features/sports/queries'
 import type {
   AthleteMatchHistoryRow,
   AthleteStatistics,
-  AthleteTournamentStatsRow,
+  AthleteTournamentHistoryRow,
 } from '../../features/sports/types'
 import {
   ATHLETE_STATUS_LABELS,
-  calcEffFromTotals,
   formatMeasuredGames,
   formatMinutesSeconds,
   formatServerDecimal,
   formatServerEfficiency,
   formatServerPercentage,
   formatShootingLine,
-  formatStatPct,
-  formatTsPct,
-  perGame,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import s from './athletes.module.css'
@@ -45,15 +41,6 @@ const TABS: TabItem[] = [
   { id: 'matches', label: 'Partidas' },
   { id: 'tournaments', label: 'Campeonatos' },
 ]
-
-function formatAvg(value: number | null): string {
-  return value === null ? 'N/A' : value.toFixed(1)
-}
-
-function formatEffAvg(value: number | null): string {
-  if (value === null) return 'N/A'
-  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)
-}
 
 interface DisplayStat {
   label: string
@@ -288,12 +275,26 @@ function MatchesContent({
   )
 }
 
+function MeasuredMetric({ value, count }: { value: string; count: number }) {
+  return (
+    <span className={s.metricCell}>
+      <span>{value}</span>
+      <span className={s.cellMeta}>{formatMeasuredGames(count)}</span>
+    </span>
+  )
+}
+
 function TournamentsContent({
-  rows,
-  seasonLabels,
+  rows, seasonLabels, total, hasNextPage, isFetchingNextPage,
+  isFetchNextPageError, onLoadMore,
 }: {
-  rows: AthleteTournamentStatsRow[]
+  rows: AthleteTournamentHistoryRow[]
   seasonLabels: Map<number, string>
+  total: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  onLoadMore: () => void
 }) {
   const navigate = useNavigate()
 
@@ -309,70 +310,72 @@ function TournamentsContent({
   }
 
   return (
-    <div className={s.tableWrap}>
-      <table className={s.table}>
-        <thead className={s.thead}>
-          <tr>
-            <th className={s.th}>Campeonato</th>
-            <th className={s.th}>Equipe</th>
-            <th className={s.th}>Temporada</th>
-            <th className={s.thNum}>Jogos</th>
-            <th className={s.thNum}>MPG</th>
-            <th className={s.thNum}>PPG</th>
-            <th className={s.thNum}>RPG</th>
-            <th className={s.thNum}>APG</th>
-            <th className={s.thNum}>STG</th>
-            <th className={s.thNum}>BPG</th>
-            <th className={s.thNum}>FG%</th>
-            <th className={s.thNum}>3FG%</th>
-            <th className={s.thNum}>FT%</th>
-            <th className={s.thNum}>TS%</th>
-            <th className={s.thNum}>EFF/EFI</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const games = row.totals.games
-            const efi = perGame(calcEffFromTotals(row.totals), games)
-            return (
-              <tr
-                key={`${row.tournament.id}-${row.tournamentTeamId}`}
-                className={s.tr}
-                tabIndex={0}
-                onClick={() => navigate(`/tournaments/${row.tournament.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') navigate(`/tournaments/${row.tournament.id}`)
-                }}
-              >
-                <td className={s.tdStrong}>
-                  <Link
-                    to={`/tournaments/${row.tournament.id}`}
-                    className={s.rowLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {row.tournament.name}
-                  </Link>
-                </td>
-                <td className={s.td}>{row.teamName}</td>
-                <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? String(row.tournament.seasonId)}</td>
-                <td className={s.tdNum}>{games}</td>
-                <td className={s.tdNum}>{formatMinutesSeconds(perGame(row.totals.minutesSeconds, row.totals.measuredGames.minutesSeconds))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, row.totals.measuredGames.pts))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.reb, row.totals.measuredGames.reb))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.ast, row.totals.measuredGames.ast))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.stl, row.totals.measuredGames.stl))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.blk, row.totals.measuredGames.blk))}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.fgm, row.totals.fga)}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.threeFgm, row.totals.threeFga)}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.ftm, row.totals.fta)}</td>
-                <td className={s.tdNum}>{formatTsPct(row.totals.pts, row.totals.fga, row.totals.fta)}</td>
-                <td className={s.tdNum}>{formatEffAvg(efi)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className={s.tableWrap}>
+        <table className={s.table}>
+          <thead className={s.thead}>
+            <tr>
+              {['Campeonato', 'Equipe', 'Temporada'].map((label) => <th key={label} className={s.th}>{label}</th>)}
+              {['Jogos', 'MPG', 'PPG', 'RPG', 'APG', 'STG', 'BPG', 'FG%', '3FG%', 'FT%', 'TS%', 'EFF', 'EFF/J']
+                .map((label) => <th key={label} className={s.thNum}>{label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const { statistics } = row
+              const open = () => navigate(`/tournaments/${row.tournament.id}`)
+              return (
+                <tr
+                  key={`${row.tournament.id}-${row.team.tournamentTeamId}`}
+                  className={s.tr}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      open()
+                    }
+                  }}
+                >
+                  <td className={s.tdStrong}>
+                    <Link to={`/tournaments/${row.tournament.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
+                      {row.tournament.name}
+                    </Link>
+                  </td>
+                  <td className={s.td}>{row.team.name}</td>
+                  <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? `Temporada #${row.tournament.seasonId}`}</td>
+                  <td className={s.tdNum}>{statistics.gamesPlayed}</td>
+                  <td className={s.tdNum}><MeasuredMetric value={formatMinutesSeconds(statistics.perGame.minutesSeconds)} count={statistics.measuredGames.minutesSeconds} /></td>
+                  {(['pts', 'reb', 'ast', 'stl', 'blk'] as const).map((field) => (
+                    <td key={field} className={s.tdNum}>
+                      <MeasuredMetric value={formatServerDecimal(statistics.perGame[field])} count={statistics.measuredGames[field]} />
+                    </td>
+                  ))}
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.fgPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.threeFgPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.ftPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.trueShootingPct)}</td>
+                  <td className={s.tdNum}>{formatServerEfficiency(statistics.efficiency.total)}</td>
+                  <td className={s.tdNum}>
+                    <MeasuredMetric value={formatServerEfficiency(statistics.efficiency.perGame)} count={statistics.efficiency.measuredGames} />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <HistoryFooter
+        loaded={rows.length}
+        total={total}
+        noun="campeonato"
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
+        nextPageErrorTitle="Não foi possível carregar mais campeonatos."
+        onLoadMore={onLoadMore}
+      />
+    </>
   )
 }
 
@@ -392,9 +395,13 @@ export function AthleteDetailPage() {
     {},
     activeTab === 'matches',
   )
-  const tournamentQuery = useAthleteTournamentStatsQuery(athleteId ?? undefined)
+  const tournamentsQuery = useAthleteTournamentsInfiniteQuery(
+    athleteId ?? undefined,
+    {},
+    activeTab === 'tournaments',
+  )
   const teamsQuery = useTeamsQuery()
-  const seasonsQuery = useSeasonsQuery()
+  const seasonsQuery = useSeasonsQuery({}, activeTab === 'tournaments')
 
   if (athleteId == null) {
     return (
@@ -459,6 +466,8 @@ export function AthleteDetailPage() {
   const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
   const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
   const matchTotal = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
+  const tournamentRows = tournamentsQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const tournamentTotal = tournamentsQuery.data?.pages[0]?.meta.totalItems ?? 0
 
   return (
     <div className={s.page}>
@@ -519,17 +528,22 @@ export function AthleteDetailPage() {
           )
         )}
         {activeTab === 'tournaments' && (
-          tournamentQuery.isPending ? (
-            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
-          ) : tournamentQuery.isError ? (
+          tournamentsQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+          ) : tournamentsQuery.isError && tournamentRows.length === 0 ? (
             <div className={s.tabEmpty}>
-              <ErrorState
-                title="Não foi possível carregar os campeonatos."
-                onRetry={() => tournamentQuery.refetch()}
-              />
+              <ErrorState title="Não foi possível carregar os campeonatos." onRetry={() => tournamentsQuery.refetch()} />
             </div>
           ) : (
-            <TournamentsContent rows={tournamentQuery.data ?? []} seasonLabels={seasonLabels} />
+            <TournamentsContent
+              rows={tournamentRows}
+              seasonLabels={seasonLabels}
+              total={tournamentTotal}
+              hasNextPage={Boolean(tournamentsQuery.hasNextPage)}
+              isFetchingNextPage={tournamentsQuery.isFetchingNextPage}
+              isFetchNextPageError={tournamentsQuery.isFetchNextPageError}
+              onLoadMore={() => void tournamentsQuery.fetchNextPage()}
+            />
           )
         )}
       </div>

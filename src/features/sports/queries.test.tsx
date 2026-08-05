@@ -11,6 +11,7 @@ import {
   useAthleteMatchesInfiniteQuery,
   useAthleteQuery,
   useAthleteStatisticsQuery,
+  useAthleteTournamentsInfiniteQuery,
   useCancelMatch,
   useCreateMatch,
   useLinkBracketSlotMatch,
@@ -273,6 +274,54 @@ describe('athlete match history query', () => {
     const listMatches = vi.spyOn(sportsApi, 'listAthleteMatchesPage')
     renderHook(() => useAthleteMatchesInfiniteQuery(165, {}, false), { wrapper })
     expect(listMatches).not.toHaveBeenCalled()
+  })
+})
+
+const athleteTournamentRow = {
+  tournament: { id: 12, name: 'Historical Cup', seasonId: 7, startsAt: null },
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
+  statistics: athleteStatistics,
+}
+
+const athleteTournamentPage = (tournamentTeamId: number, currentPage: number, totalPages: number) => ({
+  data: [{ ...athleteTournamentRow, team: { ...athleteTournamentRow.team, tournamentTeamId } }],
+  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
+describe('athlete tournament history query', () => {
+  it('keeps filters in the key and appends successive pages of twenty', async () => {
+    vi.spyOn(sportsApi, 'listAthleteTournamentsPage')
+      .mockResolvedValueOnce(athleteTournamentPage(41, 1, 2))
+      .mockResolvedValueOnce(athleteTournamentPage(42, 2, 2))
+    const filters = { ids: [12], seasonId: 7 }
+    const { result } = renderHook(
+      () => useAthleteTournamentsInfiniteQuery(165, filters),
+      { wrapper },
+    )
+
+    await waitForPageCount(() => result.current, 1)
+    await act(async () => {
+      await result.current.fetchNextPage()
+    })
+    await waitForPageCount(() => result.current, 2)
+
+    expect(athleteKeys.tournaments(165, filters)).toEqual(['athletes', 'tournaments', 165, 20, filters])
+    expect(sportsApi.listAthleteTournamentsPage).toHaveBeenNthCalledWith(1, 165, {
+      ids: [12], seasonId: 7, page: 1, limit: 20,
+    })
+    expect(sportsApi.listAthleteTournamentsPage).toHaveBeenNthCalledWith(2, 165, {
+      ids: [12], seasonId: 7, page: 2, limit: 20,
+    })
+    expect(result.current.data?.pages.flatMap((page) => page.data).map((row) => row.team.tournamentTeamId))
+      .toEqual([41, 42])
+  })
+
+  it('does not request tournament history while its tab is disabled', () => {
+    const listTournaments = vi.spyOn(sportsApi, 'listAthleteTournamentsPage')
+    renderHook(() => useAthleteTournamentsInfiniteQuery(165, {}, false), { wrapper })
+    expect(listTournaments).not.toHaveBeenCalled()
   })
 })
 
