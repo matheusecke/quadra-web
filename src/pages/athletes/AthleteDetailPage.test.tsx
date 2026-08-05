@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AthleteDetailPage } from './AthleteDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import { getTeams as getMockTeams } from '../../features/sports/mock-sports-data'
+import type { LossType } from '../../features/sports/types'
 
 const RAFAEL_ID = 165
 
@@ -43,7 +44,7 @@ const matchRow = {
   athleteName: 'Historical Athlete',
   team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
   opponent: { tournamentTeamId: 52, teamId: 15, name: 'Historical Opponent' },
-  result: { result: 'LOSS' as const, lossType: 'FORFEIT' as const, pointsFor: 0, pointsAgainst: 20 },
+  result: { result: 'LOSS' as const, lossType: 'FORFEIT' as LossType | null, pointsFor: 0, pointsAgainst: 20 },
   stats: {
     tournamentRosterId: 88,
     minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
@@ -327,6 +328,34 @@ describe('AthleteDetailPage', () => {
     expect(within(row).getAllByText('0').length).toBeGreaterThan(0)
   })
 
+  it('labels a DEFAULT loss as Abandono', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(
+      matchPage([{ ...matchRow, result: { ...matchRow.result, lossType: 'DEFAULT' as const } }]),
+    )
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const row = await screen.findByRole('row', { name: /historical cup/i })
+    expect(within(row).getByText('Abandono')).toBeInTheDocument()
+  })
+
+  it('shows no special loss badge when lossType is null', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(
+      matchPage([{ ...matchRow, result: { ...matchRow.result, lossType: null } }]),
+    )
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const row = await screen.findByRole('row', { name: /historical cup/i })
+    expect(within(row).getByText('Derrota 0–20')).toBeInTheDocument()
+    expect(within(row).queryByText('W.O.')).not.toBeInTheDocument()
+    expect(within(row).queryByText('Abandono')).not.toBeInTheDocument()
+  })
+
   it('uses only match metadata for its visible count even when Summary games differ', async () => {
     vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(matchPage([matchRow], 1, 1, 1))
     const user = userEvent.setup()
@@ -386,5 +415,25 @@ describe('AthleteDetailPage', () => {
     row.focus()
     await user.keyboard(key)
     expect(await screen.findByText('Match destination')).toBeInTheDocument()
+  })
+
+  it('shows the matches empty state when the athlete has no match history', async () => {
+    vi.mocked(sportsApi.listAthleteMatchesPage).mockResolvedValueOnce(matchPage([]))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(await screen.findByText('Sem partidas com estatísticas.')).toBeInTheDocument()
+  })
+
+  it('shows the tournaments empty state when the athlete has no tournament history', async () => {
+    vi.mocked(sportsApi.listAthleteTournamentsPage).mockResolvedValueOnce(tournamentPage([]))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Sem campeonatos com estatísticas.')).toBeInTheDocument()
   })
 })

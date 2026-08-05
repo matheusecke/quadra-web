@@ -214,8 +214,8 @@ function MatchesContent({
           </thead>
           <tbody>
             {rows.map((row) => {
-              const specialLoss = row.result.result === 'LOSS' && row.result.lossType !== 'NORMAL'
-                ? row.result.lossType === 'DEFAULT' ? 'Abandono' : 'W.O.'
+              const specialLoss = row.result.lossType === 'FORFEIT' ? 'W.O.'
+                : row.result.lossType === 'DEFAULT' ? 'Abandono'
                 : null
               const open = () => navigate(`/matches/${row.match.id}`)
               return (

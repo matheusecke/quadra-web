@@ -55,6 +55,7 @@ async function waitForPageCount(getResult: () => { data?: { pages: unknown[] } }
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
   }
+  expect(getResult().data?.pages ?? []).toHaveLength(count)
 }
 
 afterEach(() => vi.restoreAllMocks())

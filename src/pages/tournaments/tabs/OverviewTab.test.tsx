@@ -212,7 +212,7 @@ describe('OverviewTab', () => {
     expect(screen.getAllByText('Sem dados medidos.')).toHaveLength(3)
   })
 
-  it('uses the section-level empty state only when all ten lists are empty', async () => {
+  it('uses the section-level empty state when all five per-game lists are empty', async () => {
     vi.mocked(sportsApi.getTournamentLeaders).mockResolvedValueOnce({
       perGame: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
       totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
