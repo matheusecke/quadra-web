@@ -1,7 +1,4 @@
-import {
-  getAthletes as getMockAthletes,
-  getTournamentLeaders as getMockTournamentLeaders,
-} from '../../features/sports/mock-sports-data'
+import { getAthletes as getMockAthletes } from '../../features/sports/mock-sports-data'
 
 // ── Seasons ──────────────────────────────────────────────────────────────────
 export { getSeasons, listSeasonsPage, createSeason } from './seasons'
@@ -21,12 +18,9 @@ export {
   completeTournament,
   reopenTournament,
   getChampionSuggestion,
+  getTournamentLeaders,
 } from './tournaments'
 export type { ListTournamentsParams } from './tournaments'
-
-// ── Tournament leaders (mock até a fase 10: GET /tournaments/:id/leaders) ─────────
-export const getTournamentLeaders = (tournamentId: number) =>
-  Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export {

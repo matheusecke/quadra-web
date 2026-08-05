@@ -26,8 +26,10 @@ interface OverviewTabProps {
  * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
 export function OverviewTab({ tournament, matches, matchesPending, matchesError, onRetryMatches, teams, onSeeBracket }: OverviewTabProps) {
-  const { data: leaders } = useTournamentLeadersQuery(tournament.id)
-  const hasLeaders = (leaders?.ppg.length ?? 0) > 0
+  const leadersQuery = useTournamentLeadersQuery(tournament.id)
+  const leaders = leadersQuery.data
+  const hasLeaders = leaders !== undefined
+    && Object.values(leaders.perGame).some((rows) => rows.length > 0)
   const bracket = useBracketView(tournament.id)
   const isKnockout = hasKnockout(tournament.format)
   // Ranked by the API, one envelope per group (one with group: null in LEAGUE).
@@ -106,11 +108,20 @@ export function OverviewTab({ tournament, matches, matchesPending, matchesError,
           <h2 className={s.sectionTitle}>Líderes</h2>
           <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
         </div>
-        {hasLeaders ? (
-          <LeadersGrid leaders={leaders!} teams={teams} perCard={3} />
+        {leadersQuery.isPending ? (
+          <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+        ) : leadersQuery.isError ? (
+          <div className={s.tabEmpty}>
+            <ErrorState title="Não foi possível carregar os líderes." onRetry={() => leadersQuery.refetch()} />
+          </div>
+        ) : hasLeaders ? (
+          <LeadersGrid leaders={leaders} group="perGame" limit={3} />
         ) : (
           <div className={s.tabEmpty}>
-            <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
+            <EmptyState
+              title="Sem líderes estatísticos ainda."
+              description="Os líderes aparecem após as primeiras partidas com estatísticas."
+            />
           </div>
         )}
       </section>

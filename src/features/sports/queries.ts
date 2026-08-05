@@ -63,6 +63,7 @@ export const tournamentKeys = {
   allTeams: () => [...tournamentKeys.all, 'teams', 'all'] as const,
   roster: (tournamentTeamId: number) => [...tournamentKeys.all, 'roster', tournamentTeamId] as const,
   championSuggestion: (id: number) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
+  leaders: (id: number) => [...tournamentKeys.all, 'leaders', id] as const,
 }
 
 export const matchKeys = {
@@ -182,11 +183,14 @@ export function useTournamentQuery(id: number | undefined) {
   })
 }
 
-export function useTournamentLeadersQuery(tournamentId: number | undefined) {
+export function useTournamentLeadersQuery(
+  tournamentId: number | undefined,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: [...tournamentKeys.all, 'leaders', tournamentId ?? -1] as const,
+    queryKey: tournamentKeys.leaders(tournamentId ?? -1),
     queryFn: () => sportsApi.getTournamentLeaders(tournamentId!),
-    enabled: tournamentId != null,
+    enabled: tournamentId != null && enabled,
   })
 }
 

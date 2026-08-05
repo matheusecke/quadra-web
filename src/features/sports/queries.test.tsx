@@ -25,6 +25,7 @@ import {
   useSubmitMatchResult,
   useTeamsQuery,
   useAthletesQuery,
+  useTournamentLeadersQuery,
   useTournamentMatchesQuery,
   useUnlinkBracketSlotMatch,
   useUpdateMatch,
@@ -322,6 +323,39 @@ describe('athlete tournament history query', () => {
     const listTournaments = vi.spyOn(sportsApi, 'listAthleteTournamentsPage')
     renderHook(() => useAthleteTournamentsInfiniteQuery(165, {}, false), { wrapper })
     expect(listTournaments).not.toHaveBeenCalled()
+  })
+})
+
+describe('tournament leaders query', () => {
+  const leaders = {
+    perGame: {
+      ppg: [{ athleteId: 165, athleteName: 'Historical Athlete', tournamentTeamId: 41, teamId: 8, teamName: 'Historical Team', value: 24.125, gamesPlayed: 4 }],
+      rpg: [], apg: [], stg: [], bpg: [],
+    },
+    totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
+  }
+
+  it('uses the shared leaders key and honors disabled consumers', async () => {
+    const getLeaders = vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaders)
+    const disabled = renderHook(() => useTournamentLeadersQuery(12, false), { wrapper })
+    expect(disabled.result.current.fetchStatus).toBe('idle')
+    expect(getLeaders).not.toHaveBeenCalled()
+
+    const enabled = renderHook(() => useTournamentLeadersQuery(12), { wrapper })
+    await waitFor(() => expect(enabled.result.current.data).toEqual(leaders))
+    expect(tournamentKeys.leaders(12)).toEqual(['tournaments', 'leaders', 12])
+  })
+
+  it('deduplicates two leader consumers through the same cache entry', async () => {
+    const getLeaders = vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaders)
+    const { result } = renderHook(() => ({
+      overview: useTournamentLeadersQuery(12),
+      statistics: useTournamentLeadersQuery(12),
+    }), { wrapper })
+
+    await waitFor(() => expect(result.current.overview.data).toEqual(leaders))
+    expect(result.current.statistics.data).toEqual(leaders)
+    expect(getLeaders).toHaveBeenCalledTimes(1)
   })
 })
 
