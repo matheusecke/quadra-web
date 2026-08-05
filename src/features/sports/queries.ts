@@ -86,7 +86,6 @@ export type AthleteTournamentFilters = Omit<ListAthleteTournamentsParams, 'page'
 
 export const athleteKeys = {
   all: ['athletes'] as const,
-  list: () => [...athleteKeys.all, 'list'] as const,
   detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
   statistics: (id: number) => [...athleteKeys.all, 'statistics', id] as const,
   matches: (id: number, filters: AthleteMatchFilters) =>
@@ -260,10 +259,6 @@ export function useMatchDetailQuery(id: number | undefined) {
 
 export function useTeamsQuery() {
   return useQuery({ queryKey: teamKeys.list(), queryFn: () => sportsApi.getTeams() })
-}
-
-export function useAthletesQuery() {
-  return useQuery({ queryKey: athleteKeys.list(), queryFn: () => sportsApi.getAthletes() })
 }
 
 export function useAthleteQuery(id: number | undefined) {

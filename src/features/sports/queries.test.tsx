@@ -24,7 +24,6 @@ import {
   useSetBracketSlotWinner,
   useSubmitMatchResult,
   useTeamsQuery,
-  useAthletesQuery,
   useTournamentLeadersQuery,
   useTournamentMatchesQuery,
   useUnlinkBracketSlotMatch,
@@ -163,11 +162,6 @@ describe('catalog queries', () => {
     vi.spyOn(sportsApi, 'getTeams').mockResolvedValue([{ id: 1, name: 'Time 1', shortName: 'T01', city: 'Campinas' }])
     const list = renderHook(() => useTeamsQuery(), { wrapper })
     await waitFor(() => expect(list.result.current.data?.[0]?.shortName).toBe('T01'))
-  })
-
-  it('loads athletes through React Query', async () => {
-    const list = renderHook(() => useAthletesQuery(), { wrapper })
-    await waitFor(() => expect(list.result.current.data?.[0]?.name).toBe('Rafael Moura'))
   })
 })
 

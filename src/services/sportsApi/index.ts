@@ -1,5 +1,3 @@
-import { getAthletes as getMockAthletes } from '../../features/sports/mock-sports-data'
-
 // ── Seasons ──────────────────────────────────────────────────────────────────
 export { getSeasons, listSeasonsPage, createSeason } from './seasons'
 export type { ListSeasonsParams } from './seasons'
@@ -69,7 +67,6 @@ export {
   listAthleteTournamentsPage,
 } from './athletes'
 export type { ListAthleteMatchesParams, ListAthleteTournamentsParams } from './athletes'
-export const getAthletes = () => Promise.resolve(getMockAthletes())
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
 export {

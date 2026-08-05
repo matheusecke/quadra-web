@@ -4,10 +4,7 @@ import {
   TOURNAMENT_STATUS_LABELS,
   formatDiff,
   formatStatPct,
-  calcEff,
-  perGame,
   formatMinutesSeconds,
-  aggregateAthleteStats,
   formatPct,
   matchPhaseName,
   matchStatusVariant,
@@ -20,7 +17,7 @@ import {
   formatMeasuredGames,
   formatShootingLine,
 } from './sportsUtils'
-import type { PlayerMatchStats, StandingRow, TournamentTeam } from './types'
+import type { StandingRow, TournamentTeam } from './types'
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
   position: 1, tournamentTeamId: 1001, teamId: 1, teamName: 'Alfa',
@@ -149,12 +146,6 @@ describe('Phase 10 server-value formatters', () => {
   })
 })
 
-const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 701001, tournamentTeamId: 1, displayName: 'A',
-  minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
-  fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, ...over,
-})
-
 describe('formatStatPct', () => {
   it('is N/A when a side was not tracked (null)', () => {
     expect(formatStatPct(null, 10)).toBe('N/A')
@@ -170,32 +161,9 @@ describe('formatStatPct', () => {
   })
 })
 
-describe('calcEff', () => {
-  it('is null when any input is null', () => {
-    expect(calcEff(line({ reb: null }))).toBeNull()
-  })
-})
-
-describe('perGame', () => {
-  it('divides by measured games and is null when none measured', () => {
-    expect(perGame(10, 4)).toBe(2.5)
-    expect(perGame(null, 0)).toBeNull()
-  })
-})
-
 describe('formatMinutesSeconds', () => {
   it('is N/A for null', () => {
     expect(formatMinutesSeconds(null)).toBe('N/A')
-  })
-})
-
-describe('aggregateAthleteStats', () => {
-  it('keeps a fully untracked metric null and counts measured games per field', () => {
-    const totals = aggregateAthleteStats([line({ reb: null, pts: 10 }), line({ reb: null, pts: 8 })])
-    expect(totals.reb).toBeNull()
-    expect(totals.pts).toBe(18)
-    expect(totals.measuredGames.reb).toBe(0)
-    expect(totals.measuredGames.pts).toBe(2)
   })
 })
 

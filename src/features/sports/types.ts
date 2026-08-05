@@ -24,9 +24,6 @@ export type MatchStatus =
   | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
   | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
-/** The only per-leader stat categories allowed this round. */
-export type LeaderStat = 'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg'
-
 // ── Core entities ───────────────────────────────────────────────────────────
 
 export interface Team {
@@ -166,26 +163,6 @@ export interface StandingsEnvelope {
   standingsState: StandingsState
   pendingMatches: number
   rows: StandingRow[]
-}
-
-export interface StatLeader {
-  athleteId: number
-  athleteName: string
-  tournamentTeamId: number
-  /** Global team id — legit catalog metadata, kept alongside the identity field. */
-  teamId: number
-  /** Per-game average for the category. */
-  value: number | null
-  gamesPlayed: number
-}
-
-/** Tournament statistical leaders — basic per-game categories only. */
-export interface StatLeaders {
-  ppg: StatLeader[] // pontos por jogo
-  rpg: StatLeader[] // rebotes por jogo
-  apg: StatLeader[] // assistências por jogo
-  stg: StatLeader[] // roubos por jogo
-  bpg: StatLeader[] // tocos por jogo
 }
 
 /** Why the loser lost. Drives FIBA classification points: NORMAL/DEFAULT = 1, FORFEIT = 0. */
@@ -424,28 +401,6 @@ export interface AthleteStatTotals {
   threeFga: number | null
   ftm: number | null
   fta: number | null
-}
-
-export interface AthleteMatchStatsRow {
-  match: {
-    id: number
-    scheduledAt: string
-  }
-  tournament: Tournament
-  tournamentTeamId: number
-  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
-  teamName: string
-  matchup: string
-  result: string
-  stats: PlayerMatchStats
-}
-
-export interface AthleteTournamentStatsRow {
-  tournament: Tournament
-  tournamentTeamId: number
-  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
-  teamName: string
-  totals: AthleteStatTotals
 }
 
 /** Score for a single period (regular quarter or overtime).
