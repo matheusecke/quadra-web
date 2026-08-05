@@ -183,10 +183,10 @@ describe('OverviewTab', () => {
 
   it('shows an independent leaders skeleton before the request settles', () => {
     vi.mocked(sportsApi.getTournamentLeaders).mockReturnValueOnce(new Promise(() => undefined))
-    const { container } = renderGeral()
-    expect(screen.getByRole('heading', { name: 'Líderes' })).toBeInTheDocument()
+    renderGeral()
+    const leadersSection = screen.getByRole('heading', { name: 'Líderes' }).closest('section')!
     expect(screen.queryByText('Sem líderes estatísticos ainda.')).not.toBeInTheDocument()
-    expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0)
+    expect(leadersSection.querySelector('[aria-hidden="true"]')).toBeInTheDocument()
   })
 
   it('retries a leaders failure without refetching standings or matches', async () => {

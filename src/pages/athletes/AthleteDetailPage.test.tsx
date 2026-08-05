@@ -118,10 +118,11 @@ describe('AthleteDetailPage', () => {
 
   it('shows a profile skeleton before the athlete request settles', () => {
     vi.spyOn(sportsApi, 'getAthlete').mockReturnValueOnce(new Promise(() => undefined))
-    const { container } = renderAthletePage()
+    renderAthletePage()
 
     expect(screen.queryByTestId('athlete-header')).not.toBeInTheDocument()
-    expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0)
+    const skeletonBlock = screen.getByRole('button', { name: 'Voltar' }).nextElementSibling
+    expect(skeletonBlock?.querySelector('[aria-hidden="true"]')).toBeInTheDocument()
   })
 
   it('renders athlete header with jersey number, name, abbreviated position, current team and status only', async () => {
