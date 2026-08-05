@@ -685,7 +685,7 @@
 
 .leaderMeasured {
   font-size: 9px;
-  color: var(--muted-3);
+  color: var(--muted);
 }
 
 .leaderEmpty {

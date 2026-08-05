@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -78,7 +78,7 @@ const tournamentPage = (
   statusCode: 200,
 })
 
-function renderAthletePage(athleteId = RAFAEL_ID) {
+function renderAthletePage(athleteId: number | string = RAFAEL_ID) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -110,6 +110,20 @@ beforeEach(() => {
 })
 
 describe('AthleteDetailPage', () => {
+  it('shows an invalid ID error for a non-numeric athlete route param', () => {
+    renderAthletePage('abc')
+
+    expect(screen.getByText('ID de atleta inválido.')).toBeInTheDocument()
+  })
+
+  it('shows a profile skeleton before the athlete request settles', () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockReturnValueOnce(new Promise(() => undefined))
+    const { container } = renderAthletePage()
+
+    expect(screen.queryByTestId('athlete-header')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0)
+  })
+
   it('renders athlete header with jersey number, name, abbreviated position, current team and status only', async () => {
     renderAthletePage()
 
@@ -197,6 +211,22 @@ describe('AthleteDetailPage', () => {
     expect(sportsApi.getAthlete).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps a rendered Summary after a background statistics refetch fails', async () => {
+    const getStatistics = vi.mocked(sportsApi.getAthleteStatistics)
+    getStatistics.mockResolvedValueOnce(statistics).mockRejectedValue(new Error('refetch failed'))
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+
+    expect(await screen.findByRole('heading', { name: 'Totais' })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    await user.click(screen.getByRole('tab', { name: 'Resumo' }))
+
+    await waitFor(() => expect(getStatistics).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole('heading', { name: 'Totais' })).toBeInTheDocument()
+    expect(screen.queryByText('Não foi possível carregar as estatísticas.')).not.toBeInTheDocument()
+  })
+
   it('renders the neutral not-found state for a profile 404', async () => {
     vi.spyOn(sportsApi, 'getAthlete').mockRejectedValueOnce(Object.assign(new Error('not found'), {
       isAxiosError: true,
@@ -204,6 +234,16 @@ describe('AthleteDetailPage', () => {
     }))
     renderAthletePage()
     expect(await screen.findByText('Atleta não encontrado.')).toBeInTheDocument()
+  })
+
+  it('shows a recoverable profile error with retry', async () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockRejectedValueOnce(new Error('profile unavailable'))
+    const user = userEvent.setup()
+    renderAthletePage()
+
+    expect(await screen.findByText('Não foi possível carregar o atleta.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByTestId('athlete-header')).toBeInTheDocument()
   })
 
   it('does not request tournament history or seasons before Campeonatos opens', async () => {

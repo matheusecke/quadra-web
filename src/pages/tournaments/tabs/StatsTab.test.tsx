@@ -67,8 +67,9 @@ describe('StatsTab', () => {
   it('keeps a pending request distinct from empty statistics', () => {
     vi.mocked(sportsApi.getTournamentLeaders)
       .mockReturnValueOnce(new Promise<TournamentLeaders>(() => undefined))
-    renderStats()
+    const { container } = renderStats()
     expect(screen.queryByText('Sem estatísticas disponíveis.')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0)
   })
 
   it('retries a local failure', async () => {

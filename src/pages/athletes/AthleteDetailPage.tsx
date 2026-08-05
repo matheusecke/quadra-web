@@ -46,7 +46,6 @@ interface DisplayStat {
   label: string
   value: string | number
   measuredGames?: number
-  sm?: boolean
 }
 
 function StatStrip({ title, stats }: { title: string; stats: DisplayStat[] }) {
@@ -57,9 +56,9 @@ function StatStrip({ title, stats }: { title: string; stats: DisplayStat[] }) {
       </div>
       <div className={s.statsBlock}>
         <div className={s.statsRow}>
-          {stats.map(({ label, value, measuredGames: count, sm }) => (
+          {stats.map(({ label, value, measuredGames: count }) => (
             <div key={label} className={s.statItem}>
-              <span className={sm ? s.statValueSm : s.statValue}>{value}</span>
+              <span className={s.statValue}>{value}</span>
               <span className={s.statLabel}>{label}</span>
               {count !== undefined && <span className={s.statMeta}>{formatMeasuredGames(count)}</span>}
             </div>
@@ -116,24 +115,22 @@ function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
       <StatStrip
         title="Aproveitamento e eficiência"
         stats={[
-          { label: 'FG', value: formatShootingLine(totals.fgm, totals.fga), sm: true },
-          { label: 'FG%', value: formatServerPercentage(shooting.fgPct), sm: true },
-          { label: '3FG', value: formatShootingLine(totals.threeFgm, totals.threeFga), sm: true },
-          { label: '3FG%', value: formatServerPercentage(shooting.threeFgPct), sm: true },
-          { label: 'FT', value: formatShootingLine(totals.ftm, totals.fta), sm: true },
-          { label: 'FT%', value: formatServerPercentage(shooting.ftPct), sm: true },
-          { label: 'TS%', value: formatServerPercentage(shooting.trueShootingPct), sm: true },
+          { label: 'FG', value: formatShootingLine(totals.fgm, totals.fga) },
+          { label: 'FG%', value: formatServerPercentage(shooting.fgPct) },
+          { label: '3FG', value: formatShootingLine(totals.threeFgm, totals.threeFga) },
+          { label: '3FG%', value: formatServerPercentage(shooting.threeFgPct) },
+          { label: 'FT', value: formatShootingLine(totals.ftm, totals.fta) },
+          { label: 'FT%', value: formatServerPercentage(shooting.ftPct) },
+          { label: 'TS%', value: formatServerPercentage(shooting.trueShootingPct) },
           {
             label: 'EFF',
             value: formatServerEfficiency(efficiency.total),
             measuredGames: efficiency.measuredGames,
-            sm: true,
           },
           {
             label: 'EFF/J',
             value: formatServerEfficiency(efficiency.perGame),
             measuredGames: efficiency.measuredGames,
-            sm: true,
           },
         ]}
       />
@@ -498,7 +495,7 @@ export function AthleteDetailPage() {
         {activeTab === 'summary' && (
           statisticsQuery.isPending ? (
             <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
-          ) : statisticsQuery.isError ? (
+          ) : statisticsQuery.isError && !statisticsQuery.data ? (
             <div className={s.tabEmpty}>
               <ErrorState
                 title="Não foi possível carregar as estatísticas."
