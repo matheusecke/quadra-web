@@ -1,6 +1,6 @@
 services:
   web:
-    container_name: tcc-web
+    container_name: quadra-web
     build:
       context: .
       dockerfile: Dockerfile.local

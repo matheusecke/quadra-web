@@ -2,7 +2,7 @@
  * Sports domain — MOCK DATA (PUC Campinas Basquete demo).
  * Numeric IDs follow docs/superpowers/plans/2026-07-22-sports-numeric-ids.md
  * (Team N = puc-time-N; Athlete 101+index; Tournament 1=Geral, 2=Inverno, 3=fixtures).
- * Team/athlete display names still trace tcc-api/prisma/seeds/puc-dev-seed.sql.
+ * Team/athlete display names still trace quadra-api/prisma/seeds/puc-dev-seed.sql.
  */
 import type { MatchStatus, Team, Tournament } from './types'
 import { SEED_TOURNAMENT, tournamentTeamId } from './seedIds'
