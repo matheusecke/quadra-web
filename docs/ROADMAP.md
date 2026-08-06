@@ -6,7 +6,7 @@ Planned and pending frontend work across areas. Each area is its own section.
 
 ### Current Contract
 
-- Normal affiliation flows in `tcc-web` should use the JWT-scoped API contract:
+- Normal affiliation flows in `quadra-web` should use the JWT-scoped API contract:
   - `/organization-user-affiliations`
   - `/organization-user-affiliations/:id`
   - `/organization-user-affiliations/:id/resend`
