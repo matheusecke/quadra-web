@@ -4,18 +4,20 @@ import {
   TOURNAMENT_STATUS_LABELS,
   formatDiff,
   formatStatPct,
-  calcEff,
-  perGame,
   formatMinutesSeconds,
-  aggregateAthleteStats,
   formatPct,
   matchPhaseName,
   matchStatusVariant,
   tournamentStatusVariant,
   teamMap,
   tournamentTeamMap,
+  formatServerDecimal,
+  formatServerPercentage,
+  formatServerEfficiency,
+  formatMeasuredGames,
+  formatShootingLine,
 } from './sportsUtils'
-import type { PlayerMatchStats, StandingRow, TournamentTeam } from './types'
+import type { StandingRow, TournamentTeam } from './types'
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
   position: 1, tournamentTeamId: 1001, teamId: 1, teamName: 'Alfa',
@@ -109,10 +111,39 @@ describe('matchPhaseName', () => {
   })
 })
 
-const line = (over: Partial<PlayerMatchStats>): PlayerMatchStats => ({
-  tournamentRosterId: 701001, tournamentTeamId: 1, displayName: 'A',
-  minutesSeconds: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
-  fgm: 0, fga: 0, threeFgm: 0, threeFga: 0, ftm: 0, fta: 0, ...over,
+describe('Phase 10 server-value formatters', () => {
+  it('distinguishes unmeasured null from measured zero', () => {
+    expect(formatServerDecimal(null)).toBe('N/A')
+    expect(formatServerDecimal(0)).toBe('0')
+    expect(formatShootingLine(null, 0)).toBe('N/A')
+    expect(formatShootingLine(0, 0)).toBe('0/0')
+  })
+
+  it('keeps every server decimal instead of forcing a new precision', () => {
+    expect(formatServerDecimal(24)).toBe('24')
+    expect(formatServerDecimal(24.5)).toBe('24.5')
+    expect(formatServerDecimal(24.125)).toBe('24.125')
+  })
+
+  it('formats fractional percentages without clamping values above one', () => {
+    expect(formatServerPercentage(null)).toBe('N/A')
+    expect(formatServerPercentage(0)).toBe('0%')
+    expect(formatServerPercentage(0.429)).toBe('42.9%')
+    expect(formatServerPercentage(1.4)).toBe('140%')
+  })
+
+  it('adds a sign only to positive server-owned efficiency', () => {
+    expect(formatServerEfficiency(null)).toBe('N/A')
+    expect(formatServerEfficiency(-2.5)).toBe('-2.5')
+    expect(formatServerEfficiency(0)).toBe('0')
+    expect(formatServerEfficiency(3.125)).toBe('+3.125')
+  })
+
+  it('labels the metric-specific measurement count with correct plurality', () => {
+    expect(formatMeasuredGames(0)).toBe('em 0 jogos medidos')
+    expect(formatMeasuredGames(1)).toBe('em 1 jogo medido')
+    expect(formatMeasuredGames(4)).toBe('em 4 jogos medidos')
+  })
 })
 
 describe('formatStatPct', () => {
@@ -130,32 +161,9 @@ describe('formatStatPct', () => {
   })
 })
 
-describe('calcEff', () => {
-  it('is null when any input is null', () => {
-    expect(calcEff(line({ reb: null }))).toBeNull()
-  })
-})
-
-describe('perGame', () => {
-  it('divides by measured games and is null when none measured', () => {
-    expect(perGame(10, 4)).toBe(2.5)
-    expect(perGame(null, 0)).toBeNull()
-  })
-})
-
 describe('formatMinutesSeconds', () => {
   it('is N/A for null', () => {
     expect(formatMinutesSeconds(null)).toBe('N/A')
-  })
-})
-
-describe('aggregateAthleteStats', () => {
-  it('keeps a fully untracked metric null and counts measured games per field', () => {
-    const totals = aggregateAthleteStats([line({ reb: null, pts: 10 }), line({ reb: null, pts: 8 })])
-    expect(totals.reb).toBeNull()
-    expect(totals.pts).toBe(18)
-    expect(totals.measuredGames.reb).toBe(0)
-    expect(totals.measuredGames.pts).toBe(2)
   })
 })
 

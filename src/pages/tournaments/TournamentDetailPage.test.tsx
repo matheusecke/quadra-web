@@ -113,6 +113,10 @@ beforeEach(() => {
     CANDIDATES.filter((candidate) =>
       candidate.teamId === teamId && candidate.role === role && (!q || candidate.name.toLowerCase().includes(q.toLowerCase()))))
   vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockResolvedValue(matchPage([], 1, 1))
+  vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue({
+    perGame: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
+    totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
+  })
   vi.spyOn(sportsApi, 'addTournamentRoster').mockResolvedValue({
     id: 999,
     tournamentId: SEED_TOURNAMENT.INVERNO,
@@ -246,13 +250,11 @@ describe('TournamentDetailPage inline roster (org admin)', () => {
     expect(screen.queryByRole('region', { name: 'Elenco Time 1' })).toBeNull()
   })
 
-  it('renders the roster content from the server snapshot, not the athlete catalog', async () => {
-    const getAthletes = vi.spyOn(sportsApi, 'getAthletes')
+  it('renders the roster content from the server snapshot', async () => {
     await openTeamsTab()
     await userEvent.click(elenco('Time 1'))
     const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
     expect(await within(region).findByText('Rafael Moura')).toBeInTheDocument()
-    expect(getAthletes).not.toHaveBeenCalled()
   })
 
   it('renders the enrollment snapshot instead of the current team name', async () => {

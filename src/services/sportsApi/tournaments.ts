@@ -1,7 +1,7 @@
 import api from '../api'
 import type { PaginatedResponse } from '../../types/admin'
 import type { ApiResponse } from '../../types/api'
-import type { Tournament, TournamentStatus } from '../../features/sports/types'
+import type { Tournament, TournamentLeaders, TournamentStatus } from '../../features/sports/types'
 import type {
   CompleteTournamentInput,
   CreateTournamentInput,
@@ -33,6 +33,11 @@ export const getTournaments = (params: Omit<ListTournamentsParams, 'page' | 'lim
 
 export const getTournament = (id: number) =>
   api.get<ApiResponse<Tournament>>(`/tournaments/${id}`).then((r) => r.data.data)
+
+export const getTournamentLeaders = (id: number) =>
+  api
+    .get<ApiResponse<TournamentLeaders>>(`/tournaments/${id}/leaders`)
+    .then(({ data }) => data.data)
 
 export const createTournament = (input: CreateTournamentInput) =>
   api.post<ApiResponse<Tournament>>('/tournaments', input).then((r) => r.data.data)

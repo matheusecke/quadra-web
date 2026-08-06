@@ -1,12 +1,3 @@
-import {
-  getAthletes as getMockAthletes,
-  getAthleteById,
-  getAthleteMatches as getMockAthleteMatches,
-  getAthleteSummaryById,
-  getAthleteTournamentStats as getMockAthleteTournamentStats,
-  getTournamentLeaders as getMockTournamentLeaders,
-} from '../../features/sports/mock-sports-data'
-
 // ── Seasons ──────────────────────────────────────────────────────────────────
 export { getSeasons, listSeasonsPage, createSeason } from './seasons'
 export type { ListSeasonsParams } from './seasons'
@@ -25,12 +16,9 @@ export {
   completeTournament,
   reopenTournament,
   getChampionSuggestion,
+  getTournamentLeaders,
 } from './tournaments'
 export type { ListTournamentsParams } from './tournaments'
-
-// ── Tournament leaders (mock até a fase 10: GET /tournaments/:id/leaders) ─────────
-export const getTournamentLeaders = (tournamentId: number) =>
-  Promise.resolve(getMockTournamentLeaders(tournamentId))
 
 // ── Tournament teams ─────────────────────────────────────────────────────────────
 export {
@@ -72,11 +60,13 @@ export { getTeams, listTeamsPage, listRosterCandidatesPage, searchRosterCandidat
 export type { ListRosterCandidatesParams, ListTeamsParams } from './catalogs'
 
 // ── Athletes ─────────────────────────────────────────────────────────────────
-export const getAthletes = () => Promise.resolve(getMockAthletes())
-export const getAthlete = (id: number) => Promise.resolve(getAthleteById(id))
-export const getAthleteSummary = (id: number) => Promise.resolve(getAthleteSummaryById(id))
-export const getAthleteMatches = (id: number) => Promise.resolve(getMockAthleteMatches(id))
-export const getAthleteTournamentStats = (id: number) => Promise.resolve(getMockAthleteTournamentStats(id))
+export {
+  getAthlete,
+  getAthleteStatistics,
+  listAthleteMatchesPage,
+  listAthleteTournamentsPage,
+} from './athletes'
+export type { ListAthleteMatchesParams, ListAthleteTournamentsParams } from './athletes'
 
 // ── Matches ────────────────────────────────────────────────────────────────────────
 export {

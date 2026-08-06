@@ -7,6 +7,7 @@ import {
   completeTournament,
   createTournament,
   getChampionSuggestion,
+  getTournamentLeaders,
   getTournaments,
   listTournamentsPage,
   reopenTournament,
@@ -26,6 +27,25 @@ const pageEnvelope = {
   meta: { totalItems: 1, itemCount: 1, itemsPerPage: 20, totalPages: 1, currentPage: 1 },
   links: { first: '?page=1', previous: null, next: null, last: '?page=1' },
   statusCode: 200,
+}
+
+const leaders = {
+  perGame: {
+    ppg: [{
+      athleteId: 165,
+      athleteName: 'Historical Athlete',
+      tournamentTeamId: 41,
+      teamId: 8,
+      teamName: 'Historical Team',
+      value: 24.125,
+      gamesPlayed: 4,
+    }],
+    rpg: [],
+    apg: [],
+    stg: [],
+    bpg: [],
+  },
+  totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
 }
 
 beforeEach(() => {
@@ -74,5 +94,12 @@ describe('tournaments adapter', () => {
   it('extrai a sugestão de campeão, que pode ser nula', async () => {
     apiMock.get.mockResolvedValue({ data: { data: { championTournamentTeamId: null }, statusCode: 200 } })
     expect(await getChampionSuggestion(12)).toBeNull()
+  })
+
+  it('unwraps tournament leaders without reordering or resolving snapshot names', async () => {
+    apiMock.get.mockResolvedValueOnce({ data: { data: leaders, statusCode: 200 } })
+
+    await expect(getTournamentLeaders(12)).resolves.toEqual(leaders)
+    expect(apiMock.get).toHaveBeenCalledWith('/tournaments/12/leaders')
   })
 })

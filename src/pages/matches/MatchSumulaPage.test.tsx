@@ -257,13 +257,11 @@ describe('MatchSumulaPage — roster hydration', () => {
   it('uses every ATHLETE in roster order and excludes coaching staff', async () => {
     vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
     mockRosters()
-    const getAthletes = vi.spyOn(sportsApi, 'getAthletes')
 
     renderSumula()
 
     expect(await screen.findByText('Ana Silva')).toBeInTheDocument()
     expect(screen.queryByText('Técnica da Engenharia')).not.toBeInTheDocument()
-    expect(getAthletes).not.toHaveBeenCalled()
 
     await userEvent.click(screen.getByRole('tab', { name: 'Direito' }))
     expect(screen.getByText('Bia Souza')).toBeInTheDocument()

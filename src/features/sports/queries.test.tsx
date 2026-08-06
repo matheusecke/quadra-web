@@ -1,12 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import {
+  athleteKeys,
   bracketKeys,
   matchKeys,
   standingsKeys,
   tournamentKeys,
+  useAthleteMatchesInfiniteQuery,
+  useAthleteQuery,
+  useAthleteStatisticsQuery,
+  useAthleteTournamentsInfiniteQuery,
   useCancelMatch,
   useCreateMatch,
   useLinkBracketSlotMatch,
@@ -19,7 +24,7 @@ import {
   useSetBracketSlotWinner,
   useSubmitMatchResult,
   useTeamsQuery,
-  useAthletesQuery,
+  useTournamentLeadersQuery,
   useTournamentMatchesQuery,
   useUnlinkBracketSlotMatch,
   useUpdateMatch,
@@ -37,6 +42,20 @@ function createWrapper() {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
   return { client, Wrapper }
+}
+
+/**
+ * `renderHook` result snapshots don't reliably reflect an infinite query's merged
+ * pages right after a bare `fetchNextPage()` — the commit lands on a later tick than
+ * `waitFor`'s own polling flushes. Polling inside `act()` forces that tick each time.
+ */
+async function waitForPageCount(getResult: () => { data?: { pages: unknown[] } }, count: number) {
+  for (let attempt = 0; attempt < 30 && (getResult().data?.pages.length ?? 0) < count; attempt += 1) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+  }
+  expect(getResult().data?.pages ?? []).toHaveLength(count)
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -145,10 +164,193 @@ describe('catalog queries', () => {
     const list = renderHook(() => useTeamsQuery(), { wrapper })
     await waitFor(() => expect(list.result.current.data?.[0]?.shortName).toBe('T01'))
   })
+})
 
-  it('loads athletes through React Query', async () => {
-    const list = renderHook(() => useAthletesQuery(), { wrapper })
-    await waitFor(() => expect(list.result.current.data?.[0]?.name).toBe('Rafael Moura'))
+const athleteProfile = {
+  id: 165,
+  name: 'Current Athlete',
+  currentTeamId: null,
+  jerseyNumber: null,
+  position: null,
+  status: 'INACTIVE' as const,
+}
+
+const metricCounts = {
+  minutesSeconds: 0, pts: 2, reb: 0, ast: 2, stl: 2, blk: 2, tov: 2, pf: 2,
+  fgm: 2, fga: 2, threeFgm: 2, threeFga: 2, ftm: 2, fta: 2,
+}
+
+const metricValues = {
+  minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
+  fgm: 8, fga: 6, threeFgm: 2, threeFga: 1, ftm: 4, fta: 3,
+}
+
+const athleteStatistics = {
+  gamesPlayed: 3,
+  measuredGames: metricCounts,
+  totals: metricValues,
+  perGame: { ...metricValues, ast: 1.5 },
+  shooting: { fgPct: 1.333, threeFgPct: 2, ftPct: 1.333, trueShootingPct: 1.4 },
+  efficiency: { measuredGames: 2, total: 7, perGame: 3.5 },
+}
+
+describe('athlete profile and statistics queries', () => {
+  it('uses separate detail and statistics cache keys', async () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockResolvedValue(athleteProfile)
+    vi.spyOn(sportsApi, 'getAthleteStatistics').mockResolvedValue(athleteStatistics)
+
+    const detail = renderHook(() => useAthleteQuery(165), { wrapper })
+    const statistics = renderHook(() => useAthleteStatisticsQuery(165), { wrapper })
+
+    await waitFor(() => expect(detail.result.current.data).toEqual(athleteProfile))
+    await waitFor(() => expect(statistics.result.current.data).toEqual(athleteStatistics))
+    expect(athleteKeys.detail(165)).toEqual(['athletes', 'detail', 165])
+    expect(athleteKeys.statistics(165)).toEqual(['athletes', 'statistics', 165])
+  })
+
+  it('does not request statistics while its tab is disabled', () => {
+    const getStatistics = vi.spyOn(sportsApi, 'getAthleteStatistics')
+    renderHook(() => useAthleteStatisticsQuery(165, false), { wrapper })
+    expect(getStatistics).not.toHaveBeenCalled()
+  })
+})
+
+const athleteMatchRow = {
+  match: { id: 501, scheduledAt: '2026-08-15T19:30:00.000Z' },
+  tournament: { id: 12, name: 'Intercourses 2026' },
+  athleteName: 'Historical Athlete',
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
+  opponent: { tournamentTeamId: 52, teamId: 15, name: 'Historical Opponent' },
+  result: { result: 'LOSS' as const, lossType: 'FORFEIT' as const, pointsFor: 0, pointsAgainst: 20 },
+  stats: {
+    tournamentRosterId: 88,
+    minutesSeconds: null, pts: 0, reb: null, ast: 3, stl: 0, blk: 0, tov: 1, pf: 2,
+    fgm: 8, fga: 6, threeFgm: 2, threeFga: 1, ftm: 4, fta: 3,
+  },
+  derived: { fgPct: 1.333, threeFgPct: 2, ftPct: 1.333, trueShootingPct: 1.4, efficiency: null },
+}
+
+const athleteMatchPage = (id: number, currentPage: number, totalPages: number) => ({
+  data: [{ ...athleteMatchRow, match: { ...athleteMatchRow.match, id } }],
+  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
+describe('athlete match history query', () => {
+  it('keeps filters in the key and requests successive pages of twenty', async () => {
+    vi.spyOn(sportsApi, 'listAthleteMatchesPage')
+      .mockResolvedValueOnce(athleteMatchPage(501, 1, 2))
+      .mockResolvedValueOnce(athleteMatchPage(502, 2, 2))
+    const filters = { ids: [501, 502], tournamentId: 12 }
+    const { result } = renderHook(
+      () => useAthleteMatchesInfiniteQuery(165, filters),
+      { wrapper },
+    )
+
+    await waitForPageCount(() => result.current, 1)
+    await act(async () => {
+      await result.current.fetchNextPage()
+    })
+    await waitForPageCount(() => result.current, 2)
+
+    expect(athleteKeys.matches(165, filters)).toEqual(['athletes', 'matches', 165, 20, filters])
+    expect(sportsApi.listAthleteMatchesPage).toHaveBeenNthCalledWith(1, 165, {
+      ids: [501, 502], tournamentId: 12, page: 1, limit: 20,
+    })
+    expect(sportsApi.listAthleteMatchesPage).toHaveBeenNthCalledWith(2, 165, {
+      ids: [501, 502], tournamentId: 12, page: 2, limit: 20,
+    })
+    expect(result.current.data?.pages.flatMap((page) => page.data).map((row) => row.match.id))
+      .toEqual([501, 502])
+    expect(result.current.hasNextPage).toBe(false)
+  })
+
+  it('does not request match history while its tab is disabled', () => {
+    const listMatches = vi.spyOn(sportsApi, 'listAthleteMatchesPage')
+    renderHook(() => useAthleteMatchesInfiniteQuery(165, {}, false), { wrapper })
+    expect(listMatches).not.toHaveBeenCalled()
+  })
+})
+
+const athleteTournamentRow = {
+  tournament: { id: 12, name: 'Historical Cup', seasonId: 7, startsAt: null },
+  team: { tournamentTeamId: 41, teamId: 8, name: 'Historical Team' },
+  statistics: athleteStatistics,
+}
+
+const athleteTournamentPage = (tournamentTeamId: number, currentPage: number, totalPages: number) => ({
+  data: [{ ...athleteTournamentRow, team: { ...athleteTournamentRow.team, tournamentTeamId } }],
+  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 20, totalPages, currentPage },
+  links: { first: '?page=1', previous: currentPage === 1 ? null : '?page=1', next: currentPage < totalPages ? '?page=2' : null, last: `?page=${totalPages}` },
+  statusCode: 200,
+})
+
+describe('athlete tournament history query', () => {
+  it('keeps filters in the key and appends successive pages of twenty', async () => {
+    vi.spyOn(sportsApi, 'listAthleteTournamentsPage')
+      .mockResolvedValueOnce(athleteTournamentPage(41, 1, 2))
+      .mockResolvedValueOnce(athleteTournamentPage(42, 2, 2))
+    const filters = { ids: [12], seasonId: 7 }
+    const { result } = renderHook(
+      () => useAthleteTournamentsInfiniteQuery(165, filters),
+      { wrapper },
+    )
+
+    await waitForPageCount(() => result.current, 1)
+    await act(async () => {
+      await result.current.fetchNextPage()
+    })
+    await waitForPageCount(() => result.current, 2)
+
+    expect(athleteKeys.tournaments(165, filters)).toEqual(['athletes', 'tournaments', 165, 20, filters])
+    expect(sportsApi.listAthleteTournamentsPage).toHaveBeenNthCalledWith(1, 165, {
+      ids: [12], seasonId: 7, page: 1, limit: 20,
+    })
+    expect(sportsApi.listAthleteTournamentsPage).toHaveBeenNthCalledWith(2, 165, {
+      ids: [12], seasonId: 7, page: 2, limit: 20,
+    })
+    expect(result.current.data?.pages.flatMap((page) => page.data).map((row) => row.team.tournamentTeamId))
+      .toEqual([41, 42])
+  })
+
+  it('does not request tournament history while its tab is disabled', () => {
+    const listTournaments = vi.spyOn(sportsApi, 'listAthleteTournamentsPage')
+    renderHook(() => useAthleteTournamentsInfiniteQuery(165, {}, false), { wrapper })
+    expect(listTournaments).not.toHaveBeenCalled()
+  })
+})
+
+describe('tournament leaders query', () => {
+  const leaders = {
+    perGame: {
+      ppg: [{ athleteId: 165, athleteName: 'Historical Athlete', tournamentTeamId: 41, teamId: 8, teamName: 'Historical Team', value: 24.125, gamesPlayed: 4 }],
+      rpg: [], apg: [], stg: [], bpg: [],
+    },
+    totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
+  }
+
+  it('uses the shared leaders key and honors disabled consumers', async () => {
+    const getLeaders = vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaders)
+    const disabled = renderHook(() => useTournamentLeadersQuery(12, false), { wrapper })
+    expect(disabled.result.current.fetchStatus).toBe('idle')
+    expect(getLeaders).not.toHaveBeenCalled()
+
+    const enabled = renderHook(() => useTournamentLeadersQuery(12), { wrapper })
+    await waitFor(() => expect(enabled.result.current.data).toEqual(leaders))
+    expect(tournamentKeys.leaders(12)).toEqual(['tournaments', 'leaders', 12])
+  })
+
+  it('deduplicates two leader consumers through the same cache entry', async () => {
+    const getLeaders = vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaders)
+    const { result } = renderHook(() => ({
+      overview: useTournamentLeadersQuery(12),
+      statistics: useTournamentLeadersQuery(12),
+    }), { wrapper })
+
+    await waitFor(() => expect(result.current.overview.data).toEqual(leaders))
+    expect(result.current.statistics.data).toEqual(leaders)
+    expect(getLeaders).toHaveBeenCalledTimes(1)
   })
 })
 

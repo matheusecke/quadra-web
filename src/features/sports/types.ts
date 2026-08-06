@@ -24,9 +24,6 @@ export type MatchStatus =
   | 'POSTPONED' // Adiada — vai acontecer; conta como pendente
   | 'CANCELLED' // Cancelada — nunca vai acontecer; NÃO conta como pendente
 
-/** The only per-leader stat categories allowed this round. */
-export type LeaderStat = 'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg'
-
 // ── Core entities ───────────────────────────────────────────────────────────
 
 export interface Team {
@@ -57,6 +54,81 @@ export interface Athlete {
   position: AthletePosition | null
   currentTeamId: number
   status: AthleteStatus
+}
+
+export interface AthleteProfile {
+  id: number
+  name: string
+  currentTeamId: number | null
+  jerseyNumber: number | null
+  position: AthletePosition | null
+  status: AthleteStatus
+}
+
+export type AthleteMetricValues = Record<StatField, number | null>
+export type AthleteMetricMeasurements = Record<StatField, number>
+
+export interface AthleteStatistics {
+  gamesPlayed: number
+  measuredGames: AthleteMetricMeasurements
+  totals: AthleteMetricValues
+  perGame: AthleteMetricValues
+  shooting: {
+    fgPct: number | null
+    threeFgPct: number | null
+    ftPct: number | null
+    trueShootingPct: number | null
+  }
+  efficiency: {
+    measuredGames: number
+    total: number | null
+    perGame: number | null
+  }
+}
+
+export type AthleteResult = 'WIN' | 'LOSS'
+
+export interface AthleteMatchHistoryRow {
+  match: { id: number; scheduledAt: string }
+  tournament: { id: number; name: string }
+  athleteName: string
+  team: { tournamentTeamId: number; teamId: number; name: string }
+  opponent: { tournamentTeamId: number; teamId: number; name: string }
+  result: {
+    result: AthleteResult
+    lossType: LossType | null
+    pointsFor: number
+    pointsAgainst: number
+  }
+  stats: { tournamentRosterId: number } & AthleteMetricValues
+  derived: {
+    fgPct: number | null
+    threeFgPct: number | null
+    ftPct: number | null
+    trueShootingPct: number | null
+    efficiency: number | null
+  }
+}
+
+export interface AthleteTournamentHistoryRow {
+  tournament: { id: number; name: string; seasonId: number; startsAt: string | null }
+  team: { tournamentTeamId: number; teamId: number; name: string }
+  statistics: AthleteStatistics
+}
+
+export interface TournamentLeader {
+  athleteId: number
+  athleteName: string
+  tournamentTeamId: number
+  teamId: number
+  teamName: string
+  value: number
+  gamesPlayed: number
+}
+
+export interface TournamentLeaders {
+  perGame: Record<'ppg' | 'rpg' | 'apg' | 'stg' | 'bpg', TournamentLeader[]>
+  totals: Record<'pts' | 'reb' | 'ast' | 'stl' | 'blk', TournamentLeader[]>
 }
 
 export type StandingsState = 'EMPTY' | 'PARTIAL' | 'FINAL'
@@ -91,26 +163,6 @@ export interface StandingsEnvelope {
   standingsState: StandingsState
   pendingMatches: number
   rows: StandingRow[]
-}
-
-export interface StatLeader {
-  athleteId: number
-  athleteName: string
-  tournamentTeamId: number
-  /** Global team id — legit catalog metadata, kept alongside the identity field. */
-  teamId: number
-  /** Per-game average for the category. */
-  value: number | null
-  gamesPlayed: number
-}
-
-/** Tournament statistical leaders — basic per-game categories only. */
-export interface StatLeaders {
-  ppg: StatLeader[] // pontos por jogo
-  rpg: StatLeader[] // rebotes por jogo
-  apg: StatLeader[] // assistências por jogo
-  stg: StatLeader[] // roubos por jogo
-  bpg: StatLeader[] // tocos por jogo
 }
 
 /** Why the loser lost. Drives FIBA classification points: NORMAL/DEFAULT = 1, FORFEIT = 0. */
@@ -349,28 +401,6 @@ export interface AthleteStatTotals {
   threeFga: number | null
   ftm: number | null
   fta: number | null
-}
-
-export interface AthleteMatchStatsRow {
-  match: {
-    id: number
-    scheduledAt: string
-  }
-  tournament: Tournament
-  tournamentTeamId: number
-  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
-  teamName: string
-  matchup: string
-  result: string
-  stats: PlayerMatchStats
-}
-
-export interface AthleteTournamentStatsRow {
-  tournament: Tournament
-  tournamentTeamId: number
-  /** Display snapshot — cheaper than joining a per-tournament TournamentTeam[] across many tournaments. */
-  teamName: string
-  totals: AthleteStatTotals
 }
 
 /** Score for a single period (regular quarter or overtime).

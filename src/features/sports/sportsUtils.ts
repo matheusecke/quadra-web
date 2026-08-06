@@ -5,23 +5,19 @@
  */
 
 import type {
-  AthleteStatTotals,
   AthleteStatus,
   BracketRound,
   BracketSlot,
   Tournament,
   TournamentFormat,
   TournamentStatus,
-  LeaderStat,
   MatchPeriod,
   MatchStatus,
   MatchSummary,
-  PlayerMatchStats,
   StandingRow,
   Team,
   TournamentTeam,
 } from './types'
-import { STAT_FIELDS, sumNullable, type StatField } from './statistics'
 
 // ── Standings formatting ────────────────────────────────────────────────────
 // The ranking rule lives in the API (GET /tournaments/:id/standings, FIBA Appendix D).
@@ -100,17 +96,6 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   ACTIVE: 'Ativo',
   INACTIVE: 'Inativo',
 }
-
-export const LEADER_STAT_META: Record<LeaderStat, { label: string; full: string }> = {
-  ppg: { label: 'PPG', full: 'Pontos por jogo' },
-  rpg: { label: 'RPG', full: 'Rebotes por jogo' },
-  apg: { label: 'APG', full: 'Assistências por jogo' },
-  stg: { label: 'STG', full: 'Roubos por jogo' },
-  bpg: { label: 'BPG', full: 'Tocos por jogo' },
-}
-
-/** Fixed display order for the allowed leader categories. */
-export const LEADER_STAT_ORDER: LeaderStat[] = ['ppg', 'rpg', 'apg', 'stg', 'bpg']
 
 // ── Badge variant mapping (matches Badge component variants) ────────────────────
 
@@ -214,14 +199,6 @@ export function formatStatPct(made: number | null, attempted: number | null): st
   return ((made / attempted) * 100).toFixed(1)
 }
 
-/** True-Shooting % string. */
-export function formatTsPct(pts: number | null, fga: number | null, fta: number | null): string {
-  if (pts === null || fga === null || fta === null) return 'N/A'
-  const denom = 2 * (fga + 0.44 * fta)
-  if (denom === 0) return '—'
-  return ((pts / denom) * 100).toFixed(1)
-}
-
 export function formatMinutesSeconds(totalSeconds: number | null): string {
   if (totalSeconds === null) return 'N/A'
   const roundedSeconds = Math.max(0, Math.round(totalSeconds))
@@ -230,47 +207,29 @@ export function formatMinutesSeconds(totalSeconds: number | null): string {
   return `${minutes}:${seconds}`
 }
 
-/** EFF / EFI rating. */
-export function calcEff(p: PlayerMatchStats): number | null {
-  const parts = [p.pts, p.reb, p.ast, p.stl, p.blk, p.fga, p.fgm, p.fta, p.ftm, p.tov]
-  if (parts.some((value) => value === null)) return null
-  return (
-    (p.pts as number) + (p.reb as number) + (p.ast as number) + (p.stl as number) + (p.blk as number)
-    - ((p.fga as number) - (p.fgm as number))
-    - ((p.fta as number) - (p.ftm as number))
-    - (p.tov as number)
-  )
+/** Displays a server-owned number without imposing a new precision. */
+export function formatServerDecimal(value: number | null): string {
+  return value === null ? 'N/A' : String(value)
 }
 
-export function calcEffFromTotals(totals: AthleteStatTotals): number | null {
-  const parts = [totals.pts, totals.reb, totals.ast, totals.stl, totals.blk, totals.fga, totals.fgm, totals.fta, totals.ftm, totals.tov]
-  if (parts.some((value) => value === null)) return null
-  return (
-    (totals.pts as number) + (totals.reb as number) + (totals.ast as number) + (totals.stl as number) + (totals.blk as number)
-    - ((totals.fga as number) - (totals.fgm as number))
-    - ((totals.fta as number) - (totals.ftm as number))
-    - (totals.tov as number)
-  )
+/** Phase 10 percentages are server-owned fractions and may exceed 1.0. */
+export function formatServerPercentage(value: number | null): string {
+  if (value === null) return 'N/A'
+  return `${Number((value * 100).toFixed(1))}%`
 }
 
-export function emptyAthleteTotals(): AthleteStatTotals {
-  const measuredGames = Object.fromEntries(STAT_FIELDS.map((field) => [field, 0])) as Record<StatField, number>
-  const totals = Object.fromEntries(STAT_FIELDS.map((field) => [field, null])) as Pick<AthleteStatTotals, StatField>
-  return { games: 0, measuredGames, ...totals }
+export function formatServerEfficiency(value: number | null): string {
+  if (value === null) return 'N/A'
+  const formatted = formatServerDecimal(value)
+  return value > 0 ? `+${formatted}` : formatted
 }
 
-export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatTotals {
-  const measuredGames = Object.fromEntries(
-    STAT_FIELDS.map((field) => [field, players.filter((player) => player[field] !== null).length]),
-  ) as Record<StatField, number>
-  const totals = Object.fromEntries(
-    STAT_FIELDS.map((field) => [field, sumNullable(players.map((player) => player[field]))]),
-  ) as Pick<AthleteStatTotals, StatField>
-  return { games: players.length, measuredGames, ...totals }
+export function formatMeasuredGames(count: number): string {
+  return count === 1 ? 'em 1 jogo medido' : `em ${count} jogos medidos`
 }
 
-export function perGame(value: number | null, measuredGames: number): number | null {
-  return value === null || measuredGames === 0 ? null : value / measuredGames
+export function formatShootingLine(made: number | null, attempted: number | null): string {
+  return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

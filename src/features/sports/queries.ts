@@ -5,6 +5,8 @@ import { apiErrorCode } from '../../services/apiError'
 import { collectPages } from '../../services/sportsApi/pagination'
 import type {
   CreateMatchInput,
+  ListAthleteMatchesParams,
+  ListAthleteTournamentsParams,
   ListMatchesParams,
   ListTournamentMatchesParams,
   SaveMatchDraftInput,
@@ -12,7 +14,14 @@ import type {
   UpdateMatchInput,
 } from '../../services/sportsApi'
 import type { EntityStatus, PaginatedResponse } from '../../types/admin'
-import type { MatchDetail, MatchSummary, SeasonStatus, TournamentStatus } from './types'
+import type {
+  AthleteMatchHistoryRow,
+  AthleteTournamentHistoryRow,
+  MatchDetail,
+  MatchSummary,
+  SeasonStatus,
+  TournamentStatus,
+} from './types'
 import type {
   AssignGroupTeamInput,
   ClearTiebreakOrderInput,
@@ -54,6 +63,7 @@ export const tournamentKeys = {
   allTeams: () => [...tournamentKeys.all, 'teams', 'all'] as const,
   roster: (tournamentTeamId: number) => [...tournamentKeys.all, 'roster', tournamentTeamId] as const,
   championSuggestion: (id: number) => [...tournamentKeys.all, 'champion-suggestion', id] as const,
+  leaders: (id: number) => [...tournamentKeys.all, 'leaders', id] as const,
 }
 
 export const matchKeys = {
@@ -71,13 +81,17 @@ export const teamKeys = {
   list: () => [...teamKeys.all, 'list'] as const,
 }
 
+export type AthleteMatchFilters = Omit<ListAthleteMatchesParams, 'page' | 'limit'>
+export type AthleteTournamentFilters = Omit<ListAthleteTournamentsParams, 'page' | 'limit'>
+
 export const athleteKeys = {
   all: ['athletes'] as const,
-  list: () => [...athleteKeys.all, 'list'] as const,
   detail: (id: number) => [...athleteKeys.all, 'detail', id] as const,
-  summary: (id: number) => [...athleteKeys.all, 'summary', id] as const,
-  matches: (id: number) => [...athleteKeys.all, 'matches', id] as const,
-  tournaments: (id: number) => [...athleteKeys.all, 'tournaments', id] as const,
+  statistics: (id: number) => [...athleteKeys.all, 'statistics', id] as const,
+  matches: (id: number, filters: AthleteMatchFilters) =>
+    [...athleteKeys.all, 'matches', id, 20, filters] as const,
+  tournaments: (id: number, filters: AthleteTournamentFilters) =>
+    [...athleteKeys.all, 'tournaments', id, 20, filters] as const,
 }
 
 export const groupKeys = {
@@ -98,8 +112,12 @@ export const bracketKeys = {
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 
-export function useSeasonsQuery(params: { status?: SeasonStatus } = {}) {
-  return useQuery({ queryKey: seasonKeys.list(params.status), queryFn: () => sportsApi.getSeasons(params) })
+export function useSeasonsQuery(params: { status?: SeasonStatus } = {}, enabled = true) {
+  return useQuery({
+    queryKey: seasonKeys.list(params.status),
+    queryFn: () => sportsApi.getSeasons(params),
+    enabled,
+  })
 }
 
 export function useCategoriesQuery(params: { status?: EntityStatus } = {}) {
@@ -164,11 +182,14 @@ export function useTournamentQuery(id: number | undefined) {
   })
 }
 
-export function useTournamentLeadersQuery(tournamentId: number | undefined) {
+export function useTournamentLeadersQuery(
+  tournamentId: number | undefined,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: [...tournamentKeys.all, 'leaders', tournamentId ?? -1] as const,
+    queryKey: tournamentKeys.leaders(tournamentId ?? -1),
     queryFn: () => sportsApi.getTournamentLeaders(tournamentId!),
-    enabled: tournamentId != null,
+    enabled: tournamentId != null && enabled,
   })
 }
 
@@ -240,24 +261,56 @@ export function useTeamsQuery() {
   return useQuery({ queryKey: teamKeys.list(), queryFn: () => sportsApi.getTeams() })
 }
 
-export function useAthletesQuery() {
-  return useQuery({ queryKey: athleteKeys.list(), queryFn: () => sportsApi.getAthletes() })
-}
-
 export function useAthleteQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.detail(id ?? -1), queryFn: () => sportsApi.getAthlete(id!), enabled: id != null })
+  return useQuery({
+    queryKey: athleteKeys.detail(id ?? -1),
+    queryFn: () => sportsApi.getAthlete(id!),
+    enabled: id != null,
+  })
 }
 
-export function useAthleteSummaryQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.summary(id ?? -1), queryFn: () => sportsApi.getAthleteSummary(id!), enabled: id != null })
+export function useAthleteStatisticsQuery(id: number | undefined, enabled = true) {
+  return useQuery({
+    queryKey: athleteKeys.statistics(id ?? -1),
+    queryFn: () => sportsApi.getAthleteStatistics(id!),
+    enabled: id != null && enabled,
+  })
 }
 
-export function useAthleteMatchesQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.matches(id ?? -1), queryFn: () => sportsApi.getAthleteMatches(id!), enabled: id != null })
+export function useAthleteMatchesInfiniteQuery(
+  id: number | undefined,
+  filters: AthleteMatchFilters = {},
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<AthleteMatchHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: athleteKeys.matches(id ?? -1, filters),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listAthleteMatchesPage(id!, { ...filters, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages
+        ? lastPage.meta.currentPage + 1
+        : undefined,
+    enabled: id != null && enabled,
+  })
 }
 
-export function useAthleteTournamentStatsQuery(id: number | undefined) {
-  return useQuery({ queryKey: athleteKeys.tournaments(id ?? -1), queryFn: () => sportsApi.getAthleteTournamentStats(id!), enabled: id != null })
+export function useAthleteTournamentsInfiniteQuery(
+  id: number | undefined,
+  filters: AthleteTournamentFilters = {},
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<AthleteTournamentHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: athleteKeys.tournaments(id ?? -1, filters),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listAthleteTournamentsPage(id!, { ...filters, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages
+        ? lastPage.meta.currentPage + 1
+        : undefined,
+    enabled: id != null && enabled,
+  })
 }
 
 export function useGroupsQuery(tournamentId: number | undefined) {

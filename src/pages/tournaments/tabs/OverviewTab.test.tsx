@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getTournamentById, getTeams } from '../../../features/sports/mock-sports-data'
 import * as sportsApi from '../../../services/sportsApi'
 import { OverviewTab } from './OverviewTab'
-import type { MatchSummary, StandingsEnvelope } from '../../../features/sports/types'
+import type { MatchSummary, StandingsEnvelope, TournamentLeaders } from '../../../features/sports/types'
 
 const teams = new Map(getTeams().map((team) => [team.id, team]))
 
@@ -37,6 +38,38 @@ const matches: MatchSummary[] = [
   },
 ]
 
+const leader = (
+  athleteId: number,
+  athleteName: string,
+  tournamentTeamId: number,
+  value: number,
+  gamesPlayed: number,
+) => ({
+  athleteId,
+  athleteName,
+  tournamentTeamId,
+  teamId: tournamentTeamId,
+  teamName: `Snapshot Team ${tournamentTeamId}`,
+  value,
+  gamesPlayed,
+})
+
+const leaderPayload: TournamentLeaders = {
+  perGame: {
+    ppg: [
+      { ...leader(165, 'Historical Athlete', 41, 24.125, 4), teamName: 'Historical Team' },
+      leader(166, 'Second Athlete', 42, 22, 3),
+      leader(167, 'Third Athlete', 43, 20, 2),
+      leader(168, 'Fourth Athlete', 44, 18, 1),
+    ],
+    rpg: [leader(169, 'Rebound Athlete', 45, 12, 3)],
+    apg: [],
+    stg: [],
+    bpg: [],
+  },
+  totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
+}
+
 const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Parameters<typeof OverviewTab>[0]> = {}) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
@@ -58,7 +91,12 @@ const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Paramete
   )
 }
 
+beforeEach(() => {
+  vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaderPayload)
+})
+
 afterEach(() => {
+  vi.restoreAllMocks()
   isOrgAdmin.value = false
 })
 
@@ -141,5 +179,47 @@ describe('OverviewTab', () => {
     renderGeral()
 
     expect(screen.getByLabelText('Abutres 77 - 74 Águias Douradas')).toBeInTheDocument()
+  })
+
+  it('shows an independent leaders skeleton before the request settles', () => {
+    vi.mocked(sportsApi.getTournamentLeaders).mockReturnValueOnce(new Promise(() => undefined))
+    renderGeral()
+    const leadersSection = screen.getByRole('heading', { name: 'Líderes' }).closest('section')!
+    expect(screen.queryByText('Sem líderes estatísticos ainda.')).not.toBeInTheDocument()
+    expect(leadersSection.querySelector('[aria-hidden="true"]')).toBeInTheDocument()
+  })
+
+  it('retries a leaders failure without refetching standings or matches', async () => {
+    vi.mocked(sportsApi.getTournamentLeaders)
+      .mockRejectedValueOnce(new Error('leaders unavailable'))
+      .mockResolvedValueOnce(leaderPayload)
+    const listStandings = vi.spyOn(sportsApi, 'listStandings').mockResolvedValue([])
+    const user = userEvent.setup()
+    renderGeral()
+
+    expect(await screen.findByText('Não foi possível carregar os líderes.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
+    expect(listStandings).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows only the first three per-game rows and preserves snapshot order and values', async () => {
+    renderGeral()
+    expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
+    expect(screen.getByText('Historical Team')).toBeInTheDocument()
+    expect(screen.getByText('24.125')).toBeInTheDocument()
+    expect(screen.getByText('em 4 jogos medidos')).toBeInTheDocument()
+    expect(screen.queryByText('Fourth Athlete')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Sem dados medidos.')).toHaveLength(3)
+  })
+
+  it('uses the section-level empty state when all five per-game lists are empty', async () => {
+    vi.mocked(sportsApi.getTournamentLeaders).mockResolvedValueOnce({
+      perGame: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
+      totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
+    })
+    renderGeral()
+    expect(await screen.findByText('Sem líderes estatísticos ainda.')).toBeInTheDocument()
+    expect(screen.queryByTestId('leader-card')).not.toBeInTheDocument()
   })
 })

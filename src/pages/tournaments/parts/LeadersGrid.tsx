@@ -1,48 +1,67 @@
 import { Link } from 'react-router-dom'
-import type { StatLeaders, Team } from '../../../features/sports/types'
-import { LEADER_STAT_META, LEADER_STAT_ORDER } from '../../../features/sports/sportsUtils'
+import type { TournamentLeader, TournamentLeaders } from '../../../features/sports/types'
+import { formatMeasuredGames, formatServerDecimal } from '../../../features/sports/sportsUtils'
 import s from '../tournaments.module.css'
 
+const PER_GAME = [
+  ['ppg', 'PPG', 'Pontos por jogo'],
+  ['rpg', 'RPG', 'Rebotes por jogo'],
+  ['apg', 'APG', 'Assistências por jogo'],
+  ['stg', 'STG', 'Roubos por jogo'],
+  ['bpg', 'BPG', 'Tocos por jogo'],
+] as const
+
+const TOTALS = [
+  ['pts', 'PTS', 'Pontos totais'],
+  ['reb', 'REB', 'Rebotes totais'],
+  ['ast', 'AST', 'Assistências totais'],
+  ['stl', 'STL', 'Roubos totais'],
+  ['blk', 'BLK', 'Tocos totais'],
+] as const
+
 interface LeadersGridProps {
-  leaders: StatLeaders
-  teams: Map<number, Team>
-  /** Max leaders shown per category. Overview uses 3; Stats tab uses 5. */
-  perCard?: number
+  leaders: TournamentLeaders
+  group: 'perGame' | 'totals'
+  limit?: number
 }
 
-/**
- * Statistical leaders — basic per-game categories ONLY (PPG, RPG, APG, STG, BPG).
- * Advanced efficiency and shooting splits are intentionally excluded this round.
- */
-export function LeadersGrid({ leaders, teams, perCard = 3 }: LeadersGridProps) {
+function LeaderRows({ rows }: { rows: TournamentLeader[] }) {
+  if (rows.length === 0) return <div className={s.leaderEmpty}>Sem dados medidos.</div>
+
+  return (
+    <div className={s.leaderList}>
+      {rows.map((leader, index) => (
+        <div key={`${leader.athleteId}-${leader.tournamentTeamId}`} className={s.leaderRow}>
+          <span className={s.leaderRank}>{index + 1}</span>
+          <span className={s.leaderAthlete}>
+            <Link to={`/athletes/${leader.athleteId}`} className={s.athleteLink}>
+              {leader.athleteName}
+            </Link>
+            <span className={s.leaderTeam}>{leader.teamName}</span>
+            <span className={s.leaderMeasured}>{formatMeasuredGames(leader.gamesPlayed)}</span>
+          </span>
+          <span className={s.leaderValue}>{formatServerDecimal(leader.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function LeadersGrid({ leaders, group, limit }: LeadersGridProps) {
+  const cards = group === 'perGame'
+    ? PER_GAME.map(([key, label, full]) => ({ key, label, full, rows: leaders.perGame[key] }))
+    : TOTALS.map(([key, label, full]) => ({ key, label, full, rows: leaders.totals[key] }))
   return (
     <div className={s.leadersGrid}>
-      {LEADER_STAT_ORDER.map((stat) => {
-        const meta = LEADER_STAT_META[stat]
-        const rows = leaders[stat].slice(0, perCard)
+      {cards.map(({ key, label, full, rows: serverRows }) => {
+        const rows = limit === undefined ? serverRows : serverRows.slice(0, limit)
         return (
-          <div key={stat} className={s.leaderCard}>
+          <div key={key} className={s.leaderCard} data-testid="leader-card">
             <div className={s.leaderHead}>
-              <span className={s.leaderStat}>{meta.label}</span>
-              <span className={s.leaderStatFull}>{meta.full}</span>
+              <span className={s.leaderStat}>{label}</span>
+              <span className={s.leaderStatFull}>{full}</span>
             </div>
-            <div className={s.leaderList}>
-              {rows.map((leader, i) => {
-                const team = teams.get(leader.teamId)
-                return (
-                  <div key={leader.athleteId} className={s.leaderRow}>
-                    <span className={s.leaderRank}>{i + 1}</span>
-                    <span className={s.leaderAthlete}>
-                      <Link to={`/athletes/${leader.athleteId}`} className={s.athleteLink}>
-                        {leader.athleteName}
-                      </Link>
-                      <span className={s.leaderTeam}>{team?.shortName ?? '—'}</span>
-                    </span>
-                    <span className={s.leaderValue}>{leader.value === null ? 'N/A' : leader.value.toFixed(1)}</span>
-                  </div>
-                )
-              })}
-            </div>
+            <LeaderRows rows={rows} />
           </div>
         )
       })}
