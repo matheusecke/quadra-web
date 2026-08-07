@@ -36,10 +36,22 @@
   opacity: 0.24;
 }
 
-.brand,
+.brandRow,
 .courtBottom {
   position: relative;
   z-index: 1;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brandMark {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
 }
 
 .brand {

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Color synced with the accent token (Persimmon) in src/design-system/theme.css -->
 <svg xmlns="http://www.w3.org/2000/svg" width="482" height="526" viewBox="268 237 482 526" preserveAspectRatio="xMidYMid meet">
   <title>Quadra logo</title>
   <mask id="logo-mask" maskUnits="userSpaceOnUse" x="268" y="237" width="482" height="526">
@@ -19,5 +18,5 @@
     </g>
   </mask>
 
-  <rect x="268" y="237" width="482" height="526" fill="#EC5D2A" mask="url(#logo-mask)"/>
+  <rect x="268" y="237" width="482" height="526" fill="currentColor" mask="url(#logo-mask)"/>
 </svg>

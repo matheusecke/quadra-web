@@ -97,7 +97,10 @@ export function LoginPage() {
       <div className={s.courtPanel} aria-hidden="true">
         <div className={s.courtInner}>
           <CourtSvg />
-          <span className={s.brand}>Quadra</span>
+          <div className={s.brandRow}>
+            <img src="/favicon.svg" alt="" className={s.brandMark} />
+            <span className={s.brand}>Quadra</span>
+          </div>
           <div className={s.courtBottom}>
             <span className={s.tagline}>Gerencie sua competição</span>
             <div className={s.taglineLine} />
