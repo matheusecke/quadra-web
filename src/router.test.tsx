@@ -82,6 +82,10 @@ vi.mock('./pages/athletes/AthleteDetailPage', () => ({
   AthleteDetailPage: () => <div>athlete-detail-page</div>,
 }))
 
+vi.mock('./pages/teams/TeamDetailPage', () => ({
+  TeamDetailPage: () => <div>team-detail-page</div>,
+}))
+
 afterEach(() => {
   cleanup()
   vi.resetModules()
@@ -103,6 +107,16 @@ describe('router', () => {
   it('registers the normal teams route', async () => {
     await renderRoute('/teams')
     expect(await screen.findByText('org-teams-page')).toBeInTheDocument()
+  })
+
+  it('registers the protected team detail route', async () => {
+    await renderRoute('/teams/8')
+    expect(await screen.findByText('team-detail-page')).toBeInTheDocument()
+  })
+
+  it('keeps the team listing separate from the team detail route', async () => {
+    await renderRoute('/teams')
+    expect(screen.queryByText('team-detail-page')).not.toBeInTheDocument()
   })
 
   it('registers the public register route', async () => {

@@ -1,0 +1,126 @@
+/* =============================================================================
+   Team detail screen — organization-scoped sports profile.
+   ============================================================================= */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.detailHeader {
+  padding: var(--space-5) var(--space-6) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.backLink:hover {
+  color: var(--ink);
+}
+
+.heroRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+.crest {
+  min-width: 62px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  text-align: center;
+}
+
+.heroMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 30px;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.detailBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-5) var(--space-6);
+}
+
+.bodyFill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+
+@media (max-width: 720px) {
+  .detailHeader {
+    padding-inline: var(--space-4);
+  }
+
+  .detailBody {
+    padding-inline: var(--space-4);
+  }
+
+  .heroRow {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .crest {
+    min-width: 54px;
+    font-size: 20px;
+  }
+}
