@@ -22,6 +22,19 @@ const emptyStatistics: TeamSummary['statistics'] = {
   },
 }
 
+const measuredStatistics: TeamSummary['statistics'] = {
+  results: {
+    measuredGames: 18, winRate: 0.667, scoreMeasuredGames: 16,
+    pointsForPerGame: 73.125, pointsAgainstPerGame: 68.5, pointDiffPerGame: 4.625,
+  },
+  boxScore: {
+    measuredGames: { reb: 14, ast: 14, stl: 0, blk: 12, tov: 14, pf: 14 },
+    perGame: { reb: 38.286, ast: 17.143, stl: null, blk: 3.25, tov: 11.786, pf: 16.214 },
+    shooting: { fgPct: 0.481, threeFgPct: null, ftPct: 0.742, trueShootingPct: 0.571 },
+    efficiency: { measuredGames: 12, perGame: 82.417 },
+  },
+}
+
 const summary: TeamSummary = {
   team: { id: TEAM_ID, name: 'Engenharia PUC', shortName: 'EPU', city: 'Campinas', state: 'SP', status: 'ACTIVE' },
   titles: [],
@@ -253,5 +266,95 @@ describe('TeamDetailPage', () => {
     await waitForTeamPage()
     const entry = within(screen.getAllByRole('listitem')[0])
     expect(entry.getByText('Intercursos 2028')).toBeInTheDocument()
+  })
+
+  it('opens on the overview tab', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(screen.getByRole('tab', { name: 'Visão geral' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('renders the win rate as a percentage in the results group', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getByText('66.7%')).toBeInTheDocument()
+  })
+
+  it('annotates the win rate with its measured-game denominator', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getByText('em 18 jogos medidos')).toBeInTheDocument()
+  })
+
+  it('signs the official point differential per game', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getByText('+4.625')).toBeInTheDocument()
+  })
+
+  it('renders an unmeasured production metric as an em dash', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    const strip = screen.getByTestId('overview-production')
+    expect(within(strip).getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('keeps a measured zero denominator visible for an unmeasured metric', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getByText('em 0 jogos medidos')).toBeInTheDocument()
+  })
+
+  it('never renders an aggregate totals group', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.queryByRole('heading', { name: 'Totais' })).not.toBeInTheDocument()
+  })
+
+  it('reports an entirely unmeasured results group as having no statistics', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    const group = screen.getByTestId('overview-results')
+    expect(within(group).getByText('Sem estatísticas registradas.')).toBeInTheDocument()
+  })
+
+  it('reports an entirely unmeasured production group as having no statistics', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    const group = screen.getByTestId('overview-production')
+    expect(within(group).getByText('Sem estatísticas registradas.')).toBeInTheDocument()
+  })
+
+  it('renders the overview without any extra request beyond the summary', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, statistics: measuredStatistics })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(sportsApi.getTeamSummary).toHaveBeenCalledTimes(1)
   })
 })
