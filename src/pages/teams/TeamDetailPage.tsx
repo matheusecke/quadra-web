@@ -11,10 +11,16 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useTeamMatchesInfiniteQuery, useTeamSummaryQuery } from '../../features/sports/queries'
+import {
+  useTeamMatchesInfiniteQuery,
+  useTeamSummaryQuery,
+  useTeamTournamentsInfiniteQuery,
+} from '../../features/sports/queries'
 import {
   MATCH_STATUS_LABELS,
   TEAM_PROFILE_STATUS_LABELS,
+  TOURNAMENT_STATUS_LABELS,
+  TOURNAMENT_TEAM_STATUS_LABELS,
   formatAverage,
   formatDateTime,
   formatMeasuredGames,
@@ -23,14 +29,21 @@ import {
   formatTeamLocation,
   matchStatusVariant,
   teamProfileStatusVariant,
+  tournamentStatusVariant,
 } from '../../features/sports/sportsUtils'
-import type { TeamMatchHistoryRow, TeamStatistics, TeamTitle } from '../../features/sports/types'
+import type {
+  TeamMatchHistoryRow,
+  TeamStatistics,
+  TeamTitle,
+  TeamTournamentHistoryRow,
+} from '../../features/sports/types'
 import type { PaginatedResponse } from '../../types/admin'
 import s from './teamDetail.module.css'
 
 const TABS: TabItem[] = [
   { id: 'overview', label: 'Visão geral' },
   { id: 'matches', label: 'Partidas' },
+  { id: 'tournaments', label: 'Campeonatos' },
 ]
 
 const PRODUCTION_METRICS = [
@@ -323,6 +336,108 @@ function MatchSection({ title, testId, query, emptyTitle, errorTitle }: MatchSec
   )
 }
 
+interface TournamentsContentProps {
+  rows: TeamTournamentHistoryRow[]
+  total: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  onLoadMore: () => void
+}
+
+function TournamentsContent({
+  rows, total, hasNextPage, isFetchingNextPage, isFetchNextPageError, onLoadMore,
+}: TournamentsContentProps) {
+  const navigate = useNavigate()
+
+  if (rows.length === 0) {
+    return (
+      <div className={s.tabEmpty}>
+        <EmptyState
+          title="Nenhuma participação em campeonatos."
+          description="As participações aparecerão quando a equipe for inscrita em um campeonato."
+        />
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className={s.tableWrap}>
+        <table className={s.table}>
+          <thead className={s.thead}>
+            <tr>
+              {['Campeonato', 'Temporada', 'Status', 'Participação'].map((label) => (
+                <th key={label} className={s.th}>{label}</th>
+              ))}
+              {['%V', 'PP/J', 'PC/J', 'Saldo/J', 'RPG', 'APG', 'FG%', '3FG%', 'FT%'].map((label) => (
+                <th key={label} className={s.thNum}>{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const { results, boxScore } = row.statistics
+              const open = () => navigate(`/tournaments/${row.tournament.id}`)
+              return (
+                <tr
+                  key={`${row.tournament.id}-${row.team.tournamentTeamId}`}
+                  className={s.tr}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      open()
+                    }
+                  }}
+                >
+                  <td className={s.tdStrong}>
+                    <Link
+                      to={`/tournaments/${row.tournament.id}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.tournament.name}
+                    </Link>
+                    {row.team.isChampion && <Badge variant="success">Campeão</Badge>}
+                  </td>
+                  <td className={s.td}>{row.tournament.seasonLabel}</td>
+                  <td className={s.td}>
+                    <Badge variant={tournamentStatusVariant(row.tournament.status)}>
+                      {TOURNAMENT_STATUS_LABELS[row.tournament.status]}
+                    </Badge>
+                  </td>
+                  <td className={s.td}>{TOURNAMENT_TEAM_STATUS_LABELS[row.team.status]}</td>
+                  <td className={s.tdNum}>{formatRate(results.winRate)}</td>
+                  <td className={s.tdNum}>{formatAverage(results.pointsForPerGame)}</td>
+                  <td className={s.tdNum}>{formatAverage(results.pointsAgainstPerGame)}</td>
+                  <td className={s.tdNum}>{formatSignedAverage(results.pointDiffPerGame)}</td>
+                  <td className={s.tdNum}>{formatAverage(boxScore.perGame.reb)}</td>
+                  <td className={s.tdNum}>{formatAverage(boxScore.perGame.ast)}</td>
+                  <td className={s.tdNum}>{formatRate(boxScore.shooting.fgPct)}</td>
+                  <td className={s.tdNum}>{formatRate(boxScore.shooting.threeFgPct)}</td>
+                  <td className={s.tdNum}>{formatRate(boxScore.shooting.ftPct)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <HistoryFooter
+        loaded={rows.length}
+        total={total}
+        noun="campeonato"
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
+        nextPageErrorTitle="Não foi possível carregar mais campeonatos."
+        onLoadMore={onLoadMore}
+      />
+    </>
+  )
+}
+
 export function TeamDetailPage() {
   const { teamId: rawTeamId } = useParams<{ teamId: string }>()
   const teamId = parsePositiveId(rawTeamId)
@@ -340,6 +455,10 @@ export function TeamDetailPage() {
     teamId ?? undefined,
     'history',
     activeTab === 'matches',
+  )
+  const tournamentsQuery = useTeamTournamentsInfiniteQuery(
+    teamId ?? undefined,
+    activeTab === 'tournaments',
   )
 
   const backButton = (
@@ -399,6 +518,8 @@ export function TeamDetailPage() {
   if (!summary) return null
 
   const { team } = summary
+  const tournamentRows = tournamentsQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const tournamentTotal = tournamentsQuery.data?.pages[0]?.meta.totalItems ?? 0
 
   return (
     <div className={s.page}>
@@ -444,6 +565,27 @@ export function TeamDetailPage() {
               errorTitle="Não foi possível carregar o histórico de partidas."
             />
           </>
+        )}
+        {activeTab === 'tournaments' && (
+          tournamentsQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+          ) : tournamentsQuery.isError && tournamentRows.length === 0 ? (
+            <div className={s.tabEmpty}>
+              <ErrorState
+                title="Não foi possível carregar os campeonatos."
+                onRetry={() => void tournamentsQuery.refetch()}
+              />
+            </div>
+          ) : (
+            <TournamentsContent
+              rows={tournamentRows}
+              total={tournamentTotal}
+              hasNextPage={Boolean(tournamentsQuery.hasNextPage)}
+              isFetchingNextPage={tournamentsQuery.isFetchingNextPage}
+              isFetchNextPageError={tournamentsQuery.isFetchNextPageError}
+              onLoadMore={() => void tournamentsQuery.fetchNextPage()}
+            />
+          )
         )}
       </div>
     </div>

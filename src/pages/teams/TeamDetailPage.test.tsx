@@ -85,6 +85,30 @@ const matchesByScope = (upcoming: typeof upcomingRow[], history: typeof historyR
   vi.mocked(sportsApi.listTeamMatchesPage).mockImplementation(async (_id, params) =>
     params.scope === 'upcoming' ? matchPage(upcoming) : matchPage(history))
 
+const championParticipation = {
+  tournament: {
+    id: 12, name: 'Intercursos 2026', seasonId: 7, seasonLabel: '2026',
+    status: 'COMPLETED' as const, startsAt: '2026-05-02T12:00:00.000Z', endsAt: '2026-06-20T12:00:00.000Z',
+  },
+  team: {
+    tournamentTeamId: 41, teamId: TEAM_ID, name: 'Engenharia PUC',
+    status: 'ACTIVE' as const, isChampion: true,
+  },
+  statistics: measuredStatistics,
+}
+
+const withdrawnParticipation = {
+  tournament: {
+    id: 11, name: 'Copa Interna 2025', seasonId: 6, seasonLabel: '2025',
+    status: 'CANCELLED' as const, startsAt: null, endsAt: null,
+  },
+  team: {
+    tournamentTeamId: 40, teamId: TEAM_ID, name: 'Engenharia PUC',
+    status: 'WITHDRAWN' as const, isChampion: false,
+  },
+  statistics: emptyStatistics,
+}
+
 const summary: TeamSummary = {
   team: { id: TEAM_ID, name: 'Engenharia PUC', shortName: 'EPU', city: 'Campinas', state: 'SP', status: 'ACTIVE' },
   titles: [],
@@ -127,6 +151,7 @@ afterEach(() => vi.restoreAllMocks())
 beforeEach(() => {
   vi.spyOn(sportsApi, 'getTeamSummary').mockResolvedValue(summary)
   vi.spyOn(sportsApi, 'listTeamMatchesPage').mockResolvedValue(matchPage([]))
+  vi.spyOn(sportsApi, 'listTeamTournamentsPage').mockResolvedValue(matchPage([]))
 })
 
 describe('TeamDetailPage', () => {
@@ -582,5 +607,137 @@ describe('TeamDetailPage', () => {
     await screen.findByText('Vitória 78–72')
 
     expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument()
+  })
+
+  it('does not request tournaments before the Campeonatos tab opens', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(sportsApi.listTeamTournamentsPage).not.toHaveBeenCalled()
+  })
+
+  it('requests the first tournament page when the Campeonatos tab opens', async () => {
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    await waitFor(() => expect(sportsApi.listTeamTournamentsPage).toHaveBeenCalledTimes(1))
+  })
+
+  it('links a participation to its tournament', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([championParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    const link = await screen.findByRole('link', { name: 'Intercursos 2026' })
+    expect(link).toHaveAttribute('href', '/tournaments/12')
+  })
+
+  it('marks the champion participation', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([championParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Campeão')).toBeInTheDocument()
+  })
+
+  it('renders the season label of a participation', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([championParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    const row = await screen.findByRole('row', { name: /intercursos 2026/i })
+    expect(within(row).getByText('2026')).toBeInTheDocument()
+  })
+
+  it('keeps a cancelled tournament in the participation list', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([withdrawnParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Cancelado')).toBeInTheDocument()
+  })
+
+  it('labels a withdrawn participation', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([withdrawnParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Desistente')).toBeInTheDocument()
+  })
+
+  it('renders an em dash for every unmeasured participation average', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([withdrawnParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    const row = await screen.findByRole('row', { name: /copa interna 2025/i })
+    expect(within(row).getAllByText('—')).toHaveLength(9)
+  })
+
+  it('renders the measured participation averages the spec lists', async () => {
+    vi.mocked(sportsApi.listTeamTournamentsPage).mockResolvedValue(matchPage([championParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    const row = await screen.findByRole('row', { name: /intercursos 2026/i })
+    expect(within(row).getByText('+4.625')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when the team never joined a tournament', async () => {
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    expect(await screen.findByText('Nenhuma participação em campeonatos.')).toBeInTheDocument()
+  })
+
+  it('recovers a failed tournament page through the local retry action', async () => {
+    const listTournaments = vi.mocked(sportsApi.listTeamTournamentsPage)
+    listTournaments.mockRejectedValueOnce(new Error('history unavailable'))
+    listTournaments.mockResolvedValue(matchPage([championParticipation]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+    await screen.findByText('Não foi possível carregar os campeonatos.')
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    expect(await screen.findByRole('link', { name: 'Intercursos 2026' })).toBeInTheDocument()
+  })
+
+  it('appends the next tournament page on demand', async () => {
+    const listTournaments = vi.mocked(sportsApi.listTeamTournamentsPage)
+    listTournaments.mockResolvedValueOnce(matchPage([championParticipation], 1, 2))
+    listTournaments.mockResolvedValueOnce(matchPage([withdrawnParticipation], 2, 2))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+    await screen.findByRole('link', { name: 'Intercursos 2026' })
+
+    await user.click(screen.getByRole('button', { name: 'Carregar mais' }))
+
+    expect(await screen.findByRole('link', { name: 'Copa Interna 2025' })).toBeInTheDocument()
   })
 })
