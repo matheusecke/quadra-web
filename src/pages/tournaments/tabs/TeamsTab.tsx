@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
@@ -59,7 +60,9 @@ export function TeamsTab({ tournament, teams }: TeamsTabProps) {
             return (
               <tr key={entry.id} className={s.tr} style={{ cursor: 'default' }}>
                 <td className={s.td}>
-                  <span className={s.cName}>{entry.displayNameSnapshot}</span>
+                  <Link to={`/teams/${entry.teamId}`} className={`${s.cName} ${s.teamLink}`}>
+                    {entry.displayNameSnapshot}
+                  </Link>
                   <span className={s.standTeamTag}>{team?.shortName}</span>
                 </td>
                 <td className={s.td}>
