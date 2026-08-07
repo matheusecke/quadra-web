@@ -49,7 +49,7 @@ describe('BracketCanvas', () => {
 
   it('shows a bye when only one side is filled', () => {
     const h = handlers()
-    render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...h} />)
+    render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...h} />)
     expect(screen.getByText(/bye/i)).toBeInTheDocument()
   })
 
@@ -92,7 +92,7 @@ describe('BracketCanvas', () => {
 
   it('clears a filled side through the remove option', async () => {
     const props = handlers()
-    render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...props} />)
+    render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...props} />)
     await userEvent.click(screen.getByRole('button', { name: /Semifinal 1 — mandante/ }))
     await userEvent.click(screen.getByRole('option', { name: 'Remover equipe' }))
     expect(props.onFillSide).toHaveBeenCalledWith(11, 'home', null)
@@ -144,7 +144,7 @@ describe('BracketCanvas', () => {
         <MemoryRouter>
           <BracketCanvas
             rounds={rounds}
-            slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' }, match: linkedMatch })]}
+            slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' }, match: linkedMatch })]}
             teams={teams}
             {...handlers()}
           />
@@ -308,7 +308,7 @@ describe('BracketCanvas', () => {
 
   describe('read-only structure', () => {
     it('hides every structure-editing control when the admin cannot edit structure', () => {
-      render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...handlers()} canEditStructure={false} />)
+      render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...handlers()} canEditStructure={false} />)
       expect(screen.queryByRole('button', { name: /nova rodada/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /adicionar partida/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /remover/i })).not.toBeInTheDocument()
@@ -325,8 +325,8 @@ describe('BracketCanvas', () => {
 
   describe('set the slot winner', () => {
     const filledSlot = slot({
-      homeTeam: { tournamentTeamId: 1, name: 'Alfa', shortName: 'ALF' },
-      awayTeam: { tournamentTeamId: 2, name: 'Beta', shortName: 'BET' },
+      homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' },
+      awayTeam: { tournamentTeamId: 2, teamId: 102, name: 'Beta', shortName: 'BET' },
     })
 
     it('shows no winner control when the admin cannot set winners', () => {

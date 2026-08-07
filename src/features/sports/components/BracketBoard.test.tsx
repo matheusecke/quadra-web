@@ -11,7 +11,7 @@ const rounds: BracketRound[] = [
   { id: 2, tournamentId: 1, number: 2, label: 'Final' },
 ]
 
-const team = (tournamentTeamId: number, name: string, shortName: string) => ({ tournamentTeamId, name, shortName })
+const team = (tournamentTeamId: number, name: string, shortName: string, teamId = tournamentTeamId + 100) => ({ tournamentTeamId, teamId, name, shortName })
 
 const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'roundId' | 'position'>): BracketSlotView => ({
   label: null,

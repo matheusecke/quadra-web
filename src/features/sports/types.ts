@@ -339,6 +339,8 @@ export interface BracketSlot {
 
 export interface BracketSlotTeam {
   tournamentTeamId: number
+  /** Global Team.id — the navigation target. */
+  teamId: number
   /** Registration snapshot. A renamed team keeps the historical name here. */
   name: string
   /** Read live from the catalogue — deliberately not a snapshot. */
