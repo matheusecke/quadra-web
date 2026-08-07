@@ -1,20 +1,20 @@
 export interface LayoutRound {
-  id: string
+  id: number
   number: number
 }
 
 export interface LayoutSlot {
-  id: string
-  roundId: string
+  id: number
+  roundId: number
   position: number
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  winnerTournamentTeamId: string | null
+  homeTournamentTeamId: number | null
+  awayTournamentTeamId: number | null
+  winnerTournamentTeamId: number | null
 }
 
 export interface BracketEdge {
-  fromSlotId: string
-  toSlotId: string
+  fromSlotId: number
+  toSlotId: number
   /** Toward the midline of the sibling pair: the odd position goes down, the even goes up. */
   direction: 'up' | 'down'
 }
@@ -33,18 +33,17 @@ export interface BracketLayout {
  * lines at all. See spec §5.
  */
 export function bracketLayout(rounds: LayoutRound[], slots: LayoutSlot[]): BracketLayout {
-  const ordered = [...rounds].sort((a, b) => a.number - b.number)
-  if (ordered.length === 0) return { mode: 'column', edges: [] }
+  if (rounds.length === 0) return { mode: 'column', edges: [] }
 
-  const slotsOf = (roundId: string) => slots.filter((slot) => slot.roundId === roundId).sort((a, b) => a.position - b.position)
-  const isPowerChain = ordered.every((round, index) => slotsOf(round.id).length === 2 ** (ordered.length - 1 - index))
+  const slotsOf = (roundId: number) => slots.filter((slot) => slot.roundId === roundId)
+  const isPowerChain = rounds.every((round, index) => slotsOf(round.id).length === 2 ** (rounds.length - 1 - index))
 
   const edges: BracketEdge[] = []
   let isPairingHonest = true
 
-  for (let index = 0; index < ordered.length - 1; index += 1) {
-    const next = slotsOf(ordered[index + 1].id)
-    for (const slot of slotsOf(ordered[index].id)) {
+  for (let index = 0; index < rounds.length - 1; index += 1) {
+    const next = slotsOf(rounds[index + 1].id)
+    for (const slot of slotsOf(rounds[index].id)) {
       const winner = slot.winnerTournamentTeamId
       if (!winner) continue
       const target = next.find((entry) => entry.homeTournamentTeamId === winner || entry.awayTournamentTeamId === winner)

@@ -4,20 +4,20 @@ import userEvent from '@testing-library/user-event'
 import { StandingsCard } from './StandingsCard'
 import type { StandingRow, StandingsEnvelope, Team } from '../types'
 
-const teams = new Map<string, Team>([
-  ['A', { id: 'A', name: 'Alfa', shortName: 'ALF' }],
-  ['B', { id: 'B', name: 'Beta', shortName: 'BET' }],
+const teams = new Map<number, Team>([
+  [1, { id: 1, name: 'Alfa', shortName: 'ALF' }],
+  [2, { id: 2, name: 'Beta', shortName: 'BET' }],
 ])
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
-  position: 1, tournamentTeamId: 'tt-A', teamId: 'A', teamName: 'Alfa',
+  position: 1, tournamentTeamId: 101, teamId: 1, teamName: 'Alfa',
   played: 2, wins: 1, losses: 1, classificationPoints: 3,
   pointsFor: 150, pointsAgainst: 150, pointDiff: 0, winPct: 0.5,
   isTiedUnresolved: false, tieBlockKey: null, ...over,
 })
 
 const envelope = (over: Partial<StandingsEnvelope>): StandingsEnvelope => ({
-  group: { id: 'g1', name: 'Grupo A' }, standingsState: 'FINAL', pendingMatches: 0, rows: [row({})], ...over,
+  group: { id: 1, name: 'Grupo A' }, standingsState: 'FINAL', pendingMatches: 0, rows: [row({})], ...over,
 })
 
 const renderCard = (env: StandingsEnvelope, isOrgAdmin = true, onSetTiebreakOrder = vi.fn().mockResolvedValue(undefined)) =>
@@ -50,8 +50,8 @@ describe('StandingsCard', () => {
   it('opens the draw panel for the tied block from the row action', async () => {
     renderCard(envelope({
       rows: [
-        row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
-        row({ teamId: 'B', tournamentTeamId: 'tt-B', teamName: 'Beta', position: 2, isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
+        row({ isTiedUnresolved: true, tieBlockKey: '101-102' }),
+        row({ teamId: 2, tournamentTeamId: 102, teamName: 'Beta', position: 2, isTiedUnresolved: true, tieBlockKey: '101-102' }),
       ],
     }))
     await userEvent.click(screen.getAllByRole('button', { name: /registrar sorteio/i })[0])
@@ -60,7 +60,7 @@ describe('StandingsCard', () => {
   })
 
   it('gives a non-admin no draw affordance at all', () => {
-    renderCard(envelope({ rows: [row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' })] }), false)
+    renderCard(envelope({ rows: [row({ isTiedUnresolved: true, tieBlockKey: '101-102' })] }), false)
     expect(screen.queryByRole('button', { name: /registrar sorteio/i })).not.toBeInTheDocument()
   })
 
@@ -70,10 +70,10 @@ describe('StandingsCard', () => {
     const onSetTiebreakOrder = vi.fn().mockResolvedValue(undefined)
     const twoBlocks = envelope({
       rows: [
-        row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
-        row({ teamId: 'B', tournamentTeamId: 'tt-B', teamName: 'Beta', position: 2, isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' }),
-        row({ teamId: 'C', tournamentTeamId: 'tt-C', teamName: 'Cetus', position: 3, isTiedUnresolved: true, tieBlockKey: 'tt-C-tt-D' }),
-        row({ teamId: 'D', tournamentTeamId: 'tt-D', teamName: 'Delta', position: 4, isTiedUnresolved: true, tieBlockKey: 'tt-C-tt-D' }),
+        row({ isTiedUnresolved: true, tieBlockKey: '101-102' }),
+        row({ teamId: 2, tournamentTeamId: 102, teamName: 'Beta', position: 2, isTiedUnresolved: true, tieBlockKey: '101-102' }),
+        row({ teamId: 3, tournamentTeamId: 103, teamName: 'Cetus', position: 3, isTiedUnresolved: true, tieBlockKey: '103-104' }),
+        row({ teamId: 4, tournamentTeamId: 104, teamName: 'Delta', position: 4, isTiedUnresolved: true, tieBlockKey: '103-104' }),
       ],
     })
     renderCard(twoBlocks, true, onSetTiebreakOrder)
@@ -87,8 +87,8 @@ describe('StandingsCard', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /registrar sorteio/i }).at(-1)!)
 
     expect(onSetTiebreakOrder).toHaveBeenCalledWith([
-      { tournamentTeamId: 'tt-C', order: 1 },
-      { tournamentTeamId: 'tt-D', order: 2 },
+      { tournamentTeamId: 103, order: 1 },
+      { tournamentTeamId: 104, order: 2 },
     ])
   })
 })

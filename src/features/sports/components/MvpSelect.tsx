@@ -1,18 +1,19 @@
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { Field } from '../../../components/ui/Field/Field'
+import { parsePositiveId } from '../parsePositiveId'
 import s from './MvpSelect.module.css'
 
 export interface MvpCandidate {
-  tournamentRosterId: string
-  athleteId: string
+  tournamentRosterId: number
+  athleteId: number
   name: string
   teamName: string
 }
 
 export interface MvpSelectProps {
   candidates: MvpCandidate[]
-  value: string | null
-  onChange: (tournamentRosterId: string | null) => void
+  value: number | null
+  onChange: (tournamentRosterId: number | null) => void
 }
 
 export function MvpSelect({ candidates, value, onChange }: MvpSelectProps) {
@@ -24,12 +25,12 @@ export function MvpSelect({ candidates, value, onChange }: MvpSelectProps) {
           options={[
             { value: '', label: '— nenhum —' },
             ...candidates.map((candidate) => ({
-              value: candidate.tournamentRosterId,
+              value: String(candidate.tournamentRosterId),
               label: `${candidate.name} (${candidate.teamName})`,
             })),
           ]}
-          value={value}
-          onChange={(next) => onChange(next || null)}
+          value={value == null ? null : String(value)}
+          onChange={(next) => onChange(next === '' ? null : parsePositiveId(next))}
         />
       </div>
     </Field>

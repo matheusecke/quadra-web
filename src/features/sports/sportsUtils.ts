@@ -5,26 +5,24 @@
  */
 
 import type {
-  AthleteStatTotals,
   AthleteStatus,
+  BracketRound,
+  BracketSlot,
   Tournament,
   TournamentFormat,
   TournamentStatus,
-  LeaderStat,
-  Match,
+  MatchPeriod,
   MatchStatus,
-  PlayerMatchStats,
-  PeriodScore,
+  MatchSummary,
   StandingRow,
-  StatsStatus,
   Team,
+  TournamentTeam,
 } from './types'
-import type { BracketRound, BracketSlot } from '../../services/sportsApi/store'
 
 // ── Standings formatting ────────────────────────────────────────────────────
-// The ranking rule lives in the data layer (services/sportsApi/standings.ts, FIBA
-// Appendix D). Rows arrive ranked, with pointDiff and winPct already resolved —
-// recomputing them here would be the client re-deriving a server decision.
+// The ranking rule lives in the API (GET /tournaments/:id/standings, FIBA Appendix D).
+// Rows arrive ranked, with pointDiff and winPct already resolved — recomputing them here
+// would be the client re-deriving a server decision.
 
 /** Format a win percentage as a `.XXX` string, basketball convention. `—` when unmeasured. */
 export function formatPct(row: StandingRow): string {
@@ -39,22 +37,13 @@ export function formatDiff(row: StandingRow): string {
 
 // ── Match helpers ─────────────────────────────────────────────────────────────
 
-/** Most recent first. */
-export function sortMatchesByDateDesc(matches: Match[]): Match[] {
-  return [...matches].sort((a, b) => +new Date(b.date) - +new Date(a.date))
-}
-
-export function isFinished(match: Match): boolean {
-  return match.status === 'FINISHED'
-}
-
 export function hasKnockout(format: TournamentFormat): boolean {
   return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
 /** Phase label derived from the real links — never free text on the match. */
 export function matchPhaseName(
-  match: Pick<Match, 'bracketRound' | 'tournamentGroupId'>,
+  match: Pick<MatchSummary, 'bracketRound' | 'tournamentGroupId'>,
 ): string | null {
   if (match.bracketRound) return match.bracketRound.label
   return match.tournamentGroupId ? 'Fase de grupos' : null
@@ -62,8 +51,20 @@ export function matchPhaseName(
 
 // ── Team lookups ──────────────────────────────────────────────────────────────
 
-export function teamMap(teams: Team[]): Map<string, Team> {
+export function teamMap(teams: Team[]): Map<number, Team> {
   return new Map(teams.map((t) => [t.id, t]))
+}
+
+export function tournamentTeamMap(
+  tournamentTeams: TournamentTeam[],
+  teams: Map<number, Team>,
+): Map<number, { name: string; shortName: string }> {
+  return new Map(
+    tournamentTeams.map((entry) => [
+      entry.id,
+      { name: entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? '' },
+    ]),
+  )
 }
 
 // ── Labels (Portuguese) ────────────────────────────────────────────────────────
@@ -91,27 +92,10 @@ export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   CANCELLED: 'Cancelada',
 }
 
-export const STATS_STATUS_LABELS: Record<StatsStatus, string> = {
-  COMPLETE: 'Estatísticas completas',
-  PARTIAL: 'Estatísticas incompletas',
-  PENDING: 'Sem estatísticas',
-}
-
 export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   ACTIVE: 'Ativo',
   INACTIVE: 'Inativo',
 }
-
-export const LEADER_STAT_META: Record<LeaderStat, { label: string; full: string }> = {
-  ppg: { label: 'PPG', full: 'Pontos por jogo' },
-  rpg: { label: 'RPG', full: 'Rebotes por jogo' },
-  apg: { label: 'APG', full: 'Assistências por jogo' },
-  stg: { label: 'STG', full: 'Roubos por jogo' },
-  bpg: { label: 'BPG', full: 'Tocos por jogo' },
-}
-
-/** Fixed display order for the allowed leader categories. */
-export const LEADER_STAT_ORDER: LeaderStat[] = ['ppg', 'rpg', 'apg', 'stg', 'bpg']
 
 // ── Badge variant mapping (matches Badge component variants) ────────────────────
 
@@ -149,22 +133,9 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
   }
 }
 
-export function statsStatusVariant(status: StatsStatus): BadgeVariant {
-  switch (status) {
-    case 'COMPLETE':
-      return 'success'
-    case 'PARTIAL':
-      return 'warning'
-    case 'PENDING':
-    default:
-      return 'default'
-  }
-}
-
 // ── Date formatting (pt-BR) ─────────────────────────────────────────────────────
 
 const dateFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-const dateShortFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
 const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: 'short',
@@ -174,10 +145,6 @@ const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
 
 export function formatDate(iso: string): string {
   return dateFmt.format(new Date(iso))
-}
-
-export function formatDateShort(iso: string): string {
-  return dateShortFmt.format(new Date(iso))
 }
 
 export function formatDateTime(iso: string): string {
@@ -202,8 +169,13 @@ export function matchProgress(tournament: Tournament): string {
   return `${tournament.finishedMatchCount}/${tournament.matchCount}`
 }
 
+/** Rascunho sem data é normal — a API ordena com NULLS FIRST justamente por isso. */
 export function formatPeriod(tournament: Tournament): string {
-  return `${formatDate(tournament.startDate)} - ${formatDate(tournament.endDate)}`
+  const { startsAt, endsAt } = tournament
+  if (!startsAt && !endsAt) return '—'
+  if (!endsAt) return `A partir de ${formatDate(startsAt!)}`
+  if (!startsAt) return `Até ${formatDate(endsAt)}`
+  return `${formatDate(startsAt)} - ${formatDate(endsAt)}`
 }
 
 const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -213,124 +185,51 @@ export function formatTime(iso: string): string {
 }
 
 /** Derives the column label for a period: 1Q-4Q for regular, OT / 2OT / 3OT for overtime. */
-export function getPeriodLabel(period: PeriodScore): string {
-  if (period.label) return period.label
-  if (period.type === 'REGULAR') return `${period.periodNumber}Q`
-  const overtimeNumber = period.overtimeNumber ?? 1
-  return overtimeNumber === 1 ? 'OT' : `${overtimeNumber}OT`
-}
-
-/** Safely totals one side from the dynamic period score list, ignoring null periods. */
-export function calculatePeriodTotal(periods: PeriodScore[] | null, side: 'home' | 'away'): number | null {
-  if (!periods?.length) return null
-  const key = side === 'home' ? 'homePoints' : 'awayPoints'
-  return periods.reduce<number>((sum, period) => sum + (period[key] ?? 0), 0)
+export function getPeriodLabel(period: MatchPeriod): string {
+  if (period.periodType === 'REGULAR') return `${period.periodNumber}Q`
+  return period.periodNumber === 1 ? 'OT' : `${period.periodNumber}OT`
 }
 
 // ── Per-match stat helpers ─────────────────────────────────────────────────────
 
 /** Percentage with 1 decimal. Returns '—' when denominator is 0. */
-export function formatStatPct(made: number, attempted: number): string {
+export function formatStatPct(made: number | null, attempted: number | null): string {
+  if (made === null || attempted === null) return 'N/A'
   if (attempted === 0) return '—'
   return ((made / attempted) * 100).toFixed(1)
 }
 
-/** True-Shooting % string. */
-export function formatTsPct(pts: number, fga: number, fta: number): string {
-  const denom = 2 * (fga + 0.44 * fta)
-  if (denom === 0) return '—'
-  return ((pts / denom) * 100).toFixed(1)
+export function formatMinutesSeconds(totalSeconds: number | null): string {
+  if (totalSeconds === null) return 'N/A'
+  const roundedSeconds = Math.max(0, Math.round(totalSeconds))
+  const minutes = Math.floor(roundedSeconds / 60)
+  const seconds = String(roundedSeconds % 60).padStart(2, '0')
+  return `${minutes}:${seconds}`
 }
 
-/** EFF / EFI rating. */
-export function calcEff(p: PlayerMatchStats): number {
-  return (
-    p.pts + p.reb + p.ast + p.stl + p.blk
-    - (p.fga - p.fgm)
-    - (p.fta - p.ftm)
-    - p.to
-  )
+/** Displays a server-owned number without imposing a new precision. */
+export function formatServerDecimal(value: number | null): string {
+  return value === null ? 'N/A' : String(value)
 }
 
-export function calcEffFromTotals(totals: AthleteStatTotals): number {
-  return (
-    totals.pts + totals.reb + totals.ast + totals.stl + totals.blk
-    - (totals.fga - totals.fgm)
-    - (totals.fta - totals.ftm)
-    - totals.to
-  )
+/** Phase 10 percentages are server-owned fractions and may exceed 1.0. */
+export function formatServerPercentage(value: number | null): string {
+  if (value === null) return 'N/A'
+  return `${Number((value * 100).toFixed(1))}%`
 }
 
-export function emptyAthleteTotals(): AthleteStatTotals {
-  return {
-    games: 0,
-    min: 0,
-    pts: 0,
-    reb: 0,
-    ast: 0,
-    stl: 0,
-    blk: 0,
-    to: 0,
-    pf: 0,
-    fgm: 0,
-    fga: 0,
-    tpm: 0,
-    tpa: 0,
-    ftm: 0,
-    fta: 0,
-  }
+export function formatServerEfficiency(value: number | null): string {
+  if (value === null) return 'N/A'
+  const formatted = formatServerDecimal(value)
+  return value > 0 ? `+${formatted}` : formatted
 }
 
-export function aggregateAthleteStats(players: PlayerMatchStats[]): AthleteStatTotals {
-  return players.reduce((acc, p) => ({
-    games: acc.games + 1,
-    min: acc.min + p.min,
-    pts: acc.pts + p.pts,
-    reb: acc.reb + p.reb,
-    ast: acc.ast + p.ast,
-    stl: acc.stl + p.stl,
-    blk: acc.blk + p.blk,
-    to: acc.to + p.to,
-    pf: acc.pf + p.pf,
-    fgm: acc.fgm + p.fgm,
-    fga: acc.fga + p.fga,
-    tpm: acc.tpm + p.tpm,
-    tpa: acc.tpa + p.tpa,
-    ftm: acc.ftm + p.ftm,
-    fta: acc.fta + p.fta,
-  }), emptyAthleteTotals())
+export function formatMeasuredGames(count: number): string {
+  return count === 1 ? 'em 1 jogo medido' : `em ${count} jogos medidos`
 }
 
-export function perGame(value: number, games: number): number {
-  return games === 0 ? 0 : value / games
-}
-
-export interface TeamStatTotals {
-  min: number; pts: number; reb: number; ast: number; stl: number; blk: number
-  to: number; pf: number; fgm: number; fga: number; tpm: number; tpa: number
-  ftm: number; fta: number
-}
-
-export function aggregateTeamStats(players: PlayerMatchStats[]): TeamStatTotals {
-  const z: TeamStatTotals = { min:0,pts:0,reb:0,ast:0,stl:0,blk:0,to:0,pf:0,fgm:0,fga:0,tpm:0,tpa:0,ftm:0,fta:0 }
-  return players.reduce((acc, p) => ({
-    min: acc.min + p.min, pts: acc.pts + p.pts, reb: acc.reb + p.reb,
-    ast: acc.ast + p.ast, stl: acc.stl + p.stl, blk: acc.blk + p.blk,
-    to:  acc.to  + p.to,  pf:  acc.pf  + p.pf,  fgm: acc.fgm + p.fgm,
-    fga: acc.fga + p.fga, tpm: acc.tpm + p.tpm, tpa: acc.tpa + p.tpa,
-    ftm: acc.ftm + p.ftm, fta: acc.fta + p.fta,
-  }), z)
-}
-
-/** Derived display status — surfaces 'Aguardando estatísticas' case. */
-export function matchDisplayStatus(status: MatchStatus, statsStatus: StatsStatus): string {
-  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'Aguardando estatísticas'
-  return MATCH_STATUS_LABELS[status]
-}
-
-export function matchDisplayStatusVariant(status: MatchStatus, statsStatus: StatsStatus): BadgeVariant {
-  if (status === 'FINISHED' && statsStatus === 'PENDING') return 'warning'
-  return matchStatusVariant(status)
+export function formatShootingLine(made: number | null, attempted: number | null): string {
+  return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

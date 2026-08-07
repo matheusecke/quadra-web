@@ -9,9 +9,9 @@ import s from './StandingsCard.module.css'
 
 export interface StandingsCardProps {
   envelope: StandingsEnvelope
-  teams: Map<string, Team>
+  teams: Map<number, Team>
   isOrgAdmin: boolean
-  onSetTiebreakOrder: (entries: { tournamentTeamId: string; order: number }[]) => Promise<void>
+  onSetTiebreakOrder: (entries: { tournamentTeamId: number; order: number }[]) => Promise<void>
   onClearTiebreakOrder: (blockKey: string) => Promise<void>
   errorMessage?: string
   headerAction?: ReactNode

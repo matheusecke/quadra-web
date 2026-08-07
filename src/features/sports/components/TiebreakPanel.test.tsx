@@ -4,14 +4,14 @@ import userEvent from '@testing-library/user-event'
 import { TiebreakPanel } from './TiebreakPanel'
 import type { StandingRow } from '../types'
 
-const row = (teamId: string, tournamentTeamId: string, teamName: string): StandingRow => ({
+const row = (teamId: number, tournamentTeamId: number, teamName: string): StandingRow => ({
   position: 1, tournamentTeamId, teamId, teamName,
   played: 2, wins: 1, losses: 1, classificationPoints: 3,
   pointsFor: 150, pointsAgainst: 150, pointDiff: 0, winPct: 0.5,
-  isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B',
+  isTiedUnresolved: true, tieBlockKey: '101-102',
 })
 
-const rows = [row('A', 'tt-A', 'Alfa'), row('B', 'tt-B', 'Beta')]
+const rows = [row(1, 101, 'Alfa'), row(2, 102, 'Beta')]
 
 describe('TiebreakPanel', () => {
   it('has no button that draws — only one that records a draw', () => {
@@ -29,8 +29,8 @@ describe('TiebreakPanel', () => {
     await userEvent.click(screen.getByRole('option', { name: '1º' }))
     await userEvent.click(screen.getByRole('button', { name: /registrar sorteio/i }))
     expect(onSave).toHaveBeenCalledWith([
-      { tournamentTeamId: 'tt-A', order: 2 },
-      { tournamentTeamId: 'tt-B', order: 1 },
+      { tournamentTeamId: 101, order: 2 },
+      { tournamentTeamId: 102, order: 1 },
     ])
   })
 

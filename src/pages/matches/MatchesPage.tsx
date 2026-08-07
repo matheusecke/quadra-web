@@ -7,44 +7,55 @@ import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getTeams } from '../../features/sports/mock-sports-data'
-import { useMatchesQuery, useTournamentsQuery } from '../../features/sports/queries'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
+import { useMatchesInfiniteQuery, useTournamentsQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { MatchStatus } from '../../features/sports/types'
 import {
   formatDateTime,
-  matchDisplayStatus,
-  matchDisplayStatusVariant,
+  MATCH_STATUS_LABELS,
   matchPhaseName,
-  sortMatchesByDateDesc,
-  teamMap,
+  matchStatusVariant,
 } from '../../features/sports/sportsUtils'
 import s from './matches.module.css'
 
-type StatusFilter = MatchStatus | 'WAITING_STATS' | ''
+type StatusFilter = MatchStatus | ''
 
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+const STATUS_OPTIONS: Array<{ value: MatchStatus; label: string }> = [
   { value: 'SCHEDULED',     label: 'Agendada' },
   { value: 'LIVE',          label: 'Ao vivo' },
   { value: 'FINISHED',      label: 'Finalizada' },
-  { value: 'WAITING_STATS', label: 'Aguardando estatísticas' },
   { value: 'POSTPONED',     label: 'Adiada' },
+  { value: 'CANCELLED',     label: 'Cancelada' },
 ]
 
 export function MatchesPage() {
   const navigate = useNavigate()
 
-  const [q, setQ]                       = useState('')
-  const [debouncedQ, setDebouncedQ]     = useState('')
-  const [tournamentId, setTournamentId] = useState('')
+  const [search, setSearch]             = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [tournamentId, setTournamentId] = useState<number | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q), 280)
+    const t = setTimeout(() => setDebouncedSearch(search), 280)
     return () => clearTimeout(t)
-  }, [q])
+  }, [search])
 
-  const { data: matches, isPending: isLoading, isError, refetch } = useMatchesQuery()
+  const handleClearSearch = () => {
+    setSearch('')
+    setDebouncedSearch('')
+  }
+
+  const filters = {
+    q: debouncedSearch.trim() || undefined,
+    tournamentId: tournamentId || undefined,
+    status: statusFilter || undefined,
+  }
+  const matchesQuery = useMatchesInfiniteQuery(filters)
+  const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const totalItems = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
+
   const { data: tournaments } = useTournamentsQuery()
   const isOrgAdmin = useIsOrgAdmin()
 
@@ -52,29 +63,8 @@ export function MatchesPage() {
     () => new Map((tournaments ?? []).map((c) => [c.id, c])),
     [tournaments],
   )
-  const teams = useMemo(() => teamMap(getTeams()), [])
 
-  const items = useMemo(() => {
-    const all = sortMatchesByDateDesc(matches ?? [])
-    return all.filter((m) => {
-      if (tournamentId && m.tournamentId !== tournamentId) return false
-      if (statusFilter === 'WAITING_STATS') {
-        if (!(m.status === 'FINISHED' && m.statsStatus === 'PENDING')) return false
-      } else if (statusFilter && m.status !== statusFilter) {
-        return false
-      }
-      if (debouncedQ) {
-        const home   = teams.get(m.homeTeamId)?.name.toLowerCase() ?? ''
-        const away   = teams.get(m.awayTeamId)?.name.toLowerCase() ?? ''
-        const needle = debouncedQ.toLowerCase()
-        if (!home.includes(needle) && !away.includes(needle)) return false
-      }
-      return true
-    })
-  }, [matches, tournamentId, statusFilter, debouncedQ, teams])
-
-  const total      = matches?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || tournamentId || statusFilter)
+  const hasFilters = Boolean(debouncedSearch || tournamentId != null || statusFilter)
 
   return (
     <div className={s.page}>
@@ -101,19 +91,19 @@ export function MatchesPage() {
               className={s.searchInput}
               type="search"
               placeholder="Buscar por equipe..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               aria-label="Buscar partida por equipe"
             />
-            {q && (
-              <button type="button" className={s.searchClear} onClick={() => setQ('')} aria-label="Limpar busca">
+            {search && (
+              <button type="button" className={s.searchClear} onClick={handleClearSearch} aria-label="Limpar busca">
                 ✕
               </button>
             )}
           </div>
 
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: tournament.id, label: tournament.name }))]} value={tournamentId || null} onChange={setTournamentId} />
+            <Combobox aria-label="Filtrar por campeonato" options={[{ value: '', label: 'Campeonato' }, ...(tournaments ?? []).map((tournament) => ({ value: String(tournament.id), label: tournament.name }))]} value={tournamentId == null ? null : String(tournamentId)} onChange={(raw) => setTournamentId(parsePositiveId(raw))} />
           </div>
           <div className={s.filterControl}>
             <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS]} value={statusFilter || null} onChange={(value) => setStatusFilter(value as StatusFilter)} />
@@ -122,9 +112,9 @@ export function MatchesPage() {
       </div>
 
       <div className={s.body}>
-        {isError ? (
+        {matchesQuery.isError ? (
           <div className={s.bodyFill}>
-            <ErrorState title="Não foi possível carregar as partidas." onRetry={refetch} />
+            <ErrorState title="Não foi possível carregar as partidas." onRetry={() => void matchesQuery.refetch()} />
           </div>
         ) : (
           <div className={s.tableWrap}>
@@ -142,7 +132,7 @@ export function MatchesPage() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading
+                {matchesQuery.isPending
                   ? Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className={s.skRow}>
                         <td><Skeleton width={110} height={13} /></td>
@@ -155,11 +145,9 @@ export function MatchesPage() {
                         <td><Skeleton width={110} height={13} /></td>
                       </tr>
                     ))
-                  : items.map((m) => {
-                      const home     = teams.get(m.homeTeamId)
-                      const away     = teams.get(m.awayTeamId)
+                  : matches.map((m) => {
                       const champ    = champMap.get(m.tournamentId)
-                      const hasScore = m.homeScore !== null && m.awayScore !== null
+                      const hasScore = m.homeTeam.score !== null && m.awayTeam.score !== null
                       return (
                         <tr
                           key={m.id}
@@ -173,32 +161,32 @@ export function MatchesPage() {
                             }
                           }}
                         >
-                          <td className={`${s.td} ${s.mono}`}>{formatDateTime(m.date)}</td>
+                          <td className={`${s.td} ${s.mono}`}>{formatDateTime(m.scheduledAt)}</td>
                           <td className={s.tdMuted}>{champ?.name ?? '—'}</td>
-                          <td className={s.td}>{home?.name ?? 'A definir'}</td>
-                          <td className={s.td}>{away?.name ?? 'A definir'}</td>
+                          <td className={s.td}>{m.homeTeam.teamName}</td>
+                          <td className={s.td}>{m.awayTeam.teamName}</td>
                           <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
                             {hasScore
-                              ? <strong>{m.homeScore} – {m.awayScore}</strong>
+                              ? <strong>{m.homeTeam.score} – {m.awayTeam.score}</strong>
                               : <span className={s.scorePending}>—</span>
                             }
                           </td>
                           <td className={s.tdMuted}>{matchPhaseName(m) ?? ''}</td>
                           <td className={s.td}>
-                            <Badge variant={matchDisplayStatusVariant(m.status, m.statsStatus)}>
-                              {matchDisplayStatus(m.status, m.statsStatus)}
+                            <Badge variant={matchStatusVariant(m.status)}>
+                              {MATCH_STATUS_LABELS[m.status]}
                             </Badge>
                           </td>
-                          <td className={s.tdMuted}>{m.venue ?? '—'}</td>
+                          <td className={s.tdMuted}>{m.venueName ?? '—'}</td>
                         </tr>
                       )
                     })}
               </tbody>
             </table>
 
-            {!isLoading && items.length === 0 && (
+            {!matchesQuery.isPending && matches.length === 0 && (
               <EmptyState
-                title={hasFilters ? 'Nenhuma partida encontrada.' : 'Nenhuma partida cadastrada.'}
+                title={hasFilters ? 'Nenhuma partida encontrada com os filtros atuais.' : 'Nenhuma partida agendada.'}
                 description={
                   hasFilters
                     ? 'Ajuste a busca ou os filtros para ver outras partidas.'
@@ -207,13 +195,26 @@ export function MatchesPage() {
                 icon={<CalendarDays size={20} strokeWidth={1.6} />}
               />
             )}
+
+            {!matchesQuery.isPending && matchesQuery.hasNextPage && (
+              <div className={s.loadMoreRow}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={matchesQuery.isFetchingNextPage}
+                  onClick={() => void matchesQuery.fetchNextPage()}
+                >
+                  Carregar mais
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        {!isLoading && !isError && items.length > 0 && (
+        {!matchesQuery.isPending && !matchesQuery.isError && matches.length > 0 && (
           <p className={s.counter}>
-            {items.length}
-            {items.length !== total ? ` de ${total}` : ''} partida{items.length === 1 ? '' : 's'}
+            {matches.length}
+            {matches.length !== totalItems ? ` de ${totalItems}` : ''} partida{matches.length === 1 ? '' : 's'}
           </p>
         )}
       </div>

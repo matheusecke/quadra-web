@@ -1,30 +1,27 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
-import { Combobox } from '../../../components/ui/Combobox/Combobox'
+import { SearchSelect } from '../../../components/ui/SearchSelect'
+import type { SearchSelectOption } from '../../../components/ui/SearchSelect'
 import s from './EnrollTeamPanel.module.css'
 
-export interface EnrollTeamOption {
-  id: string
-  name: string
-}
-
 export interface EnrollTeamPanelProps {
-  availableTeams: EnrollTeamOption[]
-  onEnroll: (teamId: string) => Promise<void>
+  onSearch: (q: string) => Promise<SearchSelectOption[]>
+  onEnroll: (teamId: number) => Promise<void>
   errorMessage?: string
 }
 
-export function EnrollTeamPanel({ availableTeams, onEnroll, errorMessage }: EnrollTeamPanelProps) {
-  const selectId = useId()
-  const [teamId, setTeamId] = useState('')
+export function EnrollTeamPanel({ onSearch, onEnroll, errorMessage }: EnrollTeamPanelProps) {
+  const [selected, setSelected] = useState<SearchSelectOption | null>(null)
   const [busy, setBusy] = useState(false)
 
   const handleEnroll = async () => {
-    if (!teamId) return
+    if (selected == null) return
     setBusy(true)
     try {
-      await onEnroll(teamId)
-      setTeamId('')
+      await onEnroll(selected.id)
+      setSelected(null)
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the current selection
     } finally {
       setBusy(false)
     }
@@ -33,18 +30,13 @@ export function EnrollTeamPanel({ availableTeams, onEnroll, errorMessage }: Enro
   return (
     <div className={s.panel}>
       <div className={s.row}>
-        <label className={s.label} htmlFor={selectId}>Equipe</label>
-        <div className={s.controlWrap}>
-          <Combobox
-            id={selectId}
-            options={availableTeams.map((team) => ({ value: team.id, label: team.name }))}
-            value={teamId || null}
-            onChange={setTeamId}
-            placeholder="Selecione uma equipe…"
-            disabled={availableTeams.length === 0}
-          />
-        </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleEnroll} loading={busy} disabled={!teamId}>
+        <label className={s.label}>
+          Equipe
+          <div className={s.controlWrap}>
+            <SearchSelect value={selected} onChange={setSelected} onSearch={onSearch} placeholder="Buscar equipe…" />
+          </div>
+        </label>
+        <Button type="button" variant="primary" size="sm" onClick={handleEnroll} loading={busy} disabled={selected == null}>
           Inscrever
         </Button>
       </div>

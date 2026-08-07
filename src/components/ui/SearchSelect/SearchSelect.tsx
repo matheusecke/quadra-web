@@ -23,11 +23,16 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchRef = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setInputText(value?.label ?? '')
   }, [value])
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+  }, [])
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -40,6 +45,7 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
   }, [])
 
   const handleInput = (q: string) => {
+    const searchId = ++searchRef.current
     setInputText(q)
     onChange(null)
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -53,14 +59,16 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
       setIsError(false)
       try {
         const res = await onSearch(q.trim())
+        if (searchId !== searchRef.current) return
         setResults(res)
         setIsOpen(true)
       } catch {
+        if (searchId !== searchRef.current) return
         setIsError(true)
         setResults([])
         setIsOpen(true)
       } finally {
-        setIsLoading(false)
+        if (searchId === searchRef.current) setIsLoading(false)
       }
     }, 350)
   }

@@ -34,4 +34,4 @@ jobs:
         run: npm run build
 
       - name: Build Docker image
-        run: docker build -t tcc-web .
+        run: docker build -t quadra-web .

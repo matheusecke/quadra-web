@@ -3,13 +3,13 @@ import { render, screen } from '@testing-library/react'
 import { StandingsTable } from './StandingsTable'
 import type { StandingRow, Team } from '../../../features/sports/types'
 
-const teams = new Map<string, Team>([
-  ['A', { id: 'A', name: 'Alfa', shortName: 'ALF' }],
-  ['B', { id: 'B', name: 'Beta', shortName: 'BET' }],
+const teams = new Map<number, Team>([
+  [1, { id: 1, name: 'Alfa', shortName: 'ALF' }],
+  [2, { id: 2, name: 'Beta', shortName: 'BET' }],
 ])
 
 const row = (over: Partial<StandingRow>): StandingRow => ({
-  position: 1, tournamentTeamId: 'tt-A', teamId: 'A', teamName: 'Alfa',
+  position: 1, tournamentTeamId: 101, teamId: 1, teamName: 'Alfa',
   played: 2, wins: 1, losses: 1, classificationPoints: 3,
   pointsFor: 150, pointsAgainst: 140, pointDiff: 10, winPct: 0.5,
   isTiedUnresolved: false, tieBlockKey: null, ...over,
@@ -17,7 +17,7 @@ const row = (over: Partial<StandingRow>): StandingRow => ({
 
 describe('StandingsTable', () => {
   it('renders the rows in the order given, without re-ranking', () => {
-    render(<StandingsTable rows={[row({ teamId: 'B', teamName: 'Beta', position: 1, wins: 0, classificationPoints: 2 }), row({ position: 2, wins: 5, classificationPoints: 9 })]} teams={teams} variant="full" />)
+    render(<StandingsTable rows={[row({ teamId: 2, teamName: 'Beta', position: 1, wins: 0, classificationPoints: 2 }), row({ position: 2, wins: 5, classificationPoints: 9 })]} teams={teams} variant="full" />)
     const cells = screen.getAllByRole('row').slice(1).map((r) => r.textContent)
     expect(cells[0]).toContain('Beta')   // fewer wins, but it came first — the server ranked it
   })
@@ -35,7 +35,7 @@ describe('StandingsTable', () => {
   })
 
   it('marks an unresolved tie with a textual chip, not only colour', () => {
-    render(<StandingsTable rows={[row({ isTiedUnresolved: true, tieBlockKey: 'tt-A-tt-B' })]} teams={teams} variant="full" />)
+    render(<StandingsTable rows={[row({ isTiedUnresolved: true, tieBlockKey: '101-102' })]} teams={teams} variant="full" />)
     expect(screen.getByText(/empate/i)).toBeInTheDocument()
   })
 })

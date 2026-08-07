@@ -1,25 +1,11 @@
-import { getTeams } from './mock-sports-data'
-import { useBracketRoundsQuery, useBracketSlotsQuery, useMatchesQuery, useTournamentTeamsQuery } from './queries'
+import { useBracketQuery, useTeamsQuery, useTournamentTeamsQuery } from './queries'
 
-import type { BracketRound } from '../../services/sportsApi/store'
-import type { MatchStatus } from './types'
+import type { BracketRound, BracketSlotView } from './types'
 
 export interface BracketTeamOption {
-  tournamentTeamId: string
+  tournamentTeamId: number
   name: string
   shortName: string
-}
-
-export interface BracketSlotView {
-  id: string
-  roundId: string
-  position: number
-  label: string | null
-  homeTournamentTeamId: string | null
-  awayTournamentTeamId: string | null
-  matchId: string | null
-  winnerTournamentTeamId: string | null
-  match: { id: string; status: MatchStatus; date: string; homeScore: number | null; awayScore: number | null } | null
 }
 
 export interface BracketView {
@@ -28,27 +14,31 @@ export interface BracketView {
   teams: BracketTeamOption[]
   isPending: boolean
   isError: boolean
-  refetch: () => void
+  refetch: () => Promise<void>
 }
 
-export function useBracketView(tournamentId: string): BracketView {
-  const roundsQuery = useBracketRoundsQuery(tournamentId)
-  const slotsQuery = useBracketSlotsQuery(tournamentId)
-  const { data: matches = [] } = useMatchesQuery({ tournamentId })
+/**
+ * Display data comes off the bracket itself — the API embeds the registration's name
+ * snapshot and the catalogue's live short name. The team list is a separate concern:
+ * the picker needs every active registration, including the ones not placed yet.
+ */
+export function useBracketView(tournamentId: number): BracketView {
+  const bracketQuery = useBracketQuery(tournamentId)
+  const teamsQuery = useTeamsQuery()
   const { data: tournamentTeams = [] } = useTournamentTeamsQuery(tournamentId)
 
-  const teamsById = new Map(getTeams().map((team) => [team.id, team]))
-  const matchesById = new Map(matches.map((match) => [match.id, match]))
+  const teamsById = new Map((teamsQuery.data ?? []).map((team) => [team.id, team]))
 
   return {
-    rounds: roundsQuery.data ?? [],
-    slots: (slotsQuery.data ?? []).map((slot) => ({ ...slot, match: slot.matchId ? matchesById.get(slot.matchId) ?? null : null })),
-    teams: tournamentTeams.map((entry) => {
-      const team = teamsById.get(entry.teamId)
-      return { tournamentTeamId: entry.id, name: team?.name ?? entry.displayNameSnapshot, shortName: team?.shortName ?? entry.teamId }
-    }),
-    isPending: roundsQuery.isPending || slotsQuery.isPending,
-    isError: roundsQuery.isError || slotsQuery.isError,
-    refetch: () => { void roundsQuery.refetch(); void slotsQuery.refetch() },
+    rounds: bracketQuery.data?.rounds ?? [],
+    slots: bracketQuery.data?.slots ?? [],
+    teams: tournamentTeams.map((entry) => ({
+      tournamentTeamId: entry.id,
+      name: entry.displayNameSnapshot,
+      shortName: teamsById.get(entry.teamId)?.shortName ?? String(entry.teamId),
+    })),
+    isPending: bracketQuery.isPending,
+    isError: bracketQuery.isError,
+    refetch: async () => { await bracketQuery.refetch() },
   }
 }

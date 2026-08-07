@@ -2,7 +2,11 @@ import { useId, useState } from 'react'
 import { Button } from '../../../components/ui/Button/Button'
 import { Combobox } from '../../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
+import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { NumberField } from '../../../components/ui/NumberField/NumberField'
+import { SearchSelect } from '../../../components/ui/SearchSelect'
+import type { SearchSelectOption } from '../../../components/ui/SearchSelect'
+import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../../../components/ui/Table/Table'
 import s from './TournamentRosterPanel.module.css'
 
@@ -13,56 +17,74 @@ const ROLE_LABELS: Record<RosterRole, string> = {
   COACHING_STAFF: 'Comissão técnica',
 }
 
-export interface RosterAthleteOption {
-  id: string
-  name: string
-}
-
 export interface RosterDisplayEntry {
-  id: string
-  athleteId: string
+  id: number
+  userId: number
   name: string
-  jerseyNumber: number
+  jerseyNumber: number | null
   role: RosterRole
 }
 
 export interface RosterEntryDraft {
-  athleteId: string
-  jerseyNumber: number
+  userId: number
   role: RosterRole
+  jerseyNumber?: number
 }
 
 export interface TournamentRosterPanelProps {
   roster: RosterDisplayEntry[]
-  availableAthletes: RosterAthleteOption[]
-  onAdd: (entry: RosterEntryDraft) => Promise<void> | void
-  onRemove: (id: string) => void
-  onUpdate: (id: string, input: { jerseyNumber?: number; role?: RosterRole }) => Promise<void>
+  isLoading: boolean
+  isError: boolean
+  onRetry: () => void
+  onSearchCandidates: (q: string, role: RosterRole) => Promise<SearchSelectOption[]>
+  onAdd: (entry: RosterEntryDraft) => Promise<void>
+  onRemove: (id: number) => Promise<void>
+  onUpdate: (id: number, input: { jerseyNumber?: number | null; role?: RosterRole }) => Promise<void>
   errorMessage?: string
 }
 
-export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemove, onUpdate, errorMessage }: TournamentRosterPanelProps) {
-  const athleteId = useId()
-  const jerseyId = useId()
+export function TournamentRosterPanel({
+  roster,
+  isLoading,
+  isError,
+  onRetry,
+  onSearchCandidates,
+  onAdd,
+  onRemove,
+  onUpdate,
+  errorMessage,
+}: TournamentRosterPanelProps) {
   const roleId = useId()
   const editRoleId = useId()
-  const [selectedAthlete, setSelectedAthlete] = useState('')
+  const [selectedCandidate, setSelectedCandidate] = useState<SearchSelectOption | null>(null)
   const [jerseyNumber, setJerseyNumber] = useState<number | ''>('')
   const [role, setRole] = useState<RosterRole>('ATHLETE')
   const [busy, setBusy] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
+  const [removingId, setRemovingId] = useState<number | null>(null)
   const [draftNumber, setDraftNumber] = useState<number | ''>('')
   const [draftRole, setDraftRole] = useState<RosterRole>('ATHLETE')
 
+  const handleRoleChange = (nextRole: RosterRole) => {
+    setRole(nextRole)
+    setSelectedCandidate(null)
+  }
+
   const handleAdd = async () => {
-    if (!selectedAthlete || jerseyNumber === '') return
+    if (selectedCandidate == null) return
     setBusy(true)
     try {
-      await onAdd({ athleteId: selectedAthlete, jerseyNumber, role })
-      setSelectedAthlete('')
+      await onAdd({
+        userId: selectedCandidate.id,
+        role,
+        ...(jerseyNumber === '' ? {} : { jerseyNumber }),
+      })
+      setSelectedCandidate(null)
       setJerseyNumber('')
       setRole('ATHLETE')
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the current draft
     } finally {
       setBusy(false)
     }
@@ -71,19 +93,39 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
   const startEditing = (entry: RosterDisplayEntry) => {
     setConfirmingId(null)
     setEditingId(entry.id)
-    setDraftNumber(entry.jerseyNumber)
+    setDraftNumber(entry.jerseyNumber ?? '')
     setDraftRole(entry.role)
   }
 
   const handleUpdate = async () => {
-    if (editingId === null || draftNumber === '' || draftNumber < 0 || draftNumber > 99) return
-    await onUpdate(editingId, { jerseyNumber: draftNumber, role: draftRole })
-    setEditingId(null)
+    if (editingId === null || invalidJerseyDraft(draftNumber)) return
+    try {
+      await onUpdate(editingId, { jerseyNumber: draftNumber === '' ? null : draftNumber, role: draftRole })
+      setEditingId(null)
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the row in edit mode
+    }
+  }
+
+  const handleRemove = async (id: number) => {
+    setRemovingId(id)
+    try {
+      await onRemove(id)
+      setConfirmingId(null)
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep confirmation open
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   return (
     <div className={s.panel}>
-      {roster.length > 0 ? (
+      {isLoading ? (
+        <Skeleton width="100%" height={240} />
+      ) : isError ? (
+        <ErrorState title="Não foi possível carregar o elenco." onRetry={onRetry} />
+      ) : roster.length > 0 ? (
         <Table>
           <TableHead>
             <TableRow>
@@ -97,7 +139,7 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
             {roster.map((entry) => {
               const isEditing = editingId === entry.id
               const isConfirming = confirmingId === entry.id
-              const invalidDraftNumber = draftNumber === '' || draftNumber < 0 || draftNumber > 99
+              const invalidDraft = invalidJerseyDraft(draftNumber)
 
               return (
                 <TableRow key={entry.id} className={s.rosterRow}>
@@ -113,7 +155,7 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
                           max={99}
                         />
                       </div>
-                    ) : entry.jerseyNumber}
+                    ) : (entry.jerseyNumber ?? '—')}
                   </TableCell>
                   <TableCell>{entry.name}</TableCell>
                   <TableCell>
@@ -135,12 +177,12 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
                     {isEditing ? (
                       <div className={`${s.actions} ${s.actionsVisible}`}>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancelar</Button>
-                        <Button type="button" size="sm" onClick={handleUpdate} disabled={invalidDraftNumber}>Salvar</Button>
+                        <Button type="button" size="sm" onClick={handleUpdate} disabled={invalidDraft}>Salvar</Button>
                       </div>
                     ) : isConfirming ? (
                       <div className={`${s.actions} ${s.actionsVisible}`}>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingId(null)}>Cancelar</Button>
-                        <Button type="button" variant="danger" size="sm" onClick={() => onRemove(entry.id)}>Confirmar</Button>
+                        <Button type="button" variant="danger" size="sm" loading={removingId === entry.id} onClick={() => handleRemove(entry.id)}>Confirmar</Button>
                       </div>
                     ) : (
                       <div className={s.actions}>
@@ -160,21 +202,22 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
 
       <div className={s.addRow}>
         <div className={`${s.field} ${s.roleField}`}>
-          <label className={s.label} htmlFor={athleteId}>Atleta</label>
-          <Combobox
-            id={athleteId}
-            options={availableAthletes.map((athlete) => ({ value: athlete.id, label: athlete.name }))}
-            value={selectedAthlete || null}
-            onChange={setSelectedAthlete}
-            placeholder="Selecione um atleta…"
-            disabled={availableAthletes.length === 0}
-          />
+          <label className={s.label}>
+            Atleta
+            <SearchSelect
+              key={role}
+              value={selectedCandidate}
+              onChange={setSelectedCandidate}
+              onSearch={(q) => onSearchCandidates(q, role)}
+              placeholder="Buscar atleta…"
+            />
+          </label>
         </div>
         <div className={s.field}>
-          <label className={s.label} htmlFor={jerseyId}>Número</label>
+          <label className={s.label} htmlFor="jerseyNumber">Número</label>
           <div className={s.numberWrap}>
             <NumberField
-              id={jerseyId}
+              id="jerseyNumber"
               aria-label="Número"
               controlLabel="número"
               value={jerseyNumber}
@@ -190,14 +233,18 @@ export function TournamentRosterPanel({ roster, availableAthletes, onAdd, onRemo
             id={roleId}
             options={Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))}
             value={role}
-            onChange={(next) => setRole(next as RosterRole)}
+            onChange={(next) => handleRoleChange(next as RosterRole)}
           />
         </div>
-        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={!selectedAthlete || jerseyNumber === ''}>
+        <Button type="button" variant="primary" size="sm" onClick={handleAdd} loading={busy} disabled={selectedCandidate == null}>
           Adicionar ao elenco
         </Button>
       </div>
       {errorMessage && <p className={s.error} role="alert">{errorMessage}</p>}
     </div>
   )
+}
+
+function invalidJerseyDraft(draft: number | ''): boolean {
+  return draft !== '' && (draft < 0 || draft > 99)
 }

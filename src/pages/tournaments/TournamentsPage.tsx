@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Trophy, X } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
@@ -7,14 +7,15 @@ import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { getCategoryName, getSeasonLabel, getSeasons } from '../../features/sports/mock-sports-data'
-import { useTournamentsQuery } from '../../features/sports/queries'
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
+import { useCategoriesQuery, useSeasonsQuery, useTournamentsInfiniteQuery } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import type { TournamentStatus } from '../../features/sports/types'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
-  formatDate,
+  formatPeriod,
   formatRelative,
   matchProgress,
 } from '../../features/sports/sportsUtils'
@@ -34,29 +35,40 @@ export function TournamentsPage() {
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<TournamentStatus | ''>('')
-  const [season, setSeason] = useState('')
+  const [season, setSeason] = useState<number | null>(null)
+  const [category, setCategory] = useState<number | null>(null)
 
-  const { data, isPending: isLoading, isError, refetch } = useTournamentsQuery()
+  const seasonsQuery = useSeasonsQuery()
+  const categoriesQuery = useCategoriesQuery()
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError, refetch: refetchTournaments } =
+    useTournamentsInfiniteQuery({ q: debouncedQ, seasonId: season, categoryId: category, status })
+  const isLoading = isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const hasError = isError || seasonsQuery.isError || categoriesQuery.isError
+  const refetch = () => {
+    refetchTournaments()
+    seasonsQuery.refetch()
+    categoriesQuery.refetch()
+  }
   const isOrgAdmin = useIsOrgAdmin()
-  const seasons = useMemo(() => getSeasons(), [])
+  const seasons = useMemo(() => seasonsQuery.data ?? [], [seasonsQuery.data])
+  const seasonLabels = useMemo(() => new Map(seasons.map((item) => [item.id, item.label])), [seasons])
+  const categoryNames = useMemo(
+    () => new Map((categoriesQuery.data ?? []).map((item) => [item.id, item.name])),
+    [categoriesQuery.data],
+  )
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300)
     return () => clearTimeout(t)
   }, [q])
 
-  const items = useMemo(() => {
-    const all = data ?? []
-    return all.filter((c) => {
-      if (debouncedQ && !c.name.toLowerCase().includes(debouncedQ.toLowerCase())) return false
-      if (status && c.status !== status) return false
-      if (season && c.seasonId !== season) return false
-      return true
-    })
-  }, [data, debouncedQ, status, season])
-
-  const total = data?.length ?? 0
-  const hasFilters = Boolean(debouncedQ || status || season)
+  const items = data?.pages.flatMap((page) => page.data) ?? []
+  const total = data?.pages[0]?.meta.totalItems ?? 0
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+  const sentinelRef = useInfiniteScroll(loadMore, hasNextPage ?? false)
+  const hasFilters = Boolean(debouncedQ || status || season != null || category != null)
 
   return (
     <div className={s.page}>
@@ -104,16 +116,24 @@ export function TournamentsPage() {
             )}
           </div>
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((season) => ({ value: season.id, label: season.label }))]} value={season || null} onChange={setSeason} />
+            <Combobox aria-label="Filtrar por temporada" options={[{ value: '', label: 'Temporada' }, ...seasons.map((opt) => ({ value: String(opt.id), label: opt.label }))]} value={season == null ? null : String(season)} onChange={(raw) => setSeason(parsePositiveId(raw))} />
           </div>
           <div className={s.filterControl}>
             <Combobox aria-label="Filtrar por status" options={[{ value: '', label: 'Status' }, ...STATUS_OPTIONS.map((value) => ({ value, label: TOURNAMENT_STATUS_LABELS[value] }))]} value={status || null} onChange={(value) => setStatus(value as TournamentStatus | '')} />
+          </div>
+          <div className={s.filterControl}>
+            <Combobox
+              aria-label="Filtrar por categoria"
+              options={[{ value: '', label: 'Categoria' }, ...(categoriesQuery.data ?? []).map((item) => ({ value: String(item.id), label: item.name }))]}
+              value={category == null ? null : String(category)}
+              onChange={(raw) => setCategory(parsePositiveId(raw))}
+            />
           </div>
         </div>
       </div>
 
       <div className={s.body}>
-        {isError ? (
+        {hasError ? (
           <div className={s.bodyFill}>
             <ErrorState title="Não foi possível carregar os campeonatos." onRetry={refetch} />
           </div>
@@ -162,26 +182,33 @@ export function TournamentsPage() {
                         <td className={s.td}>
                           <span className={s.cName}>{c.name}</span>
                         </td>
-                        <td className={`${s.td} ${s.mono}`}>{getSeasonLabel(c.seasonId)}</td>
-                        <td className={s.tdMuted}>{getCategoryName(c.categoryId)}</td>
+                        <td className={`${s.td} ${s.mono}`}>{seasonLabels.get(c.seasonId) ?? String(c.seasonId)}</td>
+                        <td className={s.tdMuted}>
+                          {c.categoryId == null ? '—' : categoryNames.get(c.categoryId) ?? String(c.categoryId)}
+                        </td>
                         <td className={s.td}>
                           <Badge variant={tournamentStatusVariant(c.status)}>
                             {TOURNAMENT_STATUS_LABELS[c.status]}
                           </Badge>
                         </td>
-                        <td className={`${s.td} ${s.tdNum} ${s.mono}`}>{c.teamIds.length}</td>
+                        <td className={`${s.td} ${s.tdNum} ${s.mono}`}>{c.enrolledTeamCount}</td>
                         <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
                           {matchProgress(c)}
                           <span className={s.numSub}>fin./total</span>
                         </td>
                         <td className={s.tdMuted}>
-                          <span className={s.mono}>{formatDate(c.startDate)}</span>
-                          <span className={s.periodSep}>-</span>
-                          <span className={s.mono}>{formatDate(c.endDate)}</span>
+                          <span className={s.mono}>{formatPeriod(c)}</span>
                         </td>
                         <td className={s.tdMuted}>{formatRelative(c.updatedAt)}</td>
                       </tr>
                     ))}
+                {!isLoading && (
+                  <tr>
+                    <td colSpan={8} style={{ padding: 0 }}>
+                      <div ref={sentinelRef} style={{ height: 1 }} />
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
@@ -199,10 +226,9 @@ export function TournamentsPage() {
           </div>
         )}
 
-        {!isLoading && !isError && items.length > 0 && (
+        {!isLoading && !hasError && items.length > 0 && (
           <p className={s.counter}>
-            {items.length}
-            {items.length !== total ? ` de ${total}` : ''} campeonato{items.length === 1 ? '' : 's'}
+            {items.length} de {total} carregados
           </p>
         )}
       </div>

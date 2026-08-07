@@ -11,14 +11,14 @@ export interface TiebreakPanelProps {
   rows: StandingRow[]
   standingsState: StandingsState
   isResolved: boolean
-  onSave: (entries: { tournamentTeamId: string; order: number }[]) => Promise<void>
+  onSave: (entries: { tournamentTeamId: number; order: number }[]) => Promise<void>
   onClear: () => Promise<void>
   onCancel: () => void
   errorMessage?: string
 }
 
 export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClear, onCancel, errorMessage }: TiebreakPanelProps) {
-  const [orders, setOrders] = useState<Record<string, number>>(
+  const [orders, setOrders] = useState<Record<number, number>>(
     Object.fromEntries(rows.map((row, i) => [row.tournamentTeamId, i + 1])),
   )
   const [busy, setBusy] = useState(false)
@@ -30,6 +30,8 @@ export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClea
     setBusy(true)
     try {
       await onSave(rows.map((row) => ({ tournamentTeamId: row.tournamentTeamId, order: orders[row.tournamentTeamId] })))
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the panel open to retry
     } finally {
       setBusy(false)
     }
@@ -39,6 +41,8 @@ export function TiebreakPanel({ rows, standingsState, isResolved, onSave, onClea
     setBusy(true)
     try {
       await onClear()
+    } catch {
+      // the caller surfaces the failure via errorMessage; keep the panel open to retry
     } finally {
       setBusy(false)
     }

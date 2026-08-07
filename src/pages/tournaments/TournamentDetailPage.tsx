@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -9,16 +9,17 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { Collapse } from '../../components/ui/Collapse'
-import { getAthletes, getCategoryName, getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import { EnrollTeamPanel } from '../../features/sports/components/EnrollTeamPanel'
 import { TournamentRosterPanel } from '../../features/sports/components/TournamentRosterPanel'
 import { CompleteTournamentPanel } from '../../features/sports/components/CompleteTournamentPanel'
 import { ChampionHighlight } from '../../features/sports/components/ChampionHighlight'
 import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
-import type { RosterEntryDraft } from '../../features/sports/components/TournamentRosterPanel'
-import type { UpdateRosterEntryInput } from '../../services/sportsApi/types'
-import { useAddRosterEntry, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useMatchesQuery, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
+import type { RosterEntryDraft, RosterRole } from '../../features/sports/components/TournamentRosterPanel'
+import * as sportsApi from '../../services/sportsApi'
+import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentMatchesQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
+import { apiErrorCode, apiErrorMessage } from '../../services/apiError'
 import {
   TOURNAMENT_STATUS_LABELS,
   tournamentStatusVariant,
@@ -36,13 +37,43 @@ import { StatsTab } from './tabs/StatsTab'
 import { BracketTab } from './tabs/BracketTab'
 import s from './tournaments.module.css'
 
+const COMPLETE_ERRORS: Record<string, string> = {
+  CHAMPION_REQUIRED: 'Selecione a equipe campeã.',
+  CHAMPION_NOT_ALLOWED: 'Um campeonato de fase de grupos não tem campeão.',
+  INVALID_CHAMPION: 'A equipe escolhida não está inscrita ou não venceu a decisão.',
+  INVALID_STATUS_TRANSITION: 'O status do campeonato mudou. Recarregue a página.',
+}
+
+const ENROLLMENT_MESSAGES: Record<string, string> = {
+  DUPLICATE_RECORD: 'Equipe já inscrita neste campeonato.',
+  INVALID_TEAM: 'A equipe não está disponível para esta organização.',
+  TOURNAMENT_NOT_MUTABLE: 'Este campeonato não permite mais alterações.',
+  REGISTRATION_IN_USE: 'A inscrição já está em uso pelo chaveamento.',
+}
+
+const ROSTER_MESSAGES: Record<string, string> = {
+  DUPLICATE_RECORD: 'A pessoa já está ativa neste elenco.',
+  ATHLETE_ALREADY_REGISTERED: 'Atleta já está em outra equipe neste campeonato.',
+  INVALID_ROSTER_MEMBER: 'A pessoa não possui vínculo ativo com esta equipe.',
+  INVALID_ROSTER_ROLE: 'O papel escolhido não corresponde ao vínculo ativo.',
+  INACTIVE_REGISTRATION: 'A inscrição ou o membro não está ativo.',
+  TOURNAMENT_NOT_MUTABLE: 'Este campeonato não permite mais alterações.',
+}
+
 export function TournamentDetailPage() {
-  const { tournamentId } = useParams<{ tournamentId: string }>()
+  const { tournamentId: rawTournamentId } = useParams<{ tournamentId: string }>()
+  const tournamentId = parsePositiveId(rawTournamentId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
-  const { data: tournament, isPending: isLoading, isError, refetch } = useTournamentQuery(tournamentId)
-  const { data: matches } = useMatchesQuery({ tournamentId })
-  const { data: enrolledJoins } = useTournamentTeamsQuery(tournamentId)
+  const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
+  const { data: tournament } = tournamentQuery
+  const matchesQuery = useTournamentMatchesQuery(tournamentId ?? undefined)
+  const matches = matchesQuery.data ?? []
+  const tournamentTeamsQuery = useTournamentTeamsQuery(tournamentId ?? undefined)
+  const { data: enrolledJoins } = tournamentTeamsQuery
+  const teamsQuery = useTeamsQuery()
+  const seasonsQuery = useSeasonsQuery()
+  const categoriesQuery = useCategoriesQuery()
   const enrollTeam = useEnrollTeam()
   const removeTeam = useRemoveTournamentTeam()
   const addRosterEntry = useAddRosterEntry()
@@ -50,89 +81,159 @@ export function TournamentDetailPage() {
   const removeRosterEntry = useRemoveRosterEntry()
   const completeTournament = useCompleteTournament()
   const reopenTournament = useReopenTournament()
-  const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId)
-  const [activeTab, setActiveTab] = useState('overview')
+  const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId ?? undefined)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'overview')
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', tab)
+        return next
+      },
+      { replace: true },
+    )
+  }
   const [enrollError, setEnrollError] = useState('')
-  const [rosterTeamId, setRosterTeamId] = useState<string | null>(null)
+  const [rosterTournamentTeamId, setRosterTournamentTeamId] = useState<number | null>(null)
   const [rosterError, setRosterError] = useState('')
-  const [confirmingTeamId, setConfirmingTeamId] = useState<string | null>(null)
+  const [confirmingTeamId, setConfirmingTeamId] = useState<number | null>(null)
   const [isCompleting, setIsCompleting] = useState(false)
   const [completionError, setCompletionError] = useState('')
   const [isReopening, setIsReopening] = useState(false)
   const [reopenError, setReopenError] = useState('')
-  const { data: roster } = useRosterQuery(tournamentId, rosterTeamId ?? undefined)
-  const teams = teamMap(getTeams())
+  const rosterQuery = useRosterQuery(rosterTournamentTeamId ?? undefined)
+  const { data: roster } = rosterQuery
+
+  const isLoading = tournamentQuery.isPending || tournamentTeamsQuery.isPending || teamsQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
+  const isError = tournamentQuery.isError || tournamentTeamsQuery.isError || teamsQuery.isError || seasonsQuery.isError || categoriesQuery.isError
+  const refetch = () => {
+    tournamentQuery.refetch()
+    tournamentTeamsQuery.refetch()
+    teamsQuery.refetch()
+    seasonsQuery.refetch()
+    categoriesQuery.refetch()
+  }
+
+  if (tournamentId == null) {
+    return (
+      <div className={s.page}>
+        <div className={s.bodyFill}>
+          <ErrorState title="ID de campeonato inválido." />
+        </div>
+      </div>
+    )
+  }
+
+  const teams = teamMap(teamsQuery.data ?? [])
+  const seasonLabel = seasonsQuery.data?.find((season) => season.id === tournament?.seasonId)?.label
+    ?? String(tournament?.seasonId ?? '')
+  const categoryName = tournament?.categoryId == null
+    ? '—'
+    : categoriesQuery.data?.find((category) => category.id === tournament.categoryId)?.name
+      ?? String(tournament.categoryId)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
-  const championName = championTournamentTeam ? teams.get(championTournamentTeam.teamId)?.name ?? championTournamentTeam.displayNameSnapshot : null
+  const championName = championTournamentTeam?.displayNameSnapshot ?? null
 
   const rosterDisplay = (roster ?? []).map((entry) => ({
     id: entry.id,
-    athleteId: entry.athleteId,
-    name: getAthletes().find((athlete) => athlete.id === entry.athleteId)?.name ?? entry.athleteId,
+    userId: entry.userId,
+    name: entry.displayNameSnapshot,
     jerseyNumber: entry.jerseyNumber,
     role: entry.role,
   }))
 
-  const availableAthletes = rosterTeamId
-    ? getAthletes()
-        .filter((athlete) => athlete.currentTeamId === rosterTeamId && !(roster ?? []).some((entry) => entry.athleteId === athlete.id))
-        .map((athlete) => ({ id: athlete.id, name: athlete.name }))
-    : []
+  const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === rosterTournamentTeamId)?.teamId
+
+  const searchEnrollmentTeams = async (q: string) => {
+    const enrolledTeamIds = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
+    return (await sportsApi.searchTeams(q))
+      .filter((team) => !enrolledTeamIds.has(team.id))
+      .map((team) => ({ id: team.id, label: team.name, secondary: team.shortName }))
+  }
+
+  const searchRosterCandidates = async (q: string, role: RosterRole) => {
+    if (rosterTeamGlobalId == null) return []
+    return (await sportsApi.searchRosterCandidates({ q, teamId: rosterTeamGlobalId, role }))
+      .map((candidate) => ({
+        id: candidate.id,
+        label: candidate.name,
+        secondary: candidate.jerseyNumber == null ? undefined : `Camisa ${candidate.jerseyNumber}`,
+      }))
+  }
 
   const handleAddRoster = async (draft: RosterEntryDraft) => {
-    if (!tournamentId || !rosterTeamId) return
+    if (rosterTournamentTeamId == null) return
     try {
-      await addRosterEntry.mutateAsync({ tournamentId, teamId: rosterTeamId, ...draft })
+      await addRosterEntry.mutateAsync({ tournamentTeamId: rosterTournamentTeamId, ...draft })
       setRosterError('')
-    } catch {
-      setRosterError('Atleta já está em uma equipe no mesmo campeonato.')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível adicionar ao elenco.')
+      throw error
     }
   }
 
-  const handleUpdateRoster = async (id: string, input: UpdateRosterEntryInput) => {
-    if (!tournamentId || !rosterTeamId) return
-    await updateRosterEntry.mutateAsync({ id, tournamentId, teamId: rosterTeamId, input })
-  }
-
-  const handleRemoveRoster = (id: string) => {
-    if (!tournamentId || !rosterTeamId) return
-    removeRosterEntry.mutate({ id, tournamentId, teamId: rosterTeamId })
-  }
-
-  const availableTeams = useMemo(() => {
-    const enrolled = new Set(tournament?.teamIds ?? [])
-    return getTeams().filter((team) => !enrolled.has(team.id)).map((team) => ({ id: team.id, name: team.name }))
-  }, [tournament])
-
-  const handleEnroll = async (teamId: string) => {
-    if (!tournamentId) return
+  const handleUpdateRoster = async (id: number, input: { jerseyNumber?: number | null; role?: RosterRole }) => {
+    if (rosterTournamentTeamId == null) return
     try {
-      await enrollTeam.mutateAsync({ tournamentId, teamId, displayName: teams.get(teamId)?.name ?? teamId })
-      setEnrollError('')
-    } catch {
-      setEnrollError('Equipe já inscrita neste campeonato.')
+      await updateRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId, input })
+      setRosterError('')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível atualizar o elenco.')
+      throw error
     }
   }
 
-  const handleComplete = async (championTournamentTeamId: string | null) => {
-    if (!tournamentId) return
+  const handleRemoveRoster = async (id: number) => {
+    if (rosterTournamentTeamId == null) return
+    try {
+      await removeRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId })
+      setRosterError('')
+    } catch (error) {
+      setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível remover do elenco.')
+      throw error
+    }
+  }
+
+  const handleEnroll = async (teamId: number) => {
+    try {
+      await enrollTeam.mutateAsync({ tournamentId, teamId })
+      setEnrollError('')
+    } catch (error) {
+      setEnrollError(ENROLLMENT_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível inscrever a equipe.')
+      throw error
+    }
+  }
+
+  const handleRemoveTeam = async (id: number) => {
+    try {
+      await removeTeam.mutateAsync(id)
+      setEnrollError('')
+      setConfirmingTeamId(null)
+    } catch (error) {
+      setEnrollError(ENROLLMENT_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível remover a equipe.')
+    }
+  }
+
+  const handleComplete = async (championTournamentTeamId: number | null) => {
     try {
       await completeTournament.mutateAsync({ tournamentId, championTournamentTeamId })
       setCompletionError('')
       setIsCompleting(false)
     } catch (error) {
-      setCompletionError(error instanceof Error && error.message === 'Champion must have won a bracket slot' ? 'O campeão precisa ser uma equipe que venceu uma vaga do chaveamento.' : error instanceof Error ? error.message : '')
+      setCompletionError(COMPLETE_ERRORS[apiErrorCode(error) ?? ''] ?? 'Não foi possível encerrar o campeonato.')
     }
   }
 
   const handleReopen = async () => {
-    if (!tournamentId) return
     try {
       await reopenTournament.mutateAsync({ tournamentId })
       setReopenError('')
       setIsReopening(false)
     } catch (error) {
-      setReopenError(error instanceof Error ? error.message : 'Não foi possível reabrir o campeonato.')
+      setReopenError(COMPLETE_ERRORS[apiErrorCode(error) ?? ''] ?? 'Não foi possível reabrir o campeonato.')
     }
   }
 
@@ -166,24 +267,10 @@ export function TournamentDetailPage() {
     )
   }
 
-  // ── Error ──
-  if (isError) {
-    return (
-      <div className={s.page}>
-        <div className={s.detailHeader}>
-          <Link to="/tournaments" className={s.backLink}>
-            <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
-          </Link>
-        </div>
-        <div className={s.bodyFill}>
-          <ErrorState title="Não foi possível carregar o campeonato." onRetry={refetch} />
-        </div>
-      </div>
-    )
-  }
-
-  // ── Not found ──
-  if (!tournament) {
+  // ── Not found (the tournament itself, not a sibling resource) ──
+  const tournamentNotFound = apiErrorCode(tournamentQuery.error) === 'RECORD_NOT_FOUND'
+    && apiErrorMessage(tournamentQuery.error) === 'Tournament not found'
+  if (tournamentNotFound) {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -202,7 +289,23 @@ export function TournamentDetailPage() {
     )
   }
 
-  const allMatches = matches ?? []
+  // ── Error ──
+  if (isError || !tournament) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <Link to="/tournaments" className={s.backLink}>
+            <ArrowLeft size={13} strokeWidth={1.7} /> Voltar para campeonatos
+          </Link>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="Não foi possível carregar o campeonato." onRetry={refetch} />
+        </div>
+      </div>
+    )
+  }
+
+  const allMatches = matches
 
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const hasGroupStage = tournament.format === 'GROUP_STAGE' || tournament.format === 'GROUP_STAGE_KNOCKOUT'
@@ -228,9 +331,9 @@ export function TournamentDetailPage() {
           <div>
             <h1 className={s.detailTitle}>{tournament.name}</h1>
             <div className={s.detailMeta}>
-              <span className={s.mono}>{getSeasonLabel(tournament.seasonId)}</span>
+              <span className={s.mono}>{seasonLabel}</span>
               <span className={s.detailMetaSep}>·</span>
-              <span>{getCategoryName(tournament.categoryId)}</span>
+              <span>{categoryName}</span>
             </div>
           </div>
           <div className={s.detailStatusCol}>
@@ -252,11 +355,17 @@ export function TournamentDetailPage() {
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Equipes</span>
-            <span className={s.infoValue}>{tournament.teamIds.length}</span>
+            <span className={s.infoValue}>{tournament.enrolledTeamCount}</span>
           </div>
           <div className={s.infoItem}>
             <span className={s.infoLabel}>Partidas</span>
             <span className={s.infoValue}>{matchProgress(tournament)}</span>
+          </div>
+          <div className={s.infoItem}>
+            <span className={s.infoLabel}>Inscrições</span>
+            <span className={s.infoValue}>
+              {tournament.isRegistrationOpen && tournament.status === 'REGISTRATION' ? 'Abertas' : 'Fechadas'}
+            </span>
           </div>
         </div>
 
@@ -280,7 +389,7 @@ export function TournamentDetailPage() {
             </div>
             {isCompleting && (
               <CompleteTournamentPanel
-                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: teams.get(entry.teamId)?.name ?? entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? entry.teamId }))}
+                teams={(enrolledJoins ?? []).map((entry) => ({ tournamentTeamId: entry.id, name: entry.displayNameSnapshot, shortName: teams.get(entry.teamId)?.shortName ?? String(entry.teamId) }))}
                 suggestion={championSuggestion ?? null}
                 requiresChampion={tournament.format !== 'GROUP_STAGE'}
                 onComplete={handleComplete}
@@ -301,26 +410,34 @@ export function TournamentDetailPage() {
         )}
 
         <div className={s.tabsBar}>
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="line" />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} variant="line" />
         </div>
       </div>
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && (
-          <OverviewTab tournament={tournament} matches={allMatches} teams={teams} onSeeBracket={() => setActiveTab('bracket')} />
+          <OverviewTab
+            tournament={tournament}
+            matches={allMatches}
+            matchesPending={matchesQuery.isPending}
+            matchesError={matchesQuery.isError}
+            onRetryMatches={() => matchesQuery.refetch()}
+            teams={teams}
+            onSeeBracket={() => handleTabChange('bracket')}
+          />
         )}
         {activeTab === 'teams' && (
           <div className={s.teamsTab}>
             {isOrgAdmin && (
               <div className={s.enrollManage}>
-                <EnrollTeamPanel availableTeams={availableTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
+                <EnrollTeamPanel onSearch={searchEnrollmentTeams} onEnroll={handleEnroll} errorMessage={enrollError} />
                 {enrolledJoins && enrolledJoins.length > 0 && (
                   <ul className={s.enrolledList} aria-label="Equipes inscritas">
                     {enrolledJoins.map((join) => {
-                      const teamName = teams.get(join.teamId)?.name ?? join.teamId
-                      const isOpen = rosterTeamId === join.teamId
+                      const teamName = join.displayNameSnapshot
+                      const isOpen = rosterTournamentTeamId === join.id
                       const isConfirming = confirmingTeamId === join.id
-                      const panelId = `roster-panel-${join.teamId}`
+                      const panelId = `roster-panel-${join.id}`
                       return (
                         <li key={join.id} className={s.enrolledItem}>
                           <div className={s.enrolledRow}>
@@ -331,7 +448,7 @@ export function TournamentDetailPage() {
                                   <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmingTeamId(null)}>
                                     Cancelar
                                   </Button>
-                                  <Button type="button" variant="danger" size="sm" onClick={() => removeTeam.mutate(join.id)}>
+                                  <Button type="button" variant="danger" size="sm" loading={removeTeam.isPending} onClick={() => handleRemoveTeam(join.id)}>
                                     Confirmar
                                   </Button>
                                 </>
@@ -344,7 +461,7 @@ export function TournamentDetailPage() {
                                     aria-expanded={isOpen}
                                     aria-controls={panelId}
                                     className={isOpen ? s.rosterToggleActive : undefined}
-                                    onClick={() => setRosterTeamId((current) => (current === join.teamId ? null : join.teamId))}
+                                    onClick={() => setRosterTournamentTeamId((current) => (current === join.id ? null : join.id))}
                                   >
                                     Elenco
                                   </Button>
@@ -364,7 +481,10 @@ export function TournamentDetailPage() {
                             {isOpen ? (
                               <TournamentRosterPanel
                                 roster={rosterDisplay}
-                                availableAthletes={availableAthletes}
+                                isLoading={rosterQuery.isPending}
+                                isError={rosterQuery.isError}
+                                onRetry={rosterQuery.refetch}
+                                onSearchCandidates={searchRosterCandidates}
                                 onAdd={handleAddRoster}
                                 onUpdate={handleUpdateRoster}
                                 onRemove={handleRemoveRoster}
@@ -384,11 +504,18 @@ export function TournamentDetailPage() {
         )}
         {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
         {activeTab === 'matches' && (
-          <MatchesTab tournament={tournament} matches={allMatches} teams={teams} />
+          <MatchesTab
+            tournament={tournament}
+            matches={allMatches}
+            isPending={matchesQuery.isPending}
+            isError={matchesQuery.isError}
+            onRetry={() => matchesQuery.refetch()}
+            isOrgAdmin={isOrgAdmin}
+          />
         )}
-        {activeTab === 'bracket' && <BracketTab tournament={tournament} />}
+        {activeTab === 'bracket' && <BracketTab tournament={tournament} onRefetchTournament={() => tournamentQuery.refetch()} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
-        {activeTab === 'stats' && <StatsTab tournament={tournament} teams={teams} />}
+        {activeTab === 'stats' && <StatsTab tournament={tournament} />}
       </div>
     </div>
   )

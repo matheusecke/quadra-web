@@ -4,7 +4,7 @@ import { bracketLayout } from './bracketLayout'
 import type { LayoutRound, LayoutSlot } from './bracketLayout'
 
 const rounds = (count: number): LayoutRound[] =>
-  Array.from({ length: count }, (_, index) => ({ id: `r${index + 1}`, number: index + 1 }))
+  Array.from({ length: count }, (_, index) => ({ id: index + 1, number: index + 1 }))
 
 const slot = (over: Partial<LayoutSlot> & Pick<LayoutSlot, 'id' | 'roundId' | 'position'>): LayoutSlot => ({
   homeTournamentTeamId: null,
@@ -13,15 +13,16 @@ const slot = (over: Partial<LayoutSlot> & Pick<LayoutSlot, 'id' | 'roundId' | 'p
   ...over,
 })
 
+// Teams A..H → 1..8; slot ids q1..q4/s1..s2/f1 → 11..17 (arbitrary, stable within this file).
 /** Quartas → semis → final, 2ⁿ, com todos os vencedores declarados e colocados. */
 const fullTree = (): LayoutSlot[] => [
-  slot({ id: 'q1', roundId: 'r1', position: 1, homeTournamentTeamId: 'A', awayTournamentTeamId: 'B', winnerTournamentTeamId: 'A' }),
-  slot({ id: 'q2', roundId: 'r1', position: 2, homeTournamentTeamId: 'C', awayTournamentTeamId: 'D', winnerTournamentTeamId: 'C' }),
-  slot({ id: 'q3', roundId: 'r1', position: 3, homeTournamentTeamId: 'E', awayTournamentTeamId: 'F', winnerTournamentTeamId: 'E' }),
-  slot({ id: 'q4', roundId: 'r1', position: 4, homeTournamentTeamId: 'G', awayTournamentTeamId: 'H', winnerTournamentTeamId: 'G' }),
-  slot({ id: 's1', roundId: 'r2', position: 1, homeTournamentTeamId: 'A', awayTournamentTeamId: 'C', winnerTournamentTeamId: 'A' }),
-  slot({ id: 's2', roundId: 'r2', position: 2, homeTournamentTeamId: 'E', awayTournamentTeamId: 'G', winnerTournamentTeamId: 'E' }),
-  slot({ id: 'f1', roundId: 'r3', position: 1, homeTournamentTeamId: 'A', awayTournamentTeamId: 'E', winnerTournamentTeamId: 'A' }),
+  slot({ id: 11, roundId: 1, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 2, winnerTournamentTeamId: 1 }),
+  slot({ id: 12, roundId: 1, position: 2, homeTournamentTeamId: 3, awayTournamentTeamId: 4, winnerTournamentTeamId: 3 }),
+  slot({ id: 13, roundId: 1, position: 3, homeTournamentTeamId: 5, awayTournamentTeamId: 6, winnerTournamentTeamId: 5 }),
+  slot({ id: 14, roundId: 1, position: 4, homeTournamentTeamId: 7, awayTournamentTeamId: 8, winnerTournamentTeamId: 7 }),
+  slot({ id: 15, roundId: 2, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 3, winnerTournamentTeamId: 1 }),
+  slot({ id: 16, roundId: 2, position: 2, homeTournamentTeamId: 5, awayTournamentTeamId: 7, winnerTournamentTeamId: 5 }),
+  slot({ id: 17, roundId: 3, position: 1, homeTournamentTeamId: 1, awayTournamentTeamId: 5, winnerTournamentTeamId: 1 }),
 ]
 
 describe('bracketLayout mode', () => {
@@ -30,12 +31,12 @@ describe('bracketLayout mode', () => {
   })
 
   it('falls back to columns when a round count is irregular', () => {
-    const slots = [...fullTree(), slot({ id: 's3', roundId: 'r2', position: 3 })]
+    const slots = [...fullTree(), slot({ id: 18, roundId: 2, position: 3 })]
     expect(bracketLayout(rounds(3), slots).mode).toBe('column')
   })
 
   it('falls back to columns when a declared winner appears outside the ceil(p/2) slot', () => {
-    const slots = fullTree().map((entry) => (entry.id === 's1' ? { ...entry, awayTournamentTeamId: 'G' } : entry))
+    const slots = fullTree().map((entry) => (entry.id === 15 ? { ...entry, awayTournamentTeamId: 7 } : entry))
     expect(bracketLayout(rounds(3), slots).mode).toBe('column')
   })
 
@@ -45,7 +46,7 @@ describe('bracketLayout mode', () => {
   })
 
   it('falls back to columns for a third-place playoff beside the final', () => {
-    const slots = [...fullTree(), slot({ id: 'f2', roundId: 'r3', position: 2 })]
+    const slots = [...fullTree(), slot({ id: 19, roundId: 3, position: 2 })]
     expect(bracketLayout(rounds(3), slots).mode).toBe('column')
   })
 
@@ -59,8 +60,14 @@ describe('bracketLayout edges', () => {
     expect(bracketLayout(rounds(3), fullTree()).edges).toHaveLength(6)
   })
 
+  it('preserves the slot order received from the API while deriving edges', () => {
+    expect(bracketLayout(rounds(3), fullTree().reverse()).edges.map((edge) => edge.fromSlotId)).toEqual([
+      14, 13, 12, 11, 16, 15,
+    ])
+  })
+
   it('draws no edge for a winner not yet placed in the next round', () => {
-    const slots = fullTree().map((entry) => (entry.id === 'f1' ? { ...entry, homeTournamentTeamId: null } : entry))
+    const slots = fullTree().map((entry) => (entry.id === 17 ? { ...entry, homeTournamentTeamId: null } : entry))
     expect(bracketLayout(rounds(3), slots).edges).toHaveLength(5)
   })
 
@@ -70,22 +77,22 @@ describe('bracketLayout edges', () => {
   })
 
   it('sends the odd sibling down toward the pair midline', () => {
-    const edge = bracketLayout(rounds(3), fullTree()).edges.find((entry) => entry.fromSlotId === 'q1')
+    const edge = bracketLayout(rounds(3), fullTree()).edges.find((entry) => entry.fromSlotId === 11)
     expect(edge?.direction).toBe('down')
   })
 
   it('sends the even sibling up toward the pair midline', () => {
-    const edge = bracketLayout(rounds(3), fullTree()).edges.find((entry) => entry.fromSlotId === 'q2')
+    const edge = bracketLayout(rounds(3), fullTree()).edges.find((entry) => entry.fromSlotId === 12)
     expect(edge?.direction).toBe('up')
   })
 
   it('draws no edge in column mode', () => {
-    const slots = [...fullTree(), slot({ id: 's3', roundId: 'r2', position: 3 })]
+    const slots = [...fullTree(), slot({ id: 18, roundId: 2, position: 3 })]
     expect(bracketLayout(rounds(3), slots).edges).toEqual([])
   })
 
   it('keeps the bye chain closed, deriving an edge from a one-sided slot', () => {
-    const slots = fullTree().map((entry) => (entry.id === 'q1' ? { ...entry, awayTournamentTeamId: null } : entry))
+    const slots = fullTree().map((entry) => (entry.id === 11 ? { ...entry, awayTournamentTeamId: null } : entry))
     expect(bracketLayout(rounds(3), slots).edges).toHaveLength(6)
   })
 })

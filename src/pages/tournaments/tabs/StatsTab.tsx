@@ -1,20 +1,29 @@
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
-import type { Tournament, Team } from '../../../features/sports/types'
+import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
+import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
+import { useTournamentLeadersQuery } from '../../../features/sports/queries'
+import type { Tournament } from '../../../features/sports/types'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import s from '../tournaments.module.css'
 
-interface StatsTabProps {
-  tournament: Tournament
-  teams: Map<string, Team>
-}
+export function StatsTab({ tournament }: { tournament: Tournament }) {
+  const leadersQuery = useTournamentLeadersQuery(tournament.id)
+  const leaders = leadersQuery.data
+  const hasLeaders = leaders !== undefined && [
+    ...Object.values(leaders.perGame),
+    ...Object.values(leaders.totals),
+  ].some((rows) => rows.length > 0)
 
-/**
- * Statistics tab — basic per-game rankings ONLY (PPG, RPG, APG, STG, BPG).
- * Efficiency / shooting-percentage metrics are intentionally out of scope.
- */
-export function StatsTab({ tournament, teams }: StatsTabProps) {
-  const hasLeaders = tournament.leaders.ppg.length > 0
-
+  if (leadersQuery.isPending) {
+    return <div className={s.tabEmpty}><Skeleton width="100%" height={320} /></div>
+  }
+  if (leadersQuery.isError) {
+    return (
+      <div className={s.tabEmpty}>
+        <ErrorState title="Não foi possível carregar os líderes." onRetry={() => leadersQuery.refetch()} />
+      </div>
+    )
+  }
   if (!hasLeaders) {
     return (
       <div className={s.tabEmpty}>
@@ -30,9 +39,18 @@ export function StatsTab({ tournament, teams }: StatsTabProps) {
     <section className={s.section}>
       <div className={s.sectionHead}>
         <h2 className={s.sectionTitle}>Rankings por categoria</h2>
-        <span className={s.sectionHint}>Médias por jogo · top 5 · clique no atleta</span>
+        <span className={s.sectionHint}>Top 5 fixo · ordem do servidor · clique no atleta</span>
       </div>
-      <LeadersGrid leaders={tournament.leaders} teams={teams} perCard={5} />
+      <div className={s.leaderGroups}>
+        <section>
+          <h3 className={s.leaderGroupTitle}>Médias por jogo</h3>
+          <LeadersGrid leaders={leaders} group="perGame" />
+        </section>
+        <section>
+          <h3 className={s.leaderGroupTitle}>Totais</h3>
+          <LeadersGrid leaders={leaders} group="totals" />
+        </section>
+      </div>
     </section>
   )
 }

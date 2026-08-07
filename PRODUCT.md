@@ -20,7 +20,7 @@ Every user experience is shaped by the active organization selected in the sessi
 
 Quadra centralizes basketball championship operations that are otherwise scattered across spreadsheets, chats, social networks, and informal records. The product exists to make organizations, teams, memberships, invitations, competition participation, schedules, match results, and sporting history manageable in one isolated multi-tenant system.
 
-The current frontend should prioritize the real backend surface: authentication, session bootstrap, organization selection, platform administration, organization and team lifecycle, user and team affiliations, and account/session management. Championship, match, schedule, statistics, notification, upload, and advanced analytics screens are future product areas until the API exposes those modules.
+The current frontend should prioritize the real backend surface: authentication, session bootstrap, organization selection, platform administration, organization and team lifecycle, user and team affiliations, championship operation, matches, schedules, athlete history, standings, statistics, and account/session management. Notifications, uploads, and advanced analytics remain future product areas until their APIs are implemented.
 
 Success means users always understand which organization they are operating in, which role they have there, what actions are currently available, and where the product is intentionally waiting on backend capability rather than presenting fake dashboards.
 
@@ -37,13 +37,13 @@ Quadra should not look like:
 - A generic SaaS template with oversized hero metrics, gradient text, identical cards, and empty marketing gloss.
 - A consumer sports fan site focused on spectacle, player hype, or entertainment-first visuals.
 - A spreadsheet clone that ignores hierarchy, role context, and critical workflow states.
-- A fake analytics product that invents championship, match, schedule, or statistics data before the backend supports it.
+- A fake analytics product that invents data beyond the implemented championship, match, schedule, standings, or statistics APIs.
 - A modal-heavy admin panel where simple edits and status changes are hidden behind unnecessary interruption.
 
 ## Design Principles
 
 1. Make tenant context impossible to miss. Every authenticated surface should clearly show the active organization, role, and any reduced or missing context.
-2. Respect API reality. Build only on implemented endpoints and use empty, blocked, or informational states where the sports domain is not available yet.
+2. Respect API reality. Build only on implemented endpoints and use empty, blocked, or informational states for capabilities that are still unavailable, such as notifications and uploads.
 3. Design for operational density. Lists, filters, statuses, invitations, and role changes should be compact, scannable, and keyboard-friendly.
 4. Separate platform administration from organization operation. System-admin flows cross tenants intentionally; organization-role flows stay scoped to the active tenant.
 5. Preserve sporting specificity without theatrical UI. Basketball vocabulary, statuses, and workflows should inform the interface, but the product should remain a professional management tool.

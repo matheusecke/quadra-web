@@ -1,12 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Button } from '../../../components/ui/Button/Button'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { GroupsPanel } from '../../../features/sports/components/GroupsPanel'
 import { StandingsCard } from '../../../features/sports/components/StandingsCard'
-import { getTeams } from '../../../features/sports/mock-sports-data'
 import {
   standingsKeys,
   useAssignTeamToGroup,
@@ -14,23 +12,36 @@ import {
   useCreateGroup,
   useGroupsQuery,
   useGroupTeamsQuery,
+  useRemoveGroup,
   useRemoveGroupTeam,
   useSetTiebreakOrder,
   useStandingsQuery,
   useTournamentTeamsQuery,
+  useUpdateGroup,
 } from '../../../features/sports/queries'
-import { teamMap } from '../../../features/sports/sportsUtils'
-import type { StandingRow, Team, Tournament } from '../../../features/sports/types'
+import type { Team, Tournament } from '../../../features/sports/types'
 import { useIsOrgAdmin } from '../../../features/sports/useIsOrgAdmin'
+import { apiErrorCode } from '../../../services/apiError'
+import { describeTiebreakError, isStaleTieBlock } from './tiebreakErrors'
 import s from './GroupsTab.module.css'
 
 interface GroupsTabProps {
   tournament: Tournament
-  teams: Map<string, Team>
+  teams: Map<number, Team>
 }
 
-const TEAM_ALREADY_ASSIGNED = 'Team already assigned to a group in this tournament'
-const TIED_BLOCK_MISMATCH = 'Tied block no longer matches'
+const GROUP_ERROR_MESSAGES: Record<string, string> = {
+  DUPLICATE_RECORD: 'Já existe um grupo com esse nome neste campeonato.',
+  TEAM_ALREADY_ASSIGNED: 'Esta equipe já está em um grupo deste campeonato.',
+  GROUP_NOT_EMPTY: 'Remova as equipes do grupo antes de excluí-lo.',
+  TOURNAMENT_NOT_MUTABLE: 'Este campeonato não permite mais alterações.',
+  INVALID_TOURNAMENT_FORMAT: 'Este campeonato não tem fase de grupos.',
+  INACTIVE_REGISTRATION: 'A inscrição desta equipe não está ativa.',
+  INVALID_GROUP_ASSIGNMENT: 'Grupo e equipe são de campeonatos diferentes.',
+  RECORD_NOT_FOUND: 'Registro não encontrado. Atualize a página.',
+}
+
+const describeGroupError = (error: unknown, fallback: string) => GROUP_ERROR_MESSAGES[apiErrorCode(error) ?? ''] ?? fallback
 
 export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   const isOrgAdmin = useIsOrgAdmin()
@@ -42,6 +53,8 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournament.id)
 
   const createGroup = useCreateGroup()
+  const updateGroup = useUpdateGroup()
+  const removeGroup = useRemoveGroup()
   const assignTeamToGroup = useAssignTeamToGroup()
   const removeGroupTeam = useRemoveGroupTeam()
   const setTiebreakOrder = useSetTiebreakOrder()
@@ -52,7 +65,8 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
 
   // Whether groups exist is decided from useGroupsQuery alone — it never depends on the
   // tournament having match data, so it settles (and can be judged) independently of the
-  // other three queries below.
+  // other three queries below. An admin must be able to create the first group while those
+  // still-mocked standings queries resolve.
   if (groupsQuery.isPending) {
     return <Skeleton width="100%" height={240} />
   }
@@ -62,78 +76,86 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
   }
 
   const groups = groupsQuery.data ?? []
-
-  if (groups.length === 0) {
-    return (
-      <EmptyState
-        title="Nenhum grupo criado ainda."
-        description="Crie o primeiro grupo e distribua as equipes já inscritas."
-      />
-    )
-  }
-
-  if (groupTeamsQuery.isPending || standingsQuery.isPending || tournamentTeamsQuery.isPending) {
-    return <Skeleton width="100%" height={240} />
-  }
-
-  if (groupTeamsQuery.isError || standingsQuery.isError || tournamentTeamsQuery.isError) {
-    const retry = () => {
-      groupTeamsQuery.refetch()
-      standingsQuery.refetch()
-      tournamentTeamsQuery.refetch()
-    }
-    return <ErrorState title="Não foi possível carregar os grupos." onRetry={retry} />
-  }
-
   const groupTeams = groupTeamsQuery.data ?? []
-  const envelopes = standingsQuery.data ?? []
   const tournamentTeams = tournamentTeamsQuery.data ?? []
-  const teamNameById = teamMap(getTeams())
+  const envelopes = standingsQuery.data ?? []
 
+  const nameByRegistration = new Map(tournamentTeams.map((t) => [t.id, t.displayNameSnapshot]))
+  const members = groupTeams.map((groupTeam) => ({
+    id: groupTeam.id,
+    tournamentGroupId: groupTeam.tournamentGroupId,
+    tournamentTeamId: groupTeam.tournamentTeamId,
+    name: nameByRegistration.get(groupTeam.tournamentTeamId) ?? String(groupTeam.tournamentTeamId),
+  }))
   const enrolledTeams = tournamentTeams.map((tournamentTeam) => ({
-    id: tournamentTeam.teamId,
-    name: teamNameById.get(tournamentTeam.teamId)?.name ?? tournamentTeam.displayNameSnapshot,
+    id: tournamentTeam.id,
+    name: tournamentTeam.displayNameSnapshot,
   }))
 
-  const assignedTeamIds = groupTeams.map((groupTeam) => groupTeam.teamId)
-
   const handleCreateGroup = async (name: string) => {
-    await createGroup.mutateAsync({ tournamentId: tournament.id, name })
-  }
-
-  const handleAssign = async (groupId: string, teamId: string) => {
     try {
-      await assignTeamToGroup.mutateAsync({ tournamentId: tournament.id, groupId, teamId })
+      await createGroup.mutateAsync({ tournamentId: tournament.id, name })
       setPanelError('')
     } catch (error) {
-      if (error instanceof Error && error.message === TEAM_ALREADY_ASSIGNED) {
-        setPanelError('Equipe já está em um grupo neste campeonato.')
-        return
-      }
+      setPanelError(describeGroupError(error, 'Não foi possível criar o grupo.'))
       throw error
     }
   }
 
-  const handleRemoveFromGroup = (groupTeamId: string) => {
-    removeGroupTeam.mutate(groupTeamId)
+  const handleRenameGroup = async (id: number, name: string) => {
+    try {
+      await updateGroup.mutateAsync({ id, input: { name } })
+      setPanelError('')
+    } catch (error) {
+      setPanelError(describeGroupError(error, 'Não foi possível renomear o grupo.'))
+      throw error
+    }
+  }
+
+  const handleRemoveGroup = async (id: number) => {
+    try {
+      await removeGroup.mutateAsync(id)
+      setPanelError('')
+    } catch (error) {
+      setPanelError(describeGroupError(error, 'Não foi possível excluir o grupo.'))
+      throw error
+    }
+  }
+
+  const handleAssign = async (tournamentGroupId: number, tournamentTeamId: number) => {
+    try {
+      await assignTeamToGroup.mutateAsync({ tournamentGroupId, tournamentTeamId })
+      setPanelError('')
+    } catch (error) {
+      setPanelError(describeGroupError(error, 'Não foi possível adicionar a equipe ao grupo.'))
+      throw error
+    }
+  }
+
+  const handleRemoveMember = async (id: number) => {
+    try {
+      await removeGroupTeam.mutateAsync(id)
+      setPanelError('')
+    } catch (error) {
+      setPanelError(describeGroupError(error, 'Não foi possível remover a equipe do grupo.'))
+      throw error
+    }
   }
 
   const handleTieBreakError = (error: unknown) => {
-    if (error instanceof Error && error.message === TIED_BLOCK_MISMATCH) {
-      setCardError('A composição do empate mudou. Recarregue a classificação.')
+    setCardError(describeTiebreakError(error))
+    if (isStaleTieBlock(error)) {
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(tournament.id) })
-      return
     }
-    // The panel already blocks an incomplete permutation; this is the safety net behind it.
-    setCardError('Não foi possível registrar o sorteio. Tente novamente.')
   }
 
-  const handleSetTiebreakOrder = async (entries: { tournamentTeamId: string; order: number }[]) => {
+  const handleSetTiebreakOrder = async (entries: { tournamentTeamId: number; order: number }[]) => {
     try {
       await setTiebreakOrder.mutateAsync({ tournamentId: tournament.id, entries })
       setCardError('')
     } catch (error) {
       handleTieBreakError(error)
+      throw error
     }
   }
 
@@ -143,46 +165,57 @@ export function GroupsTab({ tournament, teams }: GroupsTabProps) {
       setCardError('')
     } catch (error) {
       handleTieBreakError(error)
+      throw error
     }
   }
 
-  const renderExtraRowAction = (groupId: string | undefined) => (row: StandingRow) => {
-    const join = groupTeams.find((groupTeam) => groupTeam.groupId === groupId && groupTeam.teamId === row.teamId)
-    if (!join) return null
-    return (
-      <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveFromGroup(join.id)}>
-        Remover do grupo
-      </Button>
-    )
+  const standingsLoading = groupTeamsQuery.isPending || standingsQuery.isPending || tournamentTeamsQuery.isPending
+  const standingsFailed = groupTeamsQuery.isError || standingsQuery.isError || tournamentTeamsQuery.isError
+  const retryStandings = () => {
+    groupTeamsQuery.refetch()
+    standingsQuery.refetch()
+    tournamentTeamsQuery.refetch()
   }
 
   return (
     <div className={s.tab}>
-      {isOrgAdmin && (
-        <GroupsPanel
-          groups={groups}
-          enrolledTeams={enrolledTeams}
-          assignedTeamIds={assignedTeamIds}
-          onCreateGroup={handleCreateGroup}
-          onAssign={handleAssign}
-          errorMessage={panelError}
-        />
-      )}
+      <GroupsPanel
+        groups={groups}
+        members={members}
+        enrolledTeams={enrolledTeams}
+        canManage={isOrgAdmin}
+        onCreateGroup={handleCreateGroup}
+        onRenameGroup={handleRenameGroup}
+        onRemoveGroup={handleRemoveGroup}
+        onAssign={handleAssign}
+        onRemoveMember={handleRemoveMember}
+        errorMessage={panelError}
+      />
 
-      <div className={s.cards}>
-        {envelopes.map((envelope) => (
-          <StandingsCard
-            key={envelope.group?.id ?? 'consolidated'}
-            envelope={envelope}
-            teams={teams}
-            isOrgAdmin={isOrgAdmin}
-            onSetTiebreakOrder={handleSetTiebreakOrder}
-            onClearTiebreakOrder={handleClearTiebreakOrder}
-            errorMessage={cardError}
-            renderExtraRowAction={isOrgAdmin ? renderExtraRowAction(envelope.group?.id) : undefined}
-          />
-        ))}
-      </div>
+      {groups.length === 0 ? (
+        <EmptyState
+          title="Nenhum grupo criado ainda."
+          description="Crie o primeiro grupo e distribua as equipes já inscritas."
+        />
+      ) : standingsLoading ? (
+        <Skeleton width="100%" height={240} />
+      ) : standingsFailed ? (
+        <ErrorState title="Não foi possível carregar a classificação." onRetry={retryStandings} />
+      ) : (
+        <div className={s.cards}>
+          {envelopes.map((envelope) => (
+            <StandingsCard
+              key={envelope.group?.id ?? 'consolidated'}
+              envelope={envelope}
+              teams={teams}
+              isOrgAdmin={isOrgAdmin}
+              onSetTiebreakOrder={handleSetTiebreakOrder}
+              onClearTiebreakOrder={handleClearTiebreakOrder}
+              errorMessage={cardError}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

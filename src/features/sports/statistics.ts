@@ -1,51 +1,95 @@
 import type { AthleteStatTotals, PeriodScore, PlayerMatchStats } from './types'
 
+export const STAT_FIELDS = [
+  'minutesSeconds', 'pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf',
+  'fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta',
+] as const
+export type StatField = (typeof STAT_FIELDS)[number]
+
+export const SHOOTING_FIELDS: StatField[] = ['fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta']
+
+export interface StatToggleGroup { id: string; label: string; fields: StatField[] }
+
+export const STAT_TOGGLE_GROUPS: StatToggleGroup[] = [
+  { id: 'minutesSeconds', label: 'Minutos (MIN)', fields: ['minutesSeconds'] },
+  { id: 'pts', label: 'Pontos (PTS)', fields: ['pts'] },
+  { id: 'reb', label: 'Rebotes (REB)', fields: ['reb'] },
+  { id: 'ast', label: 'Assistências (AST)', fields: ['ast'] },
+  { id: 'stl', label: 'Roubos (STL)', fields: ['stl'] },
+  { id: 'blk', label: 'Tocos (BLK)', fields: ['blk'] },
+  { id: 'tov', label: 'Turnovers (TOV)', fields: ['tov'] },
+  { id: 'pf', label: 'Faltas (PF)', fields: ['pf'] },
+  { id: 'shooting', label: 'Arremessos (FG · 3P · FT)', fields: SHOOTING_FIELDS },
+]
+
+export function sumNullable(values: Array<number | null>): number | null {
+  let total = 0
+  let seen = false
+  for (const value of values) {
+    if (value !== null) {
+      total += value
+      seen = true
+    }
+  }
+  return seen ? total : null
+}
+
+export function avgNullable(total: number | null, measuredGames: number): number | null {
+  return total === null || measuredGames === 0 ? null : total / measuredGames
+}
+
 export interface PlayerStatInput {
-  pts: number; fgm: number; fga: number; tpm: number; tpa: number
-  ftm: number; fta: number; reb: number; ast: number; stl: number
-  blk: number; to: number; pf: number; min: number
+  pts: number | null; fgm: number | null; fga: number | null; threeFgm: number | null; threeFga: number | null
+  ftm: number | null; fta: number | null; reb: number | null; ast: number | null; stl: number | null
+  blk: number | null; tov: number | null; pf: number | null; minutesSeconds: number | null
 }
 
 export interface StatValidationError { field: keyof PlayerStatInput; message: string }
-export interface PerGameAverages { pts: number; reb: number; ast: number; stl: number; blk: number }
+export interface PerGameAverages { pts: number | null; reb: number | null; ast: number | null; stl: number | null; blk: number | null }
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000
 
 export function sumPlayerStats(lines: PlayerMatchStats[]): AthleteStatTotals {
-  const base: AthleteStatTotals = {
-    games: lines.length, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
-    to: 0, pf: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
-  }
-  return lines.reduce((acc, l) => ({
-    games: acc.games, min: acc.min + l.min, pts: acc.pts + l.pts, reb: acc.reb + l.reb,
-    ast: acc.ast + l.ast, stl: acc.stl + l.stl, blk: acc.blk + l.blk, to: acc.to + l.to,
-    pf: acc.pf + l.pf, fgm: acc.fgm + l.fgm, fga: acc.fga + l.fga, tpm: acc.tpm + l.tpm,
-    tpa: acc.tpa + l.tpa, ftm: acc.ftm + l.ftm, fta: acc.fta + l.fta,
-  }), base)
+  const measuredGames = Object.fromEntries(
+    STAT_FIELDS.map((field) => [field, lines.filter((line) => line[field] !== null).length]),
+  ) as Record<StatField, number>
+  const totals = Object.fromEntries(
+    STAT_FIELDS.map((field) => [field, sumNullable(lines.map((line) => line[field]))]),
+  ) as Pick<AthleteStatTotals, StatField>
+  return { games: lines.length, measuredGames, ...totals }
 }
 
 export function averagePlayerStats(totals: AthleteStatTotals): PerGameAverages {
-  const g = totals.games || 0
-  const per = (v: number) => (g === 0 ? 0 : round3(v / g))
-  return { pts: per(totals.pts), reb: per(totals.reb), ast: per(totals.ast), stl: per(totals.stl), blk: per(totals.blk) }
+  const per = (field: 'pts' | 'reb' | 'ast' | 'stl' | 'blk') => {
+    const average = avgNullable(totals[field], totals.measuredGames[field])
+    return average === null ? null : round3(average)
+  }
+  return { pts: per('pts'), reb: per('reb'), ast: per('ast'), stl: per('stl'), blk: per('blk') }
 }
 
-export function shootingPercentages(t: { fgm: number; fga: number; tpm: number; tpa: number; ftm: number; fta: number }) {
-  const pct = (made: number, att: number) => (att === 0 ? 0 : round3(made / att))
-  return { fg: pct(t.fgm, t.fga), tp: pct(t.tpm, t.tpa), ft: pct(t.ftm, t.fta) }
+export function shootingPercentages(t: { fgm: number | null; fga: number | null; threeFgm: number | null; threeFga: number | null; ftm: number | null; fta: number | null }) {
+  const pct = (made: number | null, att: number | null): number | null =>
+    made === null || att === null || att === 0 ? null : round3(made / att)
+  return { fg: pct(t.fgm, t.fga), tp: pct(t.threeFgm, t.threeFga), ft: pct(t.ftm, t.fta) }
 }
 
 export function validatePlayerStatLine(line: PlayerStatInput): StatValidationError[] {
   const errors: StatValidationError[] = []
-  const nonNeg: (keyof PlayerStatInput)[] = ['pts', 'fgm', 'fga', 'tpm', 'tpa', 'ftm', 'fta', 'reb', 'ast', 'stl', 'blk', 'to', 'pf', 'min']
+  const nonNeg: (keyof PlayerStatInput)[] = ['pts', 'fgm', 'fga', 'threeFgm', 'threeFga', 'ftm', 'fta', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf', 'minutesSeconds']
   for (const field of nonNeg) {
-    if (line[field] < 0) errors.push({ field, message: 'Não pode ser negativo' })
+    const value = line[field]
+    if (value !== null && !Number.isInteger(value)) {
+      errors.push({ field, message: 'Deve ser um número inteiro' })
+    }
+    if (value !== null && value < 0) errors.push({ field, message: 'Não pode ser negativo' })
   }
-  if (line.fgm > line.fga) errors.push({ field: 'fgm', message: 'FGM não pode exceder FGA' })
-  if (line.tpa > line.fga) errors.push({ field: 'tpa', message: '3PA não pode exceder FGA' })
-  if (line.tpm > line.tpa) errors.push({ field: 'tpm', message: '3PM não pode exceder 3PA' })
-  if (line.tpm > line.fgm) errors.push({ field: 'tpm', message: '3PM não pode exceder FGM' })
-  if (line.ftm > line.fta) errors.push({ field: 'ftm', message: 'FTM não pode exceder FTA' })
+  const pair = (first: keyof PlayerStatInput, second: keyof PlayerStatInput) =>
+    line[first] !== null && line[second] !== null && line[first] > line[second]
+  if (pair('fgm', 'fga')) errors.push({ field: 'fgm', message: 'FGM não pode exceder FGA' })
+  if (pair('threeFga', 'fga')) errors.push({ field: 'threeFga', message: '3PA não pode exceder FGA' })
+  if (pair('threeFgm', 'threeFga')) errors.push({ field: 'threeFgm', message: '3PM não pode exceder 3PA' })
+  if (pair('threeFgm', 'fgm')) errors.push({ field: 'threeFgm', message: '3PM não pode exceder FGM' })
+  if (pair('ftm', 'fta')) errors.push({ field: 'ftm', message: 'FTM não pode exceder FTA' })
   return errors
 }
 

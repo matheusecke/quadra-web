@@ -1,17 +1,39 @@
+import { StrictMode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { useAuth } from '../hooks/useAuth'
-import api, { setAccessToken } from '../services/api'
+import api, { refreshAccessToken, setAccessToken } from '../services/api'
+import { queryClient } from '../lib/query-client'
 
 vi.mock('../services/api', () => ({
   default: {
     post: vi.fn(),
     get: vi.fn(),
   },
+  refreshAccessToken: vi.fn(),
   setAccessToken: vi.fn(),
 }))
+
+const unauthorized = Object.assign(new Error('no refresh cookie'), {
+  isAxiosError: true,
+  response: { status: 401 },
+})
+
+function SessionHarness() {
+  const { status, user, organizations } = useAuth()
+
+  return (
+    <div>
+      <span data-testid="status">{status}</span>
+      <span data-testid="organization-id">{user?.organizationId}</span>
+      <span data-testid="organizations">
+        {organizations.map((org) => org.organizationName).join(', ')}
+      </span>
+    </div>
+  )
+}
 
 function RegisterHarness() {
   const { register } = useAuth()
@@ -47,10 +69,139 @@ function RefreshOrganizationsHarness() {
   )
 }
 
+function ChooseOrgHarness() {
+  const { chooseOrg, user } = useAuth()
+  return (
+    <div>
+      <button type="button" onClick={() => chooseOrg(202)}>choose organization</button>
+      <span data-testid="chosen-organization">{user?.organizationId}</span>
+    </div>
+  )
+}
+
+describe('AuthContext session restoration', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.post).mockRejectedValue(unauthorized)
+    vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
+    vi.mocked(setAccessToken).mockReset()
+  })
+
+  it('restores one complete session under StrictMode', async () => {
+    vi.mocked(refreshAccessToken).mockResolvedValue('renewed-token')
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/auth/me') {
+        return Promise.resolve({
+          data: {
+            data: {
+              id: 1,
+              email: 'user@example.com',
+              name: 'User Name',
+              isSystemAdmin: false,
+              organizationId: 101,
+              role: 'ADMIN',
+            },
+            statusCode: 200,
+          },
+        })
+      }
+
+      if (url === '/auth/org') {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                organizationId: 101,
+                organizationName: 'Liga Metropolitana',
+                organizationSlug: 'liga-metropolitana',
+                role: 'ADMIN',
+                teamId: null,
+              },
+              {
+                organizationId: 202,
+                organizationName: 'Circuito Interior',
+                organizationSlug: 'circuito-interior',
+                role: 'ATHLETE',
+                teamId: 12,
+              },
+            ],
+            statusCode: 200,
+          },
+        })
+      }
+
+      return Promise.reject(new Error(`unexpected GET ${url}`))
+    })
+
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <SessionHarness />
+        </AuthProvider>
+      </StrictMode>,
+    )
+
+    expect(screen.getByTestId('status')).toHaveTextContent('loading')
+    await waitFor(() => {
+      expect(screen.getByTestId('status')).toHaveTextContent('authenticated')
+    })
+    expect(refreshAccessToken).toHaveBeenCalledTimes(1)
+    expect(api.get).toHaveBeenCalledWith('/auth/me')
+    expect(api.get).toHaveBeenCalledWith('/auth/org')
+    expect(screen.getByTestId('organization-id')).toHaveTextContent('101')
+    expect(screen.getByTestId('organizations')).toHaveTextContent(
+      'Liga Metropolitana, Circuito Interior',
+    )
+  })
+
+  it('publishes unauthenticated only after a definitive 401', async () => {
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <SessionHarness />
+        </AuthProvider>
+      </StrictMode>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status')).toHaveTextContent('unauthenticated')
+    })
+    expect(refreshAccessToken).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('organization-id')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('organizations')).toBeEmptyDOMElement()
+    expect(api.get).not.toHaveBeenCalled()
+  })
+
+  it('keeps a temporary restoration failure out of unauthenticated state', async () => {
+    vi.mocked(refreshAccessToken).mockRejectedValue(
+      new Error('network unavailable'),
+    )
+
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <SessionHarness />
+        </AuthProvider>
+      </StrictMode>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('status')).toHaveTextContent('error')
+    })
+    expect(screen.getByTestId('status')).not.toHaveTextContent(
+      'unauthenticated',
+    )
+  })
+})
+
 describe('AuthContext register', () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset()
     vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
     vi.mocked(setAccessToken).mockReset()
   })
 
@@ -119,6 +270,8 @@ describe('AuthContext refreshOrganizations', () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset()
     vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
     vi.mocked(setAccessToken).mockReset()
   })
 
@@ -155,5 +308,34 @@ describe('AuthContext refreshOrganizations', () => {
       expect(screen.getByText('Liga Atualizada')).toBeInTheDocument()
     })
     expect(api.get).toHaveBeenCalledWith('/auth/org')
+  })
+})
+
+describe('AuthContext chooseOrg', () => {
+  it('clears cached tenant data when the active organization changes', async () => {
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
+    queryClient.setQueryData(['teams', 'list'], [{ id: 1, name: 'Tenant anterior' }])
+    vi.mocked(api.post).mockResolvedValue({
+      data: { data: { accessToken: 'organization-token' }, statusCode: 200 },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          email: 'user@example.com',
+          name: 'User Name',
+          isSystemAdmin: false,
+          organizationId: 202,
+          role: 'ORG_ADMIN',
+        },
+        statusCode: 200,
+      },
+    })
+
+    render(<AuthProvider><ChooseOrgHarness /></AuthProvider>)
+    await userEvent.click(screen.getByRole('button', { name: 'choose organization' }))
+    await screen.findByText('202')
+
+    expect(queryClient.getQueryData(['teams', 'list'])).toBeUndefined()
   })
 })

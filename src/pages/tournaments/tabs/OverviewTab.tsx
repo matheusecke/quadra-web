@@ -2,9 +2,9 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { BracketBoard } from '../../../features/sports/components/BracketBoard'
-import type { Tournament, Match, Team } from '../../../features/sports/types'
-import { hasKnockout, sortMatchesByDateDesc } from '../../../features/sports/sportsUtils'
-import { useStandingsQuery } from '../../../features/sports/queries'
+import type { Tournament, MatchSummary, Team } from '../../../features/sports/types'
+import { hasKnockout } from '../../../features/sports/sportsUtils'
+import { useStandingsQuery, useTournamentLeadersQuery } from '../../../features/sports/queries'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
@@ -13,8 +13,11 @@ import s from '../tournaments.module.css'
 
 interface OverviewTabProps {
   tournament: Tournament
-  matches: Match[]
-  teams: Map<string, Team>
+  matches: MatchSummary[]
+  matchesPending: boolean
+  matchesError: boolean
+  onRetryMatches: () => void
+  teams: Map<number, Team>
   onSeeBracket: () => void
 }
 
@@ -22,12 +25,14 @@ interface OverviewTabProps {
  * Overview — the main reading surface. Fixed section order:
  * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
  */
-export function OverviewTab({ tournament, matches, teams, onSeeBracket }: OverviewTabProps) {
-  const recentMatches = sortMatchesByDateDesc(matches)
-  const hasLeaders = tournament.leaders.ppg.length > 0
+export function OverviewTab({ tournament, matches, matchesPending, matchesError, onRetryMatches, teams, onSeeBracket }: OverviewTabProps) {
+  const leadersQuery = useTournamentLeadersQuery(tournament.id)
+  const leaders = leadersQuery.data
+  const hasLeaders = leaders !== undefined
+    && Object.values(leaders.perGame).some((rows) => rows.length > 0)
   const bracket = useBracketView(tournament.id)
   const isKnockout = hasKnockout(tournament.format)
-  // Ranked by the data layer, one envelope per group (one with group: null in LEAGUE).
+  // Ranked by the API, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
     useStandingsQuery(tournament.id)
   const tables = envelopes ?? []
@@ -87,7 +92,7 @@ export function OverviewTab({ tournament, matches, teams, onSeeBracket }: Overvi
           )}
           {!bracket.isPending && !bracket.isError && (
             bracket.slots.length > 0 ? (
-              <BracketBoard rounds={bracket.rounds} slots={bracket.slots} teams={bracket.teams} championTournamentTeamId={tournament.championTournamentTeamId} />
+              <BracketBoard rounds={bracket.rounds} slots={bracket.slots} championTournamentTeamId={tournament.championTournamentTeamId} />
             ) : (
               <div className={s.tabEmpty}>
                 <EmptyState title="Chaveamento ainda não montado." />
@@ -103,23 +108,39 @@ export function OverviewTab({ tournament, matches, teams, onSeeBracket }: Overvi
           <h2 className={s.sectionTitle}>Líderes</h2>
           <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
         </div>
-        {hasLeaders ? (
-          <LeadersGrid leaders={tournament.leaders} teams={teams} perCard={3} />
+        {leadersQuery.isPending ? (
+          <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+        ) : leadersQuery.isError ? (
+          <div className={s.tabEmpty}>
+            <ErrorState title="Não foi possível carregar os líderes." onRetry={() => leadersQuery.refetch()} />
+          </div>
+        ) : hasLeaders ? (
+          <LeadersGrid leaders={leaders} group="perGame" limit={3} />
         ) : (
           <div className={s.tabEmpty}>
-            <EmptyState title="Sem líderes estatísticos ainda." description="Os líderes aparecem após as primeiras partidas com estatísticas." />
+            <EmptyState
+              title="Sem líderes estatísticos ainda."
+              description="Os líderes aparecem após as primeiras partidas com estatísticas."
+            />
           </div>
         )}
       </section>
 
-      {/* 4. Lista de partidas, mais recente para mais antiga */}
+      {/* 4. Lista de partidas, na ordem entregue pela API */}
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
-          <span className={s.sectionHint}>Mais recentes primeiro</span>
         </div>
-        {recentMatches.length > 0 ? (
-          <MatchList matches={recentMatches} teams={teams} />
+        {matchesPending ? (
+          <div className={s.tabEmpty}>
+            <Skeleton width="100%" height={160} />
+          </div>
+        ) : matchesError ? (
+          <div className={s.tabEmpty}>
+            <ErrorState title="Não foi possível carregar as partidas." onRetry={onRetryMatches} />
+          </div>
+        ) : matches.length > 0 ? (
+          <MatchList matches={matches} />
         ) : (
           <div className={s.tabEmpty}>
             <EmptyState title="Nenhuma partida cadastrada." />
@@ -132,7 +153,7 @@ export function OverviewTab({ tournament, matches, teams, onSeeBracket }: Overvi
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Regulamento</h2>
         </div>
-        <div className={s.regulation}>{tournament.regulation}</div>
+        <div className={s.regulation}>{tournament.regulation ?? 'Regulamento não informado.'}</div>
       </section>
     </>
   )

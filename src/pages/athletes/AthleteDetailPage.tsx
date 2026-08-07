@@ -1,29 +1,37 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import axios from 'axios'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
-import { getSeasonLabel, getTeams } from '../../features/sports/mock-sports-data'
-import { useAthleteMatchesQuery, useAthleteQuery, useAthleteSummaryQuery, useAthleteTournamentStatsQuery } from '../../features/sports/queries'
+import { toDisplay } from '../../components/ui/DateTimeField/dateDisplay'
+import { parsePositiveId } from '../../features/sports/parsePositiveId'
+import {
+  useAthleteMatchesInfiniteQuery,
+  useAthleteQuery,
+  useAthleteStatisticsQuery,
+  useAthleteTournamentsInfiniteQuery,
+  useSeasonsQuery,
+  useTeamsQuery,
+} from '../../features/sports/queries'
 import type {
-  AthleteTournamentStatsRow,
-  AthleteMatchStatsRow,
-  AthleteStatTotals,
-  PlayerMatchStats,
-  Team,
+  AthleteMatchHistoryRow,
+  AthleteStatistics,
+  AthleteTournamentHistoryRow,
 } from '../../features/sports/types'
 import {
   ATHLETE_STATUS_LABELS,
-  calcEff,
-  calcEffFromTotals,
-  formatDateShort,
-  formatStatPct,
-  formatTsPct,
-  perGame,
+  formatMeasuredGames,
+  formatMinutesSeconds,
+  formatServerDecimal,
+  formatServerEfficiency,
+  formatServerPercentage,
+  formatShootingLine,
   teamMap,
 } from '../../features/sports/sportsUtils'
 import s from './athletes.module.css'
@@ -34,19 +42,13 @@ const TABS: TabItem[] = [
   { id: 'tournaments', label: 'Campeonatos' },
 ]
 
-function formatAvg(value: number): string {
-  return value.toFixed(1)
+interface DisplayStat {
+  label: string
+  value: string | number
+  measuredGames?: number
 }
 
-function formatEff(value: number): string {
-  return value > 0 ? `+${value}` : `${value}`
-}
-
-function formatEffAvg(value: number): string {
-  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)
-}
-
-function StatStrip({ title, stats }: { title: string; stats: Array<{ label: string; value: string | number; sm?: boolean }> }) {
+function StatStrip({ title, stats }: { title: string; stats: DisplayStat[] }) {
   return (
     <section className={s.section}>
       <div className={s.sectionHead}>
@@ -54,10 +56,11 @@ function StatStrip({ title, stats }: { title: string; stats: Array<{ label: stri
       </div>
       <div className={s.statsBlock}>
         <div className={s.statsRow}>
-          {stats.map(({ label, value, sm }) => (
+          {stats.map(({ label, value, measuredGames: count }) => (
             <div key={label} className={s.statItem}>
-              <span className={sm ? s.statValueSm : s.statValue}>{value}</span>
+              <span className={s.statValue}>{value}</span>
               <span className={s.statLabel}>{label}</span>
+              {count !== undefined && <span className={s.statMeta}>{formatMeasuredGames(count)}</span>}
             </div>
           ))}
         </div>
@@ -66,63 +69,122 @@ function StatStrip({ title, stats }: { title: string; stats: Array<{ label: stri
   )
 }
 
-function SummaryContent({ summary }: { summary: AthleteStatTotals }) {
-  const games = summary.games
-  const eff = calcEffFromTotals(summary)
+function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
+  if (statistics.gamesPlayed === 0) {
+    return (
+      <div className={s.tabEmpty}>
+        <EmptyState
+          title="Sem estatísticas registradas."
+          description="O resumo aparecerá após a primeira partida finalizada com box score."
+        />
+      </div>
+    )
+  }
+
+  const { totals, perGame: perGameStats, measuredGames, shooting, efficiency } = statistics
 
   return (
     <>
       <StatStrip
         title="Totais"
         stats={[
-          { label: 'J', value: summary.games },
-          { label: 'MIN', value: summary.min },
-          { label: 'PTS', value: summary.pts },
-          { label: 'REB', value: summary.reb },
-          { label: 'AST', value: summary.ast },
-          { label: 'STL', value: summary.stl },
-          { label: 'BLK', value: summary.blk },
-          { label: 'TO', value: summary.to },
-          { label: 'PF', value: summary.pf },
+          { label: 'J', value: statistics.gamesPlayed },
+          { label: 'MIN', value: formatMinutesSeconds(totals.minutesSeconds) },
+          { label: 'PTS', value: formatServerDecimal(totals.pts) },
+          { label: 'REB', value: formatServerDecimal(totals.reb) },
+          { label: 'AST', value: formatServerDecimal(totals.ast) },
+          { label: 'STL', value: formatServerDecimal(totals.stl) },
+          { label: 'BLK', value: formatServerDecimal(totals.blk) },
+          { label: 'TOV', value: formatServerDecimal(totals.tov) },
+          { label: 'PF', value: formatServerDecimal(totals.pf) },
         ]}
       />
       <StatStrip
         title="Médias"
         stats={[
-          { label: 'MPG', value: formatAvg(perGame(summary.min, games)) },
-          { label: 'PPG', value: formatAvg(perGame(summary.pts, games)) },
-          { label: 'RPG', value: formatAvg(perGame(summary.reb, games)) },
-          { label: 'APG', value: formatAvg(perGame(summary.ast, games)) },
-          { label: 'STG', value: formatAvg(perGame(summary.stl, games)) },
-          { label: 'BPG', value: formatAvg(perGame(summary.blk, games)) },
-          { label: 'TOV', value: formatAvg(perGame(summary.to, games)) },
-          { label: 'PF', value: formatAvg(perGame(summary.pf, games)) },
+          { label: 'MPG', value: formatMinutesSeconds(perGameStats.minutesSeconds), measuredGames: measuredGames.minutesSeconds },
+          { label: 'PPG', value: formatServerDecimal(perGameStats.pts), measuredGames: measuredGames.pts },
+          { label: 'RPG', value: formatServerDecimal(perGameStats.reb), measuredGames: measuredGames.reb },
+          { label: 'APG', value: formatServerDecimal(perGameStats.ast), measuredGames: measuredGames.ast },
+          { label: 'STG', value: formatServerDecimal(perGameStats.stl), measuredGames: measuredGames.stl },
+          { label: 'BPG', value: formatServerDecimal(perGameStats.blk), measuredGames: measuredGames.blk },
+          { label: 'TOV', value: formatServerDecimal(perGameStats.tov), measuredGames: measuredGames.tov },
+          { label: 'PF', value: formatServerDecimal(perGameStats.pf), measuredGames: measuredGames.pf },
         ]}
       />
       <StatStrip
-        title="Aproveitamento"
+        title="Aproveitamento e eficiência"
         stats={[
-          { label: 'FG', value: `${summary.fgm}/${summary.fga}`, sm: true },
-          { label: 'FG%', value: formatStatPct(summary.fgm, summary.fga), sm: true },
-          { label: '3FG', value: `${summary.tpm}/${summary.tpa}`, sm: true },
-          { label: '3FG%', value: formatStatPct(summary.tpm, summary.tpa), sm: true },
-          { label: 'FT', value: `${summary.ftm}/${summary.fta}`, sm: true },
-          { label: 'FT%', value: formatStatPct(summary.ftm, summary.fta), sm: true },
-          { label: 'TS%', value: formatTsPct(summary.pts, summary.fga, summary.fta), sm: true },
-          { label: 'EFF/EFI', value: formatEff(eff), sm: true },
+          { label: 'FG', value: formatShootingLine(totals.fgm, totals.fga) },
+          { label: 'FG%', value: formatServerPercentage(shooting.fgPct) },
+          { label: '3FG', value: formatShootingLine(totals.threeFgm, totals.threeFga) },
+          { label: '3FG%', value: formatServerPercentage(shooting.threeFgPct) },
+          { label: 'FT', value: formatShootingLine(totals.ftm, totals.fta) },
+          { label: 'FT%', value: formatServerPercentage(shooting.ftPct) },
+          { label: 'TS%', value: formatServerPercentage(shooting.trueShootingPct) },
+          {
+            label: 'EFF',
+            value: formatServerEfficiency(efficiency.total),
+            measuredGames: efficiency.measuredGames,
+          },
+          {
+            label: 'EFF/J',
+            value: formatServerEfficiency(efficiency.perGame),
+            measuredGames: efficiency.measuredGames,
+          },
         ]}
       />
     </>
   )
 }
 
-function shootingLine(stats: PlayerMatchStats, type: 'fg' | 'tp' | 'ft'): string {
-  if (type === 'fg') return `${stats.fgm}/${stats.fga}`
-  if (type === 'tp') return `${stats.tpm}/${stats.tpa}`
-  return `${stats.ftm}/${stats.fta}`
+interface HistoryFooterProps {
+  loaded: number
+  total: number
+  noun: 'partida' | 'campeonato'
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  nextPageErrorTitle: string
+  onLoadMore: () => void
 }
 
-function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
+function HistoryFooter({
+  loaded, total, noun, hasNextPage, isFetchingNextPage,
+  isFetchNextPageError, nextPageErrorTitle, onLoadMore,
+}: HistoryFooterProps) {
+  const plural = total === 1 ? noun : `${noun}s`
+  return (
+    <div className={s.historyFooter}>
+      <span className={s.historyCount}>
+        {loaded === total ? total : `${loaded} de ${total}`} {plural}
+      </span>
+      {isFetchNextPageError ? (
+        <ErrorState title={nextPageErrorTitle} onRetry={onLoadMore} />
+      ) : hasNextPage ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={isFetchingNextPage}
+          onClick={onLoadMore}
+        >
+          Carregar mais
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function MatchesContent({
+  rows, total, hasNextPage, isFetchingNextPage, isFetchNextPageError, onLoadMore,
+}: {
+  rows: AthleteMatchHistoryRow[]
+  total: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  onLoadMore: () => void
+}) {
   const navigate = useNavigate()
 
   if (rows.length === 0) {
@@ -137,82 +199,99 @@ function MatchesContent({ rows }: { rows: AthleteMatchStatsRow[] }) {
   }
 
   return (
-    <div className={s.tableWrap}>
-      <table className={s.table}>
-        <thead className={s.thead}>
-          <tr>
-            <th className={s.th}>Data</th>
-            <th className={s.th}>Campeonato</th>
-            <th className={s.th}>Partida</th>
-            <th className={s.th}>Resultado</th>
-            <th className={s.thNum}>MIN</th>
-            <th className={s.thNum}>PTS</th>
-            <th className={s.thNum}>REB</th>
-            <th className={s.thNum}>AST</th>
-            <th className={s.thNum}>STL</th>
-            <th className={s.thNum}>BLK</th>
-            <th className={s.thNum}>TO</th>
-            <th className={s.thNum}>PF</th>
-            <th className={s.thNum}>FG</th>
-            <th className={s.thNum}>3FG</th>
-            <th className={s.thNum}>FT</th>
-            <th className={s.thNum}>TS%</th>
-            <th className={s.thNum}>EFF/EFI</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const efi = calcEff(row.stats)
-            return (
-              <tr
-                key={row.match.id}
-                className={s.tr}
-                tabIndex={0}
-                onClick={() => navigate(`/matches/${row.match.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') navigate(`/matches/${row.match.id}`)
-                }}
-              >
-                <td className={s.td}>{formatDateShort(row.match.date)}</td>
-                <td className={s.td}>{row.tournament.name}</td>
-                <td className={s.tdStrong}>
-                  <Link
-                    to={`/matches/${row.match.id}`}
-                    className={s.rowLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {row.matchup}
-                  </Link>
-                </td>
-                <td className={s.td}>{row.result}</td>
-                <td className={s.tdNum}>{row.stats.min}</td>
-                <td className={s.tdNum}>{row.stats.pts}</td>
-                <td className={s.tdNum}>{row.stats.reb}</td>
-                <td className={s.tdNum}>{row.stats.ast}</td>
-                <td className={s.tdNum}>{row.stats.stl}</td>
-                <td className={s.tdNum}>{row.stats.blk}</td>
-                <td className={s.tdNum}>{row.stats.to}</td>
-                <td className={s.tdNum}>{row.stats.pf}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'fg')}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'tp')}</td>
-                <td className={s.tdNum}>{shootingLine(row.stats, 'ft')}</td>
-                <td className={s.tdNum}>{formatTsPct(row.stats.pts, row.stats.fga, row.stats.fta)}</td>
-                <td className={s.tdNum}>{formatEff(efi)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className={s.tableWrap}>
+        <table className={s.table}>
+          <thead className={s.thead}>
+            <tr>
+              {['Data', 'Campeonato', 'Atleta', 'Partida', 'Resultado'].map((label) => <th key={label} className={s.th}>{label}</th>)}
+              {['MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'FG', 'FG%', '3FG', '3FG%', 'FT', 'FT%', 'TS%', 'EFF/EFI']
+                .map((label) => <th key={label} className={s.thNum}>{label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const specialLoss = row.result.lossType === 'FORFEIT' ? 'W.O.'
+                : row.result.lossType === 'DEFAULT' ? 'Abandono'
+                : null
+              const open = () => navigate(`/matches/${row.match.id}`)
+              return (
+                <tr
+                  key={row.match.id}
+                  className={s.tr}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      open()
+                    }
+                  }}
+                >
+                  <td className={s.td}>{toDisplay(row.match.scheduledAt, 'date')}</td>
+                  <td className={s.td}>{row.tournament.name}</td>
+                  <td className={s.td}>{row.athleteName}</td>
+                  <td className={s.tdStrong}>
+                    <Link to={`/matches/${row.match.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
+                      {row.team.name} × {row.opponent.name}
+                    </Link>
+                  </td>
+                  <td className={s.td}>
+                    {row.result.result === 'WIN' ? 'Vitória' : 'Derrota'} {row.result.pointsFor}–{row.result.pointsAgainst}
+                    {specialLoss && <Badge variant="ghost">{specialLoss}</Badge>}
+                  </td>
+                  <td className={s.tdNum}>{formatMinutesSeconds(row.stats.minutesSeconds)}</td>
+                  {(['pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf'] as const).map((field) => (
+                    <td key={field} className={s.tdNum}>{formatServerDecimal(row.stats[field])}</td>
+                  ))}
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.fgm, row.stats.fga)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.fgPct)}</td>
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.threeFgm, row.stats.threeFga)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.threeFgPct)}</td>
+                  <td className={s.tdNum}>{formatShootingLine(row.stats.ftm, row.stats.fta)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.ftPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(row.derived.trueShootingPct)}</td>
+                  <td className={s.tdNum}>{formatServerEfficiency(row.derived.efficiency)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <HistoryFooter
+        loaded={rows.length}
+        total={total}
+        noun="partida"
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
+        nextPageErrorTitle="Não foi possível carregar mais partidas."
+        onLoadMore={onLoadMore}
+      />
+    </>
+  )
+}
+
+function MeasuredMetric({ value, count }: { value: string; count: number }) {
+  return (
+    <span className={s.metricCell}>
+      <span>{value}</span>
+      <span className={s.cellMeta}>{formatMeasuredGames(count)}</span>
+    </span>
   )
 }
 
 function TournamentsContent({
-  rows,
-  teams,
+  rows, seasonLabels, total, hasNextPage, isFetchingNextPage,
+  isFetchNextPageError, onLoadMore,
 }: {
-  rows: AthleteTournamentStatsRow[]
-  teams: Map<string, Team>
+  rows: AthleteTournamentHistoryRow[]
+  seasonLabels: Map<number, string>
+  total: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  onLoadMore: () => void
 }) {
   const navigate = useNavigate()
 
@@ -228,91 +307,115 @@ function TournamentsContent({
   }
 
   return (
-    <div className={s.tableWrap}>
-      <table className={s.table}>
-        <thead className={s.thead}>
-          <tr>
-            <th className={s.th}>Campeonato</th>
-            <th className={s.th}>Equipe</th>
-            <th className={s.th}>Temporada</th>
-            <th className={s.thNum}>Jogos</th>
-            <th className={s.thNum}>MPG</th>
-            <th className={s.thNum}>PPG</th>
-            <th className={s.thNum}>RPG</th>
-            <th className={s.thNum}>APG</th>
-            <th className={s.thNum}>STG</th>
-            <th className={s.thNum}>BPG</th>
-            <th className={s.thNum}>FG%</th>
-            <th className={s.thNum}>3FG%</th>
-            <th className={s.thNum}>FT%</th>
-            <th className={s.thNum}>TS%</th>
-            <th className={s.thNum}>EFF/EFI</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const games = row.totals.games
-            const efi = perGame(calcEffFromTotals(row.totals), games)
-            return (
-              <tr
-                key={`${row.tournament.id}-${row.teamId}`}
-                className={s.tr}
-                tabIndex={0}
-                onClick={() => navigate(`/tournaments/${row.tournament.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') navigate(`/tournaments/${row.tournament.id}`)
-                }}
-              >
-                <td className={s.tdStrong}>
-                  <Link
-                    to={`/tournaments/${row.tournament.id}`}
-                    className={s.rowLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {row.tournament.name}
-                  </Link>
-                </td>
-                <td className={s.td}>{teams.get(row.teamId)?.name ?? row.teamId}</td>
-                <td className={s.td}>{getSeasonLabel(row.tournament.seasonId)}</td>
-                <td className={s.tdNum}>{games}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.min, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.pts, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.reb, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.ast, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.stl, games))}</td>
-                <td className={s.tdNum}>{formatAvg(perGame(row.totals.blk, games))}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.fgm, row.totals.fga)}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.tpm, row.totals.tpa)}</td>
-                <td className={s.tdNum}>{formatStatPct(row.totals.ftm, row.totals.fta)}</td>
-                <td className={s.tdNum}>{formatTsPct(row.totals.pts, row.totals.fga, row.totals.fta)}</td>
-                <td className={s.tdNum}>{formatEffAvg(efi)}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className={s.tableWrap}>
+        <table className={s.table}>
+          <thead className={s.thead}>
+            <tr>
+              {['Campeonato', 'Equipe', 'Temporada'].map((label) => <th key={label} className={s.th}>{label}</th>)}
+              {['Jogos', 'MPG', 'PPG', 'RPG', 'APG', 'STG', 'BPG', 'FG%', '3FG%', 'FT%', 'TS%', 'EFF', 'EFF/J']
+                .map((label) => <th key={label} className={s.thNum}>{label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const { statistics } = row
+              const open = () => navigate(`/tournaments/${row.tournament.id}`)
+              return (
+                <tr
+                  key={`${row.tournament.id}-${row.team.tournamentTeamId}`}
+                  className={s.tr}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      open()
+                    }
+                  }}
+                >
+                  <td className={s.tdStrong}>
+                    <Link to={`/tournaments/${row.tournament.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
+                      {row.tournament.name}
+                    </Link>
+                  </td>
+                  <td className={s.td}>{row.team.name}</td>
+                  <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? `Temporada #${row.tournament.seasonId}`}</td>
+                  <td className={s.tdNum}>{statistics.gamesPlayed}</td>
+                  <td className={s.tdNum}><MeasuredMetric value={formatMinutesSeconds(statistics.perGame.minutesSeconds)} count={statistics.measuredGames.minutesSeconds} /></td>
+                  {(['pts', 'reb', 'ast', 'stl', 'blk'] as const).map((field) => (
+                    <td key={field} className={s.tdNum}>
+                      <MeasuredMetric value={formatServerDecimal(statistics.perGame[field])} count={statistics.measuredGames[field]} />
+                    </td>
+                  ))}
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.fgPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.threeFgPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.ftPct)}</td>
+                  <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.trueShootingPct)}</td>
+                  <td className={s.tdNum}>{formatServerEfficiency(statistics.efficiency.total)}</td>
+                  <td className={s.tdNum}>
+                    <MeasuredMetric value={formatServerEfficiency(statistics.efficiency.perGame)} count={statistics.efficiency.measuredGames} />
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <HistoryFooter
+        loaded={rows.length}
+        total={total}
+        noun="campeonato"
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
+        nextPageErrorTitle="Não foi possível carregar mais campeonatos."
+        onLoadMore={onLoadMore}
+      />
+    </>
   )
 }
 
 export function AthleteDetailPage() {
-  const { athleteId } = useParams<{ athleteId: string }>()
+  const { athleteId: rawAthleteId } = useParams<{ athleteId: string }>()
+  const athleteId = parsePositiveId(rawAthleteId)
   const navigate = useNavigate()
-  const { data: athlete, isPending: athleteLoading, isError: athleteError, refetch } = useAthleteQuery(athleteId)
-  const { data: summary, isPending: summaryLoading, isError: summaryError } = useAthleteSummaryQuery(athleteId)
-  const { data: matches, isPending: matchesLoading, isError: matchesError } = useAthleteMatchesQuery(athleteId)
-  const {
-    data: tournamentStats,
-    isPending: tournamentLoading,
-    isError: tournamentError,
-  } = useAthleteTournamentStatsQuery(athleteId)
+
   const [activeTab, setActiveTab] = useState('summary')
+  const athleteQuery = useAthleteQuery(athleteId ?? undefined)
+  const statisticsQuery = useAthleteStatisticsQuery(
+    athleteId ?? undefined,
+    activeTab === 'summary',
+  )
+  const matchesQuery = useAthleteMatchesInfiniteQuery(
+    athleteId ?? undefined,
+    {},
+    activeTab === 'matches',
+  )
+  const tournamentsQuery = useAthleteTournamentsInfiniteQuery(
+    athleteId ?? undefined,
+    {},
+    activeTab === 'tournaments',
+  )
+  const teamsQuery = useTeamsQuery()
+  const seasonsQuery = useSeasonsQuery({}, activeTab === 'tournaments')
 
-  const teams = teamMap(getTeams())
-  const isLoading = athleteLoading || summaryLoading || matchesLoading || tournamentLoading
-  const isError = athleteError || summaryError || matchesError || tournamentError
+  if (athleteId == null) {
+    return (
+      <div className={s.page}>
+        <div className={s.detailHeader}>
+          <button type="button" className={s.backLink} onClick={() => navigate(-1)}>
+            <ArrowLeft size={12} strokeWidth={1.7} /> Voltar
+          </button>
+        </div>
+        <div className={s.bodyFill}>
+          <ErrorState title="ID de atleta inválido." />
+        </div>
+      </div>
+    )
+  }
 
-  if (isLoading) {
+  if (athleteQuery.isPending) {
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -329,7 +432,9 @@ export function AthleteDetailPage() {
     )
   }
 
-  if (isError) {
+  if (athleteQuery.isError) {
+    const notFound = axios.isAxiosError(athleteQuery.error)
+      && athleteQuery.error.response?.status === 404
     return (
       <div className={s.page}>
         <div className={s.detailHeader}>
@@ -338,31 +443,28 @@ export function AthleteDetailPage() {
           </button>
         </div>
         <div className={s.bodyFill}>
-          <ErrorState title="Não foi possível carregar o atleta." onRetry={refetch} />
+          {notFound ? (
+            <EmptyState title="Atleta não encontrado." />
+          ) : (
+            <ErrorState title="Não foi possível carregar o atleta." onRetry={() => athleteQuery.refetch()} />
+          )}
         </div>
       </div>
     )
   }
 
-  if (!athlete || !summary) {
-    return (
-      <div className={s.page}>
-        <div className={s.detailHeader}>
-          <button type="button" className={s.backLink} onClick={() => navigate(-1)}>
-            <ArrowLeft size={12} strokeWidth={1.7} /> Voltar
-          </button>
-        </div>
-        <div className={s.bodyFill}>
-          <EmptyState
-            title="Atleta não encontrado."
-            description="O link pode estar incorreto ou o atleta não possui dados mockados."
-          />
-        </div>
-      </div>
-    )
-  }
+  const athlete = athleteQuery.data
+  if (!athlete) return null
 
-  const team = teams.get(athlete.currentTeamId)
+  const teams = teamMap(teamsQuery.data ?? [])
+  const teamName = athlete.currentTeamId === null
+    ? 'Sem equipe atual'
+    : teams.get(athlete.currentTeamId)?.name ?? `Equipe #${athlete.currentTeamId}`
+  const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
+  const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const matchTotal = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
+  const tournamentRows = tournamentsQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const tournamentTotal = tournamentsQuery.data?.pages[0]?.meta.totalItems ?? 0
 
   return (
     <div className={s.page}>
@@ -372,11 +474,11 @@ export function AthleteDetailPage() {
         </button>
 
         <div className={s.heroRow}>
-          <div className={s.jersey}>#{athlete.number}</div>
+          <div className={s.jersey}>{athlete.jerseyNumber === null ? '—' : `#${athlete.jerseyNumber}`}</div>
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position} · {team?.name ?? athlete.currentTeamId}</span>
+              <span>{athlete.position ?? 'Não informada'} · {teamName}</span>
             </div>
           </div>
           <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>
@@ -390,10 +492,56 @@ export function AthleteDetailPage() {
       </div>
 
       <div className={s.detailBody}>
-        {activeTab === 'summary' && <SummaryContent summary={summary} />}
-        {activeTab === 'matches' && <MatchesContent rows={matches ?? []} />}
+        {activeTab === 'summary' && (
+          statisticsQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={180} /></div>
+          ) : statisticsQuery.isError && !statisticsQuery.data ? (
+            <div className={s.tabEmpty}>
+              <ErrorState
+                title="Não foi possível carregar as estatísticas."
+                onRetry={() => statisticsQuery.refetch()}
+              />
+            </div>
+          ) : statisticsQuery.data ? (
+            <SummaryContent statistics={statisticsQuery.data} />
+          ) : null
+        )}
+        {activeTab === 'matches' && (
+          matchesQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+          ) : matchesQuery.isError && matches.length === 0 ? (
+            <div className={s.tabEmpty}>
+              <ErrorState title="Não foi possível carregar as partidas." onRetry={() => matchesQuery.refetch()} />
+            </div>
+          ) : (
+            <MatchesContent
+              rows={matches}
+              total={matchTotal}
+              hasNextPage={Boolean(matchesQuery.hasNextPage)}
+              isFetchingNextPage={matchesQuery.isFetchingNextPage}
+              isFetchNextPageError={matchesQuery.isFetchNextPageError}
+              onLoadMore={() => void matchesQuery.fetchNextPage()}
+            />
+          )
+        )}
         {activeTab === 'tournaments' && (
-          <TournamentsContent rows={tournamentStats ?? []} teams={teams} />
+          tournamentsQuery.isPending ? (
+            <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
+          ) : tournamentsQuery.isError && tournamentRows.length === 0 ? (
+            <div className={s.tabEmpty}>
+              <ErrorState title="Não foi possível carregar os campeonatos." onRetry={() => tournamentsQuery.refetch()} />
+            </div>
+          ) : (
+            <TournamentsContent
+              rows={tournamentRows}
+              seasonLabels={seasonLabels}
+              total={tournamentTotal}
+              hasNextPage={Boolean(tournamentsQuery.hasNextPage)}
+              isFetchingNextPage={tournamentsQuery.isFetchingNextPage}
+              isFetchNextPageError={tournamentsQuery.isFetchNextPageError}
+              onLoadMore={() => void tournamentsQuery.fetchNextPage()}
+            />
+          )
         )}
       </div>
     </div>

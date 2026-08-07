@@ -1,7 +1,6 @@
 import { Button } from '../../../components/ui/Button/Button'
 import { NumberField } from '../../../components/ui/NumberField/NumberField'
 import { periodsSum } from '../statistics'
-import { getPeriodLabel } from '../sportsUtils'
 import type { PeriodScore } from '../types'
 import s from './PeriodScoreEditor.module.css'
 
@@ -15,14 +14,34 @@ export interface PeriodScoreEditorProps {
 }
 
 const periodAriaLabel = (period: PeriodScore) =>
-  period.type === 'OVERTIME' ? `prorrogação ${period.overtimeNumber ?? 1}` : `${period.periodNumber}º período`
+  period.type === 'OVERTIME'
+    ? `prorrogação ${period.overtimeNumber ?? 1}`
+    : `${period.periodNumber}º período`
 
-const hasOvertime = (periods: PeriodScore[]) => periods.some((p) => p.type === 'OVERTIME')
+const periodColumnLabel = (period: PeriodScore) => {
+  if (period.label) return period.label
+  if (period.type === 'REGULAR') return `${period.periodNumber}Q`
+  const overtimeNumber = period.overtimeNumber ?? 1
+  return overtimeNumber === 1 ? 'OT' : `${overtimeNumber}OT`
+}
 
-export function PeriodScoreEditor({ periods, onChange, onAddOvertime, onRemoveOvertime, homeName, awayName }: PeriodScoreEditorProps) {
+export function PeriodScoreEditor({
+  periods,
+  onChange,
+  onAddOvertime,
+  onRemoveOvertime,
+  homeName,
+  awayName,
+}: PeriodScoreEditorProps) {
   const totals = periodsSum(periods)
+  const hasOvertime = periods.some((period) => period.type === 'OVERTIME')
 
-  const renderRow = (side: 'home' | 'away', teamName: string, total: number, testId: string) => (
+  const renderRow = (
+    side: 'home' | 'away',
+    teamName: string,
+    total: number,
+    testId: string,
+  ) => (
     <tr>
       <th scope="row" className={s.rowLabel}>{teamName}</th>
       {periods.map((period, index) => {
@@ -33,9 +52,10 @@ export function PeriodScoreEditor({ periods, onChange, onAddOvertime, onRemoveOv
               dense
               aria-label={`${teamName} — ${periodAriaLabel(period)}`}
               controlLabel={periodAriaLabel(period)}
-              value={value ?? ''}
+              value={value ?? 0}
               onValueChange={(next) => onChange(index, side, next === '' ? 0 : next)}
               min={0}
+              step={1}
             />
           </td>
         )
@@ -50,9 +70,11 @@ export function PeriodScoreEditor({ periods, onChange, onAddOvertime, onRemoveOv
         <table className={s.table}>
           <thead>
             <tr>
-              <th className={s.corner} />
+              <th className={s.corner} aria-label="Time" />
               {periods.map((period) => (
-                <th key={period.periodNumber} className={s.colLabel}>{getPeriodLabel(period)}</th>
+                <th key={period.periodNumber} className={s.colLabel}>
+                  {periodColumnLabel(period)}
+                </th>
               ))}
               <th className={s.colLabel}>Total</th>
             </tr>
@@ -65,9 +87,9 @@ export function PeriodScoreEditor({ periods, onChange, onAddOvertime, onRemoveOv
       </div>
       <div className={s.actions}>
         <Button type="button" variant="ghost" size="sm" onClick={onAddOvertime}>
-          + Adicionar prorrogação
+          Adicionar prorrogação
         </Button>
-        {hasOvertime(periods) && (
+        {hasOvertime && (
           <Button type="button" variant="ghost" size="sm" onClick={onRemoveOvertime}>
             Remover prorrogação
           </Button>

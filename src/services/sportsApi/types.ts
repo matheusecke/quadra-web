@@ -1,5 +1,4 @@
-import type { PeriodScore, SeasonStatus, TournamentFormat, TournamentStatus } from '../../features/sports/types'
-import type { PlayerStatInput } from '../../features/sports/statistics'
+import type { TournamentFormat, TournamentStatus } from '../../features/sports/types'
 
 export interface CreateSeasonInput {
   label: string
@@ -7,141 +6,131 @@ export interface CreateSeasonInput {
   endDate: string
 }
 
-export type UpdateSeasonInput = Partial<CreateSeasonInput> & { status?: SeasonStatus }
-
 export interface CreateCategoryInput {
   name: string
   sortOrder?: number
 }
 
+/** Os quatro status que a API aceita em POST e PATCH. `COMPLETED` só vem de `/complete`. */
+export type EditableTournamentStatus = Exclude<TournamentStatus, 'COMPLETED'>
+
 export interface CreateTournamentInput {
   name: string
-  seasonId: string
-  categoryId: string | null
+  seasonId: number
   format: TournamentFormat
-  startDate: string
-  endDate: string
+  categoryId?: number
   regulation?: string
+  status?: EditableTournamentStatus
+  startsAt?: string
+  endsAt?: string
+  registrationStartsAt?: string
+  registrationEndsAt?: string
 }
 
-export type UpdateTournamentInput = Partial<CreateTournamentInput> & { status?: Exclude<TournamentStatus, 'COMPLETED'> }
+/** No PATCH, `null` limpa a coluna e `undefined` deixa como está — a diferença importa. */
+export interface UpdateTournamentInput {
+  name?: string
+  seasonId?: number
+  format?: TournamentFormat
+  categoryId?: number | null
+  regulation?: string | null
+  status?: EditableTournamentStatus
+  startsAt?: string | null
+  endsAt?: string | null
+  registrationStartsAt?: string | null
+  registrationEndsAt?: string | null
+}
 
 export interface CompleteTournamentInput {
-  tournamentId: string
-  championTournamentTeamId: string | null
+  tournamentId: number
+  championTournamentTeamId: number | null
 }
 
 export interface ReopenTournamentInput {
-  tournamentId: string
+  tournamentId: number
 }
 
+/** `number` and `label` go in the body; `tournamentId` is the path. */
 export interface CreateBracketRoundInput {
-  tournamentId: string
-  /** Optional: defaults to the highest active number plus one. The UI never types it. */
-  number?: number
-  label?: string
+  tournamentId: number
+  /** Required by the API, unique among the tournament's active rounds. The UI derives max + 1. */
+  number: number
+  label?: string | null
 }
 
 export interface UpdateBracketRoundInput {
-  label?: string
+  number?: number
+  label?: string | null
 }
 
+/** The round goes in the body, not the path — the tournament is inferred from it. */
 export interface CreateBracketSlotInput {
-  tournamentId: string
-  roundId: string
-  /** Optional: defaults to the next free position in the round. The UI never types it. */
-  position?: number
-  label?: string
+  roundId: number
+  /** Required by the API, unique among the round's active slots. The UI derives max + 1. */
+  position: number
+  label?: string | null
+  homeTournamentTeamId?: number | null
+  awayTournamentTeamId?: number | null
 }
 
+/** `roundId` is absent on purpose: moving a slot between rounds means delete and recreate. */
 export interface UpdateBracketSlotInput {
-  homeTournamentTeamId?: string | null
-  awayTournamentTeamId?: string | null
-  label?: string
-}
-
-export interface SetSlotWinnerInput {
-  slotId: string
-  winnerTournamentTeamId: string
-}
-
-export interface LinkSlotMatchInput {
-  slotId: string
-  matchId: string
+  position?: number
+  label?: string | null
+  homeTournamentTeamId?: number | null
+  awayTournamentTeamId?: number | null
 }
 
 export interface EnrollTeamInput {
-  tournamentId: string
-  teamId: string
-  /** display_name_snapshot — the team's name at enrollment (DB spec §5.3). */
-  displayName: string
-  seed?: number
+  tournamentId: number
+  teamId: number
+}
+
+export interface UpdateTournamentTeamInput {
+  seed?: number | null
 }
 
 export interface CreateGroupInput {
-  tournamentId: string
+  tournamentId: number
   name: string
-  sortOrder?: number
+}
+
+export interface UpdateGroupInput {
+  name: string
+}
+
+export interface LinkBracketSlotMatchInput {
+  matchId: number
+}
+
+export interface SetBracketSlotWinnerInput {
+  winnerTournamentTeamId: number | null
 }
 
 export interface AssignGroupTeamInput {
-  tournamentId: string
-  groupId: string
-  teamId: string
+  tournamentGroupId: number
+  tournamentTeamId: number
 }
 
-export interface RosterEntryInput {
-  tournamentId: string
-  teamId: string
-  athleteId: string
-  jerseyNumber: number
+export interface CreateTournamentRosterInput {
+  userId: number
+  tournamentTeamId: number
   role: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber?: number | null
 }
 
-export interface UpdateRosterEntryInput {
-  jerseyNumber?: number
+export interface UpdateTournamentRosterInput {
   role?: 'ATHLETE' | 'COACHING_STAFF'
+  jerseyNumber?: number | null
 }
 
-export interface ScheduleMatchInput {
-  tournamentId: string
-  homeTeamId: string
-  awayTeamId: string
-  scheduledAt: string
-  venue?: string
-  groupId?: string | null
-}
-
-/** The client identifies athletes by tournamentRosterId. It never sees match_rosters — §8.9. */
-export type PlayerBoxScoreInput = PlayerStatInput & { tournamentRosterId: string }
-
+/** The whole tied block, every time: `order` is a complete permutation of `1..n`. */
 export interface SetTiebreakOrderInput {
-  tournamentId: string
-  entries: { tournamentTeamId: string; order: number }[]
+  tournamentId: number
+  entries: { tournamentTeamId: number; order: number }[]
 }
 
 export interface ClearTiebreakOrderInput {
-  tournamentId: string
+  tournamentId: number
   blockKey: string
 }
-
-interface PlayedResultInput {
-  matchId: string
-  periods: PeriodScore[]
-  playerStats: PlayerBoxScoreInput[]
-  mvpTournamentRosterId?: string | null
-}
-
-/**
- * Discriminated by resultType (§8.9). The client sends what happened on court and how it
- * ended; the server derives finalScore, result and lossType. The client never sends a score.
- */
-export type SubmitMatchResultInput =
-  | ({ resultType?: 'NORMAL' } & PlayedResultInput)
-  | ({ resultType: 'DEFAULT'; offendingTournamentTeamId: string } & PlayedResultInput)
-  | {
-      // A W.O. has no game: no periods, no box score, no MVP. Not optional — forbidden.
-      resultType: 'FORFEIT'
-      matchId: string
-      offendingTournamentTeamId: string
-    }

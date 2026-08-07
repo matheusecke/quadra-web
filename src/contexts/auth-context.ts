@@ -1,7 +1,11 @@
 import { createContext } from 'react'
 import type { MePayload, OrgAffiliation, RegisterInput } from '../types/api'
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
+export type AuthStatus =
+  | 'loading'
+  | 'authenticated'
+  | 'unauthenticated'
+  | 'error'
 
 export type AuthContextValue = {
   status: AuthStatus
