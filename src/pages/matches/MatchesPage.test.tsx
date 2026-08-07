@@ -173,4 +173,20 @@ describe('MatchesPage matchup rendering', () => {
     expect(getTeams).not.toHaveBeenCalled()
     expect(getAllTournamentTeams).not.toHaveBeenCalled()
   })
+
+  it('links the home team of a row to its team profile', async () => {
+    vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(page([buildMatch(101)], 1, 1))
+    renderMatchesPage()
+
+    const link = await screen.findByRole('link', { name: 'Abutres' })
+    expect(link).toHaveAttribute('href', '/teams/1')
+  })
+
+  it('links the away team of a row to its team profile', async () => {
+    vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(page([buildMatch(101)], 1, 1))
+    renderMatchesPage()
+
+    const link = await screen.findByRole('link', { name: 'Águias Douradas' })
+    expect(link).toHaveAttribute('href', '/teams/2')
+  })
 })

@@ -135,6 +135,26 @@ describe('MatchDetailPage — read', () => {
     await screen.findByText('Águias')
     expect(screen.queryByText(/líderes da partida/i)).not.toBeInTheDocument()
   })
+
+  it('links the home team of the score hero to its team profile', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+
+    renderDetail()
+
+    const link = await screen.findByRole('link', { name: 'Águias' })
+    expect(link).toHaveAttribute('href', '/teams/8')
+  })
+
+  it('links the away team of the score hero to its team profile', async () => {
+    vi.spyOn(sportsApi, 'getTournaments').mockResolvedValue([])
+    vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch())
+
+    renderDetail()
+
+    const link = await screen.findByRole('link', { name: 'Falcões' })
+    expect(link).toHaveAttribute('href', '/teams/9')
+  })
 })
 
 describe('MatchDetailPage — admin actions', () => {
