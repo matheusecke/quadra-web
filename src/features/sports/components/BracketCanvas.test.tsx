@@ -308,7 +308,11 @@ describe('BracketCanvas', () => {
 
   describe('read-only structure', () => {
     it('hides every structure-editing control when the admin cannot edit structure', () => {
-      render(<BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...handlers()} canEditStructure={false} />)
+      render(
+        <MemoryRouter>
+          <BracketCanvas rounds={rounds} slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]} teams={teams} {...handlers()} canEditStructure={false} />
+        </MemoryRouter>,
+      )
       expect(screen.queryByRole('button', { name: /nova rodada/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /adicionar partida/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /remover/i })).not.toBeInTheDocument()
@@ -320,6 +324,37 @@ describe('BracketCanvas', () => {
       render(<BracketCanvas rounds={rounds} slots={[slot()]} teams={teams} {...handlers()} canEditStructure={false} />)
       expect(screen.getByText('Quartas de final')).toBeInTheDocument()
       expect(screen.getByText('Semifinal 1')).toBeInTheDocument()
+    })
+
+    it('links a read-only slot side to its team profile', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas
+            rounds={rounds}
+            slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]}
+            teams={teams}
+            {...handlers()}
+            canEditStructure={false}
+          />
+        </MemoryRouter>,
+      )
+
+      expect(screen.getByRole('link', { name: 'Alfa' })).toHaveAttribute('href', '/teams/101')
+    })
+
+    it('keeps the editable slot side as a control rather than a link', () => {
+      render(
+        <MemoryRouter>
+          <BracketCanvas
+            rounds={rounds}
+            slots={[slot({ homeTeam: { tournamentTeamId: 1, teamId: 101, name: 'Alfa', shortName: 'ALF' } })]}
+            teams={teams}
+            {...handlers()}
+          />
+        </MemoryRouter>,
+      )
+
+      expect(screen.queryByRole('link', { name: 'Alfa' })).not.toBeInTheDocument()
     })
   })
 

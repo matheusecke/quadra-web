@@ -132,6 +132,18 @@ describe('BracketBoard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('links a filled slot side to its team profile', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1, homeTeam: team(1, 'Alfa', 'T01') })] })
+
+    expect(screen.getByRole('link', { name: 'Alfa' })).toHaveAttribute('href', '/teams/101')
+  })
+
+  it('leaves an undecided slot side unlinked', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1 })] })
+
+    expect(screen.queryByRole('link', { name: 'a definir' })).not.toBeInTheDocument()
+  })
+
   describe('linked match', () => {
     const linkedMatch: BracketMatchView = { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 72, awayScore: 68 }
 
