@@ -56,7 +56,10 @@ export function Sidebar() {
 
   return (
     <aside className={s.sidebar} aria-label="Navegação principal">
-      <div className={s.brand} aria-label="Quadra">Quadra</div>
+      <div className={s.brand} aria-label="Quadra">
+        <img src="/favicon.svg" alt="" className={s.brandMark} />
+        Quadra
+      </div>
 
       <nav className={s.nav} aria-label="Menu principal">
         {isAdminMode ? (
