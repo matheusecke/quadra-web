@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import { ArrowLeft, Trophy } from 'lucide-react'
+import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
@@ -10,20 +11,27 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { useTeamSummaryQuery } from '../../features/sports/queries'
+import { useTeamMatchesInfiniteQuery, useTeamSummaryQuery } from '../../features/sports/queries'
 import {
+  MATCH_STATUS_LABELS,
   TEAM_PROFILE_STATUS_LABELS,
   formatAverage,
+  formatDateTime,
   formatMeasuredGames,
   formatRate,
   formatSignedAverage,
   formatTeamLocation,
+  matchStatusVariant,
   teamProfileStatusVariant,
 } from '../../features/sports/sportsUtils'
-import type { TeamStatistics, TeamTitle } from '../../features/sports/types'
+import type { TeamMatchHistoryRow, TeamStatistics, TeamTitle } from '../../features/sports/types'
+import type { PaginatedResponse } from '../../types/admin'
 import s from './teamDetail.module.css'
 
-const TABS: TabItem[] = [{ id: 'overview', label: 'Visão geral' }]
+const TABS: TabItem[] = [
+  { id: 'overview', label: 'Visão geral' },
+  { id: 'matches', label: 'Partidas' },
+]
 
 const PRODUCTION_METRICS = [
   { field: 'reb', label: 'RPG' },
@@ -163,6 +171,158 @@ function OverviewContent({ statistics }: { statistics: TeamStatistics }) {
   )
 }
 
+interface HistoryFooterProps {
+  loaded: number
+  total: number
+  noun: 'partida' | 'campeonato' | 'atleta' | 'integrante'
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isFetchNextPageError: boolean
+  nextPageErrorTitle: string
+  onLoadMore: () => void
+}
+
+function HistoryFooter({
+  loaded, total, noun, hasNextPage, isFetchingNextPage,
+  isFetchNextPageError, nextPageErrorTitle, onLoadMore,
+}: HistoryFooterProps) {
+  const plural = total === 1 ? noun : `${noun}s`
+  return (
+    <div className={s.historyFooter}>
+      <span className={s.historyCount}>
+        {loaded === total ? total : `${loaded} de ${total}`} {plural}
+      </span>
+      {isFetchNextPageError ? (
+        <ErrorState title={nextPageErrorTitle} onRetry={onLoadMore} />
+      ) : hasNextPage ? (
+        <Button variant="secondary" size="sm" loading={isFetchingNextPage} onClick={onLoadMore}>
+          Carregar mais
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+/** A finished loss carries the special loss type; a live or scheduled match carries none. */
+function specialLossLabel(row: TeamMatchHistoryRow): string | null {
+  const lossType = row.team.lossType ?? row.opponent.lossType
+  if (lossType === 'FORFEIT') return 'W.O.'
+  if (lossType === 'DEFAULT') return 'Abandono'
+  return null
+}
+
+function matchResultText(row: TeamMatchHistoryRow): string {
+  const label = row.team.result === 'WIN' ? 'Vitória' : row.team.result === 'LOSS' ? 'Derrota' : null
+  if (label === null) return '—'
+  if (row.team.score === null || row.opponent.score === null) return label
+  return `${label} ${row.team.score}–${row.opponent.score}`
+}
+
+interface MatchSectionProps {
+  title: string
+  testId: string
+  query: UseInfiniteQueryResult<InfiniteData<PaginatedResponse<TeamMatchHistoryRow>>>
+  emptyTitle: string
+  errorTitle: string
+}
+
+function MatchSection({ title, testId, query, emptyTitle, errorTitle }: MatchSectionProps) {
+  const navigate = useNavigate()
+  const rows = query.data?.pages.flatMap((page) => page.data) ?? []
+  const total = query.data?.pages[0]?.meta.totalItems ?? 0
+
+  return (
+    <section className={s.section} data-testid={testId}>
+      <div className={s.sectionHead}>
+        <h2 className={s.sectionTitle}>{title}</h2>
+      </div>
+
+      {query.isPending ? (
+        <Skeleton width="100%" height={180} />
+      ) : query.isError && rows.length === 0 ? (
+        <ErrorState title={errorTitle} onRetry={() => void query.refetch()} />
+      ) : rows.length === 0 ? (
+        <EmptyState title={emptyTitle} />
+      ) : (
+        <>
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead className={s.thead}>
+                <tr>
+                  {['Data', 'Campeonato', 'Partida', 'Local', 'Status', 'Resultado'].map((label) => (
+                    <th key={label} className={s.th}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const special = specialLossLabel(row)
+                  const open = () => navigate(`/matches/${row.match.id}`)
+                  return (
+                    <tr
+                      key={row.match.id}
+                      className={s.tr}
+                      tabIndex={0}
+                      onClick={open}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          open()
+                        }
+                      }}
+                    >
+                      <td className={s.td}>
+                        <Link
+                          to={`/matches/${row.match.id}`}
+                          className={s.rowLink}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {formatDateTime(row.match.scheduledAt)}
+                        </Link>
+                      </td>
+                      <td className={s.td}>{row.tournament.name}</td>
+                      <td className={s.tdStrong}>
+                        {row.team.name} ×{' '}
+                        <Link
+                          to={`/teams/${row.opponent.teamId}`}
+                          className={s.rowLink}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {row.opponent.name}
+                        </Link>
+                      </td>
+                      <td className={s.td}>{row.match.venueName ?? '—'}</td>
+                      <td className={s.td}>
+                        <Badge variant={matchStatusVariant(row.match.status)}>
+                          {MATCH_STATUS_LABELS[row.match.status]}
+                        </Badge>
+                      </td>
+                      <td className={s.td}>
+                        {matchResultText(row)}
+                        {special && <Badge variant="ghost">{special}</Badge>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <HistoryFooter
+            loaded={rows.length}
+            total={total}
+            noun="partida"
+            hasNextPage={Boolean(query.hasNextPage)}
+            isFetchingNextPage={query.isFetchingNextPage}
+            isFetchNextPageError={query.isFetchNextPageError}
+            nextPageErrorTitle="Não foi possível carregar mais partidas."
+            onLoadMore={() => void query.fetchNextPage()}
+          />
+        </>
+      )}
+    </section>
+  )
+}
+
 export function TeamDetailPage() {
   const { teamId: rawTeamId } = useParams<{ teamId: string }>()
   const teamId = parsePositiveId(rawTeamId)
@@ -170,6 +330,17 @@ export function TeamDetailPage() {
 
   const summaryQuery = useTeamSummaryQuery(teamId ?? undefined)
   const [activeTab, setActiveTab] = useState('overview')
+
+  const upcomingQuery = useTeamMatchesInfiniteQuery(
+    teamId ?? undefined,
+    'upcoming',
+    activeTab === 'matches',
+  )
+  const historyQuery = useTeamMatchesInfiniteQuery(
+    teamId ?? undefined,
+    'history',
+    activeTab === 'matches',
+  )
 
   const backButton = (
     <button type="button" className={s.backLink} onClick={() => navigate(-1)}>
@@ -256,6 +427,24 @@ export function TeamDetailPage() {
 
       <div className={s.detailBody}>
         {activeTab === 'overview' && <OverviewContent statistics={summary.statistics} />}
+        {activeTab === 'matches' && (
+          <>
+            <MatchSection
+              title="Próximas partidas"
+              testId="matches-upcoming"
+              query={upcomingQuery}
+              emptyTitle="Nenhuma partida agendada."
+              errorTitle="Não foi possível carregar as próximas partidas."
+            />
+            <MatchSection
+              title="Histórico"
+              testId="matches-history"
+              query={historyQuery}
+              emptyTitle="Nenhuma partida no histórico."
+              errorTitle="Não foi possível carregar o histórico de partidas."
+            />
+          </>
+        )}
       </div>
     </div>
   )

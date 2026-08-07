@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TeamDetailPage } from './TeamDetailPage'
 import * as sportsApi from '../../services/sportsApi'
 import type { TeamSummary } from '../../features/sports/types'
+import type { PaginatedResponse } from '../../types/admin'
 
 const TEAM_ID = 8
 
@@ -34,6 +35,55 @@ const measuredStatistics: TeamSummary['statistics'] = {
     efficiency: { measuredGames: 12, perGame: 82.417 },
   },
 }
+
+const upcomingRow = {
+  match: {
+    id: 601, status: 'SCHEDULED' as const, scheduledAt: '2026-09-10T22:00:00.000Z',
+    venueName: null, scoreSource: null,
+  },
+  tournament: { id: 12, name: 'Intercursos 2026', seasonId: 7, seasonLabel: '2026' },
+  team: {
+    tournamentTeamId: 41, teamId: TEAM_ID, name: 'Engenharia PUC',
+    score: null, result: null, lossType: null, isWinner: null,
+  },
+  opponent: {
+    tournamentTeamId: 43, teamId: 10, name: 'Medicina PUC',
+    score: null, result: null, lossType: null, isWinner: null,
+  },
+}
+
+const historyRow = {
+  match: {
+    id: 501, status: 'FINISHED' as const, scheduledAt: '2026-08-15T22:30:00.000Z',
+    venueName: 'Ginásio Central', scoreSource: 'PERIODS' as const,
+  },
+  tournament: { id: 12, name: 'Intercursos 2026', seasonId: 7, seasonLabel: '2026' },
+  team: {
+    tournamentTeamId: 41, teamId: TEAM_ID, name: 'Engenharia PUC',
+    score: 78, result: 'WIN' as const, lossType: null, isWinner: true,
+  },
+  opponent: {
+    tournamentTeamId: 42, teamId: 9, name: 'Direito PUC',
+    score: 72, result: 'LOSS' as const, lossType: 'FORFEIT' as const, isWinner: false,
+  },
+}
+
+/** Shared page-envelope builder, reused by the tournament and roster tests. */
+const matchPage = <T,>(data: T[], currentPage = 1, totalPages = 1): PaginatedResponse<T> => ({
+  data,
+  meta: { totalItems: data.length * totalPages, itemCount: data.length, itemsPerPage: 20, totalPages, currentPage },
+  links: {
+    first: '?page=1',
+    previous: currentPage === 1 ? null : '?page=1',
+    next: currentPage < totalPages ? '?page=2' : null,
+    last: `?page=${totalPages}`,
+  },
+  statusCode: 200,
+})
+
+const matchesByScope = (upcoming: typeof upcomingRow[], history: typeof historyRow[]) =>
+  vi.mocked(sportsApi.listTeamMatchesPage).mockImplementation(async (_id, params) =>
+    params.scope === 'upcoming' ? matchPage(upcoming) : matchPage(history))
 
 const summary: TeamSummary = {
   team: { id: TEAM_ID, name: 'Engenharia PUC', shortName: 'EPU', city: 'Campinas', state: 'SP', status: 'ACTIVE' },
@@ -76,6 +126,7 @@ afterEach(() => vi.restoreAllMocks())
 
 beforeEach(() => {
   vi.spyOn(sportsApi, 'getTeamSummary').mockResolvedValue(summary)
+  vi.spyOn(sportsApi, 'listTeamMatchesPage').mockResolvedValue(matchPage([]))
 })
 
 describe('TeamDetailPage', () => {
@@ -356,5 +407,180 @@ describe('TeamDetailPage', () => {
 
     await waitForTeamPage()
     expect(sportsApi.getTeamSummary).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not request matches before the Partidas tab opens', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(sportsApi.listTeamMatchesPage).not.toHaveBeenCalled()
+  })
+
+  it('requests both match scopes when the Partidas tab opens', async () => {
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    await waitFor(() => expect(sportsApi.listTeamMatchesPage).toHaveBeenCalledTimes(2))
+  })
+
+  it('renders an upcoming match with its tournament and schedule', async () => {
+    matchesByScope([upcomingRow], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-upcoming')
+    expect(within(section).getByText('Intercursos 2026')).toBeInTheDocument()
+  })
+
+  it('links only the opponent of an upcoming match to its team profile', async () => {
+    matchesByScope([upcomingRow], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-upcoming')
+    expect(within(section).getByRole('link', { name: 'Medicina PUC' })).toHaveAttribute('href', '/teams/10')
+  })
+
+  it('renders an em dash for an unscheduled venue', async () => {
+    matchesByScope([upcomingRow], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-upcoming')
+    expect(within(section).getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('keeps the result masked for a match that has not finished', async () => {
+    matchesByScope([upcomingRow], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-upcoming')
+    expect(within(section).queryByText(/Vitória|Derrota/)).not.toBeInTheDocument()
+  })
+
+  it('renders the finished result with the official score', async () => {
+    matchesByScope([], [historyRow])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-history')
+    expect(within(section).getByText('Vitória 78–72')).toBeInTheDocument()
+  })
+
+  it('flags a forfeited match in the history row', async () => {
+    matchesByScope([], [historyRow])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-history')
+    expect(within(section).getByText('W.O.')).toBeInTheDocument()
+  })
+
+  it('links a history row to its match detail', async () => {
+    matchesByScope([], [historyRow])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-history')
+    expect(within(section).getByRole('link', { name: /15 de ago/i })).toHaveAttribute('href', '/matches/501')
+  })
+
+  it('shows a scope-specific empty state for upcoming matches', async () => {
+    matchesByScope([], [historyRow])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(await screen.findByText('Nenhuma partida agendada.')).toBeInTheDocument()
+  })
+
+  it('shows a scope-specific empty state for the match history', async () => {
+    matchesByScope([upcomingRow], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    expect(await screen.findByText('Nenhuma partida no histórico.')).toBeInTheDocument()
+  })
+
+  it('keeps the history section readable when the upcoming section fails', async () => {
+    vi.mocked(sportsApi.listTeamMatchesPage).mockImplementation(async (_id, params) => {
+      if (params.scope === 'upcoming') throw new Error('upcoming unavailable')
+      return matchPage([historyRow])
+    })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const section = await screen.findByTestId('matches-history')
+    expect(within(section).getByText('Vitória 78–72')).toBeInTheDocument()
+  })
+
+  it('retries only the failed match scope', async () => {
+    const listMatches = vi.mocked(sportsApi.listTeamMatchesPage)
+    listMatches.mockImplementation(async (_id, params) => {
+      if (params.scope === 'history') return matchPage([])
+      throw new Error('upcoming unavailable')
+    })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    await screen.findByText('Não foi possível carregar as próximas partidas.')
+    listMatches.mockImplementation(async () => matchPage([upcomingRow]))
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    expect(await screen.findByText('Medicina PUC')).toBeInTheDocument()
+  })
+
+  it('appends the next history page on demand', async () => {
+    const older = { ...historyRow, match: { ...historyRow.match, id: 500 }, opponent: { ...historyRow.opponent, name: 'Arquitetura PUC' } }
+    const listMatches = vi.mocked(sportsApi.listTeamMatchesPage)
+    listMatches.mockImplementation(async (_id, params) =>
+      params.scope === 'upcoming' ? matchPage([]) : matchPage([historyRow], 1, 2))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    await screen.findByText('Vitória 78–72')
+    listMatches.mockImplementation(async () => matchPage([older], 2, 2))
+
+    await user.click(screen.getByRole('button', { name: 'Carregar mais' }))
+
+    expect(await screen.findByText('Arquitetura PUC')).toBeInTheDocument()
+  })
+
+  it('hides the load-more control on the last history page', async () => {
+    matchesByScope([], [historyRow])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    await screen.findByText('Vitória 78–72')
+
+    expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument()
   })
 })
