@@ -41,6 +41,8 @@ export interface RosterCandidate {
   teamId: number
   role: 'ATHLETE' | 'COACHING_STAFF'
   jerseyNumber: number | null
+  position: AthletePosition | null
+  status: AthleteStatus
 }
 
 export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'

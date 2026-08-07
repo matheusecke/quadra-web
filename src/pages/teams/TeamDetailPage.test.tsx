@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TeamDetailPage } from './TeamDetailPage'
 import * as sportsApi from '../../services/sportsApi'
-import type { TeamSummary } from '../../features/sports/types'
+import type { RosterCandidate, TeamSummary } from '../../features/sports/types'
 import type { PaginatedResponse } from '../../types/admin'
 
 const TEAM_ID = 8
@@ -109,6 +109,20 @@ const withdrawnParticipation = {
   statistics: emptyStatistics,
 }
 
+const athleteCandidate = {
+  id: 165, name: 'Rafael Moura', teamId: TEAM_ID, role: 'ATHLETE' as const,
+  jerseyNumber: 7, position: 'PG' as const, status: 'ACTIVE' as const,
+}
+
+const staffCandidate = {
+  id: 200, name: 'Marina Alves', teamId: TEAM_ID, role: 'COACHING_STAFF' as const,
+  jerseyNumber: null, position: null, status: 'ACTIVE' as const,
+}
+
+const rosterByRole = (athletes: RosterCandidate[], staff: RosterCandidate[]) =>
+  vi.mocked(sportsApi.listRosterCandidatesPage).mockImplementation(async (params) =>
+    params?.role === 'ATHLETE' ? matchPage(athletes) : matchPage(staff))
+
 const summary: TeamSummary = {
   team: { id: TEAM_ID, name: 'Engenharia PUC', shortName: 'EPU', city: 'Campinas', state: 'SP', status: 'ACTIVE' },
   titles: [],
@@ -152,6 +166,7 @@ beforeEach(() => {
   vi.spyOn(sportsApi, 'getTeamSummary').mockResolvedValue(summary)
   vi.spyOn(sportsApi, 'listTeamMatchesPage').mockResolvedValue(matchPage([]))
   vi.spyOn(sportsApi, 'listTeamTournamentsPage').mockResolvedValue(matchPage([]))
+  vi.spyOn(sportsApi, 'listRosterCandidatesPage').mockResolvedValue(matchPage([]))
 })
 
 describe('TeamDetailPage', () => {
@@ -739,5 +754,130 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Carregar mais' }))
 
     expect(await screen.findByRole('link', { name: 'Copa Interna 2025' })).toBeInTheDocument()
+  })
+
+  it('does not request the roster before the Elenco tab opens', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(sportsApi.listRosterCandidatesPage).not.toHaveBeenCalled()
+  })
+
+  it('requests athletes and coaching staff separately when the Elenco tab opens', async () => {
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    await waitFor(() => expect(sportsApi.listRosterCandidatesPage).toHaveBeenCalledTimes(2))
+  })
+
+  it('links an athlete to their profile', async () => {
+    rosterByRole([athleteCandidate], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const link = await screen.findByRole('link', { name: 'Rafael Moura' })
+    expect(link).toHaveAttribute('href', '/athletes/165')
+  })
+
+  it('renders the jersey number and position of an athlete', async () => {
+    rosterByRole([athleteCandidate], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const row = await screen.findByRole('row', { name: /rafael moura/i })
+    expect(within(row).getByText('PG')).toBeInTheDocument()
+  })
+
+  it('renders the athlete entity status', async () => {
+    rosterByRole([athleteCandidate], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const row = await screen.findByRole('row', { name: /rafael moura/i })
+    expect(within(row).getByText('Ativo')).toBeInTheDocument()
+  })
+
+  it('renders the fixed coaching function for staff members', async () => {
+    rosterByRole([], [staffCandidate])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const row = await screen.findByRole('row', { name: /marina alves/i })
+    expect(within(row).getByText('Comissão técnica')).toBeInTheDocument()
+  })
+
+  it('does not link a coaching staff member to an athlete profile', async () => {
+    rosterByRole([], [staffCandidate])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const row = await screen.findByRole('row', { name: /marina alves/i })
+    expect(within(row).queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('shows a role-specific empty state for athletes', async () => {
+    rosterByRole([], [staffCandidate])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    expect(await screen.findByText('Nenhum atleta ativo no elenco.')).toBeInTheDocument()
+  })
+
+  it('shows a role-specific empty state for the coaching staff', async () => {
+    rosterByRole([athleteCandidate], [])
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    expect(await screen.findByText('Nenhum integrante na comissão técnica.')).toBeInTheDocument()
+  })
+
+  it('keeps the athlete table readable when the coaching staff request fails', async () => {
+    vi.mocked(sportsApi.listRosterCandidatesPage).mockImplementation(async (params) => {
+      if (params?.role === 'COACHING_STAFF') throw new Error('staff unavailable')
+      return matchPage([athleteCandidate])
+    })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+
+    const section = await screen.findByTestId('roster-athletes')
+    expect(within(section).getByRole('link', { name: 'Rafael Moura' })).toBeInTheDocument()
+  })
+
+  it('retries only the failed roster role', async () => {
+    const listCandidates = vi.mocked(sportsApi.listRosterCandidatesPage)
+    listCandidates.mockImplementation(async (params) => {
+      if (params?.role === 'ATHLETE') return matchPage([])
+      throw new Error('staff unavailable')
+    })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+    await screen.findByText('Não foi possível carregar a comissão técnica.')
+    listCandidates.mockImplementation(async () => matchPage([staffCandidate]))
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+
+    expect(await screen.findByText('Marina Alves')).toBeInTheDocument()
   })
 })

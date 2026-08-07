@@ -13,10 +13,12 @@ import type { TabItem } from '../../components/ui/Tabs/Tabs'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useTeamMatchesInfiniteQuery,
+  useTeamRosterInfiniteQuery,
   useTeamSummaryQuery,
   useTeamTournamentsInfiniteQuery,
 } from '../../features/sports/queries'
 import {
+  ATHLETE_STATUS_LABELS,
   MATCH_STATUS_LABELS,
   TEAM_PROFILE_STATUS_LABELS,
   TOURNAMENT_STATUS_LABELS,
@@ -32,6 +34,7 @@ import {
   tournamentStatusVariant,
 } from '../../features/sports/sportsUtils'
 import type {
+  RosterCandidate,
   TeamMatchHistoryRow,
   TeamStatistics,
   TeamTitle,
@@ -44,6 +47,7 @@ const TABS: TabItem[] = [
   { id: 'overview', label: 'Visão geral' },
   { id: 'matches', label: 'Partidas' },
   { id: 'tournaments', label: 'Campeonatos' },
+  { id: 'roster', label: 'Elenco' },
 ]
 
 const PRODUCTION_METRICS = [
@@ -438,6 +442,87 @@ function TournamentsContent({
   )
 }
 
+interface RosterSectionProps {
+  title: string
+  testId: string
+  query: UseInfiniteQueryResult<InfiniteData<PaginatedResponse<RosterCandidate>>>
+  emptyTitle: string
+  errorTitle: string
+  noun: 'atleta' | 'integrante'
+  isAthleteTable: boolean
+}
+
+function RosterSection({
+  title, testId, query, emptyTitle, errorTitle, noun, isAthleteTable,
+}: RosterSectionProps) {
+  const rows = query.data?.pages.flatMap((page) => page.data) ?? []
+  const total = query.data?.pages[0]?.meta.totalItems ?? 0
+
+  return (
+    <section className={s.section} data-testid={testId}>
+      <div className={s.sectionHead}>
+        <h2 className={s.sectionTitle}>{title}</h2>
+      </div>
+
+      {query.isPending ? (
+        <Skeleton width="100%" height={160} />
+      ) : query.isError && rows.length === 0 ? (
+        <ErrorState title={errorTitle} onRetry={() => void query.refetch()} />
+      ) : rows.length === 0 ? (
+        <EmptyState title={emptyTitle} />
+      ) : (
+        <>
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead className={s.thead}>
+                <tr>
+                  {(isAthleteTable ? ['Nome', 'Nº', 'Posição', 'Status'] : ['Nome', 'Função']).map((label) => (
+                    <th key={label} className={s.th}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((candidate) => (
+                  <tr key={candidate.id} className={s.tr} style={{ cursor: 'default' }}>
+                    <td className={s.tdStrong}>
+                      {isAthleteTable ? (
+                        <Link to={`/athletes/${candidate.id}`} className={s.rowLink}>
+                          {candidate.name}
+                        </Link>
+                      ) : (
+                        candidate.name
+                      )}
+                    </td>
+                    {isAthleteTable ? (
+                      <>
+                        <td className={s.td}>{candidate.jerseyNumber ?? '—'}</td>
+                        <td className={s.td}>{candidate.position ?? '—'}</td>
+                        <td className={s.td}>{ATHLETE_STATUS_LABELS[candidate.status]}</td>
+                      </>
+                    ) : (
+                      <td className={s.td}>Comissão técnica</td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <HistoryFooter
+            loaded={rows.length}
+            total={total}
+            noun={noun}
+            hasNextPage={Boolean(query.hasNextPage)}
+            isFetchingNextPage={query.isFetchingNextPage}
+            isFetchNextPageError={query.isFetchNextPageError}
+            nextPageErrorTitle="Não foi possível carregar mais integrantes."
+            onLoadMore={() => void query.fetchNextPage()}
+          />
+        </>
+      )}
+    </section>
+  )
+}
+
 export function TeamDetailPage() {
   const { teamId: rawTeamId } = useParams<{ teamId: string }>()
   const teamId = parsePositiveId(rawTeamId)
@@ -459,6 +544,16 @@ export function TeamDetailPage() {
   const tournamentsQuery = useTeamTournamentsInfiniteQuery(
     teamId ?? undefined,
     activeTab === 'tournaments',
+  )
+  const athletesQuery = useTeamRosterInfiniteQuery(
+    teamId ?? undefined,
+    'ATHLETE',
+    activeTab === 'roster',
+  )
+  const staffQuery = useTeamRosterInfiniteQuery(
+    teamId ?? undefined,
+    'COACHING_STAFF',
+    activeTab === 'roster',
   )
 
   const backButton = (
@@ -586,6 +681,28 @@ export function TeamDetailPage() {
               onLoadMore={() => void tournamentsQuery.fetchNextPage()}
             />
           )
+        )}
+        {activeTab === 'roster' && (
+          <>
+            <RosterSection
+              title="Atletas"
+              testId="roster-athletes"
+              query={athletesQuery}
+              emptyTitle="Nenhum atleta ativo no elenco."
+              errorTitle="Não foi possível carregar os atletas."
+              noun="atleta"
+              isAthleteTable
+            />
+            <RosterSection
+              title="Comissão técnica"
+              testId="roster-staff"
+              query={staffQuery}
+              emptyTitle="Nenhum integrante na comissão técnica."
+              errorTitle="Não foi possível carregar a comissão técnica."
+              noun="integrante"
+              isAthleteTable={false}
+            />
+          </>
         )}
       </div>
     </div>
