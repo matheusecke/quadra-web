@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Trophy } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
@@ -12,7 +14,54 @@ import {
   formatTeamLocation,
   teamProfileStatusVariant,
 } from '../../features/sports/sportsUtils'
+import type { TeamTitle } from '../../features/sports/types'
 import s from './teamDetail.module.css'
+
+const INITIAL_TITLE_COUNT = 3
+
+/** Every title already arrives in the summary payload; expanding never refetches. */
+function TitleGallery({ titles }: { titles: TeamTitle[] }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  if (titles.length === 0) {
+    return (
+      <section className={s.gallery} aria-labelledby="team-titles-heading">
+        <h2 id="team-titles-heading" className={s.galleryTitle}>Títulos</h2>
+        <p className={s.galleryEmpty}>Nenhum título conquistado.</p>
+      </section>
+    )
+  }
+
+  const visible = isExpanded ? titles : titles.slice(0, INITIAL_TITLE_COUNT)
+
+  return (
+    <section className={s.gallery} aria-labelledby="team-titles-heading">
+      <div className={s.galleryHead}>
+        <h2 id="team-titles-heading" className={s.galleryTitle}>Títulos</h2>
+        {titles.length > INITIAL_TITLE_COUNT && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((previous) => !previous)}
+          >
+            {isExpanded ? 'Mostrar menos' : 'Ver todos'}
+          </Button>
+        )}
+      </div>
+      <ul className={s.galleryList}>
+        {visible.map(({ tournament }) => (
+          <li key={tournament.id} className={s.titleCard}>
+            <Trophy size={14} strokeWidth={1.8} className={s.titleIcon} aria-hidden="true" />
+            <span className={s.titleName}>{tournament.name}</span>
+            <span className={s.titleSeason}>{tournament.seasonLabel}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 export function TeamDetailPage() {
   const { teamId: rawTeamId } = useParams<{ teamId: string }>()
@@ -96,6 +145,8 @@ export function TeamDetailPage() {
             {TEAM_PROFILE_STATUS_LABELS[team.status]}
           </Badge>
         </div>
+
+        <TitleGallery titles={summary.titles} />
       </div>
 
       <div className={s.detailBody} />

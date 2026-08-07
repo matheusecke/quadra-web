@@ -28,6 +28,17 @@ const summary: TeamSummary = {
   statistics: emptyStatistics,
 }
 
+const title = (id: number, name: string, seasonLabel: string) => ({
+  tournament: { id, name, seasonId: 7, seasonLabel, startsAt: null, endsAt: null },
+})
+
+const fourTitles = [
+  title(14, 'Intercursos 2028', '2028'),
+  title(13, 'Intercursos 2027', '2027'),
+  title(12, 'Intercursos 2026', '2026'),
+  title(11, 'Intercursos 2025', '2025'),
+]
+
 function renderTeamPage(teamId: number | string = TEAM_ID) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -132,5 +143,115 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
 
     expect(await screen.findByTestId('team-header')).toBeInTheDocument()
+  })
+
+  it('shows the empty gallery message when the team has no titles', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(screen.getByText('Nenhum título conquistado.')).toBeInTheDocument()
+  })
+
+  it('offers no expand control when the team has no titles', async () => {
+    renderTeamPage()
+
+    await waitForTeamPage()
+
+    expect(screen.queryByRole('button', { name: 'Ver todos' })).not.toBeInTheDocument()
+  })
+
+  it('renders at most three titles before expanding', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('keeps the oldest title hidden until the gallery expands', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.queryByText('Intercursos 2025')).not.toBeInTheDocument()
+  })
+
+  it('offers no expand control with exactly three titles', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({
+      ...summary,
+      titles: fourTitles.slice(0, 3),
+    })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.queryByRole('button', { name: 'Ver todos' })).not.toBeInTheDocument()
+  })
+
+  it('reports the collapsed gallery state to assistive technology', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    expect(screen.getByRole('button', { name: 'Ver todos' })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('expands the full title list inline', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('button', { name: 'Ver todos' }))
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+  })
+
+  it('expands the gallery without a second summary request', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValue({ ...summary, titles: fourTitles })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('button', { name: 'Ver todos' }))
+
+    expect(sportsApi.getTeamSummary).toHaveBeenCalledTimes(1)
+  })
+
+  it('collapses the gallery back to three titles', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('button', { name: 'Ver todos' }))
+
+    await user.click(screen.getByRole('button', { name: 'Mostrar menos' }))
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('reports the expanded gallery state to assistive technology', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+
+    await user.click(screen.getByRole('button', { name: 'Ver todos' }))
+
+    expect(screen.getByRole('button', { name: 'Mostrar menos' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('renders each title with its tournament and season', async () => {
+    vi.mocked(sportsApi.getTeamSummary).mockResolvedValueOnce({ ...summary, titles: fourTitles })
+
+    renderTeamPage()
+
+    await waitForTeamPage()
+    const entry = within(screen.getAllByRole('listitem')[0])
+    expect(entry.getByText('Intercursos 2028')).toBeInTheDocument()
   })
 })
