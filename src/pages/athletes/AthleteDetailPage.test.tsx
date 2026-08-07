@@ -86,6 +86,7 @@ function renderAthletePage(athleteId: number | string = RAFAEL_ID) {
         <Routes>
           <Route path="/athletes/:athleteId" element={<AthleteDetailPage />} />
           <Route path="/matches/:matchId" element={<div>Match destination</div>} />
+          <Route path="/teams/:teamId" element={<div>Team destination</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -360,8 +361,8 @@ describe('AthleteDetailPage', () => {
 
     const row = await screen.findByRole('row', { name: /historical cup/i })
     expect(within(row).getByText('Historical Athlete')).toBeInTheDocument()
-    expect(within(row).getByRole('link', { name: 'Historical Team × Historical Opponent' }))
-      .toHaveAttribute('href', '/matches/501')
+    expect(within(row).getByRole('link', { name: 'Historical Team' })).toHaveAttribute('href', '/teams/8')
+    expect(within(row).getByRole('link', { name: 'Historical Opponent' })).toHaveAttribute('href', '/teams/15')
     expect(within(row).getByText('Derrota 0–20')).toBeInTheDocument()
     expect(within(row).getByText('W.O.')).toBeInTheDocument()
     expect(within(row).getByText('140%')).toBeInTheDocument()
@@ -418,8 +419,8 @@ describe('AthleteDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Partidas' }))
     await user.click(await screen.findByRole('button', { name: 'Carregar mais' }))
 
-    expect(screen.getAllByRole('link', { name: /historical team × historical opponent/i }).map((link) => link.getAttribute('href')))
-      .toEqual(['/matches/501', '/matches/500'])
+    expect(screen.getAllByText(/cup/i).map((node) => node.textContent))
+      .toEqual(['Historical Cup', 'Older Cup'])
     expect(sportsApi.listAthleteMatchesPage).toHaveBeenLastCalledWith(RAFAEL_ID, { page: 2, limit: 20 })
     expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument()
   })
@@ -456,6 +457,49 @@ describe('AthleteDetailPage', () => {
     row.focus()
     await user.keyboard(key)
     expect(await screen.findByText('Match destination')).toBeInTheDocument()
+  })
+
+  it('links the athlete team of a match row to its team profile', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const link = await screen.findByRole('link', { name: 'Historical Team' })
+    expect(link).toHaveAttribute('href', '/teams/8')
+  })
+
+  it('links the opponent of a match row to its team profile', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+
+    const link = await screen.findByRole('link', { name: 'Historical Opponent' })
+    expect(link).toHaveAttribute('href', '/teams/15')
+  })
+
+  it('keeps the match row reachable by keyboard after the cell links change', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Partidas' }))
+    const row = await screen.findByRole('row', { name: /historical team/i })
+
+    row.focus()
+    await user.keyboard('{Enter}')
+
+    expect(await screen.findByText('Match destination')).toBeInTheDocument()
+  })
+
+  it('links the snapshot team of a tournament row to its team profile', async () => {
+    const user = userEvent.setup()
+    renderAthletePage()
+    await waitForAthletePage()
+    await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
+
+    const link = await screen.findByRole('link', { name: 'Snapshot Team' })
+    expect(link).toHaveAttribute('href', '/teams/8')
   })
 
   it('shows the matches empty state when the athlete has no match history', async () => {
