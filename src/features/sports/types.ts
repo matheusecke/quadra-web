@@ -175,6 +175,8 @@ export type MatchScoreSource = 'PERIODS' | 'AWARDED'
 
 export interface MatchSide {
   tournamentTeamId: number
+  /** Global Team.id — the navigation target; the snapshot name stays the label. */
+  teamId: number
   teamName: string
   score: number | null
   result: MatchSideResult | null

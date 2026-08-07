@@ -22,8 +22,8 @@ const buildMatch = (id: number): MatchSummary => ({
   venueName: 'Ginásio Central',
   bracketRound: null,
   scoreSource: 'PERIODS',
-  homeTeam: { tournamentTeamId: 1, teamName: 'Abutres', score: 20, result: 'WIN', lossType: null, isWinner: true },
-  awayTeam: { tournamentTeamId: 2, teamName: 'Águias Douradas', score: 0, result: 'LOSS', lossType: null, isWinner: false },
+  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: 'Abutres', score: 20, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: 'Águias Douradas', score: 0, result: 'LOSS', lossType: null, isWinner: false },
 })
 
 const page = (data: MatchSummary[], currentPage: number, totalPages: number): PaginatedResponse<MatchSummary> => ({

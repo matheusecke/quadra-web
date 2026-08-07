@@ -30,8 +30,8 @@ const buildMatch = (id: number, tournamentId: number): MatchSummary => ({
   venueName: 'Ginásio Central',
   bracketRound: null,
   scoreSource: null,
-  homeTeam: { tournamentTeamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
-  awayTeam: { tournamentTeamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
 })
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))

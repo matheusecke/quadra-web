@@ -23,8 +23,8 @@ const buildMatch = (overrides: Partial<MatchDetail> = {}): MatchDetail => ({
   venueName: 'Quadra 1',
   bracketRound: null,
   scoreSource: null,
-  homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: null, result: null, lossType: null, isWinner: null },
-  awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: null, result: null, lossType: null, isWinner: null },
+  homeTeam: { tournamentTeamId: 41, teamId: 8, teamName: 'Águias', score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 52, teamId: 9, teamName: 'Falcões', score: null, result: null, lossType: null, isWinner: null },
   periods: [],
   playerStats: [],
   mvp: null,
@@ -98,8 +98,8 @@ describe('MatchDetailPage — read', () => {
     vi.spyOn(sportsApi, 'getMatch').mockResolvedValue(buildMatch({
       status: 'FINISHED',
       scoreSource: 'PERIODS',
-      homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
-      awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
+      homeTeam: { tournamentTeamId: 41, teamId: 8, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
+      awayTeam: { tournamentTeamId: 52, teamId: 9, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
     }))
 
     renderDetail()
