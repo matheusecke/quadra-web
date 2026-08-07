@@ -1,5 +1,9 @@
 # Project Instructions
 
+## Commit Attribution
+
+Keep commit messages limited to the repository change. Do not add `Co-authored-by`, `Signed-off-by`, `Generated-by`, or equivalent authorship, provenance, or tool-identification trailers or commit-body metadata.
+
 ## Commands
 
 ```bash
