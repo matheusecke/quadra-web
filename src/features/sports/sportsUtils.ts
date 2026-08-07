@@ -16,7 +16,9 @@ import type {
   MatchSummary,
   StandingRow,
   Team,
+  TeamProfileStatus,
   TournamentTeam,
+  TournamentTeamStatus,
 } from './types'
 
 // ── Standings formatting ────────────────────────────────────────────────────
@@ -97,6 +99,17 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   INACTIVE: 'Inativo',
 }
 
+export const TEAM_PROFILE_STATUS_LABELS: Record<TeamProfileStatus, string> = {
+  ACTIVE: 'Ativa',
+  HISTORICAL: 'Histórica',
+  INACTIVE: 'Inativa',
+}
+
+export const TOURNAMENT_TEAM_STATUS_LABELS: Record<TournamentTeamStatus, string> = {
+  ACTIVE: 'Ativa',
+  WITHDRAWN: 'Desistente',
+}
+
 // ── Badge variant mapping (matches Badge component variants) ────────────────────
 
 type BadgeVariant = 'default' | 'accent' | 'live' | 'success' | 'warning' | 'danger' | 'ghost'
@@ -128,6 +141,18 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
     case 'CANCELLED':
       return 'danger'
     case 'SCHEDULED':
+    default:
+      return 'ghost'
+  }
+}
+
+export function teamProfileStatusVariant(status: TeamProfileStatus): BadgeVariant {
+  switch (status) {
+    case 'ACTIVE':
+      return 'success'
+    case 'INACTIVE':
+      return 'danger'
+    case 'HISTORICAL':
     default:
       return 'ghost'
   }
@@ -230,6 +255,32 @@ export function formatMeasuredGames(count: number): string {
 
 export function formatShootingLine(made: number | null, attempted: number | null): string {
   return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
+}
+
+// ── Team profile formatting ───────────────────────────────────────────────────
+// The team profile renders an unavailable value as `—` (spec §4.8); the athlete
+// screens keep their own `N/A` convention.
+
+/** `city / state`, dropping whichever half is missing. */
+export function formatTeamLocation(city: string | null, state: string | null): string {
+  return [city, state].filter(Boolean).join(' / ') || '—'
+}
+
+/** Server-owned average, printed without imposing a new precision. */
+export function formatAverage(value: number | null): string {
+  return value === null ? '—' : String(value)
+}
+
+/** Signed average, used for the official point differential per game. */
+export function formatSignedAverage(value: number | null): string {
+  if (value === null) return '—'
+  return value > 0 ? `+${value}` : String(value)
+}
+
+/** Server-owned fraction shown as a percentage; values may exceed 1.0. */
+export function formatRate(value: number | null): string {
+  if (value === null) return '—'
+  return `${Number((value * 100).toFixed(1))}%`
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {
