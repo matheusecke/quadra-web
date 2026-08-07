@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
+import type { InfiniteData, UseInfiniteQueryResult, UseQueryResult } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import { apiErrorCode } from '../../services/apiError'
 import { collectPages } from '../../services/sportsApi/pagination'
@@ -19,7 +19,13 @@ import type {
   AthleteTournamentHistoryRow,
   MatchDetail,
   MatchSummary,
+  RosterCandidate,
+  RosterRole,
   SeasonStatus,
+  TeamMatchHistoryRow,
+  TeamMatchScope,
+  TeamSummary,
+  TeamTournamentHistoryRow,
   TournamentStatus,
 } from './types'
 import type {
@@ -79,6 +85,16 @@ export const matchKeys = {
 export const teamKeys = {
   all: ['teams'] as const,
   list: () => [...teamKeys.all, 'list'] as const,
+}
+
+export const teamProfileKeys = {
+  all: ['team-profile'] as const,
+  summary: (id: number) => [...teamProfileKeys.all, 'summary', id] as const,
+  matches: (id: number, scope: TeamMatchScope) =>
+    [...teamProfileKeys.all, 'matches', id, scope, 20] as const,
+  tournaments: (id: number) => [...teamProfileKeys.all, 'tournaments', id, 20] as const,
+  roster: (teamId: number, role: RosterRole) =>
+    [...teamProfileKeys.all, 'roster', teamId, role, 20] as const,
 }
 
 export type AthleteMatchFilters = Omit<ListAthleteMatchesParams, 'page' | 'limit'>
@@ -259,6 +275,61 @@ export function useMatchDetailQuery(id: number | undefined) {
 
 export function useTeamsQuery() {
   return useQuery({ queryKey: teamKeys.list(), queryFn: () => sportsApi.getTeams() })
+}
+
+export function useTeamSummaryQuery(id: number | undefined): UseQueryResult<TeamSummary> {
+  return useQuery({
+    queryKey: teamProfileKeys.summary(id ?? -1),
+    queryFn: () => sportsApi.getTeamSummary(id!),
+    enabled: id != null,
+  })
+}
+
+/** Upcoming and history are separate queries so each section fails and paginates alone. */
+export function useTeamMatchesInfiniteQuery(
+  id: number | undefined,
+  scope: TeamMatchScope,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<TeamMatchHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.matches(id ?? -1, scope),
+    queryFn: ({ pageParam }) => sportsApi.listTeamMatchesPage(id!, { scope, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: id != null && enabled,
+  })
+}
+
+export function useTeamTournamentsInfiniteQuery(
+  id: number | undefined,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<TeamTournamentHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.tournaments(id ?? -1),
+    queryFn: ({ pageParam }) => sportsApi.listTeamTournamentsPage(id!, { page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: id != null && enabled,
+  })
+}
+
+/** The roster reuses the athlete catalog; athletes and coaching staff are separate reads. */
+export function useTeamRosterInfiniteQuery(
+  teamId: number | undefined,
+  role: RosterRole,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<RosterCandidate>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.roster(teamId ?? -1, role),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listRosterCandidatesPage({ teamId: teamId!, role, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: teamId != null && enabled,
+  })
 }
 
 export function useAthleteQuery(id: number | undefined) {
