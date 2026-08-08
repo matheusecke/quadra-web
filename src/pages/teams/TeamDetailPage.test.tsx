@@ -401,7 +401,7 @@ describe('TeamDetailPage', () => {
 
     await waitForTeamPage()
     const strip = screen.getByTestId('overview-production')
-    expect(within(strip).getAllByText('—').length).toBeGreaterThan(0)
+    expect(within(strip).getAllByText('—')).toHaveLength(2)
   })
 
   it('keeps a measured zero denominator visible for an unmeasured metric', async () => {
@@ -419,7 +419,16 @@ describe('TeamDetailPage', () => {
     renderTeamPage()
 
     await waitForTeamPage()
-    expect(screen.queryByRole('heading', { name: 'Totais' })).not.toBeInTheDocument()
+    const labels = [
+      ...screen.getByTestId('overview-results').querySelectorAll('[class*="statLabel"]'),
+      ...screen.getByTestId('overview-production').querySelectorAll('[class*="statLabel"]'),
+    ].map((el) => el.textContent)
+
+    // Only rates, averages and measured-game counts — never a raw total (e.g. PTS, Total de pontos).
+    expect(labels).toEqual([
+      '%V', 'PP/J', 'PC/J', 'SALDO/J',
+      'RPG', 'APG', 'STG', 'BPG', 'TOV', 'PF', 'EFF/J', 'FG%', '3FG%', 'FT%', 'TS%',
+    ])
   })
 
   it('reports an entirely unmeasured results group as having no statistics', async () => {
@@ -497,7 +506,9 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Partidas' }))
 
     const section = await screen.findByTestId('matches-upcoming')
-    expect(within(section).getAllByText('—').length).toBeGreaterThan(0)
+    const row = within(section).getByRole('row', { name: /medicina puc/i })
+    const cells = row.querySelectorAll('td')
+    expect(cells[3]).toHaveTextContent('—') // Local column
   })
 
   it('keeps the result masked for a match that has not finished', async () => {
