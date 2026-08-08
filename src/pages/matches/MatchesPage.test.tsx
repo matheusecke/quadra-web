@@ -22,8 +22,8 @@ const buildMatch = (id: number): MatchSummary => ({
   venueName: 'Ginásio Central',
   bracketRound: null,
   scoreSource: 'PERIODS',
-  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: 'Abutres', score: 20, result: 'WIN', lossType: null, isWinner: true },
-  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: 'Águias Douradas', score: 0, result: 'LOSS', lossType: null, isWinner: false },
+  homeTeam: { tournamentTeamId: 1, teamId: 8, teamName: 'Abutres', score: 20, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 2, teamId: 9, teamName: 'Águias Douradas', score: 0, result: 'LOSS', lossType: null, isWinner: false },
 })
 
 const page = (data: MatchSummary[], currentPage: number, totalPages: number): PaginatedResponse<MatchSummary> => ({
@@ -179,7 +179,7 @@ describe('MatchesPage matchup rendering', () => {
     renderMatchesPage()
 
     const link = await screen.findByRole('link', { name: 'Abutres' })
-    expect(link).toHaveAttribute('href', '/teams/1')
+    expect(link).toHaveAttribute('href', '/teams/8')
   })
 
   it('links the away team of a row to its team profile', async () => {
@@ -187,6 +187,6 @@ describe('MatchesPage matchup rendering', () => {
     renderMatchesPage()
 
     const link = await screen.findByRole('link', { name: 'Águias Douradas' })
-    expect(link).toHaveAttribute('href', '/teams/2')
+    expect(link).toHaveAttribute('href', '/teams/9')
   })
 })
