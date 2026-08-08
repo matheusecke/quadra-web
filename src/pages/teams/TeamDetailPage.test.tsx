@@ -880,4 +880,21 @@ describe('TeamDetailPage', () => {
 
     expect(await screen.findByText('Marina Alves')).toBeInTheDocument()
   })
+
+  it('shows the athlete-specific error when the next roster page fails to load', async () => {
+    const listCandidates = vi.mocked(sportsApi.listRosterCandidatesPage)
+    listCandidates.mockImplementation(async (params) =>
+      params?.role === 'ATHLETE' ? matchPage([athleteCandidate], 1, 2) : matchPage([]))
+    const user = userEvent.setup()
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Elenco' }))
+    await screen.findByRole('link', { name: 'Rafael Moura' })
+    listCandidates.mockImplementation(async (params) =>
+      params?.role === 'ATHLETE' ? Promise.reject(new Error('next page unavailable')) : matchPage([]))
+
+    await user.click(screen.getByRole('button', { name: 'Carregar mais' }))
+
+    expect(await screen.findByText('Não foi possível carregar mais atletas.')).toBeInTheDocument()
+  })
 })

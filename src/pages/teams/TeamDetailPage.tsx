@@ -514,7 +514,7 @@ function RosterSection({
             hasNextPage={Boolean(query.hasNextPage)}
             isFetchingNextPage={query.isFetchingNextPage}
             isFetchNextPageError={query.isFetchNextPageError}
-            nextPageErrorTitle="Não foi possível carregar mais integrantes."
+            nextPageErrorTitle={`Não foi possível carregar mais ${noun}s.`}
             onLoadMore={() => void query.fetchNextPage()}
           />
         </>
