@@ -72,7 +72,13 @@ export function BracketCanvas({
     const label = slotDisplayName(slot, roundOf(slot))
 
     if (!canEditStructure) {
-      return <p className={s.sideReadOnly}>{team ? team.name : (otherSide ? 'bye' : 'a definir')}</p>
+      return (
+        <p className={s.sideReadOnly}>
+          {team ? (
+            <Link to={`/teams/${team.teamId}`} className={s.teamLink}>{team.name}</Link>
+          ) : (otherSide ? 'bye' : 'a definir')}
+        </p>
+      )
     }
 
     const options = teams.map((entry) => ({ value: String(entry.tournamentTeamId), label: entry.name, secondary: entry.shortName }))

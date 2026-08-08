@@ -26,13 +26,13 @@ const readEnvelope = {
         slots: [
           {
             id: 101, position: 1, label: null,
-            homeTeam: { tournamentTeamId: 21, name: 'Engenharia', shortName: 'ENG' },
-            awayTeam: { tournamentTeamId: 22, name: 'Medicina', shortName: 'MED' },
+            homeTeam: { tournamentTeamId: 21, teamId: 8, name: 'Engenharia', shortName: 'ENG' },
+            awayTeam: { tournamentTeamId: 22, teamId: 9, name: 'Medicina', shortName: 'MED' },
             match: null, winnerTournamentTeamId: null,
           },
           {
             id: 102, position: 2, label: null,
-            homeTeam: { tournamentTeamId: 23, name: 'Direito', shortName: 'DIR' },
+            homeTeam: { tournamentTeamId: 23, teamId: 10, name: 'Direito', shortName: 'DIR' },
             awayTeam: null,
             match: { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 78, awayScore: 65 },
             winnerTournamentTeamId: null,
@@ -97,10 +97,16 @@ describe('getBracket', () => {
     const { slots } = await getBracket(12)
     expect(slots[0]).toEqual({
       id: 101, roundId: 10, position: 1, label: null,
-      homeTeam: { tournamentTeamId: 21, name: 'Engenharia', shortName: 'ENG' },
-      awayTeam: { tournamentTeamId: 22, name: 'Medicina', shortName: 'MED' },
+      homeTeam: { tournamentTeamId: 21, teamId: 8, name: 'Engenharia', shortName: 'ENG' },
+      awayTeam: { tournamentTeamId: 22, teamId: 9, name: 'Medicina', shortName: 'MED' },
       match: null, winnerTournamentTeamId: null,
     })
+  })
+
+  it('carries the global team id of a bracket slot through the flattening', async () => {
+    apiMock.get.mockResolvedValue({ data: readEnvelope })
+    const { slots } = await getBracket(12)
+    expect(slots[0].homeTeam?.teamId).toBe(8)
   })
 
   it('preserves a linked match view unchanged', async () => {

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import type { StandingRow, Team } from '../../../features/sports/types'
 import { cn } from '../../../components/ui/cn'
 import { formatDiff, formatPct } from '../../../features/sports/sportsUtils'
@@ -42,7 +43,9 @@ export function StandingsTable({ rows, teams, variant = 'compact', renderRowActi
               <tr key={row.teamId} className={cn(row.isTiedUnresolved && s.standTied)}>
                 <td className={s.standPos}>{row.position ?? '—'}</td>
                 <td className={s.standTeam}>
-                  <span className={s.standTeamName}>{team?.name ?? row.teamName}</span>
+                  <Link to={`/teams/${row.teamId}`} className={`${s.standTeamName} ${s.teamLink}`}>
+                    {team?.name ?? row.teamName}
+                  </Link>
                   <span className={s.standTeamTag}>{team?.shortName}</span>
                   {row.isTiedUnresolved && <span className={s.standTieChip}>⇅ empate</span>}
                 </td>

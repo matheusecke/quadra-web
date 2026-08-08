@@ -136,6 +136,7 @@ export function TournamentDetailPage() {
       ?? String(tournament.categoryId)
   const championTournamentTeam = enrolledJoins?.find((entry) => entry.id === tournament?.championTournamentTeamId)
   const championName = championTournamentTeam?.displayNameSnapshot ?? null
+  const championTeamId = championTournamentTeam?.teamId ?? null
 
   const rosterDisplay = (roster ?? []).map((entry) => ({
     id: entry.id,
@@ -344,7 +345,7 @@ export function TournamentDetailPage() {
         </div>
 
         {tournament.status === 'COMPLETED' && championName && (
-          <ChampionHighlight teamName={championName} />
+          <ChampionHighlight teamName={championName} teamId={championTeamId} />
         )}
 
         {/* Compact info strip — not dashboard cards */}

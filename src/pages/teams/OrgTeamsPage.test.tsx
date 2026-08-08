@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OrgTeamsPage } from './OrgTeamsPage'
 
@@ -26,7 +27,9 @@ function renderPage() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <OrgTeamsPage />
+      <MemoryRouter>
+        <OrgTeamsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -105,6 +108,13 @@ describe('OrgTeamsPage', () => {
       q: undefined,
       status: undefined,
     })
+  })
+
+  it('links an affiliated team to its team profile', async () => {
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: 'Lobos' })
+    expect(link).toHaveAttribute('href', '/teams/18')
   })
 
   it('renders skeleton rows while the team list query is still loading', () => {

@@ -152,8 +152,8 @@ describe('BracketTab', () => {
       rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Final' }],
       slots: [{
         id: 101, roundId: 10, position: 1, label: null,
-        homeTeam: { tournamentTeamId: 41, name: 'Águias', shortName: 'AGU' },
-        awayTeam: { tournamentTeamId: 52, name: 'Falcões', shortName: 'FAL' },
+        homeTeam: { tournamentTeamId: 41, teamId: 8, name: 'Águias', shortName: 'AGU' },
+        awayTeam: { tournamentTeamId: 52, teamId: 9, name: 'Falcões', shortName: 'FAL' },
         match: null, winnerTournamentTeamId: null,
         ...slotOverrides,
       }],
@@ -170,8 +170,8 @@ describe('BracketTab', () => {
       id: 501, tournamentId: 12, tournamentGroupId: null, matchNumber: null,
       status: 'SCHEDULED', scheduledAt: '2026-08-01T22:00:00.000Z', startedAt: null, endedAt: null,
       venueName: null, bracketRound: null, scoreSource: null,
-      homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: null, result: null, lossType: null, isWinner: null },
-      awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: null, result: null, lossType: null, isWinner: null },
+      homeTeam: { tournamentTeamId: 41, teamId: 8, teamName: 'Águias', score: null, result: null, lossType: null, isWinner: null },
+      awayTeam: { tournamentTeamId: 52, teamId: 9, teamName: 'Falcões', score: null, result: null, lossType: null, isWinner: null },
       ...over,
     })
 
@@ -253,8 +253,8 @@ describe('BracketTab', () => {
       rounds: [{ id: 10, tournamentId: 12, number: 1, label: 'Final' }],
       slots: [{
         id: 101, roundId: 10, position: 1, label: null,
-        homeTeam: { tournamentTeamId: 41, name: 'Águias', shortName: 'AGU' },
-        awayTeam: { tournamentTeamId: 52, name: 'Falcões', shortName: 'FAL' },
+        homeTeam: { tournamentTeamId: 41, teamId: 8, name: 'Águias', shortName: 'AGU' },
+        awayTeam: { tournamentTeamId: 52, teamId: 9, name: 'Falcões', shortName: 'FAL' },
         match: null, winnerTournamentTeamId: null,
         ...slotOverrides,
       }],

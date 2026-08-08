@@ -232,8 +232,20 @@ function MatchesContent({
                   <td className={s.td}>{row.tournament.name}</td>
                   <td className={s.td}>{row.athleteName}</td>
                   <td className={s.tdStrong}>
-                    <Link to={`/matches/${row.match.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
-                      {row.team.name} × {row.opponent.name}
+                    <Link
+                      to={`/teams/${row.team.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.team.name}
+                    </Link>
+                    {' × '}
+                    <Link
+                      to={`/teams/${row.opponent.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.opponent.name}
                     </Link>
                   </td>
                   <td className={s.td}>
@@ -339,7 +351,15 @@ function TournamentsContent({
                       {row.tournament.name}
                     </Link>
                   </td>
-                  <td className={s.td}>{row.team.name}</td>
+                  <td className={s.td}>
+                    <Link
+                      to={`/teams/${row.team.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.team.name}
+                    </Link>
+                  </td>
                   <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? `Temporada #${row.tournament.seasonId}`}</td>
                   <td className={s.tdNum}>{statistics.gamesPlayed}</td>
                   <td className={s.tdNum}><MeasuredMetric value={formatMinutesSeconds(statistics.perGame.minutesSeconds)} count={statistics.measuredGames.minutesSeconds} /></td>

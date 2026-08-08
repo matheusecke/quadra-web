@@ -25,6 +25,7 @@ import { MatchSumulaPage } from './pages/matches/MatchSumulaPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
+import { TeamDetailPage } from './pages/teams/TeamDetailPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
           { path: '/athletes/:athleteId', element: <AthleteDetailPage /> },
+          { path: '/teams/:teamId', element: <TeamDetailPage /> },
           {
             element: <AdminRoute />,
             children: [

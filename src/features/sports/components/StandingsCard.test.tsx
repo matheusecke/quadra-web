@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { StandingsCard } from './StandingsCard'
 import type { StandingRow, StandingsEnvelope, Team } from '../types'
 
@@ -22,13 +23,15 @@ const envelope = (over: Partial<StandingsEnvelope>): StandingsEnvelope => ({
 
 const renderCard = (env: StandingsEnvelope, isOrgAdmin = true, onSetTiebreakOrder = vi.fn().mockResolvedValue(undefined)) =>
   render(
-    <StandingsCard
-      envelope={env}
-      teams={teams}
-      isOrgAdmin={isOrgAdmin}
-      onSetTiebreakOrder={onSetTiebreakOrder}
-      onClearTiebreakOrder={vi.fn().mockResolvedValue(undefined)}
-    />,
+    <MemoryRouter>
+      <StandingsCard
+        envelope={env}
+        teams={teams}
+        isOrgAdmin={isOrgAdmin}
+        onSetTiebreakOrder={onSetTiebreakOrder}
+        onClearTiebreakOrder={vi.fn().mockResolvedValue(undefined)}
+      />
+    </MemoryRouter>,
   )
 
 describe('StandingsCard', () => {

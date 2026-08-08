@@ -21,7 +21,10 @@ const page = <T,>(currentPage: number, totalPages: number, data: T[]) => ({
   statusCode: 200,
 })
 
-const candidate165 = { id: 165, name: 'Rafael Moura', teamId: 8, role: 'ATHLETE' as const, jerseyNumber: 4 }
+const candidate165 = {
+  id: 165, name: 'Rafael Moura', teamId: 8, role: 'ATHLETE' as const,
+  jerseyNumber: 4, position: 'PG' as const, status: 'ACTIVE' as const,
+}
 
 beforeEach(() => {
   apiMock.get.mockReset()

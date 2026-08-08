@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { StandingsTab } from './StandingsTab'
 import * as sportsApi from '../../../services/sportsApi'
 import { getTeams } from '../../../features/sports/mock-sports-data'
@@ -28,9 +29,11 @@ describe('StandingsTab', () => {
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
-      <QueryClientProvider client={client}>
-        <StandingsTab tournament={tournament} teams={teamMap(getTeams())} />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <StandingsTab tournament={tournament} teams={teamMap(getTeams())} />
+        </QueryClientProvider>
+      </MemoryRouter>,
     )
 
     await waitFor(() => expect(screen.getAllByRole('row').length).toBeGreaterThan(1))

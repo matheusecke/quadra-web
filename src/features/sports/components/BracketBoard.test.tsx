@@ -11,7 +11,7 @@ const rounds: BracketRound[] = [
   { id: 2, tournamentId: 1, number: 2, label: 'Final' },
 ]
 
-const team = (tournamentTeamId: number, name: string, shortName: string) => ({ tournamentTeamId, name, shortName })
+const team = (tournamentTeamId: number, name: string, shortName: string, teamId = tournamentTeamId + 100) => ({ tournamentTeamId, teamId, name, shortName })
 
 const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'roundId' | 'position'>): BracketSlotView => ({
   label: null,
@@ -130,6 +130,18 @@ describe('BracketBoard', () => {
   it('renders no control that writes', () => {
     renderBoard()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('links a filled slot side to its team profile', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1, homeTeam: team(1, 'Alfa', 'T01') })] })
+
+    expect(screen.getByRole('link', { name: 'Alfa' })).toHaveAttribute('href', '/teams/101')
+  })
+
+  it('leaves an undecided slot side unlinked', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1 })] })
+
+    expect(screen.queryByRole('link', { name: 'a definir' })).not.toBeInTheDocument()
   })
 
   describe('linked match', () => {

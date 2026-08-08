@@ -38,8 +38,8 @@ const matches: MatchSummary[] = [
     venueName: 'Ginásio Central',
     bracketRound: { id: 11, number: 1, label: 'Oitavas de final' },
     scoreSource: 'PERIODS',
-    homeTeam: { tournamentTeamId: 1001, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
-    awayTeam: { tournamentTeamId: 1002, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
+    homeTeam: { tournamentTeamId: 1001, teamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+    awayTeam: { tournamentTeamId: 1002, teamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
   },
   {
     id: 102,
@@ -53,8 +53,8 @@ const matches: MatchSummary[] = [
     venueName: 'Arena Metropolitana',
     bracketRound: { id: 12, number: 2, label: 'Semifinais' },
     scoreSource: null,
-    homeTeam: { tournamentTeamId: 1003, teamName: 'Linces', score: null, result: null, lossType: null, isWinner: null },
-    awayTeam: { tournamentTeamId: 1004, teamName: 'Lobos do Norte', score: null, result: null, lossType: null, isWinner: null },
+    homeTeam: { tournamentTeamId: 1003, teamId: 3, teamName: 'Linces', score: null, result: null, lossType: null, isWinner: null },
+    awayTeam: { tournamentTeamId: 1004, teamId: 4, teamName: 'Lobos do Norte', score: null, result: null, lossType: null, isWinner: null },
   },
 ]
 

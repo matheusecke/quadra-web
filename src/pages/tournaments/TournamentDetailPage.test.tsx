@@ -30,8 +30,8 @@ const buildMatch = (id: number, tournamentId: number): MatchSummary => ({
   venueName: 'Ginásio Central',
   bracketRound: null,
   scoreSource: null,
-  homeTeam: { tournamentTeamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
-  awayTeam: { tournamentTeamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
 })
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
@@ -42,8 +42,8 @@ const TEAMS: Team[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => ({
 }))
 
 const CANDIDATES: RosterCandidate[] = [
-  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4 },
-  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4 },
+  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG', status: 'ACTIVE' },
+  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null, status: 'ACTIVE' },
 ]
 
 const geralTeams: TournamentTeam[] = [{

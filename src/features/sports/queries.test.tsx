@@ -82,6 +82,7 @@ const matchSummary = {
   scoreSource: null,
   homeTeam: {
     tournamentTeamId: 41,
+    teamId: 8,
     teamName: 'Águias',
     score: null,
     result: null,
@@ -90,6 +91,7 @@ const matchSummary = {
   },
   awayTeam: {
     tournamentTeamId: 52,
+    teamId: 9,
     teamName: 'Falcões',
     score: null,
     result: null,

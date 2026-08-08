@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Combobox } from '../../components/ui/Combobox/Combobox'
@@ -135,7 +136,11 @@ export function OrgTeamsPage() {
                     ))
                   : items.map((affiliation) => (
                       <tr key={affiliation.id} className={s.tr}>
-                        <td className={s.td}>{affiliation.team.name}</td>
+                        <td className={s.td}>
+                          <Link to={`/teams/${affiliation.teamId}`} className={s.teamLink}>
+                            {affiliation.team.name}
+                          </Link>
+                        </td>
                         <td className={s.tdStatus}>
                           <Badge variant={affiliationStatusVariant(affiliation.status)}>
                             {affiliationStatusLabel(affiliation.status)}

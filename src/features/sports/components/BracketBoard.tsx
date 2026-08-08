@@ -50,7 +50,7 @@ export function BracketBoard({ rounds, slots, championTournamentTeamId = null, v
     const isWinner = team.tournamentTeamId === slot.winnerTournamentTeamId
     return <div className={cn(s.side, isWinner && s.sideWinner)}>
       <span className={s.tag}>{team.shortName}</span>
-      <span className={s.name}>{team.name}</span>
+      <Link to={`/teams/${team.teamId}`} className={cn(s.name, s.nameLink)}>{team.name}</Link>
       {team.tournamentTeamId === championTournamentTeamId && <><Trophy size={12} strokeWidth={1.8} className={s.trophy} aria-hidden="true" /><span className={s.srOnly}>Campeão</span></>}
       {isWinner && <span className={s.srOnly}>Vencedor</span>}
     </div>
