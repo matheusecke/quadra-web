@@ -25,7 +25,7 @@ import {
   useSubmitMatchResult,
   useTeamsQuery,
   useTournamentLeadersQuery,
-  useTournamentMatchesQuery,
+  useTournamentMatchesPreviewQuery,
   useUnlinkBracketSlotMatch,
   useUpdateMatch,
 } from './queries'
@@ -126,17 +126,10 @@ const lastPage = {
   statusCode: 200,
 }
 
-const firstTournamentPage = {
+const previewPage = {
   data: [matchSummary],
-  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 100, totalPages: 2, currentPage: 1 },
-  links: { first: '/tournaments/31/matches?page=1', previous: null, next: '/tournaments/31/matches?page=2', last: '/tournaments/31/matches?page=2' },
-  statusCode: 200,
-}
-
-const lastTournamentPage = {
-  data: [{ ...matchSummary, id: 502 }],
-  meta: { totalItems: 2, itemCount: 1, itemsPerPage: 100, totalPages: 2, currentPage: 2 },
-  links: { first: '/tournaments/31/matches?page=1', previous: '/tournaments/31/matches?page=1', next: null, last: '/tournaments/31/matches?page=2' },
+  meta: { totalItems: 1, itemCount: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
+  links: { first: '/matches?page=1', previous: null, next: null, last: '/matches?page=1' },
   statusCode: 200,
 }
 
@@ -365,13 +358,6 @@ describe('match queries', () => {
     expect(sportsApi.listMatchesPage).toHaveBeenLastCalledWith({ q: 'Águias', status: 'SCHEDULED', page: 2, limit: 20 })
   })
 
-  it('collects every tournament page with a limit of one hundred', async () => {
-    vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockResolvedValueOnce(firstTournamentPage).mockResolvedValueOnce(lastTournamentPage)
-    const { result } = renderHook(() => useTournamentMatchesQuery(31), { wrapper })
-    await waitFor(() => expect(result.current.data).toHaveLength(2))
-    expect(sportsApi.listTournamentMatchesPage).toHaveBeenLastCalledWith(31, { page: 2, limit: 100 })
-  })
-
   it('retries a concurrent update exactly once', async () => {
     vi.spyOn(sportsApi, 'updateMatch').mockRejectedValueOnce(apiFailure('CONCURRENT_MODIFICATION')).mockResolvedValueOnce(matchDetail)
     const { result } = renderHook(() => useUpdateMatch(), { wrapper })
@@ -402,7 +388,6 @@ describe('match queries', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
-      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
     ])
@@ -426,7 +411,6 @@ describe('match queries', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
-      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
       bracketKeys.list(matchDetail.tournamentId),
@@ -550,7 +534,6 @@ describe('match queries', () => {
     expect(client.getQueryData(matchKeys.detail(501))).toEqual(liveMatch)
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
-      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
       bracketKeys.list(matchDetail.tournamentId),
@@ -578,7 +561,6 @@ describe('match queries', () => {
     expect(client.getQueryData(matchKeys.detail(501))).toEqual(finishedMatch)
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
-      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
       bracketKeys.list(matchDetail.tournamentId),
@@ -598,7 +580,6 @@ describe('match queries', () => {
     expect(client.getQueryData(matchKeys.detail(501))).toEqual(liveMatch)
     expect(invalidateSpy.mock.calls.map(([arg]) => arg!.queryKey)).toEqual([
       matchKeys.lists(),
-      matchKeys.tournamentLists(matchDetail.tournamentId),
       tournamentKeys.detail(matchDetail.tournamentId),
       standingsKeys.list(matchDetail.tournamentId),
       bracketKeys.list(matchDetail.tournamentId),
@@ -623,6 +604,33 @@ describe('match queries', () => {
       matchKeys.detail(501),
       matchKeys.lists(),
     ])
+  })
+})
+
+describe('useTournamentMatchesPreviewQuery', () => {
+  it('asks the server for a single page of ten matches, in server order', async () => {
+    const listMatchesPage = vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(previewPage)
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useTournamentMatchesPreviewQuery(12), { wrapper: Wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(listMatchesPage).toHaveBeenCalledTimes(1)
+    expect(listMatchesPage).toHaveBeenCalledWith({ tournamentId: 12, page: 1, limit: 10 })
+    expect(result.current.data).toEqual(previewPage)
+  })
+
+  it('keeps the preview under the match list prefix so every match write invalidates it', () => {
+    expect(matchKeys.preview(12).slice(0, matchKeys.lists().length)).toEqual([...matchKeys.lists()])
+  })
+
+  it('does not run without a tournament', () => {
+    const listMatchesPage = vi.spyOn(sportsApi, 'listMatchesPage')
+    const { Wrapper } = createWrapper()
+
+    renderHook(() => useTournamentMatchesPreviewQuery(undefined), { wrapper: Wrapper })
+
+    expect(listMatchesPage).not.toHaveBeenCalled()
   })
 })
 

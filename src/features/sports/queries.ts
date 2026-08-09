@@ -2,13 +2,11 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import type { InfiniteData, UseInfiniteQueryResult, UseQueryResult } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import { apiErrorCode } from '../../services/apiError'
-import { collectPages } from '../../services/sportsApi/pagination'
 import type {
   CreateMatchInput,
   ListAthleteMatchesParams,
   ListAthleteTournamentsParams,
   ListMatchesParams,
-  ListTournamentMatchesParams,
   SaveMatchDraftInput,
   SubmitMatchResultInput,
   UpdateMatchInput,
@@ -76,9 +74,7 @@ export const matchKeys = {
   all: ['matches'] as const,
   lists: () => [...matchKeys.all, 'list'] as const,
   list: (params: Omit<ListMatchesParams, 'page' | 'limit'>) => [...matchKeys.lists(), params] as const,
-  tournamentLists: (tournamentId: number) => [...matchKeys.all, 'tournament', tournamentId, 'list'] as const,
-  tournamentList: (tournamentId: number, params: ListTournamentMatchesParams) =>
-    [...matchKeys.tournamentLists(tournamentId), params] as const,
+  preview: (tournamentId: number) => [...matchKeys.lists(), 'preview', tournamentId] as const,
   detail: (id: number) => [...matchKeys.all, 'detail', id] as const,
 }
 
@@ -257,10 +253,16 @@ export function useMatchesInfiniteQuery(
   })
 }
 
-export function useTournamentMatchesQuery(tournamentId: number | undefined) {
+/**
+ * The overview's window of matches: one page, ten items, in server order.
+ * The key lives under `lists()` so it inherits every match-write invalidation.
+ */
+export function useTournamentMatchesPreviewQuery(
+  tournamentId: number | undefined,
+): UseQueryResult<PaginatedResponse<MatchSummary>> {
   return useQuery({
-    queryKey: tournamentId === undefined ? matchKeys.tournamentLists(0) : matchKeys.tournamentList(tournamentId, {}),
-    queryFn: () => collectPages((page) => sportsApi.listTournamentMatchesPage(tournamentId!, { page, limit: 100 })),
+    queryKey: matchKeys.preview(tournamentId ?? 0),
+    queryFn: () => sportsApi.listMatchesPage({ tournamentId, page: 1, limit: 10 }),
     enabled: tournamentId !== undefined,
   })
 }
@@ -619,7 +621,6 @@ export function useRemoveRosterEntry() {
 
 function invalidateMatchReads(queryClient: ReturnType<typeof useQueryClient>, data: MatchDetail) {
   queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-  queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: bracketKeys.list(data.tournamentId) })
@@ -649,7 +650,6 @@ export function useCreateMatch() {
     retryDelay: 0,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
     },

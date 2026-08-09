@@ -1,10 +1,15 @@
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
 import { BracketBoard } from '../../../features/sports/components/BracketBoard'
-import type { Tournament, MatchSummary, Team } from '../../../features/sports/types'
-import { hasKnockout } from '../../../features/sports/sportsUtils'
-import { useStandingsQuery, useTournamentLeadersQuery } from '../../../features/sports/queries'
+import type { Tournament, TournamentFormat, Team } from '../../../features/sports/types'
+import { hasGroupStage, hasKnockout } from '../../../features/sports/sportsUtils'
+import {
+  useStandingsQuery,
+  useTournamentLeadersQuery,
+  useTournamentMatchesPreviewQuery,
+} from '../../../features/sports/queries'
 import { useBracketView } from '../../../features/sports/useBracketView'
 import { LeadersGrid } from '../parts/LeadersGrid'
 import { StandingsTable } from '../parts/StandingsTable'
@@ -13,25 +18,31 @@ import s from '../tournaments.module.css'
 
 interface OverviewTabProps {
   tournament: Tournament
-  matches: MatchSummary[]
-  matchesPending: boolean
-  matchesError: boolean
-  onRetryMatches: () => void
   teams: Map<number, Team>
-  onSeeBracket: () => void
+}
+
+/** Destination of the Grupos section link, by format. No destination tab, no link. */
+function groupsLinkFor(format: TournamentFormat): { tab: string; label: string } | null {
+  if (hasGroupStage(format)) return { tab: 'groups', label: 'Ver todos os grupos' }
+  if (format === 'LEAGUE') return { tab: 'standings', label: 'Ver classificação completa' }
+  return null
 }
 
 /**
  * Overview — the main reading surface. Fixed section order:
- * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
+ * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas → 5. Regulamento.
  */
-export function OverviewTab({ tournament, matches, matchesPending, matchesError, onRetryMatches, teams, onSeeBracket }: OverviewTabProps) {
+export function OverviewTab({ tournament, teams }: OverviewTabProps) {
   const leadersQuery = useTournamentLeadersQuery(tournament.id)
   const leaders = leadersQuery.data
   const hasLeaders = leaders !== undefined
     && Object.values(leaders.perGame).some((rows) => rows.length > 0)
   const bracket = useBracketView(tournament.id)
   const isKnockout = hasKnockout(tournament.format)
+  const groupsLink = groupsLinkFor(tournament.format)
+  // One page of ten, in server order. The full list lives on the Partidas tab.
+  const matchesQuery = useTournamentMatchesPreviewQuery(tournament.id)
+  const matches = matchesQuery.data?.data ?? []
   // Ranked by the API, one envelope per group (one with group: null in LEAGUE).
   const { data: envelopes, isPending: isStandingsPending, isError: isStandingsError, refetch: refetchStandings } =
     useStandingsQuery(tournament.id)
@@ -43,7 +54,14 @@ export function OverviewTab({ tournament, matches, matchesPending, matchesError,
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Grupos</h2>
-          <span className={s.sectionHint}>Ordenação FIBA por pontos de classificação</span>
+          <div className={s.sectionMeta}>
+            <span className={s.sectionHint}>Ordenação FIBA por pontos de classificação</span>
+            {groupsLink && (
+              <Link to={`?tab=${groupsLink.tab}`} replace className={s.sectionLink}>
+                {groupsLink.label}
+              </Link>
+            )}
+          </div>
         </div>
         {isStandingsPending && (
           <div className={s.tabEmpty}>
@@ -78,7 +96,7 @@ export function OverviewTab({ tournament, matches, matchesPending, matchesError,
         <section className={s.section}>
           <div className={s.sectionHead}>
             <h2 className={s.sectionTitle}>Chaveamento</h2>
-            <button type="button" className={s.sectionLink} onClick={onSeeBracket}>Ver chaveamento completo</button>
+            <Link to="?tab=bracket" replace className={s.sectionLink}>Ver chaveamento completo</Link>
           </div>
           {bracket.isPending && (
             <div className={s.tabEmpty}>
@@ -106,7 +124,10 @@ export function OverviewTab({ tournament, matches, matchesPending, matchesError,
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Líderes</h2>
-          <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
+          <div className={s.sectionMeta}>
+            <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
+            <Link to="?tab=stats" replace className={s.sectionLink}>Ver todas as estatísticas</Link>
+          </div>
         </div>
         {leadersQuery.isPending ? (
           <div className={s.tabEmpty}><Skeleton width="100%" height={220} /></div>
@@ -130,14 +151,15 @@ export function OverviewTab({ tournament, matches, matchesPending, matchesError,
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
+          <Link to="?tab=matches" replace className={s.sectionLink}>Ver todas as partidas</Link>
         </div>
-        {matchesPending ? (
+        {matchesQuery.isPending ? (
           <div className={s.tabEmpty}>
             <Skeleton width="100%" height={160} />
           </div>
-        ) : matchesError ? (
+        ) : matchesQuery.isError ? (
           <div className={s.tabEmpty}>
-            <ErrorState title="Não foi possível carregar as partidas." onRetry={onRetryMatches} />
+            <ErrorState title="Não foi possível carregar as partidas." onRetry={() => void matchesQuery.refetch()} />
           </div>
         ) : matches.length > 0 ? (
           <MatchList matches={matches} />
