@@ -10,6 +10,8 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { Tabs } from '../../components/ui/Tabs/Tabs'
 import type { TabItem } from '../../components/ui/Tabs/Tabs'
+import { TeamRegistrationForm } from '../../components/org/TeamRegistrationForm'
+import { useActiveOrgAffiliation } from '../../hooks/useActiveOrgAffiliation'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
 import {
   useTeamMatchesInfiniteQuery,
@@ -530,6 +532,9 @@ export function TeamDetailPage() {
 
   const summaryQuery = useTeamSummaryQuery(teamId ?? undefined)
   const [activeTab, setActiveTab] = useState('overview')
+  const { role: actorRole, teamId: actorTeamId } = useActiveOrgAffiliation()
+  // Spec §5: the registration tab belongs to the team administrator of this very team.
+  const canEditRegistration = actorRole === 'TEAM_ADMIN' && actorTeamId === teamId
 
   const upcomingQuery = useTeamMatchesInfiniteQuery(
     teamId ?? undefined,
@@ -637,7 +642,12 @@ export function TeamDetailPage() {
         <TitleGallery titles={summary.titles} />
 
         <div className={s.tabsBar}>
-          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="line" />
+          <Tabs
+            tabs={canEditRegistration ? [...TABS, { id: 'registration', label: 'Cadastro' }] : TABS}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            variant="line"
+          />
         </div>
       </div>
 
@@ -704,6 +714,7 @@ export function TeamDetailPage() {
             />
           </>
         )}
+        {activeTab === 'registration' && canEditRegistration && <TeamRegistrationForm team={team} />}
       </div>
     </div>
   )
