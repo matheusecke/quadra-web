@@ -61,9 +61,9 @@ const ACTIONS_BY_STATUS: Record<string, ActionKind[]> = {
 export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliation }) {
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [restoreAction, setRestoreAction] = useState<ActionKind | null>(null)
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const restoreActionRef = useRef<ActionKind | null>(null)
   const mutation = useOrgMutation((kind: ActionKind) => ACTIONS[kind].run(affiliation.id))
 
   const available = ACTIONS_BY_STATUS[affiliation.status] ?? []
@@ -72,16 +72,16 @@ export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliatio
   const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
   useEffect(() => {
-    if (!pendingAction && restoreAction) {
-      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreAction}"]`)?.focus()
-      setRestoreAction(null)
+    if (!pendingAction && restoreActionRef.current) {
+      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreActionRef.current}"]`)?.focus()
+      restoreActionRef.current = null
     }
-  }, [pendingAction, restoreAction])
+  }, [pendingAction])
 
   const close = () => {
+    restoreActionRef.current = pendingAction
     setPendingAction(null)
     setErrorMessage(null)
-    setRestoreAction(pendingAction)
   }
 
   if (confirm) {

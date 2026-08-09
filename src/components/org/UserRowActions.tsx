@@ -61,8 +61,8 @@ const ACTIONS_BY_STATUS: Record<string, ActionKind[]> = {
 export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliation }) {
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [restoreAction, setRestoreAction] = useState<ActionKind | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const restoreActionRef = useRef<ActionKind | null>(null)
   const mutation = useOrgMutation((kind: ActionKind) => ACTIONS[kind].run(affiliation.id))
 
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -74,11 +74,11 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
     (affiliation.role === 'ATHLETE' || affiliation.role === 'COACHING_STAFF')
 
   useEffect(() => {
-    if (!pendingAction && restoreAction) {
-      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreAction}"]`)?.focus()
-      setRestoreAction(null)
+    if (!pendingAction && restoreActionRef.current) {
+      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreActionRef.current}"]`)?.focus()
+      restoreActionRef.current = null
     }
-  }, [pendingAction, restoreAction])
+  }, [pendingAction])
 
   const available = affiliation.canManage ? ACTIONS_BY_STATUS[affiliation.status] ?? [] : []
   if (available.length === 0 && !canEditMembership) return null
@@ -86,9 +86,9 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
   const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
   const close = () => {
+    restoreActionRef.current = pendingAction
     setPendingAction(null)
     setErrorMessage(null)
-    setRestoreAction(pendingAction)
   }
 
   return (
