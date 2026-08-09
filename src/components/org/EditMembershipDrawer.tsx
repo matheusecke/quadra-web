@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Drawer } from '../admin/Drawer'
 import { Button } from '../ui/Button'
 import { Combobox } from '../ui/Combobox/Combobox'
@@ -25,6 +25,7 @@ export function EditMembershipDrawer({ affiliation, open, onClose }: EditMembers
   const [jerseyNumber, setJerseyNumber] = useState<number | ''>(affiliation.jerseyNumber ?? '')
   const [position, setPosition] = useState<BasketballPosition | null>(affiliation.position)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const errorRef = useRef<HTMLParagraphElement>(null)
 
   const mutation = useOrgMutation((input: UpdateMembershipInput) =>
     updateMembership(affiliation.id, input),
@@ -32,6 +33,10 @@ export function EditMembershipDrawer({ affiliation, open, onClose }: EditMembers
 
   const isAthlete = affiliation.role === 'ATHLETE'
   const canSubmit = !isAthlete || (jerseyNumber !== '' && position !== null)
+
+  useEffect(() => {
+    if (errorMessage) errorRef.current?.focus()
+  }, [errorMessage])
 
   const close = () => {
     setErrorMessage(null)
@@ -77,7 +82,7 @@ export function EditMembershipDrawer({ affiliation, open, onClose }: EditMembers
           />
         </Field>
         {errorMessage && (
-          <p className={s.error} role="alert">
+          <p ref={errorRef} className={s.error} role="alert" tabIndex={-1}>
             {errorMessage}
           </p>
         )}

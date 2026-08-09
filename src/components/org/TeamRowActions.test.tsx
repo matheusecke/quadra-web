@@ -193,4 +193,25 @@ describe('TeamRowActions', () => {
 
     expect(screen.getByText('Equipe: Águias Campinas')).toBeInTheDocument()
   })
+
+  it('moves focus into a confirmation and restores it after cancel', async () => {
+    const user = userEvent.setup()
+    renderActions()
+
+    await user.click(screen.getByRole('button', { name: 'Desativar' }))
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveFocus()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus()
+  })
+
+  it('restores focus to the action after a confirmed mutation succeeds', async () => {
+    const user = userEvent.setup()
+    renderActions()
+
+    await user.click(screen.getByRole('button', { name: 'Desativar' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus())
+  })
 })

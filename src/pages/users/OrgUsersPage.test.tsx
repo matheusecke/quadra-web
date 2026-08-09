@@ -137,6 +137,17 @@ describe('OrgUsersPage', () => {
     })
   })
 
+  it('does not mount the invite dialog before the trigger is clicked', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await screen.findByRole('heading', { name: 'Usuários' })
+    expect(screen.queryByRole('dialog', { name: 'Convidar pessoa' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Convidar pessoa' }))
+    expect(screen.getByRole('dialog', { name: 'Convidar pessoa' })).toBeInTheDocument()
+  })
+
   it('renders the active organization user list and queries it without orgId in the call shape', async () => {
     renderPage()
 

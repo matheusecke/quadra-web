@@ -67,6 +67,12 @@ describe('TeamOnboardingDrawer', () => {
     )
   })
 
+  it('labels the team search combobox with its field label', () => {
+    renderDrawer()
+
+    expect(screen.getByRole('combobox', { name: 'Equipe' })).toBeInTheDocument()
+  })
+
   it('replaces the picker with a name field on the new-team branch', async () => {
     const user = userEvent.setup()
     renderDrawer()
@@ -146,11 +152,16 @@ describe('TeamOnboardingDrawer', () => {
     await selectMarina(user)
     await user.click(screen.getByRole('button', { name: 'Adicionar equipe' }))
 
-    expect(
-      await screen.findByText(
-        'Esta equipe está inativa nesta organização. Ative a equipe pela lista antes de convidar usuários.',
-      ),
-    ).toBeInTheDocument()
+    const error = await screen.findByText(
+      'Esta equipe está inativa nesta organização. Ative a equipe pela lista antes de convidar usuários.',
+    )
+    expect(error).toHaveFocus()
+    expect(screen.getByRole('combobox', { name: 'Equipe' })).toHaveValue('Águias Campinas')
+    expect(screen.getByRole('button', { name: /Marina Souza/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar equipe' }))
+    await waitFor(() => expect(createTeamOnboardingMock).toHaveBeenCalledTimes(2))
+    expect(lookupMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the drawer open after that failure', async () => {

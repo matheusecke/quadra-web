@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Drawer } from '../admin/Drawer'
 import { Button } from '../ui/Button'
 import { Field } from '../ui/Field'
@@ -41,6 +41,7 @@ export function TeamOnboardingDrawer({ open, onClose, fixedTeam }: TeamOnboardin
   const [teamName, setTeamName] = useState('')
   const [admin, setAdmin] = useState<UserLookupResult | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const errorRef = useRef<HTMLParagraphElement>(null)
 
   const mutation = useOrgMutation((input: CreateTeamOnboardingInput) => createTeamOnboarding(input))
 
@@ -48,6 +49,10 @@ export function TeamOnboardingDrawer({ open, onClose, fixedTeam }: TeamOnboardin
   const submitLabel = fixedTeam ? 'Convidar administrador' : 'Adicionar equipe'
   const hasTeam = Boolean(fixedTeam) || (isNewTeam ? teamName.trim() !== '' : team !== null)
   const canSubmit = hasTeam && admin !== null
+
+  useEffect(() => {
+    if (errorMessage) errorRef.current?.focus()
+  }, [errorMessage])
 
   const close = () => {
     setBranch('existing')
@@ -96,6 +101,7 @@ export function TeamOnboardingDrawer({ open, onClose, fixedTeam }: TeamOnboardin
             ) : (
               <Field label="Equipe" id="onboarding-team">
                 <SearchSelect
+                  id="onboarding-team"
                   value={team}
                   onChange={setTeam}
                   onSearch={searchTeams}
@@ -108,7 +114,7 @@ export function TeamOnboardingDrawer({ open, onClose, fixedTeam }: TeamOnboardin
         )}
         <UserLookupField value={admin} onChange={setAdmin} disabled={mutation.isPending} />
         {errorMessage && (
-          <p className={s.error} role="alert">
+          <p ref={errorRef} className={s.error} role="alert" tabIndex={-1}>
             {errorMessage}
           </p>
         )}

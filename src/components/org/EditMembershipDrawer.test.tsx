@@ -112,9 +112,12 @@ describe('EditMembershipDrawer', () => {
 
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
-    expect(
-      await screen.findByText('Outra alteração ocorreu ao mesmo tempo. Atualize a lista e tente novamente.'),
-    ).toBeInTheDocument()
+    const error = await screen.findByText('Outra alteração ocorreu ao mesmo tempo. Atualize a lista e tente novamente.')
+    expect(error).toHaveFocus()
+    expect(screen.getByLabelText('Camisa')).toHaveValue(23)
+
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(updateMembershipMock).toHaveBeenCalledTimes(2))
   })
 
   it('disables saving again while the update is still in flight', async () => {

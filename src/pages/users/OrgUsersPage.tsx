@@ -227,7 +227,7 @@ export function OrgUsersPage() {
         )}
       </div>
 
-      <InvitePersonDrawer open={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
+      {isInviteOpen && <InvitePersonDrawer open onClose={() => setIsInviteOpen(false)} />}
     </div>
   )
 }

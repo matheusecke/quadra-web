@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { UserLookupField } from './UserLookupField'
@@ -15,6 +15,12 @@ const notFound = Object.assign(new Error('User not found'), {
   isAxiosError: true,
   response: { status: 404, data: { error: { code: 'RECORD_NOT_FOUND', message: 'User not found' } } },
 })
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((next) => { resolve = next })
+  return { promise, resolve }
+}
 
 describe('UserLookupField', () => {
   beforeEach(() => {
@@ -111,5 +117,39 @@ describe('UserLookupField', () => {
     await user.click(screen.getByRole('button', { name: 'Buscar' }))
 
     expect(lookupMock).not.toHaveBeenCalled()
+  })
+
+  it('ignores a lookup response after its address is edited', async () => {
+    const first = deferred<typeof marina>()
+    lookupMock.mockReturnValueOnce(first.promise)
+    const user = userEvent.setup()
+    render(<UserLookupField value={null} onChange={vi.fn()} />)
+
+    const email = screen.getByLabelText('E-mail da pessoa')
+    await user.type(email, 'marina@example.com{Enter}')
+    await user.clear(email)
+    await user.type(email, 'nova@example.com')
+    await act(async () => first.resolve(marina))
+
+    expect(screen.queryByRole('button', { name: /Marina Souza/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps the newest lookup result when responses arrive in reverse order', async () => {
+    const first = deferred<typeof marina>()
+    const newest = { id: 7, name: 'Nova Pessoa', email: 'nova@example.com' }
+    const second = deferred<typeof newest>()
+    lookupMock.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    const user = userEvent.setup()
+    render(<UserLookupField value={null} onChange={vi.fn()} />)
+
+    const email = screen.getByLabelText('E-mail da pessoa')
+    await user.type(email, 'marina@example.com{Enter}')
+    await user.clear(email)
+    await user.type(email, 'nova@example.com{Enter}')
+    await act(async () => second.resolve(newest))
+    expect(await screen.findByRole('button', { name: /Nova Pessoa/ })).toBeInTheDocument()
+    await act(async () => first.resolve(marina))
+
+    expect(screen.queryByRole('button', { name: /Marina Souza/ })).not.toBeInTheDocument()
   })
 })

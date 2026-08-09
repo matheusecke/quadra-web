@@ -100,9 +100,13 @@ describe('InvitePersonDrawer as an organization administrator', () => {
     await selectMarina(user)
     await user.click(screen.getByRole('button', { name: 'Enviar convite' }))
 
-    expect(
-      await screen.findByText('Este usuário já possui um vínculo ativo nesta organização.'),
-    ).toBeInTheDocument()
+    const error = await screen.findByText('Este usuário já possui um vínculo ativo nesta organização.')
+    expect(error).toHaveFocus()
+    expect(screen.getByRole('button', { name: /Marina Souza/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Enviar convite' }))
+    await waitFor(() => expect(inviteOrgAdminMock).toHaveBeenCalledTimes(2))
+    expect(lookupMock).toHaveBeenCalledTimes(1)
   })
 
   it('blocks a second submit while the invite is in flight', async () => {

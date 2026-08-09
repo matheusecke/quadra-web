@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '../ui/Button/Button'
 import { Field } from '../ui/Field/Field'
 import { Input } from '../ui/Input/Input'
@@ -26,8 +26,10 @@ const EMAIL_FIELD_ID = 'user-lookup-email'
 export function UserLookupField({ value, onChange, disabled = false }: Props) {
   const [email, setEmail] = useState('')
   const [state, setState] = useState<LookupState>({ kind: 'idle' })
+  const requestRef = useRef(0)
 
   const handleEmailChange = (next: string) => {
+    requestRef.current += 1
     setEmail(next)
     setState({ kind: 'idle' })
     // Editing the address always drops a previously confirmed selection (spec §6.3).
@@ -38,11 +40,15 @@ export function UserLookupField({ value, onChange, disabled = false }: Props) {
     const trimmed = email.trim()
     if (trimmed === '') return
 
+    const request = ++requestRef.current
     setState({ kind: 'loading' })
     try {
-      setState({ kind: 'found', user: await lookupUserByEmail(trimmed) })
+      const user = await lookupUserByEmail(trimmed)
+      if (request === requestRef.current) setState({ kind: 'found', user })
     } catch (error) {
-      setState(apiErrorStatus(error) === 404 ? { kind: 'empty' } : { kind: 'error' })
+      if (request === requestRef.current) {
+        setState(apiErrorStatus(error) === 404 ? { kind: 'empty' } : { kind: 'error' })
+      }
     }
   }
 

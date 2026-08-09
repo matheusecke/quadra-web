@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef } from 'react'
 import { Button } from '../ui/Button/Button'
 import type { ButtonVariant } from '../ui/Button/Button'
 import s from './InlineConfirm.module.css'
@@ -21,9 +22,16 @@ export function InlineConfirm({
   errorMessage = null,
   variant = 'danger',
 }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const messageId = useId()
+
+  useEffect(() => {
+    panelRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+  }, [])
+
   return (
-    <div className={s.panel} role="group" aria-label="Confirmação da ação">
-      <p className={s.message}>{message}</p>
+    <div ref={panelRef} className={s.panel} role="group" aria-label="Confirmação da ação" aria-describedby={messageId}>
+      <p id={messageId} className={s.message}>{message}</p>
       {errorMessage && (
         <p className={s.error} role="alert">
           {errorMessage}

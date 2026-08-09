@@ -186,6 +186,29 @@ describe('UserRowActions', () => {
     renderActions()
 
     expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Editar vínculo' })).not.toBeInTheDocument()
+  })
+
+  it('moves focus into a confirmation and restores it after cancel', async () => {
+    const user = userEvent.setup()
+    renderActions()
+    const trigger = screen.getByRole('button', { name: 'Desativar' })
+
+    await user.click(trigger)
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus()
+  })
+
+  it('restores focus to the action after a confirmed mutation succeeds', async () => {
+    const user = userEvent.setup()
+    renderActions()
+
+    await user.click(screen.getByRole('button', { name: 'Desativar' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus())
   })
 
   it('never offers the membership edit to an organization administrator', () => {

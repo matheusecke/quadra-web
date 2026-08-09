@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Drawer } from '../admin/Drawer'
 import { Button } from '../ui/Button'
 import { Combobox } from '../ui/Combobox/Combobox'
@@ -31,6 +31,7 @@ export function InvitePersonDrawer({ open, onClose }: InvitePersonDrawerProps) {
   const { role, teamId } = useActiveOrgAffiliation()
   const [selectedUser, setSelectedUser] = useState<UserLookupResult | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const errorRef = useRef<HTMLParagraphElement>(null)
   const [memberRole, setMemberRole] = useState<'ATHLETE' | 'COACHING_STAFF'>('ATHLETE')
   const [jerseyNumber, setJerseyNumber] = useState<number | ''>('')
   const [position, setPosition] = useState<BasketballPosition | null>(null)
@@ -44,6 +45,10 @@ export function InvitePersonDrawer({ open, onClose }: InvitePersonDrawerProps) {
   const isAthlete = isTeamAdmin && memberRole === 'ATHLETE'
   const canSubmit =
     selectedUser !== null && (!isAthlete || (jerseyNumber !== '' && position !== null))
+
+  useEffect(() => {
+    if (errorMessage) errorRef.current?.focus()
+  }, [errorMessage])
 
   const close = () => {
     setSelectedUser(null)
@@ -130,7 +135,7 @@ export function InvitePersonDrawer({ open, onClose }: InvitePersonDrawerProps) {
           </>
         )}
         {errorMessage && (
-          <p className={s.error} role="alert">
+          <p ref={errorRef} className={s.error} role="alert" tabIndex={-1}>
             {errorMessage}
           </p>
         )}

@@ -9,6 +9,7 @@ export type SearchSelectOption = {
 }
 
 type Props = {
+  id?: string
   value: SearchSelectOption | null
   onChange: (option: SearchSelectOption | null) => void
   onSearch: (q: string) => Promise<SearchSelectOption[]>
@@ -16,7 +17,7 @@ type Props = {
   disabled?: boolean
 }
 
-export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar...', disabled = false }: Props) {
+export function SearchSelect({ id, value, onChange, onSearch, placeholder = 'Buscar...', disabled = false }: Props) {
   const [inputText, setInputText] = useState(value?.label ?? '')
   const [results, setResults] = useState<SearchSelectOption[]>([])
   const [isOpen, setIsOpen] = useState(false)
@@ -91,6 +92,7 @@ export function SearchSelect({ value, onChange, onSearch, placeholder = 'Buscar.
     <div className={s.wrap} ref={containerRef}>
       <div className={s.inputRow}>
         <input
+          id={id}
           className={s.input}
           type="text"
           value={inputText}

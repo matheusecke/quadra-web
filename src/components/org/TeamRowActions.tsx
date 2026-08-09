@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { InlineConfirm } from './InlineConfirm'
 import { TeamOnboardingDrawer } from './TeamOnboardingDrawer'
 import { Button } from '../ui/Button'
@@ -61,7 +61,9 @@ const ACTIONS_BY_STATUS: Record<string, ActionKind[]> = {
 export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliation }) {
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [restoreAction, setRestoreAction] = useState<ActionKind | null>(null)
   const [isInviteOpen, setIsInviteOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const mutation = useOrgMutation((kind: ActionKind) => ACTIONS[kind].run(affiliation.id))
 
   const available = ACTIONS_BY_STATUS[affiliation.status] ?? []
@@ -69,14 +71,22 @@ export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliatio
   const canInviteAdmin = affiliation.status === 'PENDING' || affiliation.status === 'ACTIVE'
   const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
+  useEffect(() => {
+    if (!pendingAction && restoreAction) {
+      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreAction}"]`)?.focus()
+      setRestoreAction(null)
+    }
+  }, [pendingAction, restoreAction])
+
   const close = () => {
     setPendingAction(null)
     setErrorMessage(null)
+    setRestoreAction(pendingAction)
   }
 
   if (confirm) {
     return (
-      <div className={s.wrap}>
+      <div ref={wrapRef} className={s.wrap}>
         <InlineConfirm
           message={confirm.message}
           confirmLabel="Confirmar"
@@ -97,14 +107,14 @@ export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliatio
   }
 
   return (
-    <div className={s.wrap}>
+    <div ref={wrapRef} className={s.wrap}>
       {canInviteAdmin && (
         <Button size="sm" variant="ghost" onClick={() => setIsInviteOpen(true)}>
           Convidar administrador
         </Button>
       )}
       {available.map((kind) => (
-        <Button key={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
+        <Button key={kind} data-action={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
           {ACTIONS[kind].label}
         </Button>
       ))}

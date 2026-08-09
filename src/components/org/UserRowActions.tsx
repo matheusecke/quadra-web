@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditMembershipDrawer } from './EditMembershipDrawer'
 import { InlineConfirm } from './InlineConfirm'
 import { Button } from '../ui/Button'
@@ -61,6 +61,8 @@ const ACTIONS_BY_STATUS: Record<string, ActionKind[]> = {
 export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliation }) {
   const [pendingAction, setPendingAction] = useState<ActionKind | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [restoreAction, setRestoreAction] = useState<ActionKind | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const mutation = useOrgMutation((kind: ActionKind) => ACTIONS[kind].run(affiliation.id))
 
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -76,13 +78,21 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
 
   const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
+  useEffect(() => {
+    if (!pendingAction && restoreAction) {
+      wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreAction}"]`)?.focus()
+      setRestoreAction(null)
+    }
+  }, [pendingAction, restoreAction])
+
   const close = () => {
     setPendingAction(null)
     setErrorMessage(null)
+    setRestoreAction(pendingAction)
   }
 
   return (
-    <div className={s.wrap}>
+    <div ref={wrapRef} className={s.wrap}>
       {confirm ? (
         <InlineConfirm
           message={confirm.message}
@@ -107,11 +117,11 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
             </Button>
           )}
           {available.map((kind) => (
-            <Button key={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
+            <Button key={kind} data-action={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
               {ACTIONS[kind].label}
             </Button>
           ))}
-          {canEditMembership && (
+          {canEditMembership && isEditOpen && (
             <EditMembershipDrawer
               affiliation={affiliation}
               open={isEditOpen}
