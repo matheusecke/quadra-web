@@ -535,7 +535,7 @@ function ScoresheetForm({
 
         {resultType === 'FORFEIT' && (
           <p className={s.modeNotice}>
-            O servidor atribuirá o resultado regulamentar à equipe não infratora e limpará
+            O sistema atribuirá o resultado regulamentar à equipe não infratora e limpará
             períodos, estatísticas e MVP anteriores.
           </p>
         )}
