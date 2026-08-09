@@ -109,7 +109,6 @@ test.describe('organization management against the live API', () => {
     await page.getByRole('dialog', { name: 'Adicionar equipe' }).getByRole('combobox').fill('a')
 
     expect((await response).status()).toBe(200)
-    await page.getByRole('button', { name: 'Cancelar' }).click()
   })
 
   test('redirects a team administrator away from the organization team list', async () => {
