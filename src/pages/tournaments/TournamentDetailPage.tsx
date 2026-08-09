@@ -505,16 +505,7 @@ export function TournamentDetailPage() {
           </div>
         )}
         {activeTab === 'groups' && <GroupsTab tournament={tournament} teams={teams} />}
-        {activeTab === 'matches' && (
-          <MatchesTab
-            tournament={tournament}
-            matches={allMatches}
-            isPending={matchesQuery.isPending}
-            isError={matchesQuery.isError}
-            onRetry={() => matchesQuery.refetch()}
-            isOrgAdmin={isOrgAdmin}
-          />
-        )}
+        {activeTab === 'matches' && <MatchesTab tournament={tournament} isOrgAdmin={isOrgAdmin} />}
         {activeTab === 'bracket' && <BracketTab tournament={tournament} onRefetchTournament={() => tournamentQuery.refetch()} />}
         {activeTab === 'standings' && <StandingsTab tournament={tournament} teams={teams} />}
         {activeTab === 'stats' && <StatsTab tournament={tournament} />}

@@ -951,6 +951,12 @@
   padding: var(--space-6) 0;
 }
 
+.loadMoreRow {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
 .skBlock {
   display: flex;
   flex-direction: column;
