@@ -14,6 +14,14 @@ vi.mock('./components/AdminRoute', () => ({
   AdminRoute: () => <Outlet />,
 }))
 
+vi.mock('./components/OrgUsersRoute', () => ({
+  OrgUsersRoute: () => <Outlet />,
+}))
+
+vi.mock('./components/OrgTeamsRoute', () => ({
+  OrgTeamsRoute: () => <Outlet />,
+}))
+
 vi.mock('./pages/HomePage', () => ({
   HomePage: () => <div>home-page</div>,
 }))
@@ -132,5 +140,20 @@ describe('router', () => {
   it('preserves the admin teams route', async () => {
     await renderRoute('/admin/teams')
     expect(await screen.findByText('admin-teams-page')).toBeInTheDocument()
+  })
+
+  it('guards the organization users route', async () => {
+    const { OrgUsersRoute } = await import('./components/OrgUsersRoute')
+
+    await renderRoute('/users')
+
+    expect(OrgUsersRoute).toBeDefined()
+    expect(await screen.findByText('org-users-page')).toBeInTheDocument()
+  })
+
+  it('keeps the team detail route outside the organization team guard', async () => {
+    await renderRoute('/teams/8')
+
+    expect(await screen.findByText('team-detail-page')).toBeInTheDocument()
   })
 })
