@@ -73,17 +73,17 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
     affiliation.status === 'ACTIVE' &&
     (affiliation.role === 'ATHLETE' || affiliation.role === 'COACHING_STAFF')
 
-  const available = affiliation.canManage ? ACTIONS_BY_STATUS[affiliation.status] ?? [] : []
-  if (available.length === 0 && !canEditMembership) return null
-
-  const confirm = pendingAction ? ACTIONS[pendingAction] : null
-
   useEffect(() => {
     if (!pendingAction && restoreAction) {
       wrapRef.current?.querySelector<HTMLButtonElement>(`button[data-action="${restoreAction}"]`)?.focus()
       setRestoreAction(null)
     }
   }, [pendingAction, restoreAction])
+
+  const available = affiliation.canManage ? ACTIONS_BY_STATUS[affiliation.status] ?? [] : []
+  if (available.length === 0 && !canEditMembership) return null
+
+  const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
   const close = () => {
     setPendingAction(null)

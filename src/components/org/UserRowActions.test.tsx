@@ -71,6 +71,23 @@ describe('UserRowActions', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('renders actions after a row becomes manageable', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <UserRowActions affiliation={{ ...baseAffiliation, canManage: false }} />
+      </QueryClientProvider>,
+    )
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <UserRowActions affiliation={baseAffiliation} />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Desativar' })).toBeInTheDocument()
+  })
+
   it('offers only the deactivation for an active affiliation', () => {
     renderActions()
 
