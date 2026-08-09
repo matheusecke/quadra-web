@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
+import { InvitePersonDrawer } from '../../components/org/InvitePersonDrawer'
 import { Avatar } from '../../components/ui/Avatar/Avatar'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
@@ -46,6 +48,7 @@ export function OrgUsersPage() {
   const [status, setStatus] = useState<AffiliationStatus | ''>('')
   const [role, setRole] = useState<OrgRole | ''>('')
   const [teamId, setTeamId] = useState<number | null>(null)
+  const [isInviteOpen, setIsInviteOpen] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(q), 400)
@@ -84,6 +87,7 @@ export function OrgUsersPage() {
             <h1 className={s.title}>Usuários</h1>
             <p className={s.subtitle}>Pessoas vinculadas à organização.</p>
           </div>
+          <Button onClick={() => setIsInviteOpen(true)}>Convidar pessoa</Button>
         </div>
         <div className={s.toolbar}>
           <div className={s.searchWrap}>
@@ -216,6 +220,8 @@ export function OrgUsersPage() {
           </p>
         )}
       </div>
+
+      <InvitePersonDrawer open={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
     </div>
   )
 }

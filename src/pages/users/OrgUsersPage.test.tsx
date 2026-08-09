@@ -16,6 +16,9 @@ vi.mock('../../hooks/useAuth', () => ({
 vi.mock('../../services/orgApi', () => ({
   listOrgUsers: (...args: unknown[]) => listOrgUsersMock(...args),
   listOrgTeams: (...args: unknown[]) => listOrgTeamsMock(...args),
+  lookupUserByEmail: vi.fn(),
+  inviteOrgAdmin: vi.fn(),
+  inviteTeamMember: vi.fn(),
 }))
 
 vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
@@ -379,5 +382,15 @@ describe('OrgUsersPage', () => {
     renderPage()
 
     expect(await screen.findByText('Administrador da organização')).toBeInTheDocument()
+  })
+
+  it('opens the invite drawer from the list header', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Usuários' })
+
+    await user.click(screen.getByRole('button', { name: 'Convidar pessoa' }))
+
+    expect(screen.getByRole('dialog', { name: 'Convidar pessoa' })).toBeInTheDocument()
   })
 })
