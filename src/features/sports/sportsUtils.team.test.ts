@@ -58,28 +58,29 @@ describe('team profile metric formatting', () => {
     expect(formatAverage(null)).toBe('—')
   })
 
-  it('shows a measured zero average as zero', () => {
-    expect(formatAverage(0)).toBe('0')
+  it('shows a measured zero average with one decimal', () => {
+    expect(formatAverage(0)).toBe('0.0')
   })
 
-  it('prints a server-owned average without changing its precision', () => {
-    expect(formatAverage(38.286)).toBe('38.286')
+  it('always prints an average with exactly one decimal place', () => {
+    expect(formatAverage(38.286)).toBe('38.3')
+    expect(formatAverage(13.5)).toBe('13.5')
   })
 
   it('shows an unmeasured differential as an em dash', () => {
     expect(formatSignedAverage(null)).toBe('—')
   })
 
-  it('signs a positive differential', () => {
-    expect(formatSignedAverage(4.625)).toBe('+4.625')
+  it('signs a positive differential with one decimal', () => {
+    expect(formatSignedAverage(4.625)).toBe('+4.6')
   })
 
-  it('keeps a negative differential sign as-is', () => {
-    expect(formatSignedAverage(-4.625)).toBe('-4.625')
+  it('keeps a negative differential sign as-is with one decimal', () => {
+    expect(formatSignedAverage(-4.625)).toBe('-4.6')
   })
 
-  it('leaves a zero differential unsigned', () => {
-    expect(formatSignedAverage(0)).toBe('0')
+  it('leaves a zero differential unsigned with one decimal', () => {
+    expect(formatSignedAverage(0)).toBe('0.0')
   })
 
   it('shows an unmeasured rate as an em dash', () => {

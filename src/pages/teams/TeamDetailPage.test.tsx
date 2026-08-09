@@ -403,7 +403,7 @@ describe('TeamDetailPage', () => {
     renderTeamPage()
 
     await waitForTeamPage()
-    expect(screen.getByText('+4.625')).toBeInTheDocument()
+    expect(screen.getByText('+4.6')).toBeInTheDocument()
   })
 
   it('renders an unmeasured production metric as an em dash', async () => {
@@ -736,7 +736,7 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Campeonatos' }))
 
     const row = await screen.findByRole('row', { name: /intercursos 2026/i })
-    expect(within(row).getByText('+4.625')).toBeInTheDocument()
+    expect(within(row).getByText('+4.6')).toBeInTheDocument()
   })
 
   it('shows the empty state when the team never joined a tournament', async () => {
