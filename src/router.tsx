@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { AdminRoute } from './components/AdminRoute'
 import { OrgAdminRoute } from './components/OrgAdminRoute'
+import { OrgTeamsRoute } from './components/OrgTeamsRoute'
+import { OrgUsersRoute } from './components/OrgUsersRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -43,8 +45,14 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/home', element: <HomePage /> },
-          { path: '/users', element: <OrgUsersPage /> },
-          { path: '/teams', element: <OrgTeamsPage /> },
+          {
+            element: <OrgUsersRoute />,
+            children: [{ path: '/users', element: <OrgUsersPage /> }],
+          },
+          {
+            element: <OrgTeamsRoute />,
+            children: [{ path: '/teams', element: <OrgTeamsPage /> }],
+          },
           { path: '/tournaments', element: <TournamentsPage /> },
           {
             element: <OrgAdminRoute />,

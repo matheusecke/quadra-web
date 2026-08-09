@@ -1,0 +1,67 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.row > :first-child {
+  flex: 1;
+}
+
+.result {
+  min-height: var(--space-6);
+}
+
+.candidate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.candidate:hover {
+  border-color: var(--accent);
+}
+
+.candidate:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.candidateName {
+  font: var(--type-body-md);
+  color: var(--ink);
+}
+
+.candidateEmail {
+  font: var(--type-micro);
+  color: var(--muted);
+}
+
+.empty,
+.error {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--muted);
+}
+
+.error {
+  color: var(--status-live);
+}

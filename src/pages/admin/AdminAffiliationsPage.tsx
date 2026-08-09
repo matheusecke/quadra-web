@@ -11,23 +11,12 @@ import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
 import * as adminApi from '../../services/adminApi'
-import type { AdminUserAffiliation, AdminTeamAffiliation, AffiliationStatus, OrgRole } from '../../types/admin'
 import { UserAffiliationDrawer } from '../../components/admin/UserAffiliationDrawer'
 import { TeamAffiliationDrawer } from '../../components/admin/TeamAffiliationDrawer'
+import { affiliationStatusVariant, userAffiliationStatusLabel } from '../../features/org/labels'
 import s from './AdminAffiliationsPage.module.css'
 import ls from './adminList.module.css'
-
-function affiliationStatusVariant(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'success' as const
-  if (status === 'PENDING') return 'warning' as const
-  return 'danger' as const
-}
-
-function affiliationStatusLabel(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'Ativo'
-  if (status === 'PENDING') return 'Pendente'
-  return 'Rejeitado'
-}
+import type { AdminUserAffiliation, AdminTeamAffiliation, AffiliationStatus, OrgRole } from '../../types/admin'
 
 function UserAffiliationsTab({ orgId }: { orgId: number }) {
   const [q, setQ] = useState('')
@@ -113,7 +102,7 @@ function UserAffiliationsTab({ orgId }: { orgId: number }) {
                       </td>
                       <td className={ls.td}><Badge variant="default">{aff.role}</Badge></td>
                       <td className={ls.td}>{aff.team?.name ?? '—'}</td>
-                      <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{affiliationStatusLabel(aff.status)}</Badge></td>
+                      <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{userAffiliationStatusLabel(aff.status)}</Badge></td>
                     </tr>
                   ))}
               <tr><td colSpan={4} style={{ padding: 0 }}><div ref={sentinelRef} style={{ height: 1 }} /></td></tr>
@@ -201,7 +190,7 @@ function TeamAffiliationsTab({ orgId }: { orgId: number }) {
                 : items.map((aff) => (
                     <tr key={aff.id} className={ls.tr} tabIndex={0} onClick={() => setSelected(aff)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelected(aff) }}>
                       <td className={ls.td}>{aff.team.name}</td>
-                      <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{affiliationStatusLabel(aff.status)}</Badge></td>
+                      <td className={ls.tdStatus}><Badge variant={affiliationStatusVariant(aff.status)}>{userAffiliationStatusLabel(aff.status)}</Badge></td>
                     </tr>
                   ))}
               <tr><td colSpan={2} style={{ padding: 0 }}><div ref={sentinelRef} style={{ height: 1 }} /></td></tr>

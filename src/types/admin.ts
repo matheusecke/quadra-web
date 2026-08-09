@@ -14,7 +14,7 @@ export type PaginatedResponse<T> = {
 }
 
 export type EntityStatus = 'ACTIVE' | 'INACTIVE'
-export type AffiliationStatus = 'PENDING' | 'ACTIVE' | 'REJECTED'
+export type AffiliationStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED'
 export type OrgRole = 'ORG_ADMIN' | 'TEAM_ADMIN' | 'ATHLETE' | 'COACHING_STAFF'
 
 export type AdminUser = {

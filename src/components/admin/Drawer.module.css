@@ -23,6 +23,15 @@
   overflow: hidden;
 }
 
+.drawer:focus {
+  outline: none;
+}
+
+.drawer:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .drawer.open {
   transform: translateX(0);
 }

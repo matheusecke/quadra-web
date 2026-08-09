@@ -8,6 +8,16 @@ import * as sportsApi from '../../services/sportsApi'
 import type { RosterCandidate, TeamSummary } from '../../features/sports/types'
 import type { PaginatedResponse } from '../../types/admin'
 
+const activeAffiliationMock = vi.fn()
+
+vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
+  useActiveOrgAffiliation: () => activeAffiliationMock(),
+}))
+
+vi.mock('../../services/orgApi', () => ({
+  updateTeam: vi.fn(),
+}))
+
 const TEAM_ID = 8
 
 const emptyStatistics: TeamSummary['statistics'] = {
@@ -167,6 +177,8 @@ beforeEach(() => {
   vi.spyOn(sportsApi, 'listTeamMatchesPage').mockResolvedValue(matchPage([]))
   vi.spyOn(sportsApi, 'listTeamTournamentsPage').mockResolvedValue(matchPage([]))
   vi.spyOn(sportsApi, 'listRosterCandidatesPage').mockResolvedValue(matchPage([]))
+  activeAffiliationMock.mockReset()
+  activeAffiliationMock.mockReturnValue({ role: 'ORG_ADMIN', teamId: null })
 })
 
 describe('TeamDetailPage', () => {
@@ -907,5 +919,52 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Carregar mais' }))
 
     expect(await screen.findByText('Não foi possível carregar mais atletas.')).toBeInTheDocument()
+  })
+
+  it('hides the registration tab from an organization administrator', async () => {
+    renderTeamPage()
+    await waitForTeamPage()
+
+    expect(screen.queryByRole('tab', { name: 'Cadastro' })).not.toBeInTheDocument()
+  })
+
+  it('hides the registration tab from the administrator of another team', async () => {
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: 99 })
+
+    renderTeamPage()
+    await waitForTeamPage()
+
+    expect(screen.queryByRole('tab', { name: 'Cadastro' })).not.toBeInTheDocument()
+  })
+
+  it('offers the registration tab to the administrator of this team', async () => {
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: TEAM_ID })
+
+    renderTeamPage()
+    await waitForTeamPage()
+
+    expect(screen.getByRole('tab', { name: 'Cadastro' })).toBeInTheDocument()
+  })
+
+  it('opens the registration form with the global identity warning', async () => {
+    const user = userEvent.setup()
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: TEAM_ID })
+
+    renderTeamPage()
+    await waitForTeamPage()
+    await user.click(screen.getByRole('tab', { name: 'Cadastro' }))
+
+    expect(
+      screen.getByText(
+        'Estes dados identificam sua equipe em toda a plataforma. Se ela estiver vinculada a outras organizações, as alterações também serão exibidas nelas.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the four sports tabs untouched', async () => {
+    renderTeamPage()
+    await waitForTeamPage()
+
+    expect(screen.getAllByRole('tab')).toHaveLength(4)
   })
 })

@@ -181,6 +181,12 @@
   text-align: center;
 }
 
+.thActions,
+.tdActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .sortIcon {
   color: var(--muted-3);
   margin-left: 3px;
@@ -233,6 +239,11 @@
 .nameText {
   font-weight: 500;
   color: var(--ink);
+}
+
+.subText {
+  font: var(--type-micro);
+  color: var(--muted);
 }
 
 .adminTag {

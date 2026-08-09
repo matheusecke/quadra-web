@@ -1,0 +1,23 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hint {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--muted);
+}
+
+.error {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--status-live);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

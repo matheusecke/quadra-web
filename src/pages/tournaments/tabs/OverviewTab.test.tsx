@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -198,7 +198,8 @@ describe('OverviewTab', () => {
     renderGeral()
 
     expect(await screen.findByText('Não foi possível carregar os líderes.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    const leadersSection = screen.getByRole('heading', { name: 'Líderes' }).closest('section')!
+    await user.click(within(leadersSection).getByRole('button', { name: 'Tentar novamente' }))
     expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
     expect(listStandings).toHaveBeenCalledTimes(1)
   })
