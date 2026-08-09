@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { TeamOnboardingDrawer } from '../../components/org/TeamOnboardingDrawer'
 import { Badge } from '../../components/ui/Badge/Badge'
+import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
@@ -29,6 +31,7 @@ export function OrgTeamsPage() {
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<AffiliationStatus | ''>('')
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(q), 400)
@@ -57,6 +60,7 @@ export function OrgTeamsPage() {
             <h1 className={s.title}>Equipes</h1>
             <p className={s.subtitle}>Equipes vinculadas à organização.</p>
           </div>
+          <Button onClick={() => setIsOnboardingOpen(true)}>Adicionar equipe</Button>
         </div>
         <div className={s.toolbar}>
           <div className={s.searchWrap}>
@@ -160,6 +164,8 @@ export function OrgTeamsPage() {
           </p>
         )}
       </div>
+
+      <TeamOnboardingDrawer open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
     </div>
   )
 }
