@@ -137,7 +137,13 @@ export function OrgUsersPage() {
         </div>
       </div>
 
-      <div className={s.body}>
+      <div
+        className={s.body}
+        role="region"
+        aria-label="Lista de usuários"
+        data-org-list-focus-target
+        tabIndex={-1}
+      >
         {isError ? (
           <div className={s.bodyFill}>
             <ErrorState

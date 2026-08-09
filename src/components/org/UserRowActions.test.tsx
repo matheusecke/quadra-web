@@ -218,14 +218,33 @@ describe('UserRowActions', () => {
     expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus()
   })
 
-  it('restores focus to the action after a confirmed mutation succeeds', async () => {
+  it('keeps focus on the stable list region when refetch changes the action', async () => {
     const user = userEvent.setup()
-    renderActions()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <section aria-label="Lista de usuários" data-org-list-focus-target tabIndex={-1}>
+          <UserRowActions affiliation={baseAffiliation} />
+        </section>
+      </QueryClientProvider>,
+    )
 
     await user.click(screen.getByRole('button', { name: 'Desativar' }))
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus())
+    const listRegion = screen.getByRole('region', { name: 'Lista de usuários' })
+    await waitFor(() => expect(listRegion).toHaveFocus())
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <section aria-label="Lista de usuários" data-org-list-focus-target tabIndex={-1}>
+          <UserRowActions affiliation={{ ...baseAffiliation, status: 'INACTIVE' }} />
+        </section>
+      </QueryClientProvider>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Ativar' })).toBeInTheDocument()
+    expect(listRegion).toHaveFocus()
   })
 
   it('never offers the membership edit to an organization administrator', () => {

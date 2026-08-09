@@ -84,6 +84,12 @@ export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliatio
     setErrorMessage(null)
   }
 
+  const closeAfterSuccess = () => {
+    wrapRef.current?.closest<HTMLElement>('[data-org-list-focus-target]')?.focus()
+    setPendingAction(null)
+    setErrorMessage(null)
+  }
+
   if (confirm) {
     return (
       <div ref={wrapRef} className={s.wrap}>
@@ -97,7 +103,7 @@ export function TeamRowActions({ affiliation }: { affiliation: OrgTeamAffiliatio
           onConfirm={() => {
             setErrorMessage(null)
             mutation.mutate(pendingAction as ActionKind, {
-              onSuccess: close,
+              onSuccess: closeAfterSuccess,
               onError: (error) => setErrorMessage(orgWriteErrorMessage(error, confirm.operation)),
             })
           }}

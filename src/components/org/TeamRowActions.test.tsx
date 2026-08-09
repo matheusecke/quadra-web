@@ -205,13 +205,30 @@ describe('TeamRowActions', () => {
     expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus()
   })
 
-  it('restores focus to the action after a confirmed mutation succeeds', async () => {
+  it('keeps focus on the stable list region when refetch removes the row', async () => {
     const user = userEvent.setup()
-    renderActions()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <section aria-label="Lista de equipes" data-org-list-focus-target tabIndex={-1}>
+          <TeamRowActions affiliation={{ ...baseAffiliation, status: 'PENDING' }} />
+        </section>
+      </QueryClientProvider>,
+    )
 
-    await user.click(screen.getByRole('button', { name: 'Desativar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar inclusão' }))
     await user.click(screen.getByRole('button', { name: 'Confirmar' }))
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Desativar' })).toHaveFocus())
+    const listRegion = screen.getByRole('region', { name: 'Lista de equipes' })
+    await waitFor(() => expect(listRegion).toHaveFocus())
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <section aria-label="Lista de equipes" data-org-list-focus-target tabIndex={-1} />
+      </QueryClientProvider>,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Cancelar inclusão' })).not.toBeInTheDocument()
+    expect(listRegion).toHaveFocus()
   })
 })

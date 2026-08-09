@@ -91,7 +91,13 @@ export function OrgTeamsPage() {
         </div>
       </div>
 
-      <div className={s.body}>
+      <div
+        className={s.body}
+        role="region"
+        aria-label="Lista de equipes"
+        data-org-list-focus-target
+        tabIndex={-1}
+      >
         {isError ? (
           <div className={s.bodyFill}>
             <ErrorState
