@@ -1,14 +1,12 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query'
+import type { InfiniteData, UseInfiniteQueryResult, UseQueryResult } from '@tanstack/react-query'
 import * as sportsApi from '../../services/sportsApi'
 import { apiErrorCode } from '../../services/apiError'
-import { collectPages } from '../../services/sportsApi/pagination'
 import type {
   CreateMatchInput,
   ListAthleteMatchesParams,
   ListAthleteTournamentsParams,
   ListMatchesParams,
-  ListTournamentMatchesParams,
   SaveMatchDraftInput,
   SubmitMatchResultInput,
   UpdateMatchInput,
@@ -19,7 +17,13 @@ import type {
   AthleteTournamentHistoryRow,
   MatchDetail,
   MatchSummary,
+  RosterCandidate,
+  RosterRole,
   SeasonStatus,
+  TeamMatchHistoryRow,
+  TeamMatchScope,
+  TeamSummary,
+  TeamTournamentHistoryRow,
   TournamentStatus,
 } from './types'
 import type {
@@ -70,15 +74,23 @@ export const matchKeys = {
   all: ['matches'] as const,
   lists: () => [...matchKeys.all, 'list'] as const,
   list: (params: Omit<ListMatchesParams, 'page' | 'limit'>) => [...matchKeys.lists(), params] as const,
-  tournamentLists: (tournamentId: number) => [...matchKeys.all, 'tournament', tournamentId, 'list'] as const,
-  tournamentList: (tournamentId: number, params: ListTournamentMatchesParams) =>
-    [...matchKeys.tournamentLists(tournamentId), params] as const,
+  preview: (tournamentId: number) => [...matchKeys.lists(), 'preview', tournamentId] as const,
   detail: (id: number) => [...matchKeys.all, 'detail', id] as const,
 }
 
 export const teamKeys = {
   all: ['teams'] as const,
   list: () => [...teamKeys.all, 'list'] as const,
+}
+
+export const teamProfileKeys = {
+  all: ['team-profile'] as const,
+  summary: (id: number) => [...teamProfileKeys.all, 'summary', id] as const,
+  matches: (id: number, scope: TeamMatchScope) =>
+    [...teamProfileKeys.all, 'matches', id, scope, 20] as const,
+  tournaments: (id: number) => [...teamProfileKeys.all, 'tournaments', id, 20] as const,
+  roster: (teamId: number, role: RosterRole) =>
+    [...teamProfileKeys.all, 'roster', teamId, role, 20] as const,
 }
 
 export type AthleteMatchFilters = Omit<ListAthleteMatchesParams, 'page' | 'limit'>
@@ -241,10 +253,16 @@ export function useMatchesInfiniteQuery(
   })
 }
 
-export function useTournamentMatchesQuery(tournamentId: number | undefined) {
+/**
+ * The overview's window of matches: one page, ten items, in server order.
+ * The key lives under `lists()` so it inherits every match-write invalidation.
+ */
+export function useTournamentMatchesPreviewQuery(
+  tournamentId: number | undefined,
+): UseQueryResult<PaginatedResponse<MatchSummary>> {
   return useQuery({
-    queryKey: tournamentId === undefined ? matchKeys.tournamentLists(0) : matchKeys.tournamentList(tournamentId, {}),
-    queryFn: () => collectPages((page) => sportsApi.listTournamentMatchesPage(tournamentId!, { page, limit: 100 })),
+    queryKey: matchKeys.preview(tournamentId ?? 0),
+    queryFn: () => sportsApi.listMatchesPage({ tournamentId, page: 1, limit: 10 }),
     enabled: tournamentId !== undefined,
   })
 }
@@ -259,6 +277,61 @@ export function useMatchDetailQuery(id: number | undefined) {
 
 export function useTeamsQuery() {
   return useQuery({ queryKey: teamKeys.list(), queryFn: () => sportsApi.getTeams() })
+}
+
+export function useTeamSummaryQuery(id: number | undefined): UseQueryResult<TeamSummary> {
+  return useQuery({
+    queryKey: teamProfileKeys.summary(id ?? -1),
+    queryFn: () => sportsApi.getTeamSummary(id!),
+    enabled: id != null,
+  })
+}
+
+/** Upcoming and history are separate queries so each section fails and paginates alone. */
+export function useTeamMatchesInfiniteQuery(
+  id: number | undefined,
+  scope: TeamMatchScope,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<TeamMatchHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.matches(id ?? -1, scope),
+    queryFn: ({ pageParam }) => sportsApi.listTeamMatchesPage(id!, { scope, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: id != null && enabled,
+  })
+}
+
+export function useTeamTournamentsInfiniteQuery(
+  id: number | undefined,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<TeamTournamentHistoryRow>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.tournaments(id ?? -1),
+    queryFn: ({ pageParam }) => sportsApi.listTeamTournamentsPage(id!, { page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: id != null && enabled,
+  })
+}
+
+/** The roster reuses the athlete catalog; athletes and coaching staff are separate reads. */
+export function useTeamRosterInfiniteQuery(
+  teamId: number | undefined,
+  role: RosterRole,
+  enabled = true,
+): UseInfiniteQueryResult<InfiniteData<PaginatedResponse<RosterCandidate>>> {
+  return useInfiniteQuery({
+    queryKey: teamProfileKeys.roster(teamId ?? -1, role),
+    queryFn: ({ pageParam }) =>
+      sportsApi.listRosterCandidatesPage({ teamId: teamId!, role, page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+    enabled: teamId != null && enabled,
+  })
 }
 
 export function useAthleteQuery(id: number | undefined) {
@@ -548,7 +621,6 @@ export function useRemoveRosterEntry() {
 
 function invalidateMatchReads(queryClient: ReturnType<typeof useQueryClient>, data: MatchDetail) {
   queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-  queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
   queryClient.invalidateQueries({ queryKey: bracketKeys.list(data.tournamentId) })
@@ -578,7 +650,6 @@ export function useCreateMatch() {
     retryDelay: 0,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: matchKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: matchKeys.tournamentLists(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(data.tournamentId) })
       queryClient.invalidateQueries({ queryKey: standingsKeys.list(data.tournamentId) })
     },

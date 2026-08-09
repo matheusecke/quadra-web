@@ -16,7 +16,9 @@ import type {
   MatchSummary,
   StandingRow,
   Team,
+  TeamProfileStatus,
   TournamentTeam,
+  TournamentTeamStatus,
 } from './types'
 
 // ── Standings formatting ────────────────────────────────────────────────────
@@ -39,6 +41,10 @@ export function formatDiff(row: StandingRow): string {
 
 export function hasKnockout(format: TournamentFormat): boolean {
   return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
+}
+
+export function hasGroupStage(format: TournamentFormat): boolean {
+  return format === 'GROUP_STAGE' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
 /** Phase label derived from the real links — never free text on the match. */
@@ -97,6 +103,17 @@ export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
   INACTIVE: 'Inativo',
 }
 
+export const TEAM_PROFILE_STATUS_LABELS: Record<TeamProfileStatus, string> = {
+  ACTIVE: 'Ativa',
+  HISTORICAL: 'Histórica',
+  INACTIVE: 'Inativa',
+}
+
+export const TOURNAMENT_TEAM_STATUS_LABELS: Record<TournamentTeamStatus, string> = {
+  ACTIVE: 'Ativa',
+  WITHDRAWN: 'Desistente',
+}
+
 // ── Badge variant mapping (matches Badge component variants) ────────────────────
 
 type BadgeVariant = 'default' | 'accent' | 'live' | 'success' | 'warning' | 'danger' | 'ghost'
@@ -128,6 +145,18 @@ export function matchStatusVariant(status: MatchStatus): BadgeVariant {
     case 'CANCELLED':
       return 'danger'
     case 'SCHEDULED':
+    default:
+      return 'ghost'
+  }
+}
+
+export function teamProfileStatusVariant(status: TeamProfileStatus): BadgeVariant {
+  switch (status) {
+    case 'ACTIVE':
+      return 'success'
+    case 'INACTIVE':
+      return 'danger'
+    case 'HISTORICAL':
     default:
       return 'ghost'
   }
@@ -207,9 +236,14 @@ export function formatMinutesSeconds(totalSeconds: number | null): string {
   return `${minutes}:${seconds}`
 }
 
-/** Displays a server-owned number without imposing a new precision. */
+/** Displays a server-owned raw total — always an integer, no decimal point. */
 export function formatServerDecimal(value: number | null): string {
   return value === null ? 'N/A' : String(value)
+}
+
+/** Displays a server-owned average, always with one decimal place (§6 — precision consistency). */
+export function formatServerAverage(value: number | null): string {
+  return value === null ? 'N/A' : value.toFixed(1)
 }
 
 /** Phase 10 percentages are server-owned fractions and may exceed 1.0. */
@@ -218,9 +252,17 @@ export function formatServerPercentage(value: number | null): string {
   return `${Number((value * 100).toFixed(1))}%`
 }
 
+/** Signed efficiency total — integer, no decimal point. */
 export function formatServerEfficiency(value: number | null): string {
   if (value === null) return 'N/A'
   const formatted = formatServerDecimal(value)
+  return value > 0 ? `+${formatted}` : formatted
+}
+
+/** Signed efficiency per game, always with one decimal place. */
+export function formatServerAverageEfficiency(value: number | null): string {
+  if (value === null) return 'N/A'
+  const formatted = formatServerAverage(value)
   return value > 0 ? `+${formatted}` : formatted
 }
 
@@ -230,6 +272,33 @@ export function formatMeasuredGames(count: number): string {
 
 export function formatShootingLine(made: number | null, attempted: number | null): string {
   return made === null || attempted === null ? 'N/A' : `${made}/${attempted}`
+}
+
+// ── Team profile formatting ───────────────────────────────────────────────────
+// The team profile renders an unavailable value as `—` (spec §4.8); the athlete
+// screens keep their own `N/A` convention.
+
+/** `city / state`, dropping whichever half is missing. */
+export function formatTeamLocation(city: string | null, state: string | null): string {
+  return [city, state].filter(Boolean).join(' / ') || '—'
+}
+
+/** Server-owned average, always shown with one decimal place (§6 — precision consistency). */
+export function formatAverage(value: number | null): string {
+  return value === null ? '—' : value.toFixed(1)
+}
+
+/** Signed average, used for the official point differential per game. */
+export function formatSignedAverage(value: number | null): string {
+  if (value === null) return '—'
+  const formatted = value.toFixed(1)
+  return value > 0 ? `+${formatted}` : formatted
+}
+
+/** Server-owned fraction shown as a percentage; values may exceed 1.0. */
+export function formatRate(value: number | null): string {
+  if (value === null) return '—'
+  return `${Number((value * 100).toFixed(1))}%`
 }
 
 export function slotDisplayName(slot: Pick<BracketSlot, 'label' | 'position'>, round: Pick<BracketRound, 'label'>): string {

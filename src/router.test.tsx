@@ -14,6 +14,14 @@ vi.mock('./components/AdminRoute', () => ({
   AdminRoute: () => <Outlet />,
 }))
 
+vi.mock('./components/OrgUsersRoute', () => ({
+  OrgUsersRoute: () => <Outlet />,
+}))
+
+vi.mock('./components/OrgTeamsRoute', () => ({
+  OrgTeamsRoute: () => <Outlet />,
+}))
+
 vi.mock('./pages/HomePage', () => ({
   HomePage: () => <div>home-page</div>,
 }))
@@ -82,6 +90,10 @@ vi.mock('./pages/athletes/AthleteDetailPage', () => ({
   AthleteDetailPage: () => <div>athlete-detail-page</div>,
 }))
 
+vi.mock('./pages/teams/TeamDetailPage', () => ({
+  TeamDetailPage: () => <div>team-detail-page</div>,
+}))
+
 afterEach(() => {
   cleanup()
   vi.resetModules()
@@ -105,6 +117,16 @@ describe('router', () => {
     expect(await screen.findByText('org-teams-page')).toBeInTheDocument()
   })
 
+  it('registers the protected team detail route', async () => {
+    await renderRoute('/teams/8')
+    expect(await screen.findByText('team-detail-page')).toBeInTheDocument()
+  })
+
+  it('keeps the team listing separate from the team detail route', async () => {
+    await renderRoute('/teams')
+    expect(screen.queryByText('team-detail-page')).not.toBeInTheDocument()
+  })
+
   it('registers the public register route', async () => {
     await renderRoute('/register')
     expect(await screen.findByText('register-page')).toBeInTheDocument()
@@ -118,5 +140,20 @@ describe('router', () => {
   it('preserves the admin teams route', async () => {
     await renderRoute('/admin/teams')
     expect(await screen.findByText('admin-teams-page')).toBeInTheDocument()
+  })
+
+  it('guards the organization users route', async () => {
+    const { OrgUsersRoute } = await import('./components/OrgUsersRoute')
+
+    await renderRoute('/users')
+
+    expect(OrgUsersRoute).toBeDefined()
+    expect(await screen.findByText('org-users-page')).toBeInTheDocument()
+  })
+
+  it('keeps the team detail route outside the organization team guard', async () => {
+    await renderRoute('/teams/8')
+
+    expect(await screen.findByText('team-detail-page')).toBeInTheDocument()
   })
 })

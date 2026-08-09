@@ -36,6 +36,7 @@ const matchSummary = {
   scoreSource: null,
   homeTeam: {
     tournamentTeamId: 41,
+    teamId: 8,
     teamName: 'Águias',
     score: null,
     result: null,
@@ -44,6 +45,7 @@ const matchSummary = {
   },
   awayTeam: {
     tournamentTeamId: 52,
+    teamId: 9,
     teamName: 'Falcões',
     score: null,
     result: null,
@@ -148,6 +150,14 @@ describe('matches adapter', () => {
   it('returns the global paginated envelope unchanged', async () => {
     apiMock.get.mockResolvedValue({ data: pageEnvelope })
     await expect(listMatchesPage()).resolves.toEqual(pageEnvelope)
+  })
+
+  it('preserves the global team id of both match sides for navigation', async () => {
+    apiMock.get.mockResolvedValueOnce({ data: pageEnvelope })
+
+    const result = await listMatchesPage({})
+
+    expect(result.data[0].homeTeam.teamId).toBe(8)
   })
 
   it('lists tournament matches without tournamentId in params', async () => {

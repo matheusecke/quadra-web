@@ -288,7 +288,9 @@ export function MatchDetailPage() {
         {/* ── Score hero ── */}
         <div className={s.scoreHero}>
           <div className={s.scoreTeamLeft}>
-            <span className={s.scoreTeamName}>{match.homeTeam.teamName}</span>
+            <Link to={`/teams/${match.homeTeam.teamId}`} className={`${s.scoreTeamName} ${s.teamLink}`}>
+              {match.homeTeam.teamName}
+            </Link>
             <span className={s.scoreTeamRole}>Mandante</span>
           </div>
 
@@ -308,7 +310,9 @@ export function MatchDetailPage() {
           </div>
 
           <div className={s.scoreTeamRight}>
-            <span className={s.scoreTeamName}>{match.awayTeam.teamName}</span>
+            <Link to={`/teams/${match.awayTeam.teamId}`} className={`${s.scoreTeamName} ${s.teamLink}`}>
+              {match.awayTeam.teamName}
+            </Link>
             <span className={s.scoreTeamRole}>Visitante</span>
           </div>
         </div>

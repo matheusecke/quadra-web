@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OrgTeamsPage } from './OrgTeamsPage'
 
@@ -13,6 +14,13 @@ vi.mock('../../hooks/useAuth', () => ({
 
 vi.mock('../../services/orgApi', () => ({
   listOrgTeams: (...args: unknown[]) => listOrgTeamsMock(...args),
+  createTeamOnboarding: vi.fn(),
+  listTeamAffiliationCandidates: vi.fn(),
+  lookupUserByEmail: vi.fn(),
+  activateTeamAffiliation: vi.fn(),
+  deactivateTeamAffiliation: vi.fn(),
+  cancelTeamInclusion: vi.fn(),
+  resendTeamInvites: vi.fn(),
 }))
 
 function renderPage() {
@@ -26,7 +34,9 @@ function renderPage() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <OrgTeamsPage />
+      <MemoryRouter>
+        <OrgTeamsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -61,11 +71,10 @@ describe('OrgTeamsPage', () => {
           id: 3,
           organizationId: 42,
           teamId: 18,
-          team: {
-            id: 18,
-            name: 'Lobos',
-          },
+          team: { id: 18, name: 'Lobos', shortName: 'TIG', city: 'Campinas', state: 'SP' },
           status: 'ACTIVE',
+          activeUserCount: 12,
+          pendingAdminInviteCount: 0,
           createdByUserId: 9,
           createdAt: '2026-06-01T12:00:00.000Z',
           updatedAt: '2026-06-01T12:00:00.000Z',
@@ -96,7 +105,7 @@ describe('OrgTeamsPage', () => {
 
     expect(heading).toBeInTheDocument()
     expect(await screen.findByText('Lobos')).toBeInTheDocument()
-    expect(screen.getByText('Ativo')).toBeInTheDocument()
+    expect(screen.getByText('Ativa')).toBeInTheDocument()
     expect(pageHeader).toContainElement(screen.getByLabelText('Buscar equipes da organização'))
     expect(pageHeader).toContainElement(screen.getByLabelText('Filtrar equipes por status'))
     expect(listOrgTeamsMock).toHaveBeenCalledWith({
@@ -105,6 +114,13 @@ describe('OrgTeamsPage', () => {
       q: undefined,
       status: undefined,
     })
+  })
+
+  it('links an affiliated team to its team profile', async () => {
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: 'Lobos' })
+    expect(link).toHaveAttribute('href', '/teams/18')
   })
 
   it('renders skeleton rows while the team list query is still loading', () => {
@@ -161,6 +177,7 @@ describe('OrgTeamsPage', () => {
   it('renders the authorization-specific copy for 403 team responses', async () => {
     listOrgTeamsMock.mockReset()
     listOrgTeamsMock.mockRejectedValue({
+      isAxiosError: true,
       response: {
         status: 403,
       },
@@ -202,7 +219,7 @@ describe('OrgTeamsPage', () => {
 
     await user.type(screen.getByLabelText('Buscar equipes da organização'), 'lob')
     await user.click(screen.getByLabelText('Filtrar equipes por status'))
-    await user.click(screen.getByRole('option', { name: 'Ativo' }))
+    await user.click(screen.getByRole('option', { name: 'Ativa' }))
 
     await waitFor(() => {
       expect(listOrgTeamsMock).toHaveBeenLastCalledWith({
@@ -212,5 +229,81 @@ describe('OrgTeamsPage', () => {
         status: 'ACTIVE',
       })
     })
+  })
+
+  it('shows how many active members the team has in this organization', async () => {
+    renderPage()
+
+    expect(await screen.findByText('12')).toBeInTheDocument()
+  })
+
+  it('shows how many administrator invites are still pending', async () => {
+    listOrgTeamsMock.mockReset()
+    listOrgTeamsMock.mockResolvedValue({
+      data: [
+        {
+          id: 4,
+          organizationId: 42,
+          teamId: 9,
+          team: { id: 9, name: 'Águias', shortName: 'AGU', city: null, state: null },
+          status: 'PENDING',
+          activeUserCount: 0,
+          pendingAdminInviteCount: 2,
+          createdByUserId: 9,
+          createdAt: '2026-06-01T12:00:00.000Z',
+          updatedAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+      meta: { totalItems: 1, itemCount: 1, itemsPerPage: 20, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: null, next: null, last: '' },
+      statusCode: 200,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('2')).toBeInTheDocument()
+  })
+
+  it('offers the feminine inactive label in the status filter', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Equipes' })
+
+    await user.click(screen.getByLabelText('Filtrar equipes por status'))
+
+    expect(screen.getByRole('option', { name: 'Inativa' })).toBeInTheDocument()
+  })
+
+  it('never offers the rejected status as a filter', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Equipes' })
+
+    await user.click(screen.getByLabelText('Filtrar equipes por status'))
+
+    expect(screen.queryByRole('option', { name: 'Rejeitado' })).not.toBeInTheDocument()
+  })
+
+  it('shows the short name next to the team', async () => {
+    renderPage()
+
+    expect(await screen.findByText('TIG · Campinas/SP')).toBeInTheDocument()
+  })
+
+  it('opens the onboarding drawer from the list header', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Equipes' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar equipe' }))
+
+    expect(screen.getByRole('dialog', { name: 'Adicionar equipe' })).toBeInTheDocument()
+  })
+
+  it('renders the row actions for an active affiliation', async () => {
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Desativar' })).toBeInTheDocument()
   })
 })

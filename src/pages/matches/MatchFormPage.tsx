@@ -8,7 +8,7 @@ import { Field } from '../../components/ui/Field/Field'
 import { NumberField } from '../../components/ui/NumberField/NumberField'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { parsePositiveId } from '../../features/sports/parsePositiveId'
-import { hasKnockout } from '../../features/sports/sportsUtils'
+import { hasGroupStage, hasKnockout } from '../../features/sports/sportsUtils'
 import {
   useBracketQuery,
   useCreateMatch,
@@ -112,8 +112,8 @@ export function MatchFormPage() {
 
   const { data: tournaments } = useTournamentsQuery()
   const tournamentQuery = useTournamentQuery(lookupTournamentId)
-  const hasGroupStage = tournamentQuery.data?.format === 'GROUP_STAGE' || tournamentQuery.data?.format === 'GROUP_STAGE_KNOCKOUT'
-  const groupsQuery = useGroupsQuery(hasGroupStage ? lookupTournamentId : undefined)
+  const isGroupStage = tournamentQuery.data !== undefined && hasGroupStage(tournamentQuery.data.format)
+  const groupsQuery = useGroupsQuery(isGroupStage ? lookupTournamentId : undefined)
   const tournamentTeamsQuery = useTournamentTeamsQuery(lookupTournamentId)
   // Only a knockout format can answer MATCH_IN_BRACKET, so nothing else needs the read.
   const hasBracket = tournamentQuery.data !== undefined && hasKnockout(tournamentQuery.data.format)
@@ -293,7 +293,7 @@ export function MatchFormPage() {
     try {
       const input: CreateMatchInput = {
         tournamentId: Number(form.tournamentId),
-        tournamentGroupId: hasGroupStage ? Number(form.tournamentGroupId) || null : null,
+        tournamentGroupId: isGroupStage ? Number(form.tournamentGroupId) || null : null,
         matchNumber: Number(form.matchNumber) || null,
         scheduledAt: new Date(form.scheduledAt).toISOString(),
         venueName: form.venueName.trim() || null,
@@ -355,7 +355,7 @@ export function MatchFormPage() {
           </Field>
         </div>
 
-        {hasGroupStage && (
+        {isGroupStage && (
           <Field label="Grupo" id="match-group" hint="Só os jogos de grupo entram na classificação do grupo." error={fieldErrors?.tournamentGroupId?.[0]}>
             <Combobox
               id="match-group"

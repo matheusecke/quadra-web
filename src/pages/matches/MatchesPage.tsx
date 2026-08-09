@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button/Button'
@@ -163,8 +163,24 @@ export function MatchesPage() {
                         >
                           <td className={`${s.td} ${s.mono}`}>{formatDateTime(m.scheduledAt)}</td>
                           <td className={s.tdMuted}>{champ?.name ?? '—'}</td>
-                          <td className={s.td}>{m.homeTeam.teamName}</td>
-                          <td className={s.td}>{m.awayTeam.teamName}</td>
+                          <td className={s.td}>
+                            <Link
+                              to={`/teams/${m.homeTeam.teamId}`}
+                              className={s.teamLink}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {m.homeTeam.teamName}
+                            </Link>
+                          </td>
+                          <td className={s.td}>
+                            <Link
+                              to={`/teams/${m.awayTeam.teamId}`}
+                              className={s.teamLink}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {m.awayTeam.teamName}
+                            </Link>
+                          </td>
                           <td className={`${s.td} ${s.tdNum} ${s.mono}`}>
                             {hasScore
                               ? <strong>{m.homeTeam.score} – {m.awayTeam.score}</strong>

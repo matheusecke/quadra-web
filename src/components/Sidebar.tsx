@@ -40,7 +40,9 @@ export function Sidebar() {
   const isAdminMode = location.pathname.startsWith('/admin')
   const role = user?.role ?? null
   const activeOrg = organizations.find((o) => o.organizationId === user?.organizationId) ?? null
+  const activeTeamId = activeOrg?.teamId ?? null
   const isOrgAdmin = role === 'ORG_ADMIN'
+  const isTeamAdmin = role === 'TEAM_ADMIN'
   const isTeamRole = role === 'TEAM_ADMIN' || role === 'ATHLETE' || role === 'COACHING_STAFF'
 
   const handleLogout = async () => {
@@ -74,11 +76,24 @@ export function Sidebar() {
           <>
             <span className={s.sectionLabel}>Principal</span>
             <NavItem to="/home" icon={<House size={15} strokeWidth={1.6} />} label="Início" />
+            {(isOrgAdmin || isTeamAdmin) && (
+              <>
+                <span className={s.sectionLabel}>Administração</span>
+                <NavItem to="/users" icon={<Users size={15} strokeWidth={1.6} />} label="Usuários" />
+                {isOrgAdmin && (
+                  <NavItem to="/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />
+                )}
+                {isTeamAdmin && activeTeamId !== null && (
+                  <NavItem
+                    to={`/teams/${activeTeamId}`}
+                    icon={<Shield size={15} strokeWidth={1.6} />}
+                    label="Minha equipe"
+                  />
+                )}
+              </>
+            )}
             {(isOrgAdmin || isTeamRole) && (
               <>
-                <span className={s.sectionLabel}>Organização</span>
-                <NavItem to="/users" icon={<Users size={15} strokeWidth={1.6} />} label="Usuários" />
-                <NavItem to="/teams" icon={<Shield size={15} strokeWidth={1.6} />} label="Equipes" />
                 <span className={s.sectionLabel}>Esportivo</span>
                 <NavItem to="/tournaments" icon={<Trophy size={15} strokeWidth={1.6} />} label="Campeonatos" />
                 <NavItem to="/matches" icon={<CalendarDays size={15} strokeWidth={1.6} />} label="Partidas" />

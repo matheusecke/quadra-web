@@ -28,6 +28,8 @@ import {
   ATHLETE_STATUS_LABELS,
   formatMeasuredGames,
   formatMinutesSeconds,
+  formatServerAverage,
+  formatServerAverageEfficiency,
   formatServerDecimal,
   formatServerEfficiency,
   formatServerPercentage,
@@ -103,13 +105,13 @@ function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
         title="Médias"
         stats={[
           { label: 'MPG', value: formatMinutesSeconds(perGameStats.minutesSeconds), measuredGames: measuredGames.minutesSeconds },
-          { label: 'PPG', value: formatServerDecimal(perGameStats.pts), measuredGames: measuredGames.pts },
-          { label: 'RPG', value: formatServerDecimal(perGameStats.reb), measuredGames: measuredGames.reb },
-          { label: 'APG', value: formatServerDecimal(perGameStats.ast), measuredGames: measuredGames.ast },
-          { label: 'STG', value: formatServerDecimal(perGameStats.stl), measuredGames: measuredGames.stl },
-          { label: 'BPG', value: formatServerDecimal(perGameStats.blk), measuredGames: measuredGames.blk },
-          { label: 'TOV', value: formatServerDecimal(perGameStats.tov), measuredGames: measuredGames.tov },
-          { label: 'PF', value: formatServerDecimal(perGameStats.pf), measuredGames: measuredGames.pf },
+          { label: 'PPG', value: formatServerAverage(perGameStats.pts), measuredGames: measuredGames.pts },
+          { label: 'RPG', value: formatServerAverage(perGameStats.reb), measuredGames: measuredGames.reb },
+          { label: 'APG', value: formatServerAverage(perGameStats.ast), measuredGames: measuredGames.ast },
+          { label: 'STG', value: formatServerAverage(perGameStats.stl), measuredGames: measuredGames.stl },
+          { label: 'BPG', value: formatServerAverage(perGameStats.blk), measuredGames: measuredGames.blk },
+          { label: 'TOV', value: formatServerAverage(perGameStats.tov), measuredGames: measuredGames.tov },
+          { label: 'PF', value: formatServerAverage(perGameStats.pf), measuredGames: measuredGames.pf },
         ]}
       />
       <StatStrip
@@ -129,7 +131,7 @@ function SummaryContent({ statistics }: { statistics: AthleteStatistics }) {
           },
           {
             label: 'EFF/J',
-            value: formatServerEfficiency(efficiency.perGame),
+            value: formatServerAverageEfficiency(efficiency.perGame),
             measuredGames: efficiency.measuredGames,
           },
         ]}
@@ -232,8 +234,20 @@ function MatchesContent({
                   <td className={s.td}>{row.tournament.name}</td>
                   <td className={s.td}>{row.athleteName}</td>
                   <td className={s.tdStrong}>
-                    <Link to={`/matches/${row.match.id}`} className={s.rowLink} onClick={(event) => event.stopPropagation()}>
-                      {row.team.name} × {row.opponent.name}
+                    <Link
+                      to={`/teams/${row.team.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.team.name}
+                    </Link>
+                    {' × '}
+                    <Link
+                      to={`/teams/${row.opponent.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.opponent.name}
                     </Link>
                   </td>
                   <td className={s.td}>
@@ -339,13 +353,21 @@ function TournamentsContent({
                       {row.tournament.name}
                     </Link>
                   </td>
-                  <td className={s.td}>{row.team.name}</td>
+                  <td className={s.td}>
+                    <Link
+                      to={`/teams/${row.team.teamId}`}
+                      className={s.rowLink}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {row.team.name}
+                    </Link>
+                  </td>
                   <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? `Temporada #${row.tournament.seasonId}`}</td>
                   <td className={s.tdNum}>{statistics.gamesPlayed}</td>
                   <td className={s.tdNum}><MeasuredMetric value={formatMinutesSeconds(statistics.perGame.minutesSeconds)} count={statistics.measuredGames.minutesSeconds} /></td>
                   {(['pts', 'reb', 'ast', 'stl', 'blk'] as const).map((field) => (
                     <td key={field} className={s.tdNum}>
-                      <MeasuredMetric value={formatServerDecimal(statistics.perGame[field])} count={statistics.measuredGames[field]} />
+                      <MeasuredMetric value={formatServerAverage(statistics.perGame[field])} count={statistics.measuredGames[field]} />
                     </td>
                   ))}
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.fgPct)}</td>
@@ -354,7 +376,7 @@ function TournamentsContent({
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.trueShootingPct)}</td>
                   <td className={s.tdNum}>{formatServerEfficiency(statistics.efficiency.total)}</td>
                   <td className={s.tdNum}>
-                    <MeasuredMetric value={formatServerEfficiency(statistics.efficiency.perGame)} count={statistics.efficiency.measuredGames} />
+                    <MeasuredMetric value={formatServerAverageEfficiency(statistics.efficiency.perGame)} count={statistics.efficiency.measuredGames} />
                   </td>
                 </tr>
               )

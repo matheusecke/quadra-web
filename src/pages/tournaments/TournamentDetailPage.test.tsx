@@ -30,8 +30,8 @@ const buildMatch = (id: number, tournamentId: number): MatchSummary => ({
   venueName: 'Ginásio Central',
   bracketRound: null,
   scoreSource: null,
-  homeTeam: { tournamentTeamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
-  awayTeam: { tournamentTeamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: `Casa ${id}`, score: null, result: null, lossType: null, isWinner: null },
+  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: `Visitante ${id}`, score: null, result: null, lossType: null, isWinner: null },
 })
 
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
@@ -42,8 +42,8 @@ const TEAMS: Team[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => ({
 }))
 
 const CANDIDATES: RosterCandidate[] = [
-  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4 },
-  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4 },
+  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG', status: 'ACTIVE' },
+  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null, status: 'ACTIVE' },
 ]
 
 const geralTeams: TournamentTeam[] = [{
@@ -113,6 +113,7 @@ beforeEach(() => {
     CANDIDATES.filter((candidate) =>
       candidate.teamId === teamId && candidate.role === role && (!q || candidate.name.toLowerCase().includes(q.toLowerCase()))))
   vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockResolvedValue(matchPage([], 1, 1))
+  vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(matchPage([], 1, 1))
   vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue({
     perGame: { ppg: [], rpg: [], apg: [], stg: [], bpg: [] },
     totals: { pts: [], reb: [], ast: [], stl: [], blk: [] },
@@ -488,12 +489,12 @@ describe('TournamentDetailPage tab query param', () => {
   })
 })
 
-describe('TournamentDetailPage matches collection', () => {
-  it('collects every match page and lists them in the response order on the Partidas tab', async () => {
+describe('TournamentDetailPage matches', () => {
+  it('lists the first page the server returned on the Partidas tab, in response order', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    vi.spyOn(sportsApi, 'listTournamentMatchesPage')
-      .mockResolvedValueOnce(matchPage([buildMatch(101, 2), buildMatch(102, 2)], 1, 2))
-      .mockResolvedValueOnce(matchPage([buildMatch(103, 2)], 2, 2))
+    vi.mocked(sportsApi.listMatchesPage).mockResolvedValue(
+      matchPage([buildMatch(101, 2), buildMatch(102, 2), buildMatch(103, 2)], 1, 1),
+    )
     renderDetailAt('/tournaments/2?tab=matches')
 
     await screen.findByRole('link', { name: 'Casa 101 vs Visitante 101' })
@@ -502,12 +503,24 @@ describe('TournamentDetailPage matches collection', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['/matches/101', '/matches/102', '/matches/103'])
   })
 
-  it('shows a matches error state instead of an empty list when the collection fails', async () => {
+  it('shows a matches error state instead of an empty list when the request fails', async () => {
     mockIsOrgAdmin.mockReturnValue(false)
-    vi.spyOn(sportsApi, 'listTournamentMatchesPage').mockRejectedValue(new Error('matches unavailable'))
+    vi.mocked(sportsApi.listMatchesPage).mockRejectedValue(new Error('matches unavailable'))
     renderDetailAt('/tournaments/2?tab=matches')
 
     expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
+  })
+
+  // The page no longer owns the list: each tab fetches what it renders.
+  it('leaves the match request to the tabs, asking only for the overview preview', async () => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    renderDetailAt('/tournaments/2')
+    await screen.findByText('Copa de Inverno PUC')
+
+    await waitFor(() =>
+      expect(sportsApi.listMatchesPage).toHaveBeenCalledWith({ tournamentId: 2, page: 1, limit: 10 }),
+    )
+    expect(sportsApi.listTournamentMatchesPage).not.toHaveBeenCalled()
   })
 })
 

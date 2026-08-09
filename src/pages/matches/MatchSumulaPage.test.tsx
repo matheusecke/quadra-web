@@ -56,6 +56,7 @@ export const buildMatch = (overrides: Partial<MatchDetail> = {}): MatchDetail =>
   scoreSource: null,
   homeTeam: {
     tournamentTeamId: 41,
+    teamId: 8,
     teamName: 'Engenharia',
     score: null,
     result: null,
@@ -64,6 +65,7 @@ export const buildMatch = (overrides: Partial<MatchDetail> = {}): MatchDetail =>
   },
   awayTeam: {
     tournamentTeamId: 52,
+    teamId: 9,
     teamName: 'Direito',
     score: null,
     result: null,

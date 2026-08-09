@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -7,6 +7,7 @@ import { getTournamentById, getTeams } from '../../../features/sports/mock-sport
 import * as sportsApi from '../../../services/sportsApi'
 import { OverviewTab } from './OverviewTab'
 import type { MatchSummary, StandingsEnvelope, TournamentLeaders } from '../../../features/sports/types'
+import type { PaginatedResponse } from '../../../types/admin'
 
 const teams = new Map(getTeams().map((team) => [team.id, team]))
 
@@ -33,10 +34,17 @@ const matches: MatchSummary[] = [
     venueName: 'Ginásio Central',
     bracketRound: null,
     scoreSource: 'PERIODS',
-    homeTeam: { tournamentTeamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
-    awayTeam: { tournamentTeamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
+    homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+    awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
   },
 ]
+
+const matchesPage: PaginatedResponse<MatchSummary> = {
+  data: matches,
+  meta: { totalItems: 1, itemCount: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
+  links: { first: '', previous: null, next: null, last: '' },
+  statusCode: 200,
+}
 
 const leader = (
   athleteId: number,
@@ -76,16 +84,7 @@ const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Paramete
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <OverviewTab
-          tournament={tournament}
-          matches={matches}
-          matchesPending={false}
-          matchesError={false}
-          onRetryMatches={vi.fn()}
-          teams={teams}
-          onSeeBracket={vi.fn()}
-          {...props}
-        />
+        <OverviewTab tournament={tournament} teams={teams} {...props} />
       </QueryClientProvider>
     </MemoryRouter>,
   )
@@ -93,6 +92,7 @@ const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Paramete
 
 beforeEach(() => {
   vi.spyOn(sportsApi, 'getTournamentLeaders').mockResolvedValue(leaderPayload)
+  vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(matchesPage)
 })
 
 afterEach(() => {
@@ -162,23 +162,32 @@ describe('OverviewTab', () => {
     expect(screen.queryByText(/grupos ainda não definidos/i)).not.toBeInTheDocument()
   })
 
-  it('shows a matches skeleton while the tournament match collection loads', () => {
-    renderGeral(getTournamentById(1)!, { matchesPending: true })
+  it('shows a matches skeleton while the preview loads', () => {
+    vi.mocked(sportsApi.listMatchesPage).mockReturnValue(new Promise(() => undefined))
+    renderGeral()
 
     expect(screen.queryByLabelText('Abutres 77 - 74 Águias Douradas')).not.toBeInTheDocument()
   })
 
   it('shows a matches error state with retry instead of an empty list', async () => {
-    const onRetryMatches = vi.fn()
-    renderGeral(getTournamentById(1)!, { matchesError: true, onRetryMatches })
+    vi.mocked(sportsApi.listMatchesPage).mockRejectedValue(new Error('matches unavailable'))
+    renderGeral()
 
     expect(await screen.findByText('Não foi possível carregar as partidas.')).toBeInTheDocument()
   })
 
-  it('renders the tournament matches without a client-side resort', () => {
+  it('renders the tournament matches without a client-side resort', async () => {
     renderGeral()
 
-    expect(screen.getByLabelText('Abutres 77 - 74 Águias Douradas')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Abutres 77 - 74 Águias Douradas')).toBeInTheDocument()
+  })
+
+  it('asks the server for ten matches instead of draining the pagination', async () => {
+    renderGeral()
+
+    await screen.findByLabelText('Abutres 77 - 74 Águias Douradas')
+    expect(sportsApi.listMatchesPage).toHaveBeenCalledTimes(1)
+    expect(sportsApi.listMatchesPage).toHaveBeenCalledWith({ tournamentId: 1, page: 1, limit: 10 })
   })
 
   it('shows an independent leaders skeleton before the request settles', () => {
@@ -198,7 +207,8 @@ describe('OverviewTab', () => {
     renderGeral()
 
     expect(await screen.findByText('Não foi possível carregar os líderes.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    const leadersSection = screen.getByRole('heading', { name: 'Líderes' }).closest('section')!
+    await user.click(within(leadersSection).getByRole('button', { name: 'Tentar novamente' }))
     expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
     expect(listStandings).toHaveBeenCalledTimes(1)
   })
@@ -207,7 +217,7 @@ describe('OverviewTab', () => {
     renderGeral()
     expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
     expect(screen.getByText('Historical Team')).toBeInTheDocument()
-    expect(screen.getByText('24.125')).toBeInTheDocument()
+    expect(screen.getByText('24.1')).toBeInTheDocument()
     expect(screen.getByText('em 4 jogos medidos')).toBeInTheDocument()
     expect(screen.queryByText('Fourth Athlete')).not.toBeInTheDocument()
     expect(screen.getAllByText('Sem dados medidos.')).toHaveLength(3)
@@ -221,5 +231,36 @@ describe('OverviewTab', () => {
     renderGeral()
     expect(await screen.findByText('Sem líderes estatísticos ainda.')).toBeInTheDocument()
     expect(screen.queryByTestId('leader-card')).not.toBeInTheDocument()
+  })
+
+  it('carries each section link to the matching tab url', () => {
+    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE_KNOCKOUT' })
+
+    expect(screen.getByRole('link', { name: 'Ver todos os grupos' })).toHaveAttribute('href', '/?tab=groups')
+    expect(screen.getByRole('link', { name: 'Ver chaveamento completo' })).toHaveAttribute('href', '/?tab=bracket')
+    expect(screen.getByRole('link', { name: 'Ver todas as estatísticas' })).toHaveAttribute('href', '/?tab=stats')
+    expect(screen.getByRole('link', { name: 'Ver todas as partidas' })).toHaveAttribute('href', '/?tab=matches')
+  })
+
+  it('sends a league to the classification instead of the groups tab', () => {
+    renderGeral({ ...getTournamentById(1)!, format: 'LEAGUE' })
+
+    expect(screen.getByRole('link', { name: 'Ver classificação completa' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
+  })
+
+  it('leaves the groups section without a link in a pure knockout', () => {
+    renderGeral({ ...getTournamentById(1)!, format: 'KNOCKOUT' })
+
+    expect(screen.queryByRole('link', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver classificação completa' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the section hints beside the new links', () => {
+    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE' })
+
+    expect(screen.getByText('Ordenação FIBA por pontos de classificação')).toBeInTheDocument()
+    expect(screen.getByText('Médias por jogo, clique no atleta para o perfil')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver todos os grupos' })).toBeInTheDocument()
   })
 })

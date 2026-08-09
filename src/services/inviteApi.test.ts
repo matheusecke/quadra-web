@@ -58,4 +58,14 @@ describe('inviteApi', () => {
 
     await expect(listMyInvites()).rejects.toThrow('network failed')
   })
+
+  it('answers every invite through the single respond endpoint', async () => {
+    await respondToMyInvite(10, 'ACCEPT')
+    await respondToMyInvite(11, 'REJECT')
+
+    expect(vi.mocked(api.post).mock.calls.map(([url]) => url)).toEqual([
+      '/auth/invites/10/respond',
+      '/auth/invites/11/respond',
+    ])
+  })
 })

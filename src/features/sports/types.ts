@@ -41,6 +41,8 @@ export interface RosterCandidate {
   teamId: number
   role: 'ATHLETE' | 'COACHING_STAFF'
   jerseyNumber: number | null
+  position: AthletePosition | null
+  status: AthleteStatus
 }
 
 export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
@@ -173,6 +175,8 @@ export type MatchScoreSource = 'PERIODS' | 'AWARDED'
 
 export interface MatchSide {
   tournamentTeamId: number
+  /** Global Team.id — the navigation target; the snapshot name stays the label. */
+  teamId: number
   teamName: string
   score: number | null
   result: MatchSideResult | null
@@ -335,6 +339,8 @@ export interface BracketSlot {
 
 export interface BracketSlotTeam {
   tournamentTeamId: number
+  /** Global Team.id — the navigation target. */
+  teamId: number
   /** Registration snapshot. A renamed team keeps the historical name here. */
   name: string
   /** Read live from the catalogue — deliberately not a snapshot. */
@@ -430,4 +436,117 @@ export interface MatchDetail extends MatchSummary {
   playerStats: PlayerMatchStats[]
   /** null on a W.O. and until the admin picks one. §8.10 */
   mvp: MatchMvp | null
+}
+
+// ── Team profile (GET /teams/:id/summary | /matches | /tournaments) ──────────
+// Averages, rates and measured-game metadata only. The API exposes no team totals.
+
+/** Contextual status derived by the API from the global entity plus organization visibility. */
+export type TeamProfileStatus = 'ACTIVE' | 'HISTORICAL' | 'INACTIVE'
+
+/** TournamentTeam participation status. */
+export type TournamentTeamStatus = 'ACTIVE' | 'WITHDRAWN'
+
+export type TeamMatchScope = 'upcoming' | 'history'
+
+export type TeamBoxScoreField = 'reb' | 'ast' | 'stl' | 'blk' | 'tov' | 'pf'
+
+export interface TeamProfileIdentity {
+  id: number
+  name: string
+  shortName: string
+  city: string | null
+  /** Two-letter Brazilian state code, e.g. 'SP'. */
+  state: string | null
+  status: TeamProfileStatus
+}
+
+export interface TeamTitle {
+  tournament: {
+    id: number
+    name: string
+    seasonId: number
+    seasonLabel: string
+    startsAt: string | null
+    endsAt: string | null
+  }
+}
+
+export interface TeamResultStatistics {
+  /** Denominator metadata for winRate — reliability annotation, never a headline total. */
+  measuredGames: number
+  winRate: number | null
+  scoreMeasuredGames: number
+  pointsForPerGame: number | null
+  pointsAgainstPerGame: number | null
+  pointDiffPerGame: number | null
+}
+
+export interface TeamBoxScoreStatistics {
+  /** Each metric carries its own denominator; a recorded zero stays measured. */
+  measuredGames: Record<TeamBoxScoreField, number>
+  perGame: Record<TeamBoxScoreField, number | null>
+  shooting: {
+    fgPct: number | null
+    threeFgPct: number | null
+    ftPct: number | null
+    trueShootingPct: number | null
+  }
+  efficiency: { measuredGames: number; perGame: number | null }
+}
+
+export interface TeamStatistics {
+  results: TeamResultStatistics
+  boxScore: TeamBoxScoreStatistics
+}
+
+export interface TeamSummary {
+  team: TeamProfileIdentity
+  titles: TeamTitle[]
+  statistics: TeamStatistics
+}
+
+export interface TeamMatchParticipant {
+  tournamentTeamId: number
+  /** Global Team.id — the navigation target. */
+  teamId: number
+  /** TournamentTeam.displayNameSnapshot — the historical label. */
+  name: string
+  score: number | null
+  result: MatchSideResult | null
+  lossType: LossType | null
+  isWinner: boolean | null
+}
+
+export interface TeamMatchHistoryRow {
+  match: {
+    id: number
+    status: MatchStatus
+    scheduledAt: string
+    venueName: string | null
+    scoreSource: MatchScoreSource | null
+  }
+  tournament: { id: number; name: string; seasonId: number; seasonLabel: string }
+  team: TeamMatchParticipant
+  opponent: TeamMatchParticipant
+}
+
+export interface TeamTournamentHistoryRow {
+  tournament: {
+    id: number
+    name: string
+    seasonId: number
+    seasonLabel: string
+    status: TournamentStatus
+    startsAt: string | null
+    endsAt: string | null
+  }
+  team: {
+    tournamentTeamId: number
+    teamId: number
+    name: string
+    status: TournamentTeamStatus
+    isChampion: boolean
+  }
+  statistics: TeamStatistics
 }

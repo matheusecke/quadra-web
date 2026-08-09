@@ -59,6 +59,10 @@ export {
 export { getTeams, listTeamsPage, listRosterCandidatesPage, searchRosterCandidates, searchTeams } from './catalogs'
 export type { ListRosterCandidatesParams, ListTeamsParams } from './catalogs'
 
+// ── Team profile ─────────────────────────────────────────────────────────────
+export { getTeamSummary, listTeamMatchesPage, listTeamTournamentsPage } from './team-profile'
+export type { ListTeamMatchesParams, ListTeamTournamentsParams } from './team-profile'
+
 // ── Athletes ─────────────────────────────────────────────────────────────────
 export {
   getAthlete,

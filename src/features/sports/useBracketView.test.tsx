@@ -26,7 +26,7 @@ const GERAL_TOURNAMENT_TEAMS: TournamentTeam[] = GERAL_TEAMS.map((team) => ({
 /** Same tree the mock seed used to describe as a store: 4 quarters -> 2 semis -> 1 final. */
 const teamRef = (n: number): BracketSlotTeam => {
   const team = GERAL_TEAMS[n - 1]
-  return { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.GERAL, n), name: team.name, shortName: team.shortName }
+  return { tournamentTeamId: tournamentTeamId(SEED_TOURNAMENT.GERAL, n), teamId: team.id, name: team.name, shortName: team.shortName }
 }
 
 const DEMO_BRACKET: sportsApi.BracketRead = {

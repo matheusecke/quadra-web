@@ -16,8 +16,8 @@ const finishedMatch: MatchSummary = {
   venueName: 'Ginásio Central',
   bracketRound: { id: 1, number: 1, label: 'Oitavas de final' },
   scoreSource: 'PERIODS',
-  homeTeam: { tournamentTeamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
-  awayTeam: { tournamentTeamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
+  homeTeam: { tournamentTeamId: 1, teamId: 1, teamName: 'Abutres', score: 77, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 2, teamId: 2, teamName: 'Águias Douradas', score: 74, result: 'LOSS', lossType: 'NORMAL', isWinner: false },
 }
 
 describe('MatchList', () => {

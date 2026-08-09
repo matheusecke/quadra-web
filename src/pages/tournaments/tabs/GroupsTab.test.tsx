@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import axios from 'axios'
+import { MemoryRouter } from 'react-router-dom'
 import { GroupsTab } from './GroupsTab'
 import * as sportsApi from '../../../services/sportsApi'
 import { teamMap } from '../../../features/sports/sportsUtils'
@@ -93,9 +94,11 @@ function renderTab({
 
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={client}>
-      <GroupsTab tournament={tournament} teams={teamMap([team, team2])} />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={client}>
+        <GroupsTab tournament={tournament} teams={teamMap([team, team2])} />
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
 

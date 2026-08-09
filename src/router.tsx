@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { AdminRoute } from './components/AdminRoute'
 import { OrgAdminRoute } from './components/OrgAdminRoute'
+import { OrgTeamsRoute } from './components/OrgTeamsRoute'
+import { OrgUsersRoute } from './components/OrgUsersRoute'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
@@ -25,6 +27,7 @@ import { MatchSumulaPage } from './pages/matches/MatchSumulaPage'
 import { MatchDetailPage } from './pages/matches/MatchDetailPage'
 import { MatchesPage } from './pages/matches/MatchesPage'
 import { AthleteDetailPage } from './pages/athletes/AthleteDetailPage'
+import { TeamDetailPage } from './pages/teams/TeamDetailPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/home" replace /> },
@@ -42,8 +45,14 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/home', element: <HomePage /> },
-          { path: '/users', element: <OrgUsersPage /> },
-          { path: '/teams', element: <OrgTeamsPage /> },
+          {
+            element: <OrgUsersRoute />,
+            children: [{ path: '/users', element: <OrgUsersPage /> }],
+          },
+          {
+            element: <OrgTeamsRoute />,
+            children: [{ path: '/teams', element: <OrgTeamsPage /> }],
+          },
           { path: '/tournaments', element: <TournamentsPage /> },
           {
             element: <OrgAdminRoute />,
@@ -62,6 +71,7 @@ export const router = createBrowserRouter([
           { path: '/matches', element: <MatchesPage /> },
           { path: '/matches/:matchId', element: <MatchDetailPage /> },
           { path: '/athletes/:athleteId', element: <AthleteDetailPage /> },
+          { path: '/teams/:teamId', element: <TeamDetailPage /> },
           {
             element: <AdminRoute />,
             children: [

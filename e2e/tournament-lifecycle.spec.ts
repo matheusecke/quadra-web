@@ -20,11 +20,18 @@ async function login(page: Page) {
 }
 
 test('cria, inicia, encerra e reabre um campeonato de fase de grupos', async ({ page }) => {
+  await page.route(
+    '**/auth/refresh',
+    (route) => route.fulfill({ status: 401, json: { message: 'Unauthorized' } }),
+    { times: 1 },
+  )
   await login(page)
 
   await page.getByRole('button', { name: 'Novo campeonato' }).click()
   const name = `E2E Fase de Grupos ${Date.now()}`
   await page.getByLabel('Nome').fill(name)
+  await page.getByLabel('Temporada').click()
+  await page.getByRole('option').first().click()
   await page.getByLabel('Formato').click()
   await page.getByRole('option', { name: 'Fase de grupos' }).click()
   await page.getByLabel('Status').click()

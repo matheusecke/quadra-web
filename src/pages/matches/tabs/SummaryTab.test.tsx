@@ -15,8 +15,8 @@ const baseMatch: MatchDetail = {
   venueName: 'Quadra 1',
   bracketRound: null,
   scoreSource: 'PERIODS',
-  homeTeam: { tournamentTeamId: 41, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
-  awayTeam: { tournamentTeamId: 52, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
+  homeTeam: { tournamentTeamId: 41, teamId: 8, teamName: 'Águias', score: 80, result: 'WIN', lossType: null, isWinner: true },
+  awayTeam: { tournamentTeamId: 52, teamId: 9, teamName: 'Falcões', score: 75, result: 'LOSS', lossType: null, isWinner: false },
   periods: [
     { periodNumber: 2, periodType: 'REGULAR', homePoints: 22, awayPoints: 19, startedAt: null, endedAt: null },
     { periodNumber: 1, periodType: 'REGULAR', homePoints: 20, awayPoints: 18, startedAt: null, endedAt: null },

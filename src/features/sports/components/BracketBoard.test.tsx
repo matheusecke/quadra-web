@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
@@ -11,7 +11,7 @@ const rounds: BracketRound[] = [
   { id: 2, tournamentId: 1, number: 2, label: 'Final' },
 ]
 
-const team = (tournamentTeamId: number, name: string, shortName: string) => ({ tournamentTeamId, name, shortName })
+const team = (tournamentTeamId: number, name: string, shortName: string, teamId = tournamentTeamId + 100) => ({ tournamentTeamId, teamId, name, shortName })
 
 const slot = (over: Partial<BracketSlotView> & Pick<BracketSlotView, 'id' | 'roundId' | 'position'>): BracketSlotView => ({
   label: null,
@@ -132,39 +132,92 @@ describe('BracketBoard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('links a filled slot side to its team profile', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1, homeTeam: team(1, 'Alfa', 'T01') })] })
+
+    expect(screen.getByRole('link', { name: 'Alfa' })).toHaveAttribute('href', '/teams/101')
+  })
+
+  it('leaves an undecided slot side unlinked', () => {
+    renderBoard({ slots: [slot({ id: 1, roundId: 1, position: 1 })] })
+
+    expect(screen.queryByRole('link', { name: 'a definir' })).not.toBeInTheDocument()
+  })
+
   describe('linked match', () => {
     const linkedMatch: BracketMatchView = { id: 501, status: 'FINISHED', date: '2026-08-01T22:00:00.000Z', homeScore: 72, awayScore: 68 }
 
-    it('shows no linked match block when the slot has none', () => {
-      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1 })] })
-      expect(screen.queryByLabelText('Partida vinculada')).not.toBeInTheDocument()
+    const linkedSlot = (match: BracketMatchView | null) => slot({
+      id: 11,
+      roundId: 1,
+      position: 1,
+      homeTeam: team(1, 'Alfa', 'T01'),
+      awayTeam: team(2, 'Beta', 'T02'),
+      match,
     })
 
-    it('links to the linked match, with its status, date and score', () => {
-      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, match: linkedMatch })] })
-      expect(screen.getByRole('link', { name: /Partida #501/ })).toHaveAttribute('href', '/matches/501')
-      expect(screen.getByText('Finalizada')).toBeInTheDocument()
+    it('makes the whole card a link to the match', () => {
+      renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
+      expect(screen.getByRole('link', { name: 'Partida' })).toHaveAttribute('href', '/matches/501')
+    })
+
+    it('keeps each team name linking to its own team', () => {
+      renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
+      expect(screen.getByRole('link', { name: 'Alfa' })).toHaveAttribute('href', '/teams/101')
+      expect(screen.getByRole('link', { name: 'Beta' })).toHaveAttribute('href', '/teams/102')
+    })
+
+    // An <a> inside another is invalid HTML; the stretched link exists to avoid it.
+    it('nests no anchor inside another', () => {
+      const { container } = renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
+      expect(container.querySelector('a a')).toBeNull()
+    })
+
+    it('shows neither the match number nor a status chip', () => {
+      renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
+      expect(screen.queryByText(/Partida #\d+/)).not.toBeInTheDocument()
+      expect(screen.queryByText('Finalizada')).not.toBeInTheDocument()
+    })
+
+    it('stacks each score beside its own team name', () => {
+      renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
+      const homeSide = screen.getByText('Alfa').closest('div') as HTMLElement
+      const awaySide = screen.getByText('Beta').closest('div') as HTMLElement
+      expect(within(homeSide).getByText('72')).toBeInTheDocument()
+      expect(within(awaySide).getByText('68')).toBeInTheDocument()
+      expect(screen.queryByText('72 × 68')).not.toBeInTheDocument()
+    })
+
+    it('shows the match date on its own line', () => {
+      renderBoard({ slots: [linkedSlot(linkedMatch)] })
+
       expect(screen.getByText(formatDateTime(linkedMatch.date!))).toBeInTheDocument()
-      expect(screen.getByText('72 × 68')).toBeInTheDocument()
     })
 
-    it('keeps the score in its own block, not attached to either side name', () => {
-      renderBoard({
-        slots: [slot({
-          id: 11, roundId: 1, position: 1,
-          homeTeam: team(1, 'Alfa', 'T01'), awayTeam: team(2, 'Beta', 'T02'),
-          match: linkedMatch,
-        })],
-      })
-      expect(screen.getByText('Alfa')).toBeInTheDocument()
-      expect(screen.getByText('Beta')).toBeInTheDocument()
-      expect(screen.getByText('72 × 68').closest('article')).toContainElement(screen.getByText('Alfa'))
+    it('renders no score cell and no placeholder when the match has no score', () => {
+      renderBoard({ slots: [linkedSlot({ id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null })] })
+
+      expect(screen.queryByText('Placar indisponível')).not.toBeInTheDocument()
+      expect(screen.getByRole('article').textContent).toBe('T01AlfaT02BetaData não informada')
     })
 
-    it('shows a placeholder when the linked match has no date or score yet', () => {
-      renderBoard({ slots: [slot({ id: 11, roundId: 1, position: 1, match: { id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null } })] })
+    it('keeps the date placeholder when the linked match has no date', () => {
+      renderBoard({ slots: [linkedSlot({ id: 501, status: 'SCHEDULED', date: null, homeScore: null, awayScore: null })] })
+
       expect(screen.getByText('Data não informada')).toBeInTheDocument()
-      expect(screen.getByText('Placar indisponível')).toBeInTheDocument()
+    })
+
+    it('gives an unlinked slot no match link and no date line', () => {
+      renderBoard({ slots: [linkedSlot(null)] })
+
+      expect(screen.queryByRole('link', { name: 'Partida' })).not.toBeInTheDocument()
+      expect(screen.queryByText('Data não informada')).not.toBeInTheDocument()
+      expect(screen.getByRole('article').textContent).toBe('T01AlfaT02Beta')
     })
   })
 })
