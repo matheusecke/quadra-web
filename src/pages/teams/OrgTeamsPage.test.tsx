@@ -64,11 +64,10 @@ describe('OrgTeamsPage', () => {
           id: 3,
           organizationId: 42,
           teamId: 18,
-          team: {
-            id: 18,
-            name: 'Lobos',
-          },
+          team: { id: 18, name: 'Lobos', shortName: 'TIG', city: 'Campinas', state: 'SP' },
           status: 'ACTIVE',
+          activeUserCount: 12,
+          pendingAdminInviteCount: 0,
           createdByUserId: 9,
           createdAt: '2026-06-01T12:00:00.000Z',
           updatedAt: '2026-06-01T12:00:00.000Z',
@@ -171,6 +170,7 @@ describe('OrgTeamsPage', () => {
   it('renders the authorization-specific copy for 403 team responses', async () => {
     listOrgTeamsMock.mockReset()
     listOrgTeamsMock.mockRejectedValue({
+      isAxiosError: true,
       response: {
         status: 403,
       },
@@ -222,5 +222,64 @@ describe('OrgTeamsPage', () => {
         status: 'ACTIVE',
       })
     })
+  })
+
+  it('shows how many active members the team has in this organization', async () => {
+    renderPage()
+
+    expect(await screen.findByText('12')).toBeInTheDocument()
+  })
+
+  it('shows how many administrator invites are still pending', async () => {
+    listOrgTeamsMock.mockReset()
+    listOrgTeamsMock.mockResolvedValue({
+      data: [
+        {
+          id: 4,
+          organizationId: 42,
+          teamId: 9,
+          team: { id: 9, name: 'Águias', shortName: 'AGU', city: null, state: null },
+          status: 'PENDING',
+          activeUserCount: 0,
+          pendingAdminInviteCount: 2,
+          createdByUserId: 9,
+          createdAt: '2026-06-01T12:00:00.000Z',
+          updatedAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+      meta: { totalItems: 1, itemCount: 1, itemsPerPage: 20, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: null, next: null, last: '' },
+      statusCode: 200,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('2')).toBeInTheDocument()
+  })
+
+  it('offers the feminine inactive label in the status filter', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Equipes' })
+
+    await user.click(screen.getByLabelText('Filtrar equipes por status'))
+
+    expect(screen.getByRole('option', { name: 'Inativa' })).toBeInTheDocument()
+  })
+
+  it('never offers the rejected status as a filter', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Equipes' })
+
+    await user.click(screen.getByLabelText('Filtrar equipes por status'))
+
+    expect(screen.queryByRole('option', { name: 'Rejeitado' })).not.toBeInTheDocument()
+  })
+
+  it('shows the short name next to the team', async () => {
+    renderPage()
+
+    expect(await screen.findByText('TIG · Campinas/SP')).toBeInTheDocument()
   })
 })

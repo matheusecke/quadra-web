@@ -1,22 +1,31 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
 import { Combobox } from '../../components/ui/Combobox/Combobox'
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
-import { useAuth } from '../../hooks/useAuth'
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
-import { listOrgTeams } from '../../services/orgApi'
 import { affiliationStatusVariant, teamAffiliationStatusLabel } from '../../features/org/labels'
-import s from '../admin/adminList.module.css'
+import { useOrgTeamsInfiniteQuery } from '../../features/org/queries'
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
+import { apiErrorStatus } from '../../services/apiError'
 import type { AffiliationStatus } from '../../types/admin'
+import type { OrgTeamAffiliationTeam } from '../../types/org'
+import s from '../admin/adminList.module.css'
 
-const LIMIT = 20
+const STATUS_OPTIONS = [
+  { value: '', label: 'Status' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'ACTIVE', label: 'Ativa' },
+  { value: 'INACTIVE', label: 'Inativa' },
+]
+
+function teamSubtitle(team: OrgTeamAffiliationTeam) {
+  const place = team.city && team.state ? `${team.city}/${team.state}` : team.city ?? team.state
+  return place ? `${team.shortName} · ${place}` : team.shortName
+}
 
 export function OrgTeamsPage() {
-  const { user } = useAuth()
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [status, setStatus] = useState<AffiliationStatus | ''>('')
@@ -26,28 +35,12 @@ export function OrgTeamsPage() {
     return () => clearTimeout(timer)
   }, [q])
 
-  const { data, error, fetchNextPage, hasNextPage, isError, isLoading, refetch } = useInfiniteQuery({
-    queryKey: ['org-teams', user?.organizationId, debouncedQ, status],
-    queryFn: ({ pageParam }) =>
-      listOrgTeams({
-        page: pageParam as number,
-        limit: LIMIT,
-        q: debouncedQ || undefined,
-        status: (status as AffiliationStatus) || undefined,
-      }),
-    initialPageParam: 1,
-    getNextPageParam: (last) => (
-      last.meta.currentPage < last.meta.totalPages ? last.meta.currentPage + 1 : undefined
-    ),
-    enabled: user?.organizationId !== null,
-    gcTime: 0,
-  })
+  const { data, error, fetchNextPage, hasNextPage, isError, isLoading, refetch } =
+    useOrgTeamsInfiniteQuery({ q: debouncedQ, status })
 
   const items = data?.pages.flatMap((page) => page.data) ?? []
   const total = data?.pages[0]?.meta.totalItems ?? 0
-  const errorStatus = typeof error === 'object' && error !== null && 'response' in error
-    ? (error.response as { status?: number } | undefined)?.status
-    : undefined
+  const errorStatus = apiErrorStatus(error)
   const loadMore = useCallback(() => {
     if (hasNextPage) {
       void fetchNextPage()
@@ -85,12 +78,7 @@ export function OrgTeamsPage() {
           <div className={s.filterControl}>
             <Combobox
               aria-label="Filtrar equipes por status"
-              options={[
-                { value: '', label: 'Status' },
-                { value: 'PENDING', label: 'Pendente' },
-                { value: 'ACTIVE', label: 'Ativa' },
-                { value: 'INACTIVE', label: 'Inativa' },
-              ]}
+              options={STATUS_OPTIONS}
               value={status || null}
               onChange={(value) => setStatus(value as AffiliationStatus | '')}
             />
@@ -122,6 +110,8 @@ export function OrgTeamsPage() {
               <thead className={s.thead}>
                 <tr>
                   <th className={s.th}>Equipe</th>
+                  <th className={s.th}>Membros ativos</th>
+                  <th className={s.th}>Convites pendentes</th>
                   <th className={`${s.th} ${s.thStatus}`}>Status</th>
                 </tr>
               </thead>
@@ -130,16 +120,23 @@ export function OrgTeamsPage() {
                   ? Array.from({ length: 8 }).map((_, index) => (
                       <tr key={index} className={s.skRow}>
                         <td><Skeleton width={180} height={14} /></td>
+                        <td><Skeleton width={40} height={14} /></td>
+                        <td><Skeleton width={40} height={14} /></td>
                         <td><Skeleton width={64} height={20} /></td>
                       </tr>
                     ))
                   : items.map((affiliation) => (
                       <tr key={affiliation.id} className={s.tr}>
                         <td className={s.td}>
-                          <Link to={`/teams/${affiliation.teamId}`} className={s.teamLink}>
-                            {affiliation.team.name}
-                          </Link>
+                          <div className={s.nameMeta}>
+                            <Link to={`/teams/${affiliation.teamId}`} className={s.teamLink}>
+                              {affiliation.team.name}
+                            </Link>
+                            <span className={s.subText}>{teamSubtitle(affiliation.team)}</span>
+                          </div>
                         </td>
+                        <td className={s.td}>{affiliation.activeUserCount}</td>
+                        <td className={s.td}>{affiliation.pendingAdminInviteCount}</td>
                         <td className={s.tdStatus}>
                           <Badge variant={affiliationStatusVariant(affiliation.status)}>
                             {teamAffiliationStatusLabel(affiliation.status)}
@@ -148,7 +145,7 @@ export function OrgTeamsPage() {
                       </tr>
                     ))}
                 <tr>
-                  <td colSpan={2} style={{ padding: 0 }}>
+                  <td colSpan={4} style={{ padding: 0 }}>
                     <div ref={sentinelRef} style={{ height: 1 }} />
                   </td>
                 </tr>
