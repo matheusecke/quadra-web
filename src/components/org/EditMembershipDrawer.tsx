@@ -85,7 +85,7 @@ export function EditMembershipDrawer({ affiliation, open, onClose }: EditMembers
           <Button type="button" variant="ghost" onClick={close} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={!canSubmit} loading={mutation.isPending}>
+          <Button type="submit" disabled={!canSubmit || mutation.isPending} loading={mutation.isPending}>
             Salvar
           </Button>
         </div>

@@ -116,4 +116,14 @@ describe('EditMembershipDrawer', () => {
       await screen.findByText('Outra alteração ocorreu ao mesmo tempo. Atualize a lista e tente novamente.'),
     ).toBeInTheDocument()
   })
+
+  it('disables saving again while the update is still in flight', async () => {
+    const user = userEvent.setup()
+    updateMembershipMock.mockReturnValue(new Promise(() => undefined))
+    renderDrawer()
+
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled()
+  })
 })

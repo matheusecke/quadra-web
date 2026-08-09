@@ -171,7 +171,9 @@ export function OrgTeamsPage() {
         )}
       </div>
 
-      <TeamOnboardingDrawer open={isOnboardingOpen} onClose={() => setIsOnboardingOpen(false)} />
+      {isOnboardingOpen && (
+        <TeamOnboardingDrawer open onClose={() => setIsOnboardingOpen(false)} />
+      )}
     </div>
   )
 }

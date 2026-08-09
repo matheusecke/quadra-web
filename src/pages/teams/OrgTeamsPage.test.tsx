@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -293,10 +293,10 @@ describe('OrgTeamsPage', () => {
   it('opens the onboarding drawer from the list header', async () => {
     const user = userEvent.setup()
     renderPage()
-    const heading = await screen.findByRole('heading', { name: 'Equipes' })
-    const headerRow = heading.closest('div')?.parentElement as HTMLElement
+    await screen.findByRole('heading', { name: 'Equipes' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    await user.click(within(headerRow).getByRole('button', { name: 'Adicionar equipe' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar equipe' }))
 
     expect(screen.getByRole('dialog', { name: 'Adicionar equipe' })).toBeInTheDocument()
   })
