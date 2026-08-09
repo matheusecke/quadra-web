@@ -9,22 +9,11 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { useAuth } from '../../hooks/useAuth'
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
 import { listOrgTeams } from '../../services/orgApi'
-import type { AffiliationStatus } from '../../types/admin'
+import { affiliationStatusVariant, teamAffiliationStatusLabel } from '../../features/org/labels'
 import s from '../admin/adminList.module.css'
+import type { AffiliationStatus } from '../../types/admin'
 
 const LIMIT = 20
-
-function affiliationStatusVariant(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'success' as const
-  if (status === 'PENDING') return 'warning' as const
-  return 'danger' as const
-}
-
-function affiliationStatusLabel(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'Ativo'
-  if (status === 'PENDING') return 'Pendente'
-  return 'Rejeitado'
-}
 
 export function OrgTeamsPage() {
   const { user } = useAuth()
@@ -94,7 +83,17 @@ export function OrgTeamsPage() {
             )}
           </div>
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar equipes por status" options={[{ value: '', label: 'Status' }, { value: 'ACTIVE', label: 'Ativo' }, { value: 'PENDING', label: 'Pendente' }, { value: 'REJECTED', label: 'Rejeitado' }]} value={status || null} onChange={(value) => setStatus(value as AffiliationStatus | '')} />
+            <Combobox
+              aria-label="Filtrar equipes por status"
+              options={[
+                { value: '', label: 'Status' },
+                { value: 'PENDING', label: 'Pendente' },
+                { value: 'ACTIVE', label: 'Ativa' },
+                { value: 'INACTIVE', label: 'Inativa' },
+              ]}
+              value={status || null}
+              onChange={(value) => setStatus(value as AffiliationStatus | '')}
+            />
           </div>
         </div>
       </div>
@@ -143,7 +142,7 @@ export function OrgTeamsPage() {
                         </td>
                         <td className={s.tdStatus}>
                           <Badge variant={affiliationStatusVariant(affiliation.status)}>
-                            {affiliationStatusLabel(affiliation.status)}
+                            {teamAffiliationStatusLabel(affiliation.status)}
                           </Badge>
                         </td>
                       </tr>

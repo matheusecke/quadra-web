@@ -9,26 +9,15 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton'
 import { useAuth } from '../../hooks/useAuth'
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
 import { listOrgUsers } from '../../services/orgApi'
-import type { AffiliationStatus, OrgRole } from '../../types/admin'
+import { affiliationStatusVariant, userAffiliationStatusLabel } from '../../features/org/labels'
 import s from '../admin/adminList.module.css'
+import type { AffiliationStatus, OrgRole } from '../../types/admin'
 
 const LIMIT = 20
 
 function getInitials(name: string) {
   const words = name.trim().split(/\s+/)
   return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase()
-}
-
-function affiliationStatusVariant(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'success' as const
-  if (status === 'PENDING') return 'warning' as const
-  return 'danger' as const
-}
-
-function affiliationStatusLabel(status: AffiliationStatus) {
-  if (status === 'ACTIVE') return 'Ativo'
-  if (status === 'PENDING') return 'Pendente'
-  return 'Rejeitado'
 }
 
 export function OrgUsersPage() {
@@ -168,7 +157,7 @@ export function OrgUsersPage() {
                         <td className={s.td}>{affiliation.jerseyNumber ?? '-'}</td>
                         <td className={s.tdStatus}>
                           <Badge variant={affiliationStatusVariant(affiliation.status)}>
-                            {affiliationStatusLabel(affiliation.status)}
+                            {userAffiliationStatusLabel(affiliation.status)}
                           </Badge>
                         </td>
                       </tr>
