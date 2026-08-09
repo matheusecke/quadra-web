@@ -259,4 +259,12 @@ describe('orgApi writes', () => {
       state: 'SP',
     })
   })
+
+  it('never sends an organization id on an organization-scoped write', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { data: {} } })
+
+    await inviteOrgAdmin({ userId: 42 })
+
+    expect(api.post).toHaveBeenCalledWith('/organization-user-affiliations', { userId: 42 })
+  })
 })
