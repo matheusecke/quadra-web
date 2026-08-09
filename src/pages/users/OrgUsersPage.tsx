@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { InvitePersonDrawer } from '../../components/org/InvitePersonDrawer'
+import { UserRowActions } from '../../components/org/UserRowActions'
 import { Avatar } from '../../components/ui/Avatar/Avatar'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button'
@@ -164,6 +165,7 @@ export function OrgUsersPage() {
                   <th className={s.th}>Equipe</th>
                   <th className={s.th}>Camisa/Posição</th>
                   <th className={`${s.th} ${s.thStatus}`}>Status</th>
+                  <th className={`${s.th} ${s.thActions}`}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -175,6 +177,7 @@ export function OrgUsersPage() {
                         <td><Skeleton width={100} height={14} /></td>
                         <td><Skeleton width={60} height={14} /></td>
                         <td><Skeleton width={64} height={20} /></td>
+                        <td><Skeleton width={80} height={24} /></td>
                       </tr>
                     ))
                   : items.map((affiliation) => (
@@ -202,10 +205,13 @@ export function OrgUsersPage() {
                             {userAffiliationStatusLabel(affiliation.status, affiliation.isInviteExpired)}
                           </Badge>
                         </td>
+                        <td className={s.tdActions}>
+                          <UserRowActions affiliation={affiliation} />
+                        </td>
                       </tr>
                     ))}
                 <tr>
-                  <td colSpan={5} style={{ padding: 0 }}>
+                  <td colSpan={6} style={{ padding: 0 }}>
                     <div ref={sentinelRef} style={{ height: 1 }} />
                   </td>
                 </tr>

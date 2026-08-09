@@ -181,6 +181,12 @@
   text-align: center;
 }
 
+.thActions,
+.tdActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .sortIcon {
   color: var(--muted-3);
   margin-left: 3px;

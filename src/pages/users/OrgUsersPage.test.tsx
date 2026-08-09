@@ -19,6 +19,10 @@ vi.mock('../../services/orgApi', () => ({
   lookupUserByEmail: vi.fn(),
   inviteOrgAdmin: vi.fn(),
   inviteTeamMember: vi.fn(),
+  activateUserAffiliation: vi.fn(),
+  deactivateUserAffiliation: vi.fn(),
+  cancelUserInvite: vi.fn(),
+  resendUserInvite: vi.fn(),
 }))
 
 vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
@@ -392,5 +396,11 @@ describe('OrgUsersPage', () => {
     await user.click(screen.getByRole('button', { name: 'Convidar pessoa' }))
 
     expect(screen.getByRole('dialog', { name: 'Convidar pessoa' })).toBeInTheDocument()
+  })
+
+  it('renders the row actions for a manageable affiliation', async () => {
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Desativar' })).toBeInTheDocument()
   })
 })
