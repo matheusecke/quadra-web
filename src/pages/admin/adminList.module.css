@@ -235,6 +235,11 @@
   color: var(--ink);
 }
 
+.subText {
+  font: var(--type-micro);
+  color: var(--muted);
+}
+
 .adminTag {
   font-size: 13px;
   color: var(--accent);

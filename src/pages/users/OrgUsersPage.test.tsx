@@ -6,6 +6,8 @@ import { OrgUsersPage } from './OrgUsersPage'
 
 const useAuthMock = vi.fn()
 const listOrgUsersMock = vi.fn()
+const listOrgTeamsMock = vi.fn()
+const activeAffiliationMock = vi.fn()
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => useAuthMock(),
@@ -13,6 +15,11 @@ vi.mock('../../hooks/useAuth', () => ({
 
 vi.mock('../../services/orgApi', () => ({
   listOrgUsers: (...args: unknown[]) => listOrgUsersMock(...args),
+  listOrgTeams: (...args: unknown[]) => listOrgTeamsMock(...args),
+}))
+
+vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
+  useActiveOrgAffiliation: () => activeAffiliationMock(),
 }))
 
 function renderPage() {
@@ -54,6 +61,29 @@ describe('OrgUsersPage', () => {
       ],
     })
 
+    activeAffiliationMock.mockReturnValue({ role: 'ORG_ADMIN', teamId: null })
+
+    listOrgTeamsMock.mockReset()
+    listOrgTeamsMock.mockResolvedValue({
+      data: [
+        {
+          id: 3,
+          organizationId: 42,
+          teamId: 8,
+          team: { id: 8, name: 'Tigres', shortName: 'TIG', city: null, state: null },
+          status: 'ACTIVE',
+          activeUserCount: 1,
+          pendingAdminInviteCount: 0,
+          createdByUserId: 9,
+          createdAt: '2026-06-01T12:00:00.000Z',
+          updatedAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+      meta: { totalItems: 1, itemCount: 1, itemsPerPage: 100, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: null, next: null, last: '' },
+      statusCode: 200,
+    })
+
     listOrgUsersMock.mockReset()
     listOrgUsersMock.mockResolvedValue({
       data: [
@@ -73,6 +103,10 @@ describe('OrgUsersPage', () => {
             name: 'Tigres',
           },
           jerseyNumber: 23,
+          position: 'PG',
+          inviteExpiresAt: null,
+          isInviteExpired: false,
+          canManage: true,
           status: 'ACTIVE',
           createdByUserId: 9,
           createdAt: '2026-06-01T12:00:00.000Z',
@@ -105,9 +139,9 @@ describe('OrgUsersPage', () => {
     expect(heading).toBeInTheDocument()
     expect(await screen.findByText('Ana Costa')).toBeInTheDocument()
     expect(screen.getByText('ana@liga.test')).toBeInTheDocument()
-    expect(screen.getByText('ATHLETE')).toBeInTheDocument()
+    expect(screen.getByText('Atleta')).toBeInTheDocument()
     expect(screen.getByText('Tigres')).toBeInTheDocument()
-    expect(screen.getByText('23')).toBeInTheDocument()
+    expect(screen.getByText('#23 · PG')).toBeInTheDocument()
     expect(screen.getByText('Ativo')).toBeInTheDocument()
     expect(pageHeader).toContainElement(screen.getByLabelText('Buscar usuários da organização'))
     expect(pageHeader).toContainElement(screen.getByLabelText('Filtrar usuários por status'))
@@ -118,6 +152,7 @@ describe('OrgUsersPage', () => {
       q: undefined,
       status: undefined,
       role: undefined,
+      teamId: undefined,
     })
   })
 
@@ -175,6 +210,7 @@ describe('OrgUsersPage', () => {
   it('renders the authorization-specific copy for 403 responses', async () => {
     listOrgUsersMock.mockReset()
     listOrgUsersMock.mockRejectedValue({
+      isAxiosError: true,
       response: {
         status: 403,
       },
@@ -218,7 +254,7 @@ describe('OrgUsersPage', () => {
     await user.click(screen.getByLabelText('Filtrar usuários por status'))
     await user.click(screen.getByRole('option', { name: 'Ativo' }))
     await user.click(screen.getByLabelText('Filtrar usuários por papel'))
-    await user.click(screen.getByRole('option', { name: 'ATHLETE' }))
+    await user.click(screen.getByRole('option', { name: 'Atleta' }))
 
     await waitFor(() => {
       expect(listOrgUsersMock).toHaveBeenLastCalledWith({
@@ -227,7 +263,121 @@ describe('OrgUsersPage', () => {
         q: 'ana',
         status: 'ACTIVE',
         role: 'ATHLETE',
+        teamId: undefined,
       })
     })
+  })
+
+  it('translates the role filter options into the contractual labels', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Usuários' })
+
+    await user.click(screen.getByLabelText('Filtrar usuários por papel'))
+
+    expect(screen.getByRole('option', { name: 'Administrador da equipe' })).toBeInTheDocument()
+  })
+
+  it('sends the selected team to the user list query', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Usuários' })
+
+    await user.click(await screen.findByLabelText('Filtrar usuários por equipe'))
+    await user.click(await screen.findByRole('option', { name: 'Tigres' }))
+
+    await waitFor(() => {
+      expect(listOrgUsersMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ teamId: 8 }),
+      )
+    })
+  })
+
+  it('hides the team filter from a team administrator', async () => {
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: 8 })
+
+    renderPage()
+    await screen.findByRole('heading', { name: 'Usuários' })
+
+    expect(screen.queryByLabelText('Filtrar usuários por equipe')).not.toBeInTheDocument()
+  })
+
+  it('never widens the scope of a team administrator with a teamId parameter', async () => {
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: 8 })
+
+    renderPage()
+    await screen.findByRole('heading', { name: 'Usuários' })
+
+    await waitFor(() => {
+      expect(listOrgUsersMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ teamId: undefined }),
+      )
+    })
+  })
+
+  it('derives the expired status from the invite metadata', async () => {
+    listOrgUsersMock.mockReset()
+    listOrgUsersMock.mockResolvedValue({
+      data: [
+        {
+          id: 2,
+          userId: 13,
+          user: { id: 13, name: 'Bruno Lima', email: 'bruno@liga.test' },
+          organizationId: 42,
+          role: 'TEAM_ADMIN',
+          teamId: 8,
+          team: { id: 8, name: 'Tigres' },
+          jerseyNumber: null,
+          position: null,
+          status: 'PENDING',
+          inviteExpiresAt: '2026-07-01T12:00:00.000Z',
+          isInviteExpired: true,
+          canManage: true,
+          createdByUserId: 9,
+          createdAt: '2026-06-01T12:00:00.000Z',
+          updatedAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+      meta: { totalItems: 1, itemCount: 1, itemsPerPage: 20, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: null, next: null, last: '' },
+      statusCode: 200,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Expirado')).toBeInTheDocument()
+  })
+
+  it('renders a dash when the affiliation has neither jersey nor position', async () => {
+    listOrgUsersMock.mockReset()
+    listOrgUsersMock.mockResolvedValue({
+      data: [
+        {
+          id: 3,
+          userId: 14,
+          user: { id: 14, name: 'Carla Reis', email: 'carla@liga.test' },
+          organizationId: 42,
+          role: 'ORG_ADMIN',
+          teamId: null,
+          team: null,
+          jerseyNumber: null,
+          position: null,
+          status: 'ACTIVE',
+          inviteExpiresAt: null,
+          isInviteExpired: false,
+          canManage: false,
+          createdByUserId: 9,
+          createdAt: '2026-06-01T12:00:00.000Z',
+          updatedAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+      meta: { totalItems: 1, itemCount: 1, itemsPerPage: 20, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: null, next: null, last: '' },
+      statusCode: 200,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('Administrador da organização')).toBeInTheDocument()
   })
 })
