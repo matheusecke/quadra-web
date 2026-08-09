@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { EditMembershipDrawer } from './EditMembershipDrawer'
 import { InlineConfirm } from './InlineConfirm'
 import { Button } from '../ui/Button'
 import { orgWriteErrorMessage } from '../../features/org/orgWriteErrorMessage'
 import type { OrgWriteOperation } from '../../features/org/orgWriteErrorMessage'
 import { useOrgMutation } from '../../features/org/queries'
+import { useActiveOrgAffiliation } from '../../hooks/useActiveOrgAffiliation'
 import {
   activateUserAffiliation,
   cancelUserInvite,
@@ -61,8 +63,16 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const mutation = useOrgMutation((kind: ActionKind) => ACTIONS[kind].run(affiliation.id))
 
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const { role: actorRole } = useActiveOrgAffiliation()
+  const canEditMembership =
+    affiliation.canManage &&
+    actorRole === 'TEAM_ADMIN' &&
+    affiliation.status === 'ACTIVE' &&
+    (affiliation.role === 'ATHLETE' || affiliation.role === 'COACHING_STAFF')
+
   const available = affiliation.canManage ? ACTIONS_BY_STATUS[affiliation.status] ?? [] : []
-  if (available.length === 0) return null
+  if (available.length === 0 && !canEditMembership) return null
 
   const confirm = pendingAction ? ACTIONS[pendingAction] : null
 
@@ -90,11 +100,25 @@ export function UserRowActions({ affiliation }: { affiliation: OrgUserAffiliatio
           }}
         />
       ) : (
-        available.map((kind) => (
-          <Button key={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
-            {ACTIONS[kind].label}
-          </Button>
-        ))
+        <>
+          {canEditMembership && (
+            <Button size="sm" variant="ghost" onClick={() => setIsEditOpen(true)}>
+              Editar
+            </Button>
+          )}
+          {available.map((kind) => (
+            <Button key={kind} size="sm" variant="ghost" onClick={() => setPendingAction(kind)}>
+              {ACTIONS[kind].label}
+            </Button>
+          ))}
+          {canEditMembership && (
+            <EditMembershipDrawer
+              affiliation={affiliation}
+              open={isEditOpen}
+              onClose={() => setIsEditOpen(false)}
+            />
+          )}
+        </>
       )}
     </div>
   )

@@ -9,12 +9,18 @@ const cancelUserInviteMock = vi.fn()
 const resendUserInviteMock = vi.fn()
 const activateUserAffiliationMock = vi.fn()
 const deactivateUserAffiliationMock = vi.fn()
+const activeAffiliationMock = vi.fn()
 
 vi.mock('../../services/orgApi', () => ({
   cancelUserInvite: (...args: unknown[]) => cancelUserInviteMock(...args),
   resendUserInvite: (...args: unknown[]) => resendUserInviteMock(...args),
   activateUserAffiliation: (...args: unknown[]) => activateUserAffiliationMock(...args),
   deactivateUserAffiliation: (...args: unknown[]) => deactivateUserAffiliationMock(...args),
+  updateMembership: vi.fn(),
+}))
+
+vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
+  useActiveOrgAffiliation: () => activeAffiliationMock(),
 }))
 
 const baseAffiliation: OrgUserAffiliation = {
@@ -56,6 +62,7 @@ describe('UserRowActions', () => {
     activateUserAffiliationMock.mockResolvedValue(baseAffiliation)
     deactivateUserAffiliationMock.mockReset()
     deactivateUserAffiliationMock.mockResolvedValue(baseAffiliation)
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: 8 })
   })
 
   it('offers nothing for a row the actor cannot manage', () => {
@@ -173,5 +180,25 @@ describe('UserRowActions', () => {
     expect(
       await screen.findByText('Este usuário já possui um vínculo ativo nesta organização.'),
     ).toBeInTheDocument()
+  })
+
+  it('offers the membership edit to a team administrator on an active athlete', () => {
+    renderActions()
+
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument()
+  })
+
+  it('never offers the membership edit to an organization administrator', () => {
+    activeAffiliationMock.mockReturnValue({ role: 'ORG_ADMIN', teamId: null })
+
+    renderActions()
+
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument()
+  })
+
+  it('never offers the membership edit on a pending invite', () => {
+    renderActions({ status: 'PENDING' })
+
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument()
   })
 })
