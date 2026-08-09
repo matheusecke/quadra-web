@@ -1,11 +1,12 @@
 import api from './api'
+import type { AffiliationStatus, OrgRole, PaginatedResponse } from '../types/admin'
+import type { ApiResponse } from '../types/api'
 import type {
-  AdminTeamAffiliation,
-  AdminUserAffiliation,
-  AffiliationStatus,
-  OrgRole,
-  PaginatedResponse,
-} from '../types/admin'
+  OrgTeamAffiliation,
+  OrgUserAffiliation,
+  TeamAffiliationCandidate,
+  UserLookupResult,
+} from '../types/org'
 
 export type ListOrgUsersParams = {
   page: number
@@ -31,14 +32,30 @@ const strip = (obj: Record<string, unknown>) =>
 // Normal organization scope is derived from the JWT selected via POST /auth/org.
 export const listOrgUsers = (params: ListOrgUsersParams) =>
   api
-    .get<PaginatedResponse<AdminUserAffiliation>>('/organization-user-affiliations', {
+    .get<PaginatedResponse<OrgUserAffiliation>>('/organization-user-affiliations', {
       params: strip(params as Record<string, unknown>),
     })
     .then((response) => response.data)
 
 export const listOrgTeams = (params: ListOrgTeamsParams) =>
   api
-    .get<PaginatedResponse<AdminTeamAffiliation>>('/organization-team-affiliations', {
+    .get<PaginatedResponse<OrgTeamAffiliation>>('/organization-team-affiliations', {
       params: strip(params as Record<string, unknown>),
+    })
+    .then((response) => response.data)
+
+export const lookupUserByEmail = (email: string) =>
+  api
+    .get<ApiResponse<UserLookupResult>>('/users/lookup', { params: { email: email.trim() } })
+    .then((response) => response.data.data)
+
+export const listTeamAffiliationCandidates = (params: {
+  q: string
+  page?: number
+  limit?: number
+}) =>
+  api
+    .get<PaginatedResponse<TeamAffiliationCandidate>>('/teams/affiliation-candidates', {
+      params: strip({ q: params.q, page: params.page ?? 1, limit: params.limit ?? 10 }),
     })
     .then((response) => response.data)
