@@ -14,3 +14,6 @@ const envelope = (error: unknown) =>
 export const apiErrorCode = (error: unknown) => envelope(error)?.code
 export const apiErrorMessage = (error: unknown) => envelope(error)?.message
 export const apiErrorData = (error: unknown) => envelope(error)?.data
+
+export const apiErrorStatus = (error: unknown) =>
+  axios.isAxiosError(error) ? error.response?.status : undefined
