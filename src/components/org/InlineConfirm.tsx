@@ -31,20 +31,22 @@ export function InlineConfirm({
 
   return (
     <div ref={panelRef} className={s.panel} role="group" aria-label="Confirmação da ação" aria-describedby={messageId}>
-      <p id={messageId} className={s.message}>{message}</p>
+      <div className={s.row}>
+        <p id={messageId} className={s.message}>{message}</p>
+        <div className={s.actions}>
+          <Button type="button" variant={variant} size="sm" onClick={onConfirm} loading={isPending}>
+            {confirmLabel}
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
+            Cancelar
+          </Button>
+        </div>
+      </div>
       {errorMessage && (
         <p className={s.error} role="alert">
           {errorMessage}
         </p>
       )}
-      <div className={s.actions}>
-        <Button type="button" variant={variant} size="sm" onClick={onConfirm} loading={isPending}>
-          {confirmLabel}
-        </Button>
-        <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={isPending}>
-          Cancelar
-        </Button>
-      </div>
     </div>
   )
 }
