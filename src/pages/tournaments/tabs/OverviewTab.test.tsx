@@ -84,7 +84,7 @@ const renderGeral = (tournament = getTournamentById(1)!, props: Partial<Paramete
   return render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <OverviewTab tournament={tournament} teams={teams} onOpenTab={vi.fn()} {...props} />
+        <OverviewTab tournament={tournament} teams={teams} {...props} />
       </QueryClientProvider>
     </MemoryRouter>,
   )
@@ -233,31 +233,27 @@ describe('OverviewTab', () => {
     expect(screen.queryByTestId('leader-card')).not.toBeInTheDocument()
   })
 
-  it('opens the matching tab from each section link', async () => {
-    const onOpenTab = vi.fn()
-    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE_KNOCKOUT' }, { onOpenTab })
-    const user = userEvent.setup()
+  it('carries each section link to the matching tab url', () => {
+    renderGeral({ ...getTournamentById(1)!, format: 'GROUP_STAGE_KNOCKOUT' })
 
-    await user.click(screen.getByRole('button', { name: 'Ver todos os grupos' }))
-    await user.click(screen.getByRole('button', { name: 'Ver chaveamento completo' }))
-    await user.click(screen.getByRole('button', { name: 'Ver todas as estatísticas' }))
-    await user.click(screen.getByRole('button', { name: 'Ver todas as partidas' }))
-
-    expect(onOpenTab.mock.calls.map(([tab]) => tab)).toEqual(['groups', 'bracket', 'stats', 'matches'])
+    expect(screen.getByRole('link', { name: 'Ver todos os grupos' })).toHaveAttribute('href', '/?tab=groups')
+    expect(screen.getByRole('link', { name: 'Ver chaveamento completo' })).toHaveAttribute('href', '/?tab=bracket')
+    expect(screen.getByRole('link', { name: 'Ver todas as estatísticas' })).toHaveAttribute('href', '/?tab=stats')
+    expect(screen.getByRole('link', { name: 'Ver todas as partidas' })).toHaveAttribute('href', '/?tab=matches')
   })
 
   it('sends a league to the classification instead of the groups tab', () => {
     renderGeral({ ...getTournamentById(1)!, format: 'LEAGUE' })
 
-    expect(screen.getByRole('button', { name: 'Ver classificação completa' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver classificação completa' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
   })
 
   it('leaves the groups section without a link in a pure knockout', () => {
     renderGeral({ ...getTournamentById(1)!, format: 'KNOCKOUT' })
 
-    expect(screen.queryByRole('button', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ver classificação completa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver todos os grupos' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver classificação completa' })).not.toBeInTheDocument()
   })
 
   it('keeps the section hints beside the new links', () => {
@@ -265,6 +261,6 @@ describe('OverviewTab', () => {
 
     expect(screen.getByText('Ordenação FIBA por pontos de classificação')).toBeInTheDocument()
     expect(screen.getByText('Médias por jogo, clique no atleta para o perfil')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver todos os grupos' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver todos os grupos' })).toBeInTheDocument()
   })
 })

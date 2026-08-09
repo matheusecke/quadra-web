@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as sportsApi from '../../../services/sportsApi'
+import { groupKeys } from '../../../features/sports/queries'
 import type { MatchSummary, Tournament } from '../../../features/sports/types'
 import type { PaginatedResponse } from '../../../types/admin'
 import { MatchesTab } from './MatchesTab'
@@ -178,6 +179,34 @@ describe('MatchesTab', () => {
     await waitFor(() =>
       expect(sportsApi.listMatchesPage).toHaveBeenCalledWith(expect.objectContaining({ tournamentGroupIds: [301, 302] })),
     )
+  })
+
+  it('drops the group filter instead of widening the list when the group option disappears', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <MatchesTab tournament={tournament} isOrgAdmin={false} />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    )
+    await screen.findByLabelText('Abutres 77 - 74 Águias Douradas')
+
+    await userEvent.click(screen.getByLabelText('Filtrar por fase'))
+    await userEvent.click(await screen.findByRole('option', { name: 'Fase de grupos' }))
+    await waitFor(() =>
+      expect(sportsApi.listMatchesPage).toHaveBeenCalledWith(expect.objectContaining({ tournamentGroupIds: [301, 302] })),
+    )
+
+    // Simulate the tournament's last group being deleted elsewhere: the groups query refetches to empty.
+    vi.mocked(sportsApi.getGroups).mockResolvedValue([])
+    await client.refetchQueries({ queryKey: groupKeys.list(tournament.id) })
+
+    await waitFor(() => {
+      const lastCall = vi.mocked(sportsApi.listMatchesPage).mock.calls.at(-1)?.[0]
+      expect(lastCall?.tournamentGroupIds).toBeUndefined()
+    })
+    expect(screen.getByLabelText('Filtrar por fase').textContent).toBe('Fase')
   })
 
   it('sends a single round id when a bracket round is picked as the phase', async () => {

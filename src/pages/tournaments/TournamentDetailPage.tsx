@@ -82,10 +82,9 @@ export function TournamentDetailPage() {
   const reopenTournament = useReopenTournament()
   const { data: championSuggestion } = useChampionSuggestionQuery(tournamentId ?? undefined)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'overview')
+  const activeTab = searchParams.get('tab') ?? 'overview'
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab)
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -417,7 +416,6 @@ export function TournamentDetailPage() {
           <OverviewTab
             tournament={tournament}
             teams={teams}
-            onOpenTab={handleTabChange}
           />
         )}
         {activeTab === 'teams' && (

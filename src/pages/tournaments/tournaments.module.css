@@ -546,6 +546,7 @@
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
+  text-decoration: none;
   transition: color 140ms ease;
 }
 

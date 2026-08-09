@@ -68,17 +68,21 @@ export function MatchesTab({ tournament, isOrgAdmin }: MatchesTabProps) {
     [groupIds, bracket],
   )
 
+  // A phase whose option no longer exists (its group or round was deleted) must read as no filter:
+  // an empty id list serialises to nothing and would silently widen the list instead of narrowing it.
+  const activePhase = phases.some((option) => option.value === phase) ? phase : ''
+
   const matchesQuery = useMatchesInfiniteQuery({
     tournamentId: tournament.id,
     q: debouncedQ.trim() || undefined,
     tournamentTeamIds: team != null ? [team] : undefined,
     status: status || undefined,
-    tournamentGroupIds: phase === GROUP_PHASE_FILTER ? groupIds : undefined,
-    bracketRoundIds: phase && phase !== GROUP_PHASE_FILTER ? [Number(phase)] : undefined,
+    tournamentGroupIds: activePhase === GROUP_PHASE_FILTER ? groupIds : undefined,
+    bracketRoundIds: activePhase && activePhase !== GROUP_PHASE_FILTER ? [Number(activePhase)] : undefined,
   })
   const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
 
-  const hasFilters = Boolean(debouncedQ || team != null || status || phase)
+  const hasFilters = Boolean(debouncedQ || team != null || status || activePhase)
 
   return (
     <>
@@ -123,7 +127,7 @@ export function MatchesTab({ tournament, isOrgAdmin }: MatchesTabProps) {
         </div>
         {phases.length > 0 && (
           <div className={s.filterControl}>
-            <Combobox aria-label="Filtrar por fase" options={[{ value: '', label: 'Fase' }, ...phases]} value={phase || null} onChange={setPhase} />
+            <Combobox aria-label="Filtrar por fase" options={[{ value: '', label: 'Fase' }, ...phases]} value={activePhase || null} onChange={setPhase} />
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState'
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState'
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton'
@@ -18,7 +19,6 @@ import s from '../tournaments.module.css'
 interface OverviewTabProps {
   tournament: Tournament
   teams: Map<number, Team>
-  onOpenTab: (tab: string) => void
 }
 
 /** Destination of the Grupos section link, by format. No destination tab, no link. */
@@ -30,9 +30,9 @@ function groupsLinkFor(format: TournamentFormat): { tab: string; label: string }
 
 /**
  * Overview — the main reading surface. Fixed section order:
- * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas recentes → 5. Regulamento.
+ * 1. Grupos → 2. Chaveamento → 3. Líderes → 4. Partidas → 5. Regulamento.
  */
-export function OverviewTab({ tournament, teams, onOpenTab }: OverviewTabProps) {
+export function OverviewTab({ tournament, teams }: OverviewTabProps) {
   const leadersQuery = useTournamentLeadersQuery(tournament.id)
   const leaders = leadersQuery.data
   const hasLeaders = leaders !== undefined
@@ -57,9 +57,9 @@ export function OverviewTab({ tournament, teams, onOpenTab }: OverviewTabProps) 
           <div className={s.sectionMeta}>
             <span className={s.sectionHint}>Ordenação FIBA por pontos de classificação</span>
             {groupsLink && (
-              <button type="button" className={s.sectionLink} onClick={() => onOpenTab(groupsLink.tab)}>
+              <Link to={`?tab=${groupsLink.tab}`} replace className={s.sectionLink}>
                 {groupsLink.label}
-              </button>
+              </Link>
             )}
           </div>
         </div>
@@ -96,7 +96,7 @@ export function OverviewTab({ tournament, teams, onOpenTab }: OverviewTabProps) 
         <section className={s.section}>
           <div className={s.sectionHead}>
             <h2 className={s.sectionTitle}>Chaveamento</h2>
-            <button type="button" className={s.sectionLink} onClick={() => onOpenTab('bracket')}>Ver chaveamento completo</button>
+            <Link to="?tab=bracket" replace className={s.sectionLink}>Ver chaveamento completo</Link>
           </div>
           {bracket.isPending && (
             <div className={s.tabEmpty}>
@@ -126,7 +126,7 @@ export function OverviewTab({ tournament, teams, onOpenTab }: OverviewTabProps) 
           <h2 className={s.sectionTitle}>Líderes</h2>
           <div className={s.sectionMeta}>
             <span className={s.sectionHint}>Médias por jogo, clique no atleta para o perfil</span>
-            <button type="button" className={s.sectionLink} onClick={() => onOpenTab('stats')}>Ver todas as estatísticas</button>
+            <Link to="?tab=stats" replace className={s.sectionLink}>Ver todas as estatísticas</Link>
           </div>
         </div>
         {leadersQuery.isPending ? (
@@ -151,7 +151,7 @@ export function OverviewTab({ tournament, teams, onOpenTab }: OverviewTabProps) 
       <section className={s.section}>
         <div className={s.sectionHead}>
           <h2 className={s.sectionTitle}>Partidas</h2>
-          <button type="button" className={s.sectionLink} onClick={() => onOpenTab('matches')}>Ver todas as partidas</button>
+          <Link to="?tab=matches" replace className={s.sectionLink}>Ver todas as partidas</Link>
         </div>
         {matchesQuery.isPending ? (
           <div className={s.tabEmpty}>
