@@ -6,12 +6,13 @@ import { InvitePersonDrawer } from './InvitePersonDrawer'
 
 const lookupMock = vi.fn()
 const inviteOrgAdminMock = vi.fn()
+const inviteTeamMemberMock = vi.fn()
 const activeAffiliationMock = vi.fn()
 
 vi.mock('../../services/orgApi', () => ({
   lookupUserByEmail: (...args: unknown[]) => lookupMock(...args),
   inviteOrgAdmin: (...args: unknown[]) => inviteOrgAdminMock(...args),
-  inviteTeamMember: vi.fn(),
+  inviteTeamMember: (...args: unknown[]) => inviteTeamMemberMock(...args),
 }))
 
 vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
@@ -113,5 +114,83 @@ describe('InvitePersonDrawer as an organization administrator', () => {
     await user.click(screen.getByRole('button', { name: 'Enviar convite' }))
 
     expect(screen.getByRole('button', { name: 'Enviar convite' })).toBeDisabled()
+  })
+})
+
+describe('InvitePersonDrawer as a team administrator', () => {
+  beforeEach(() => {
+    onClose.mockReset()
+    lookupMock.mockReset()
+    lookupMock.mockResolvedValue({ id: 42, name: 'Marina Souza', email: 'marina@example.com' })
+    inviteTeamMemberMock.mockReset()
+    inviteTeamMemberMock.mockResolvedValue(undefined)
+    activeAffiliationMock.mockReturnValue({ role: 'TEAM_ADMIN', teamId: 8 })
+  })
+
+  it('requires a jersey number before an athlete can be invited', async () => {
+    const user = userEvent.setup()
+    renderDrawer()
+
+    await selectMarina(user)
+
+    expect(screen.getByRole('button', { name: 'Enviar convite' })).toBeDisabled()
+  })
+
+  it('sends the athlete membership fields to the team route', async () => {
+    const user = userEvent.setup()
+    renderDrawer()
+
+    await selectMarina(user)
+    await user.type(screen.getByLabelText('Camisa'), '7')
+    await user.click(screen.getByLabelText('Posição'))
+    await user.click(screen.getByRole('option', { name: 'PG' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar convite' }))
+
+    await waitFor(() => {
+      expect(inviteTeamMemberMock).toHaveBeenCalledWith(8, {
+        userId: 42,
+        role: 'ATHLETE',
+        jerseyNumber: 7,
+        position: 'PG',
+      })
+    })
+  })
+
+  it('lets the coaching staff be invited without jersey or position', async () => {
+    const user = userEvent.setup()
+    renderDrawer()
+
+    await selectMarina(user)
+    await user.click(screen.getByLabelText('Papel'))
+    await user.click(screen.getByRole('option', { name: 'Comissão técnica' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar convite' }))
+
+    await waitFor(() => {
+      expect(inviteTeamMemberMock).toHaveBeenCalledWith(8, {
+        userId: 42,
+        role: 'COACHING_STAFF',
+      })
+    })
+  })
+
+  it('hides the jersey field once the coaching staff role is chosen', async () => {
+    const user = userEvent.setup()
+    renderDrawer()
+
+    await user.click(screen.getByLabelText('Papel'))
+    await user.click(screen.getByRole('option', { name: 'Comissão técnica' }))
+
+    expect(screen.queryByLabelText('Camisa')).not.toBeInTheDocument()
+  })
+
+  it('never offers the organization administrator role to a team administrator', async () => {
+    const user = userEvent.setup()
+    renderDrawer()
+
+    await user.click(screen.getByLabelText('Papel'))
+
+    expect(
+      screen.queryByRole('option', { name: 'Administrador da organização' }),
+    ).not.toBeInTheDocument()
   })
 })
