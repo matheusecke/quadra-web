@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TeamOnboardingDrawer } from '../../components/org/TeamOnboardingDrawer'
+import { TeamRowActions } from '../../components/org/TeamRowActions'
 import { Badge } from '../../components/ui/Badge/Badge'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState'
@@ -117,6 +118,7 @@ export function OrgTeamsPage() {
                   <th className={s.th}>Membros ativos</th>
                   <th className={s.th}>Convites pendentes</th>
                   <th className={`${s.th} ${s.thStatus}`}>Status</th>
+                  <th className={`${s.th} ${s.thActions}`}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,6 +129,7 @@ export function OrgTeamsPage() {
                         <td><Skeleton width={40} height={14} /></td>
                         <td><Skeleton width={40} height={14} /></td>
                         <td><Skeleton width={64} height={20} /></td>
+                        <td><Skeleton width={80} height={24} /></td>
                       </tr>
                     ))
                   : items.map((affiliation) => (
@@ -146,10 +149,13 @@ export function OrgTeamsPage() {
                             {teamAffiliationStatusLabel(affiliation.status)}
                           </Badge>
                         </td>
+                        <td className={s.tdActions}>
+                          <TeamRowActions affiliation={affiliation} />
+                        </td>
                       </tr>
                     ))}
                 <tr>
-                  <td colSpan={4} style={{ padding: 0 }}>
+                  <td colSpan={5} style={{ padding: 0 }}>
                     <div ref={sentinelRef} style={{ height: 1 }} />
                   </td>
                 </tr>

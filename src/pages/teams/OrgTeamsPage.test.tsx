@@ -17,6 +17,10 @@ vi.mock('../../services/orgApi', () => ({
   createTeamOnboarding: vi.fn(),
   listTeamAffiliationCandidates: vi.fn(),
   lookupUserByEmail: vi.fn(),
+  activateTeamAffiliation: vi.fn(),
+  deactivateTeamAffiliation: vi.fn(),
+  cancelTeamInclusion: vi.fn(),
+  resendTeamInvites: vi.fn(),
 }))
 
 function renderPage() {
@@ -295,5 +299,11 @@ describe('OrgTeamsPage', () => {
     await user.click(within(headerRow).getByRole('button', { name: 'Adicionar equipe' }))
 
     expect(screen.getByRole('dialog', { name: 'Adicionar equipe' })).toBeInTheDocument()
+  })
+
+  it('renders the row actions for an active affiliation', async () => {
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Desativar' })).toBeInTheDocument()
   })
 })
