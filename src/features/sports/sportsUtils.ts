@@ -43,6 +43,10 @@ export function hasKnockout(format: TournamentFormat): boolean {
   return format === 'KNOCKOUT' || format === 'GROUP_STAGE_KNOCKOUT'
 }
 
+export function hasGroupStage(format: TournamentFormat): boolean {
+  return format === 'GROUP_STAGE' || format === 'GROUP_STAGE_KNOCKOUT'
+}
+
 /** Phase label derived from the real links — never free text on the match. */
 export function matchPhaseName(
   match: Pick<MatchSummary, 'bracketRound' | 'tournamentGroupId'>,

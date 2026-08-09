@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { hasKnockout, roundDisplayName, slotDisplayName } from './sportsUtils'
+import { hasGroupStage, hasKnockout, roundDisplayName, slotDisplayName } from './sportsUtils'
 
 describe('slotDisplayName', () => {
   it('uses the slot own label when it has one', () => {
@@ -41,5 +41,23 @@ describe('hasKnockout', () => {
 
   it('is false for a group stage with no knockout', () => {
     expect(hasKnockout('GROUP_STAGE')).toBe(false)
+  })
+})
+
+describe('hasGroupStage', () => {
+  it('is true for a pure group stage', () => {
+    expect(hasGroupStage('GROUP_STAGE')).toBe(true)
+  })
+
+  it('is true for a group stage followed by a knockout', () => {
+    expect(hasGroupStage('GROUP_STAGE_KNOCKOUT')).toBe(true)
+  })
+
+  it('is false for a pure knockout', () => {
+    expect(hasGroupStage('KNOCKOUT')).toBe(false)
+  })
+
+  it('is false for a league', () => {
+    expect(hasGroupStage('LEAGUE')).toBe(false)
   })
 })
