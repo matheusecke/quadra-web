@@ -217,7 +217,7 @@ describe('OverviewTab', () => {
     renderGeral()
     expect(await screen.findByText('Historical Athlete')).toBeInTheDocument()
     expect(screen.getByText('Historical Team')).toBeInTheDocument()
-    expect(screen.getByText('24.125')).toBeInTheDocument()
+    expect(screen.getByText('24.1')).toBeInTheDocument()
     expect(screen.getByText('em 4 jogos medidos')).toBeInTheDocument()
     expect(screen.queryByText('Fourth Athlete')).not.toBeInTheDocument()
     expect(screen.getAllByText('Sem dados medidos.')).toHaveLength(3)

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { TournamentLeader, TournamentLeaders } from '../../../features/sports/types'
-import { formatMeasuredGames, formatServerDecimal } from '../../../features/sports/sportsUtils'
+import { formatMeasuredGames, formatServerAverage, formatServerDecimal } from '../../../features/sports/sportsUtils'
 import s from '../tournaments.module.css'
 
 const PER_GAME = [
@@ -25,7 +25,7 @@ interface LeadersGridProps {
   limit?: number
 }
 
-function LeaderRows({ rows }: { rows: TournamentLeader[] }) {
+function LeaderRows({ rows, formatValue }: { rows: TournamentLeader[]; formatValue: (value: number) => string }) {
   if (rows.length === 0) return <div className={s.leaderEmpty}>Sem dados medidos.</div>
 
   return (
@@ -40,7 +40,7 @@ function LeaderRows({ rows }: { rows: TournamentLeader[] }) {
             <span className={s.leaderTeam}>{leader.teamName}</span>
             <span className={s.leaderMeasured}>{formatMeasuredGames(leader.gamesPlayed)}</span>
           </span>
-          <span className={s.leaderValue}>{formatServerDecimal(leader.value)}</span>
+          <span className={s.leaderValue}>{formatValue(leader.value)}</span>
         </div>
       ))}
     </div>
@@ -51,6 +51,7 @@ export function LeadersGrid({ leaders, group, limit }: LeadersGridProps) {
   const cards = group === 'perGame'
     ? PER_GAME.map(([key, label, full]) => ({ key, label, full, rows: leaders.perGame[key] }))
     : TOTALS.map(([key, label, full]) => ({ key, label, full, rows: leaders.totals[key] }))
+  const formatValue = group === 'perGame' ? formatServerAverage : formatServerDecimal
   return (
     <div className={s.leadersGrid}>
       {cards.map(({ key, label, full, rows: serverRows }) => {
@@ -61,7 +62,7 @@ export function LeadersGrid({ leaders, group, limit }: LeadersGridProps) {
               <span className={s.leaderStat}>{label}</span>
               <span className={s.leaderStatFull}>{full}</span>
             </div>
-            <LeaderRows rows={rows} />
+            <LeaderRows rows={rows} formatValue={formatValue} />
           </div>
         )
       })}

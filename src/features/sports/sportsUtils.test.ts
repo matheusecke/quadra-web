@@ -11,6 +11,8 @@ import {
   tournamentStatusVariant,
   teamMap,
   tournamentTeamMap,
+  formatServerAverage,
+  formatServerAverageEfficiency,
   formatServerDecimal,
   formatServerPercentage,
   formatServerEfficiency,
@@ -119,10 +121,17 @@ describe('Phase 10 server-value formatters', () => {
     expect(formatShootingLine(0, 0)).toBe('0/0')
   })
 
-  it('keeps every server decimal instead of forcing a new precision', () => {
+  it('keeps a raw server total as an integer, no decimal point', () => {
     expect(formatServerDecimal(24)).toBe('24')
-    expect(formatServerDecimal(24.5)).toBe('24.5')
-    expect(formatServerDecimal(24.125)).toBe('24.125')
+    expect(formatServerDecimal(0)).toBe('0')
+  })
+
+  it('always prints a server-owned average with exactly one decimal place', () => {
+    expect(formatServerAverage(null)).toBe('N/A')
+    expect(formatServerAverage(0)).toBe('0.0')
+    expect(formatServerAverage(24)).toBe('24.0')
+    expect(formatServerAverage(13.5)).toBe('13.5')
+    expect(formatServerAverage(13.333)).toBe('13.3')
   })
 
   it('formats fractional percentages without clamping values above one', () => {
@@ -132,11 +141,18 @@ describe('Phase 10 server-value formatters', () => {
     expect(formatServerPercentage(1.4)).toBe('140%')
   })
 
-  it('adds a sign only to positive server-owned efficiency', () => {
+  it('adds a sign only to positive server-owned efficiency totals, as integers', () => {
     expect(formatServerEfficiency(null)).toBe('N/A')
-    expect(formatServerEfficiency(-2.5)).toBe('-2.5')
+    expect(formatServerEfficiency(-2)).toBe('-2')
     expect(formatServerEfficiency(0)).toBe('0')
-    expect(formatServerEfficiency(3.125)).toBe('+3.125')
+    expect(formatServerEfficiency(3)).toBe('+3')
+  })
+
+  it('adds a sign only to positive server-owned efficiency per game, with one decimal', () => {
+    expect(formatServerAverageEfficiency(null)).toBe('N/A')
+    expect(formatServerAverageEfficiency(-2.5)).toBe('-2.5')
+    expect(formatServerAverageEfficiency(0)).toBe('0.0')
+    expect(formatServerAverageEfficiency(3.125)).toBe('+3.1')
   })
 
   it('labels the metric-specific measurement count with correct plurality', () => {

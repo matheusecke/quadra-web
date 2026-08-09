@@ -236,9 +236,14 @@ export function formatMinutesSeconds(totalSeconds: number | null): string {
   return `${minutes}:${seconds}`
 }
 
-/** Displays a server-owned number without imposing a new precision. */
+/** Displays a server-owned raw total — always an integer, no decimal point. */
 export function formatServerDecimal(value: number | null): string {
   return value === null ? 'N/A' : String(value)
+}
+
+/** Displays a server-owned average, always with one decimal place (§6 — precision consistency). */
+export function formatServerAverage(value: number | null): string {
+  return value === null ? 'N/A' : value.toFixed(1)
 }
 
 /** Phase 10 percentages are server-owned fractions and may exceed 1.0. */
@@ -247,9 +252,17 @@ export function formatServerPercentage(value: number | null): string {
   return `${Number((value * 100).toFixed(1))}%`
 }
 
+/** Signed efficiency total — integer, no decimal point. */
 export function formatServerEfficiency(value: number | null): string {
   if (value === null) return 'N/A'
   const formatted = formatServerDecimal(value)
+  return value > 0 ? `+${formatted}` : formatted
+}
+
+/** Signed efficiency per game, always with one decimal place. */
+export function formatServerAverageEfficiency(value: number | null): string {
+  if (value === null) return 'N/A'
+  const formatted = formatServerAverage(value)
   return value > 0 ? `+${formatted}` : formatted
 }
 
@@ -270,15 +283,16 @@ export function formatTeamLocation(city: string | null, state: string | null): s
   return [city, state].filter(Boolean).join(' / ') || '—'
 }
 
-/** Server-owned average, printed without imposing a new precision. */
+/** Server-owned average, always shown with one decimal place (§6 — precision consistency). */
 export function formatAverage(value: number | null): string {
-  return value === null ? '—' : String(value)
+  return value === null ? '—' : value.toFixed(1)
 }
 
 /** Signed average, used for the official point differential per game. */
 export function formatSignedAverage(value: number | null): string {
   if (value === null) return '—'
-  return value > 0 ? `+${value}` : String(value)
+  const formatted = value.toFixed(1)
+  return value > 0 ? `+${formatted}` : formatted
 }
 
 /** Server-owned fraction shown as a percentage; values may exceed 1.0. */

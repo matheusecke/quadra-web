@@ -39,7 +39,7 @@ export function StatsTab({ tournament }: { tournament: Tournament }) {
     <section className={s.section}>
       <div className={s.sectionHead}>
         <h2 className={s.sectionTitle}>Rankings por categoria</h2>
-        <span className={s.sectionHint}>Top 5 fixo · ordem do servidor · clique no atleta</span>
+        <span className={s.sectionHint}>Top 5 · clique no atleta</span>
       </div>
       <div className={s.leaderGroups}>
         <section>
