@@ -10,6 +10,8 @@ export interface ListMatchesParams {
   ids?: number[]
   tournamentId?: number
   tournamentTeamIds?: number[]
+  tournamentGroupIds?: number[]
+  bracketRoundIds?: number[]
   status?: MatchStatus
 }
 

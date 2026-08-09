@@ -25,6 +25,7 @@ import {
   useSubmitMatchResult,
   useTeamsQuery,
   useTournamentLeadersQuery,
+  useTournamentMatchesPreviewQuery,
   useTournamentMatchesQuery,
   useUnlinkBracketSlotMatch,
   useUpdateMatch,
@@ -123,6 +124,13 @@ const lastPage = {
   data: [{ ...matchSummary, id: 502 }],
   meta: { totalItems: 2, itemCount: 1, itemsPerPage: 20, totalPages: 2, currentPage: 2 },
   links: { first: '/matches?page=1', previous: '/matches?page=1', next: null, last: '/matches?page=2' },
+  statusCode: 200,
+}
+
+const previewPage = {
+  data: [matchSummary],
+  meta: { totalItems: 1, itemCount: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
+  links: { first: '/matches?page=1', previous: null, next: null, last: '/matches?page=1' },
   statusCode: 200,
 }
 
@@ -623,6 +631,33 @@ describe('match queries', () => {
       matchKeys.detail(501),
       matchKeys.lists(),
     ])
+  })
+})
+
+describe('useTournamentMatchesPreviewQuery', () => {
+  it('asks the server for a single page of ten matches, in server order', async () => {
+    const listMatchesPage = vi.spyOn(sportsApi, 'listMatchesPage').mockResolvedValue(previewPage)
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useTournamentMatchesPreviewQuery(12), { wrapper: Wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(listMatchesPage).toHaveBeenCalledTimes(1)
+    expect(listMatchesPage).toHaveBeenCalledWith({ tournamentId: 12, page: 1, limit: 10 })
+    expect(result.current.data).toEqual(previewPage)
+  })
+
+  it('keeps the preview under the match list prefix so every match write invalidates it', () => {
+    expect(matchKeys.preview(12).slice(0, matchKeys.lists().length)).toEqual([...matchKeys.lists()])
+  })
+
+  it('does not run without a tournament', () => {
+    const listMatchesPage = vi.spyOn(sportsApi, 'listMatchesPage')
+    const { Wrapper } = createWrapper()
+
+    renderHook(() => useTournamentMatchesPreviewQuery(undefined), { wrapper: Wrapper })
+
+    expect(listMatchesPage).not.toHaveBeenCalled()
   })
 })
 

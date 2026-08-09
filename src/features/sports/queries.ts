@@ -76,6 +76,7 @@ export const matchKeys = {
   all: ['matches'] as const,
   lists: () => [...matchKeys.all, 'list'] as const,
   list: (params: Omit<ListMatchesParams, 'page' | 'limit'>) => [...matchKeys.lists(), params] as const,
+  preview: (tournamentId: number) => [...matchKeys.lists(), 'preview', tournamentId] as const,
   tournamentLists: (tournamentId: number) => [...matchKeys.all, 'tournament', tournamentId, 'list'] as const,
   tournamentList: (tournamentId: number, params: ListTournamentMatchesParams) =>
     [...matchKeys.tournamentLists(tournamentId), params] as const,
@@ -254,6 +255,20 @@ export function useMatchesInfiniteQuery(
     initialPageParam: 1,
     getNextPageParam: (lastPage: PaginatedResponse<MatchSummary>) =>
       lastPage.meta.currentPage < lastPage.meta.totalPages ? lastPage.meta.currentPage + 1 : undefined,
+  })
+}
+
+/**
+ * The overview's window of matches: one page, ten items, in server order.
+ * The key lives under `lists()` so it inherits every match-write invalidation.
+ */
+export function useTournamentMatchesPreviewQuery(
+  tournamentId: number | undefined,
+): UseQueryResult<PaginatedResponse<MatchSummary>> {
+  return useQuery({
+    queryKey: matchKeys.preview(tournamentId ?? 0),
+    queryFn: () => sportsApi.listMatchesPage({ tournamentId, page: 1, limit: 10 }),
+    enabled: tournamentId !== undefined,
   })
 }
 
