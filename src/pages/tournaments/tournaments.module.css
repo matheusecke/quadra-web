@@ -530,6 +530,13 @@
   color: var(--muted-3);
 }
 
+/* Hint and link share the right slot of sectionHead, which keeps its two children. */
+.sectionMeta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
 .sectionLink {
   border: 0;
   padding: 0;

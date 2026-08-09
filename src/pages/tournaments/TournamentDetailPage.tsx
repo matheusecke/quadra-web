@@ -17,7 +17,7 @@ import { ChampionHighlight } from '../../features/sports/components/ChampionHigh
 import { ReopenTournamentPanel } from '../../features/sports/components/ReopenTournamentPanel'
 import type { RosterEntryDraft, RosterRole } from '../../features/sports/components/TournamentRosterPanel'
 import * as sportsApi from '../../services/sportsApi'
-import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentMatchesQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
+import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
 import { apiErrorCode, apiErrorMessage } from '../../services/apiError'
 import {
@@ -68,8 +68,6 @@ export function TournamentDetailPage() {
   const isOrgAdmin = useIsOrgAdmin()
   const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
   const { data: tournament } = tournamentQuery
-  const matchesQuery = useTournamentMatchesQuery(tournamentId ?? undefined)
-  const matches = matchesQuery.data ?? []
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournamentId ?? undefined)
   const { data: enrolledJoins } = tournamentTeamsQuery
   const teamsQuery = useTeamsQuery()
@@ -307,8 +305,6 @@ export function TournamentDetailPage() {
     )
   }
 
-  const allMatches = matches
-
   // Grupos and Classificação are mutually exclusive; a pure knockout has neither. §7.5
   const isGroupStage = hasGroupStage(tournament.format)
   const isKnockout = hasKnockout(tournament.format)
@@ -420,12 +416,8 @@ export function TournamentDetailPage() {
         {activeTab === 'overview' && (
           <OverviewTab
             tournament={tournament}
-            matches={allMatches}
-            matchesPending={matchesQuery.isPending}
-            matchesError={matchesQuery.isError}
-            onRetryMatches={() => matchesQuery.refetch()}
             teams={teams}
-            onSeeBracket={() => handleTabChange('bracket')}
+            onOpenTab={handleTabChange}
           />
         )}
         {activeTab === 'teams' && (
