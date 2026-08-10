@@ -89,6 +89,7 @@ function mockAuth(overrides: Partial<AuthContextValue> = {}) {
     register: vi.fn(),
     chooseOrg: chooseOrgMock,
     refreshOrganizations: refreshOrganizationsMock,
+    refreshUser: vi.fn(),
     logout: logoutMock,
     ...overrides,
   }

@@ -114,6 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganizations(nextOrganizations)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const nextUser = await fetchMe()
+    setUser(nextUser)
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout')
@@ -126,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, refreshOrganizations, logout }}>
+    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, refreshOrganizations, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

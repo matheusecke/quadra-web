@@ -339,3 +339,68 @@ describe('AuthContext chooseOrg', () => {
     expect(queryClient.getQueryData(['teams', 'list'])).toBeUndefined()
   })
 })
+
+function RefreshUserHarness() {
+  const { user, refreshUser } = useAuth()
+
+  return (
+    <>
+      <span data-testid="user-name">{user?.name ?? '—'}</span>
+      <button type="button" onClick={() => void refreshUser()}>
+        refresh user
+      </button>
+    </>
+  )
+}
+
+describe('AuthContext refreshUser', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(setAccessToken).mockReset()
+  })
+
+  it('replaces the user with a fresh /auth/me read', async () => {
+    vi.mocked(refreshAccessToken).mockResolvedValue('access-token')
+    const me = (name: string) => ({
+      data: {
+        data: {
+          id: 1,
+          email: 'user@example.com',
+          name,
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/auth/me') {
+        return Promise.resolve(
+          vi.mocked(api.get).mock.calls.filter(([u]) => u === '/auth/me').length > 1
+            ? me('Nome Novo')
+            : me('User Name'),
+        )
+      }
+      if (url === '/auth/org') {
+        return Promise.resolve({ data: { data: [], statusCode: 200 } })
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`))
+    })
+
+    render(
+      <AuthProvider>
+        <RefreshUserHarness />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByTestId('user-name')).toHaveTextContent('User Name'))
+    await userEvent.click(screen.getByRole('button', { name: 'refresh user' }))
+    await waitFor(() => expect(screen.getByTestId('user-name')).toHaveTextContent('Nome Novo'))
+    expect(api.get).not.toHaveBeenCalledWith('/auth/org', expect.anything())
+    expect(setAccessToken).not.toHaveBeenCalledWith(null)
+  })
+})
