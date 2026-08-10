@@ -1,0 +1,40 @@
+.wrapper {
+  position: relative;
+  display: block;
+}
+
+.input {
+  padding-right: 36px;
+}
+
+.arrows {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  min-height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.arrow:hover {
+  color: var(--ink);
+}
+
+.arrow:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: var(--radius-xs);
+}

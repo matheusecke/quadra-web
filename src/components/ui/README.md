@@ -59,16 +59,21 @@ Intentional password exception for screens that benefit from it:
 
 ---
 
-### Combobox, NumberField, DateTimeField, and SearchSelect
+### Combobox, NumberField, DateTimeField, HeightField, and SearchSelect
 
 ```tsx
 <Combobox options={[{ value: 'active', label: 'Ativo' }]} value={value} onChange={setValue} />
 <NumberField value={sortOrder} onValueChange={setSortOrder} min={0} />
 <DateTimeField type="date" value={startDate} onChange={setStartDate} />
+<HeightField id="height" digits={heightDigits} onDigitsChange={setHeightDigits} />
 <SearchSelect value={team} onChange={setTeam} onSearch={searchTeams} />
 ```
 
-Use `Combobox` for local selection, `SearchSelect` for remote search, `NumberField` for numeric values, and `DateTimeField` for dates and times.
+Use `Combobox` for local selection, `SearchSelect` for remote search,
+`NumberField` for numeric values, `DateTimeField` for dates and times, and
+`HeightField` for a height in centimeters. `HeightField` holds raw digits, not
+a number: `digits` is a string of up to three characters and the field renders
+it as `1,82m`. The caller parses it (`parseInt`) only when submitting.
 
 ---
 
