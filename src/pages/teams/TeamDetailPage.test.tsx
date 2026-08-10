@@ -121,12 +121,12 @@ const withdrawnParticipation = {
 
 const athleteCandidate = {
   id: 165, name: 'Rafael Moura', teamId: TEAM_ID, role: 'ATHLETE' as const,
-  jerseyNumber: 7, position: 'PG' as const, status: 'ACTIVE' as const,
+  jerseyNumber: 7, position: 'PG' as const,
 }
 
 const staffCandidate = {
   id: 200, name: 'Marina Alves', teamId: TEAM_ID, role: 'COACHING_STAFF' as const,
-  jerseyNumber: null, position: null, status: 'ACTIVE' as const,
+  jerseyNumber: null, position: null,
 }
 
 const rosterByRole = (athletes: RosterCandidate[], staff: RosterCandidate[]) =>
@@ -819,7 +819,7 @@ describe('TeamDetailPage', () => {
     expect(within(row).getByText('PG')).toBeInTheDocument()
   })
 
-  it('renders the athlete entity status', async () => {
+  it('does not render an account status column in the roster table', async () => {
     rosterByRole([athleteCandidate], [])
     const user = userEvent.setup()
     renderTeamPage()
@@ -827,7 +827,7 @@ describe('TeamDetailPage', () => {
     await user.click(screen.getByRole('tab', { name: 'Elenco' }))
 
     const row = await screen.findByRole('row', { name: /rafael moura/i })
-    expect(within(row).getByText('Ativo')).toBeInTheDocument()
+    expect(within(row).queryByText('Ativo')).not.toBeInTheDocument()
   })
 
   it('renders the fixed coaching function for staff members', async () => {

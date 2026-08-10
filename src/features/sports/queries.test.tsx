@@ -167,7 +167,8 @@ const athleteProfile = {
   currentTeamId: null,
   jerseyNumber: null,
   position: null,
-  status: 'INACTIVE' as const,
+  heightCm: null,
+  ageYears: 31,
 }
 
 const metricCounts = {

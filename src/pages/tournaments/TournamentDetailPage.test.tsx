@@ -37,13 +37,22 @@ const buildMatch = (id: number, tournamentId: number): MatchSummary => ({
 const { mockIsOrgAdmin } = vi.hoisted(() => ({ mockIsOrgAdmin: vi.fn(() => false) }))
 vi.mock('../../features/sports/useIsOrgAdmin', () => ({ useIsOrgAdmin: () => mockIsOrgAdmin() }))
 
+const { mockActiveOrgAffiliation } = vi.hoisted(() => ({
+  mockActiveOrgAffiliation: vi.fn<() => { role: string | null; teamId: number | null }>(
+    () => ({ role: null, teamId: null }),
+  ),
+}))
+vi.mock('../../hooks/useActiveOrgAffiliation', () => ({
+  useActiveOrgAffiliation: () => mockActiveOrgAffiliation(),
+}))
+
 const TEAMS: Team[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => ({
   id, name: `Time ${id}`, shortName: `T0${id}`, city: 'Campinas',
 }))
 
 const CANDIDATES: RosterCandidate[] = [
-  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG', status: 'ACTIVE' },
-  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null, status: 'ACTIVE' },
+  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG' },
+  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null },
 ]
 
 const geralTeams: TournamentTeam[] = [{
@@ -69,6 +78,7 @@ const rafaelRoster: TournamentRoster = {
 let invernoTeams: TournamentTeam[]
 
 beforeEach(() => {
+  mockActiveOrgAffiliation.mockReturnValue({ role: null, teamId: null })
   invernoTeams = [1, 2, 3, 4, 5, 6, 7, 8].map((teamId) => ({
     id: tournamentTeamId(SEED_TOURNAMENT.INVERNO, teamId),
     tournamentId: SEED_TOURNAMENT.INVERNO,
@@ -536,5 +546,62 @@ describe('TournamentDetailPage not found', () => {
 
     expect(await screen.findByText('Campeonato não encontrado.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ver todos os campeonatos' })).toHaveAttribute('href', '/tournaments')
+  })
+})
+
+describe('TournamentDetailPage own-team roster', () => {
+  const openTeamsTabAs = async (role: string, teamId: number | null) => {
+    mockIsOrgAdmin.mockReturnValue(false)
+    mockActiveOrgAffiliation.mockReturnValue({ role, teamId })
+    renderDetail('2')
+    await screen.findByText('Copa de Inverno PUC')
+    await userEvent.click(screen.getByRole('tab', { name: 'Equipes' }))
+  }
+
+  it('offers the roster panel of their own team to a team admin', async () => {
+    await openTeamsTabAs('TEAM_ADMIN', 1)
+
+    expect(await screen.findByRole('region', { name: 'Elenco Time 1' })).toBeInTheDocument()
+  })
+
+  it('offers the roster panel of their own team to coaching staff', async () => {
+    await openTeamsTabAs('COACHING_STAFF', 1)
+
+    expect(await screen.findByRole('region', { name: 'Elenco Time 1' })).toBeInTheDocument()
+  })
+
+  it('loads the roster of the own-team registration', async () => {
+    await openTeamsTabAs('TEAM_ADMIN', 1)
+
+    const region = await screen.findByRole('region', { name: 'Elenco Time 1' })
+    expect(await within(region).findByText('Rafael Moura')).toBeInTheDocument()
+  })
+
+  it('does not offer team enrollment to a team admin', async () => {
+    await openTeamsTabAs('TEAM_ADMIN', 1)
+    await screen.findByRole('region', { name: 'Elenco Time 1' })
+
+    expect(screen.queryByRole('list', { name: 'Equipes inscritas' })).not.toBeInTheDocument()
+  })
+
+  it('does not offer a roster panel to an athlete', async () => {
+    await openTeamsTabAs('ATHLETE', 1)
+    await screen.findByRole('tab', { name: 'Equipes', selected: true })
+
+    expect(screen.queryByRole('region', { name: /^Elenco / })).not.toBeInTheDocument()
+  })
+
+  it('does not offer a roster panel when the own team is not enrolled', async () => {
+    await openTeamsTabAs('TEAM_ADMIN', 9)
+    await screen.findByRole('tab', { name: 'Equipes', selected: true })
+
+    expect(screen.queryByRole('region', { name: /^Elenco / })).not.toBeInTheDocument()
+  })
+
+  it('does not offer a roster panel when the affiliation carries no team', async () => {
+    await openTeamsTabAs('TEAM_ADMIN', null)
+    await screen.findByRole('tab', { name: 'Equipes', selected: true })
+
+    expect(screen.queryByRole('region', { name: /^Elenco / })).not.toBeInTheDocument()
   })
 })

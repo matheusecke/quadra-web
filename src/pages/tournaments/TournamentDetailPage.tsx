@@ -19,6 +19,7 @@ import type { RosterEntryDraft, RosterRole } from '../../features/sports/compone
 import * as sportsApi from '../../services/sportsApi'
 import { useAddRosterEntry, useCategoriesQuery, useChampionSuggestionQuery, useCompleteTournament, useEnrollTeam, useRemoveRosterEntry, useRemoveTournamentTeam, useReopenTournament, useRosterQuery, useSeasonsQuery, useTeamsQuery, useTournamentQuery, useTournamentTeamsQuery, useUpdateRosterEntry } from '../../features/sports/queries'
 import { useIsOrgAdmin } from '../../features/sports/useIsOrgAdmin'
+import { useActiveOrgAffiliation } from '../../hooks/useActiveOrgAffiliation'
 import { apiErrorCode, apiErrorMessage } from '../../services/apiError'
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -66,6 +67,7 @@ export function TournamentDetailPage() {
   const tournamentId = parsePositiveId(rawTournamentId)
   const navigate = useNavigate()
   const isOrgAdmin = useIsOrgAdmin()
+  const { role: activeRole, teamId: activeTeamId } = useActiveOrgAffiliation()
   const tournamentQuery = useTournamentQuery(tournamentId ?? undefined)
   const { data: tournament } = tournamentQuery
   const tournamentTeamsQuery = useTournamentTeamsQuery(tournamentId ?? undefined)
@@ -102,7 +104,17 @@ export function TournamentDetailPage() {
   const [completionError, setCompletionError] = useState('')
   const [isReopening, setIsReopening] = useState(false)
   const [reopenError, setReopenError] = useState('')
-  const rosterQuery = useRosterQuery(rosterTournamentTeamId ?? undefined)
+
+  // TEAM_ADMIN and COACHING_STAFF manage only their own team's registration; the API
+  // re-checks the team on every write, so this only decides what the screen offers.
+  const ownEnrollment =
+    (activeRole === 'TEAM_ADMIN' || activeRole === 'COACHING_STAFF') && activeTeamId !== null
+      ? enrolledJoins?.find((entry) => entry.teamId === activeTeamId) ?? null
+      : null
+  const activeRosterTournamentTeamId = isOrgAdmin
+    ? rosterTournamentTeamId
+    : ownEnrollment?.id ?? null
+  const rosterQuery = useRosterQuery(activeRosterTournamentTeamId ?? undefined)
   const { data: roster } = rosterQuery
 
   const isLoading = tournamentQuery.isPending || tournamentTeamsQuery.isPending || teamsQuery.isPending || seasonsQuery.isPending || categoriesQuery.isPending
@@ -144,7 +156,7 @@ export function TournamentDetailPage() {
     role: entry.role,
   }))
 
-  const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === rosterTournamentTeamId)?.teamId
+  const rosterTeamGlobalId = enrolledJoins?.find((entry) => entry.id === activeRosterTournamentTeamId)?.teamId
 
   const searchEnrollmentTeams = async (q: string) => {
     const enrolledTeamIds = new Set((enrolledJoins ?? []).map((entry) => entry.teamId))
@@ -164,9 +176,9 @@ export function TournamentDetailPage() {
   }
 
   const handleAddRoster = async (draft: RosterEntryDraft) => {
-    if (rosterTournamentTeamId == null) return
+    if (activeRosterTournamentTeamId == null) return
     try {
-      await addRosterEntry.mutateAsync({ tournamentTeamId: rosterTournamentTeamId, ...draft })
+      await addRosterEntry.mutateAsync({ tournamentTeamId: activeRosterTournamentTeamId, ...draft })
       setRosterError('')
     } catch (error) {
       setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível adicionar ao elenco.')
@@ -175,9 +187,9 @@ export function TournamentDetailPage() {
   }
 
   const handleUpdateRoster = async (id: number, input: { jerseyNumber?: number | null; role?: RosterRole }) => {
-    if (rosterTournamentTeamId == null) return
+    if (activeRosterTournamentTeamId == null) return
     try {
-      await updateRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId, input })
+      await updateRosterEntry.mutateAsync({ id, tournamentTeamId: activeRosterTournamentTeamId, input })
       setRosterError('')
     } catch (error) {
       setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível atualizar o elenco.')
@@ -186,9 +198,9 @@ export function TournamentDetailPage() {
   }
 
   const handleRemoveRoster = async (id: number) => {
-    if (rosterTournamentTeamId == null) return
+    if (activeRosterTournamentTeamId == null) return
     try {
-      await removeRosterEntry.mutateAsync({ id, tournamentTeamId: rosterTournamentTeamId })
+      await removeRosterEntry.mutateAsync({ id, tournamentTeamId: activeRosterTournamentTeamId })
       setRosterError('')
     } catch (error) {
       setRosterError(ROSTER_MESSAGES[apiErrorCode(error) ?? ''] ?? 'Não foi possível remover do elenco.')
@@ -490,6 +502,24 @@ export function TournamentDetailPage() {
                   </ul>
                 )}
               </div>
+            )}
+            {!isOrgAdmin && ownEnrollment && (
+              <section className={s.enrollManage} aria-label={`Elenco ${ownEnrollment.displayNameSnapshot}`}>
+                <div className={s.sectionHead}>
+                  <h2 className={s.sectionTitle}>Elenco {ownEnrollment.displayNameSnapshot}</h2>
+                </div>
+                <TournamentRosterPanel
+                  roster={rosterDisplay}
+                  isLoading={rosterQuery.isPending}
+                  isError={rosterQuery.isError}
+                  onRetry={rosterQuery.refetch}
+                  onSearchCandidates={searchRosterCandidates}
+                  onAdd={handleAddRoster}
+                  onUpdate={handleUpdateRoster}
+                  onRemove={handleRemoveRoster}
+                  errorMessage={rosterError}
+                />
+              </section>
             )}
             <TeamsTab tournament={tournament} teams={teams} />
           </div>
