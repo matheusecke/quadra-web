@@ -5,7 +5,6 @@
  */
 
 import type {
-  AthleteStatus,
   BracketRound,
   BracketSlot,
   Tournament,
@@ -96,11 +95,6 @@ export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   FINISHED: 'Finalizada',
   POSTPONED: 'Adiada',
   CANCELLED: 'Cancelada',
-}
-
-export const ATHLETE_STATUS_LABELS: Record<AthleteStatus, string> = {
-  ACTIVE: 'Ativo',
-  INACTIVE: 'Inativo',
 }
 
 export const TEAM_PROFILE_STATUS_LABELS: Record<TeamProfileStatus, string> = {

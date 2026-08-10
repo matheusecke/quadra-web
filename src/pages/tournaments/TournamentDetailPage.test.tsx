@@ -42,8 +42,8 @@ const TEAMS: Team[] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => ({
 }))
 
 const CANDIDATES: RosterCandidate[] = [
-  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG', status: 'ACTIVE' },
-  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null, status: 'ACTIVE' },
+  { id: 101, name: 'Rafael Moura', teamId: 1, role: 'ATHLETE', jerseyNumber: 4, position: 'PG' },
+  { id: 165, name: 'Claudio Barbosa', teamId: 9, role: 'ATHLETE', jerseyNumber: 4, position: null },
 ]
 
 const geralTeams: TournamentTeam[] = [{
