@@ -64,7 +64,8 @@ export interface AthleteProfile {
   currentTeamId: number | null
   jerseyNumber: number | null
   position: AthletePosition | null
-  status: AthleteStatus
+  heightCm: number | null
+  ageYears: number
 }
 
 export type AthleteMetricValues = Record<StatField, number | null>

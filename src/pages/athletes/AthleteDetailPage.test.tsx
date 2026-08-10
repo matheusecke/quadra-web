@@ -16,7 +16,8 @@ const athlete = {
   currentTeamId: 8,
   jerseyNumber: 7,
   position: 'PG' as const,
-  status: 'ACTIVE' as const,
+  heightCm: 191,
+  ageYears: 24,
 }
 
 const measuredGames = {
@@ -126,18 +127,47 @@ describe('AthleteDetailPage', () => {
     expect(skeletonBlock?.querySelector('[aria-hidden="true"]')).toBeInTheDocument()
   })
 
-  it('renders athlete header with jersey number, name, abbreviated position, current team and status only', async () => {
+  it('renders athlete header with team, position, height in meters and age', async () => {
     renderAthletePage()
 
     await waitForAthletePage()
 
     const header = screen.getByTestId('athlete-header')
-    expect(within(header).getByText('#7')).toBeInTheDocument()
-    expect(within(header).getByRole('heading', { name: /rafael atual/i })).toBeInTheDocument()
-    expect(within(header).getByText(/PG · Time 8/i)).toBeInTheDocument()
-    expect(within(header).getByText('Ativo')).toBeInTheDocument()
-    expect(within(header).queryByText(/organização/i)).not.toBeInTheDocument()
-    expect(within(header).queryByText(/2026/i)).not.toBeInTheDocument()
+    expect(within(header).getByText('Time 8 · PG · 1,91 m · 24 anos')).toBeInTheDocument()
+  })
+
+  it('does not show an account status badge on the athlete profile', async () => {
+    renderAthletePage()
+
+    await waitForAthletePage()
+
+    expect(within(screen.getByTestId('athlete-header')).queryByText('Ativo')).not.toBeInTheDocument()
+  })
+
+  it('omits the height segment when the athlete has no height', async () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockResolvedValueOnce({ ...athlete, heightCm: null })
+
+    renderAthletePage()
+
+    const header = await screen.findByTestId('athlete-header')
+    expect(within(header).getByText('Time 8 · PG · 24 anos')).toBeInTheDocument()
+  })
+
+  it('omits the position segment when the athlete has no position', async () => {
+    vi.spyOn(sportsApi, 'getAthlete').mockResolvedValueOnce({ ...athlete, position: null })
+
+    renderAthletePage()
+
+    const header = await screen.findByTestId('athlete-header')
+    expect(within(header).getByText('Time 8 · 1,91 m · 24 anos')).toBeInTheDocument()
+  })
+
+  it('renders the jersey number in the hero block', async () => {
+    renderAthletePage()
+
+    await waitForAthletePage()
+
+    expect(within(screen.getByTestId('athlete-header')).getByText('#7')).toBeInTheDocument()
   })
 
   it('renders a historical-only profile without fabricating current fields', async () => {
@@ -146,15 +176,13 @@ describe('AthleteDetailPage', () => {
       currentTeamId: null,
       jerseyNumber: null,
       position: null,
-      status: 'INACTIVE',
+      heightCm: null,
     })
 
     renderAthletePage()
 
     const header = await screen.findByTestId('athlete-header')
-    expect(within(header).getByText('—')).toBeInTheDocument()
-    expect(within(header).getByText('Não informada · Sem equipe atual')).toBeInTheDocument()
-    expect(within(header).getByText('Inativo')).toBeInTheDocument()
+    expect(within(header).getByText('Sem equipe atual · 24 anos')).toBeInTheDocument()
   })
 
   it('shows only Resumo, Partidas and Campeonatos tabs and no eFG metric', async () => {

@@ -25,7 +25,6 @@ import type {
   AthleteTournamentHistoryRow,
 } from '../../features/sports/types'
 import {
-  ATHLETE_STATUS_LABELS,
   formatMeasuredGames,
   formatMinutesSeconds,
   formatServerAverage,
@@ -482,6 +481,14 @@ export function AthleteDetailPage() {
   const teamName = athlete.currentTeamId === null
     ? 'Sem equipe atual'
     : teams.get(athlete.currentTeamId)?.name ?? `Equipe #${athlete.currentTeamId}`
+  const headerMeta = [
+    teamName,
+    athlete.position,
+    athlete.heightCm === null ? null : `${(athlete.heightCm / 100).toFixed(2).replace('.', ',')} m`,
+    `${athlete.ageYears} anos`,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(' · ')
   const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
   const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
   const matchTotal = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
@@ -500,12 +507,9 @@ export function AthleteDetailPage() {
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position ?? 'Não informada'} · {teamName}</span>
+              <span>{headerMeta}</span>
             </div>
           </div>
-          <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>
-            {ATHLETE_STATUS_LABELS[athlete.status]}
-          </Badge>
         </div>
 
         <div className={s.tabsBar}>
