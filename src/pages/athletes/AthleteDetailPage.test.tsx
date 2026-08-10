@@ -283,7 +283,7 @@ describe('AthleteDetailPage', () => {
     expect(sportsApi.getSeasons).not.toHaveBeenCalled()
   })
 
-  it('renders snapshot team, season fallback, server values and measured-game labels', async () => {
+  it('renders snapshot team, season fallback and server values without a measured-games caption', async () => {
     vi.mocked(sportsApi.getSeasons).mockRejectedValueOnce(new Error('catalog unavailable'))
     const user = userEvent.setup()
     renderAthletePage()
@@ -295,7 +295,7 @@ describe('AthleteDetailPage', () => {
     expect(within(row).getByText('Temporada #7')).toBeInTheDocument()
     expect(within(row).getByText('140%')).toBeInTheDocument()
     expect(within(row).getByText('+3.5')).toBeInTheDocument()
-    expect(within(row).getByText('em 0 jogos medidos')).toBeInTheDocument()
+    expect(within(row).queryByText(/jogos? medidos?/)).not.toBeInTheDocument()
     expect(screen.queryByText('Não foi possível carregar o atleta.')).not.toBeInTheDocument()
   })
 
