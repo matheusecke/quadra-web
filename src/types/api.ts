@@ -47,6 +47,25 @@ export type RegisterInput = {
   heightCm?: number
 }
 
+export type MyProfile = {
+  id: number
+  email: string
+  name: string
+  birthDate: string
+  heightCm: number | null
+}
+
+export type UpdateMyProfileInput = {
+  name?: string
+  birthDate?: string
+  heightCm?: number | null
+}
+
+export type ChangePasswordInput = {
+  currentPassword: string
+  newPassword: string
+}
+
 export type InviteDecision = 'ACCEPT' | 'REJECT'
 
 export type MyInvite = {
