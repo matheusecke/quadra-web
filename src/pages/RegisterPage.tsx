@@ -185,7 +185,7 @@ export function RegisterPage() {
         name: name.trim(),
         password,
         birthDate: backendBirthDate,
-        ...(parsedHeight !== undefined ? { height: parsedHeight } : {}),
+        ...(parsedHeight !== undefined ? { heightCm: parsedHeight } : {}),
       })
 
       if (organizations.length === 0) {

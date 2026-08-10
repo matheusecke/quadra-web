@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import api, { refreshAccessToken, setAccessToken } from '../services/api'
 import { queryClient } from '../lib/query-client'
 import { AuthContext, type AuthStatus } from './auth-context'
-import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterBody, RegisterInput, TokenPayload } from '../types/api'
+import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterInput, TokenPayload } from '../types/api'
 
 async function fetchMe(): Promise<MePayload> {
   const { data } = await api.get<ApiResponse<MePayload>>('/auth/me')
@@ -85,15 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (input: RegisterInput) => {
-    const body: RegisterBody = {
-      email: input.email,
-      name: input.name,
-      password: input.password,
-      birth_date: input.birthDate,
-      ...(input.height !== undefined ? { height: input.height } : {}),
-    }
-
-    const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/register', body)
+    const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/register', input)
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
 

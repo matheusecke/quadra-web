@@ -47,7 +47,7 @@ function RegisterHarness() {
           name: 'User Name',
           password: 'secret123!',
           birthDate: '1998-04-23',
-          height: 182,
+          heightCm: 182,
         })
       }
     >
@@ -216,8 +216,8 @@ describe('AuthContext register', () => {
           email: 'user@example.com',
           name: 'User Name',
           password: 'secret123!',
-          birth_date: '1998-04-23',
-          height: 182,
+          birthDate: '1998-04-23',
+          heightCm: 182,
         })
 
         return Promise.resolve({

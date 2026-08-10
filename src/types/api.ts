@@ -44,15 +44,7 @@ export type RegisterInput = {
   name: string
   password: string
   birthDate: string
-  height?: number
-}
-
-export type RegisterBody = {
-  email: string
-  name: string
-  password: string
-  birth_date: string
-  height?: number
+  heightCm?: number
 }
 
 export type InviteDecision = 'ACCEPT' | 'REJECT'
