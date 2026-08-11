@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button, Card, Field, PasswordInput } from '../../components/ui'
 import { useChangePasswordMutation } from '../../features/account/queries'
+import { useAuth } from '../../hooks/useAuth'
 import { PASSWORD_RULE_MESSAGE, isStrongPassword } from '../../features/account/password'
 import { apiErrorCode } from '../../services/apiError'
 import s from './account.module.css'
@@ -14,6 +15,7 @@ type PasswordErrors = {
 
 export function SecuritySection() {
   const changePassword = useChangePasswordMutation()
+  const { refreshOrganizations, refreshUser } = useAuth()
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -21,12 +23,14 @@ export function SecuritySection() {
   const [errors, setErrors] = useState<PasswordErrors>({})
   const [formError, setFormError] = useState('')
   const [changed, setChanged] = useState(false)
+  const [sessionRefreshError, setSessionRefreshError] = useState(false)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setErrors({})
     setFormError('')
     setChanged(false)
+    setSessionRefreshError(false)
 
     const nextErrors: PasswordErrors = {}
     if (!currentPassword) nextErrors.currentPassword = 'Informe sua senha atual.'
@@ -41,16 +45,23 @@ export function SecuritySection() {
 
     try {
       await changePassword.mutateAsync({ currentPassword, newPassword })
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      setChanged(true)
     } catch (error) {
       if (apiErrorCode(error) === 'WRONG_CURRENT_PASSWORD') {
         setErrors({ currentPassword: 'Senha atual incorreta.' })
         return
       }
       setFormError('Não foi possível alterar sua senha. Tente novamente.')
+      return
+    }
+
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setChanged(true)
+    try {
+      await Promise.all([refreshUser(), refreshOrganizations()])
+    } catch {
+      setSessionRefreshError(true)
     }
   }
 
@@ -108,6 +119,11 @@ export function SecuritySection() {
           {changed && (
             <p className={s.formSuccess} role="status">
               Senha alterada. As outras sessões foram encerradas.
+            </p>
+          )}
+          {sessionRefreshError && (
+            <p className={s.formError} role="alert">
+              Não foi possível atualizar o contexto da sessão. Recarregue a página.
             </p>
           )}
           {formError && (

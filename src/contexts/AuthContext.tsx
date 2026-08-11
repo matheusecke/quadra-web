@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handle = () => {
+      queryClient.clear()
       setStatus('unauthenticated')
       setUser(null)
       setOrganizations([])
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/login', { email, password })
+    queryClient.clear()
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
     try {
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (input: RegisterInput) => {
     const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/register', input)
+    queryClient.clear()
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
 
@@ -123,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/auth/logout')
     } finally {
+      queryClient.clear()
       setAccessToken(null)
       setUser(null)
       setOrganizations([])

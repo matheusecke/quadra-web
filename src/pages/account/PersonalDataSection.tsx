@@ -102,8 +102,6 @@ function PersonalDataForm({ profile }: { profile: MyProfile }) {
       setLoaded(toFormState(updated))
       setForm(toFormState(updated))
       setSaved(true)
-      // The sidebar reads the name from the auth context, not from this cache.
-      await refreshUser()
     } catch (error) {
       const fields = Object.keys(apiErrorData(error) ?? {}).filter(
         (key) => key in SERVER_FIELD_ERRORS,
@@ -113,6 +111,14 @@ function PersonalDataForm({ profile }: { profile: MyProfile }) {
         return
       }
       setFieldErrors(Object.fromEntries(fields.map((key) => [key, SERVER_FIELD_ERRORS[key]])))
+      return
+    }
+
+    // The sidebar reads the name from the auth context, not from this cache.
+    try {
+      await refreshUser()
+    } catch {
+      setFormError('Dados salvos, mas não foi possível atualizar o nome na navegação.')
     }
   }
 
@@ -191,7 +197,7 @@ function PersonalDataForm({ profile }: { profile: MyProfile }) {
             <Button
               type="submit"
               variant="primary"
-              disabled={!isDirty}
+              disabled={!isDirty || updateProfile.isPending}
               loading={updateProfile.isPending}
             >
               Salvar

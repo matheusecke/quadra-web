@@ -11,6 +11,7 @@ vi.mock('../../services/accountApi')
 vi.mock('../../hooks/useAuth', () => ({ useAuth: vi.fn() }))
 
 const refreshUserMock = vi.fn<() => Promise<void>>()
+const refreshOrganizationsMock = vi.fn<() => Promise<void>>()
 
 const profile = {
   id: 1,
@@ -42,7 +43,11 @@ describe('MyAccountPage — dados pessoais', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     refreshUserMock.mockResolvedValue()
-    vi.mocked(useAuth).mockReturnValue({ refreshUser: refreshUserMock } as never)
+    refreshOrganizationsMock.mockResolvedValue()
+    vi.mocked(useAuth).mockReturnValue({
+      refreshUser: refreshUserMock,
+      refreshOrganizations: refreshOrganizationsMock,
+    } as never)
     vi.mocked(accountApi.getMyProfile).mockResolvedValue(profile)
     vi.mocked(accountApi.updateMyProfile).mockResolvedValue(profile)
   })
@@ -82,6 +87,47 @@ describe('MyAccountPage — dados pessoais', () => {
     )
     expect(await screen.findByRole('status')).toHaveTextContent('Dados atualizados.')
     expect(refreshUserMock).toHaveBeenCalled()
+  })
+
+  it('prevents a second profile submission while the first is pending', async () => {
+    let resolveUpdate: ((updatedProfile: typeof profile) => void) | undefined
+    vi.mocked(accountApi.updateMyProfile).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve
+        }),
+    )
+    renderPage()
+
+    const nameInput = await screen.findByLabelText('Nome')
+    await userEvent.type(nameInput, ' Jr')
+    const save = screen.getByRole('button', { name: 'Salvar' })
+    await userEvent.click(save)
+
+    await waitFor(() => expect(accountApi.updateMyProfile).toHaveBeenCalledTimes(1))
+    expect(save).toBeDisabled()
+    await userEvent.click(save)
+    expect(accountApi.updateMyProfile).toHaveBeenCalledTimes(1)
+
+    if (!resolveUpdate) throw new Error('Profile update resolver was not assigned')
+    resolveUpdate({ ...profile, name: 'User Name Jr' })
+    expect(await screen.findByRole('status')).toHaveTextContent('Dados atualizados.')
+  })
+
+  it('keeps saved data successful when refreshing the session user fails', async () => {
+    refreshUserMock.mockRejectedValueOnce(new Error('network error'))
+    vi.mocked(accountApi.updateMyProfile).mockResolvedValue({ ...profile, name: 'Nome Novo' })
+    renderPage()
+
+    const nameInput = await screen.findByLabelText('Nome')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'Nome Novo')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Dados atualizados.')
+    expect(await screen.findByText('Dados salvos, mas não foi possível atualizar o nome na navegação.'))
+      .toBeInTheDocument()
+    expect(screen.queryByText('Não foi possível salvar seus dados. Tente novamente.')).not.toBeInTheDocument()
   })
 
   it('sends null when the height is cleared', async () => {
@@ -159,7 +205,11 @@ describe('MyAccountPage — segurança', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     refreshUserMock.mockResolvedValue()
-    vi.mocked(useAuth).mockReturnValue({ refreshUser: refreshUserMock } as never)
+    refreshOrganizationsMock.mockResolvedValue()
+    vi.mocked(useAuth).mockReturnValue({
+      refreshUser: refreshUserMock,
+      refreshOrganizations: refreshOrganizationsMock,
+    } as never)
     vi.mocked(accountApi.getMyProfile).mockResolvedValue(profile)
     vi.mocked(accountApi.changePassword).mockResolvedValue('rotated-token')
   })
@@ -171,7 +221,7 @@ describe('MyAccountPage — segurança', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
   }
 
-  it('changes the password and clears the three fields', async () => {
+  it('changes the password, refreshes the session context, and clears the three fields', async () => {
     renderPage()
 
     await fillPasswords('oldpassword1!', 'newpassword1!', 'newpassword1!')
@@ -184,6 +234,26 @@ describe('MyAccountPage — segurança', () => {
     )
     expect(await screen.findByText('Senha alterada. As outras sessões foram encerradas.'))
       .toBeInTheDocument()
+    expect(refreshUserMock).toHaveBeenCalled()
+    expect(refreshOrganizationsMock).toHaveBeenCalled()
+    expect(screen.getByLabelText('Senha atual')).toHaveValue('')
+    expect(screen.getByLabelText('Nova senha')).toHaveValue('')
+    expect(screen.getByLabelText('Confirmar nova senha')).toHaveValue('')
+  })
+
+  it('keeps the password change successful when refreshing the session context fails', async () => {
+    refreshOrganizationsMock.mockRejectedValueOnce(new Error('network error'))
+    renderPage()
+
+    await fillPasswords('oldpassword1!', 'newpassword1!', 'newpassword1!')
+
+    expect(await screen.findByText('Senha alterada. As outras sessões foram encerradas.'))
+      .toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível atualizar o contexto da sessão. Recarregue a página.',
+    )
+    expect(refreshUserMock).toHaveBeenCalled()
+    expect(refreshOrganizationsMock).toHaveBeenCalled()
     expect(screen.getByLabelText('Senha atual')).toHaveValue('')
     expect(screen.getByLabelText('Nova senha')).toHaveValue('')
     expect(screen.getByLabelText('Confirmar nova senha')).toHaveValue('')

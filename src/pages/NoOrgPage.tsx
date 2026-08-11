@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export function NoOrgPage() {
@@ -26,11 +26,8 @@ export function NoOrgPage() {
             administrador.
           </p>
           <div className="empty-state__actions">
-            <button
-              className="button button--secondary button--full"
-              onClick={handleLogout}
-              type="button"
-            >
+            <Link className="button button--ghost button--full" to="/account">Minha conta</Link>
+            <button className="button button--secondary button--full" onClick={handleLogout} type="button">
               Sair
             </button>
           </div>

@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { AuthProvider } from './AuthContext'
@@ -52,6 +52,26 @@ function RegisterHarness() {
       }
     >
       register
+    </button>
+  )
+}
+
+function LoginHarness() {
+  const { login } = useAuth()
+
+  return (
+    <button type="button" onClick={() => void login('next@example.com', 'secret123!')}>
+      login
+    </button>
+  )
+}
+
+function LogoutHarness() {
+  const { logout } = useAuth()
+
+  return (
+    <button type="button" onClick={() => void logout().catch(() => undefined)}>
+      logout
     </button>
   )
 }
@@ -263,6 +283,102 @@ describe('AuthContext register', () => {
     expect(api.get).toHaveBeenCalledWith('/auth/me')
     expect(api.get).toHaveBeenCalledTimes(1)
     expect(api.get).not.toHaveBeenCalledWith('/auth/org')
+  })
+})
+
+describe('AuthContext identity cache clearing', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
+    vi.mocked(setAccessToken).mockReset()
+    queryClient.clear()
+  })
+
+  it('clears a cached account profile when authentication is terminated by an event', async () => {
+    render(<AuthProvider><SessionHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    act(() => {
+      window.dispatchEvent(new Event('auth:unauthenticated'))
+    })
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile when logout fails', async () => {
+    vi.mocked(api.post).mockRejectedValue(new Error('logout unavailable'))
+    render(<AuthProvider><LogoutHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'logout' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile before login installs a new identity', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        data: { accessToken: 'next-token', organizations: [] },
+        statusCode: 200,
+      },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 2,
+          email: 'next@example.com',
+          name: 'Next User',
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+    render(<AuthProvider><LoginHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'login' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile before registration installs a new identity', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        data: { accessToken: 'next-token', organizations: [] },
+        statusCode: 201,
+      },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 2,
+          email: 'user@example.com',
+          name: 'User Name',
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+    render(<AuthProvider><RegisterHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'register' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
   })
 })
 
