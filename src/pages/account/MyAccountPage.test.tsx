@@ -148,3 +148,79 @@ describe('MyAccountPage — dados pessoais', () => {
     expect(accountApi.updateMyProfile).not.toHaveBeenCalled()
   })
 })
+
+const axiosErrorWithCode = (code: string) =>
+  Object.assign(new Error('Request failed'), {
+    isAxiosError: true,
+    response: { status: 400, data: { error: { code, message: 'Bad request.' } } },
+  })
+
+describe('MyAccountPage — segurança', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    refreshUserMock.mockResolvedValue()
+    vi.mocked(useAuth).mockReturnValue({ refreshUser: refreshUserMock } as never)
+    vi.mocked(accountApi.getMyProfile).mockResolvedValue(profile)
+    vi.mocked(accountApi.changePassword).mockResolvedValue('rotated-token')
+  })
+
+  const fillPasswords = async (current: string, next: string, confirm: string) => {
+    await userEvent.type(await screen.findByLabelText('Senha atual'), current)
+    await userEvent.type(screen.getByLabelText('Nova senha'), next)
+    await userEvent.type(screen.getByLabelText('Confirmar nova senha'), confirm)
+    await userEvent.click(screen.getByRole('button', { name: 'Trocar senha' }))
+  }
+
+  it('changes the password and clears the three fields', async () => {
+    renderPage()
+
+    await fillPasswords('oldpassword1!', 'newpassword1!', 'newpassword1!')
+
+    await waitFor(() =>
+      expect(accountApi.changePassword).toHaveBeenCalledWith({
+        currentPassword: 'oldpassword1!',
+        newPassword: 'newpassword1!',
+      }),
+    )
+    expect(await screen.findByText('Senha alterada. As outras sessões foram encerradas.'))
+      .toBeInTheDocument()
+    expect(screen.getByLabelText('Senha atual')).toHaveValue('')
+    expect(screen.getByLabelText('Nova senha')).toHaveValue('')
+    expect(screen.getByLabelText('Confirmar nova senha')).toHaveValue('')
+  })
+
+  it('does not call the API when the confirmation does not match', async () => {
+    renderPage()
+
+    await fillPasswords('oldpassword1!', 'newpassword1!', 'newpassword2!')
+
+    expect(await screen.findByText('A confirmação não confere com a nova senha.'))
+      .toBeInTheDocument()
+    expect(accountApi.changePassword).not.toHaveBeenCalled()
+  })
+
+  it('does not call the API when the new password is too weak', async () => {
+    renderPage()
+
+    await fillPasswords('oldpassword1!', 'abcdefgh', 'abcdefgh')
+
+    expect(
+      await screen.findByText(
+        'A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial.',
+      ),
+    ).toBeInTheDocument()
+    expect(accountApi.changePassword).not.toHaveBeenCalled()
+  })
+
+  it('reports a wrong current password on its own field, not as a banner', async () => {
+    vi.mocked(accountApi.changePassword).mockRejectedValue(
+      axiosErrorWithCode('WRONG_CURRENT_PASSWORD'),
+    )
+    renderPage()
+
+    await fillPasswords('errada1!', 'newpassword1!', 'newpassword1!')
+
+    expect(await screen.findByText('Senha atual incorreta.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Senha atual')).toHaveValue('errada1!')
+  })
+})

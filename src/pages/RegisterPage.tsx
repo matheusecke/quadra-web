@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Field, HeightField, PasswordInput } from '../components/ui'
+import { PASSWORD_RULE_MESSAGE, isStrongPassword } from '../features/account/password'
 import s from './RegisterPage.module.css'
 
 type RegisterErrors = {
@@ -12,8 +13,6 @@ type RegisterErrors = {
 }
 
 const brDatePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/
-const numberPattern = /\d/
-const specialPattern = /[^A-Za-z0-9]/
 
 function formatBirthDateInput(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 8)
@@ -50,14 +49,8 @@ function validateRegisterForm(values: {
   if (!values.name.trim()) errors.name = 'Informe seu nome.'
   if (!values.password) {
     errors.password = 'Informe sua senha.'
-  } else {
-    const missingReqs =
-      values.password.length < 8 ||
-      !numberPattern.test(values.password) ||
-      !specialPattern.test(values.password)
-    if (missingReqs) {
-      errors.password = 'A senha deve ter no mínimo 8 caracteres, 1 número e 1 caractere especial.'
-    }
+  } else if (!isStrongPassword(values.password)) {
+    errors.password = PASSWORD_RULE_MESSAGE
   }
 
   if (!values.birthDate) {

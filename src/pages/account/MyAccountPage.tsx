@@ -1,4 +1,5 @@
 import { PersonalDataSection } from './PersonalDataSection'
+import { SecuritySection } from './SecuritySection'
 import s from './account.module.css'
 
 export function MyAccountPage() {
@@ -11,6 +12,7 @@ export function MyAccountPage() {
       </header>
 
       <PersonalDataSection />
+      <SecuritySection />
     </div>
   )
 }
