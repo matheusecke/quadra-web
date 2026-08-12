@@ -116,7 +116,7 @@ describe('RegisterPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /criar conta/i }))
 
     await waitFor(() => {
-      expect(registerMock).toHaveBeenCalledWith(expect.objectContaining({ height: 182 }))
+      expect(registerMock).toHaveBeenCalledWith(expect.objectContaining({ heightCm: 182 }))
     })
     expect(navigateMock).toHaveBeenCalledWith('/select-org')
   })

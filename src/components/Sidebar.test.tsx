@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Sidebar } from './Sidebar'
 
@@ -57,6 +58,32 @@ describe('Sidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Usuários' })).toHaveAttribute('href', '/admin/users')
     expect(screen.getByRole('link', { name: 'Equipes' })).toHaveAttribute('href', '/admin/teams')
+  })
+
+  it('offers Minha conta as the first item of the footer panel', async () => {
+    renderSidebar('/home')
+    await userEvent.click(screen.getByRole('button', { name: /Pessoa Liga/ }))
+    const panel = screen.getByRole('dialog', { name: 'Contexto da organização' })
+    const actions = within(panel).getAllByRole('button')
+    expect(actions.map((button) => button.textContent)).toEqual([
+      'Minha conta', 'Trocar organização', 'Sair da conta',
+    ])
+  })
+
+  it('navigates to /account and closes the panel', async () => {
+    function LocationProbe() {
+      return <span data-testid="location">{useLocation().pathname}</span>
+    }
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <Sidebar />
+        <LocationProbe />
+      </MemoryRouter>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /Pessoa Liga/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Minha conta' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/account')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 

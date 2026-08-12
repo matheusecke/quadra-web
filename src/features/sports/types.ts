@@ -42,21 +42,9 @@ export interface RosterCandidate {
   role: 'ATHLETE' | 'COACHING_STAFF'
   jerseyNumber: number | null
   position: AthletePosition | null
-  status: AthleteStatus
 }
 
 export type AthletePosition = 'PG' | 'SG' | 'SF' | 'PF' | 'C'
-
-export type AthleteStatus = 'ACTIVE' | 'INACTIVE'
-
-export interface Athlete {
-  id: number
-  name: string
-  number: number
-  position: AthletePosition | null
-  currentTeamId: number
-  status: AthleteStatus
-}
 
 export interface AthleteProfile {
   id: number
@@ -64,7 +52,8 @@ export interface AthleteProfile {
   currentTeamId: number | null
   jerseyNumber: number | null
   position: AthletePosition | null
-  status: AthleteStatus
+  heightCm: number | null
+  ageYears: number
 }
 
 export type AthleteMetricValues = Record<StatField, number | null>

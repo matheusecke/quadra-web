@@ -10,6 +10,7 @@ import {
   ChevronDown,
   CalendarDays,
   Trophy,
+  UserRound,
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -54,6 +55,11 @@ export function Sidebar() {
   const handleSwitchOrg = () => {
     setOrgOpen(false)
     navigate('/select-org')
+  }
+
+  const handleMyAccount = () => {
+    setOrgOpen(false)
+    navigate('/account')
   }
 
   return (
@@ -112,6 +118,10 @@ export function Sidebar() {
               </p>
               {!isAdminMode && <p className={s.orgRole}>{user?.role}</p>}
             </div>
+            <button type="button" className={s.orgAction} onClick={handleMyAccount}>
+              <UserRound size={14} strokeWidth={1.6} />
+              Minha conta
+            </button>
             <button type="button" className={s.orgAction} onClick={handleSwitchOrg}>
               <ArrowLeftRight size={14} strokeWidth={1.6} />
               Trocar organização

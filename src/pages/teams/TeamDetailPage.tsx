@@ -20,7 +20,6 @@ import {
   useTeamTournamentsInfiniteQuery,
 } from '../../features/sports/queries'
 import {
-  ATHLETE_STATUS_LABELS,
   MATCH_STATUS_LABELS,
   TEAM_PROFILE_STATUS_LABELS,
   TOURNAMENT_STATUS_LABELS,
@@ -478,7 +477,7 @@ function RosterSection({
             <table className={s.table}>
               <thead className={s.thead}>
                 <tr>
-                  {(isAthleteTable ? ['Nome', 'Nº', 'Posição', 'Status'] : ['Nome', 'Função']).map((label) => (
+                  {(isAthleteTable ? ['Nome', 'Nº', 'Posição'] : ['Nome', 'Função']).map((label) => (
                     <th key={label} className={s.th}>{label}</th>
                   ))}
                 </tr>
@@ -499,7 +498,6 @@ function RosterSection({
                       <>
                         <td className={s.td}>{candidate.jerseyNumber ?? '—'}</td>
                         <td className={s.td}>{candidate.position ?? '—'}</td>
-                        <td className={s.td}>{ATHLETE_STATUS_LABELS[candidate.status]}</td>
                       </>
                     ) : (
                       <td className={s.td}>Comissão técnica</td>

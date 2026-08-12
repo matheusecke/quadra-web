@@ -42,6 +42,10 @@ vi.mock('./pages/OrgSelectionPage', () => ({
   OrgSelectionPage: () => <div>org-selection-page</div>,
 }))
 
+vi.mock('./pages/account/MyAccountPage', () => ({
+  MyAccountPage: () => <div>my-account-page</div>,
+}))
+
 vi.mock('./pages/users/OrgUsersPage', () => ({
   OrgUsersPage: () => <div>org-users-page</div>,
 }))
@@ -155,5 +159,10 @@ describe('router', () => {
     await renderRoute('/teams/8')
 
     expect(await screen.findByText('team-detail-page')).toBeInTheDocument()
+  })
+
+  it('registers the account route inside the shell', async () => {
+    await renderRoute('/account')
+    expect(await screen.findByText('my-account-page')).toBeInTheDocument()
   })
 })

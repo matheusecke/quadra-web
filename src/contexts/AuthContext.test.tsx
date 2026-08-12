@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { AuthProvider } from './AuthContext'
@@ -47,11 +47,31 @@ function RegisterHarness() {
           name: 'User Name',
           password: 'secret123!',
           birthDate: '1998-04-23',
-          height: 182,
+          heightCm: 182,
         })
       }
     >
       register
+    </button>
+  )
+}
+
+function LoginHarness() {
+  const { login } = useAuth()
+
+  return (
+    <button type="button" onClick={() => void login('next@example.com', 'secret123!')}>
+      login
+    </button>
+  )
+}
+
+function LogoutHarness() {
+  const { logout } = useAuth()
+
+  return (
+    <button type="button" onClick={() => void logout().catch(() => undefined)}>
+      logout
     </button>
   )
 }
@@ -216,8 +236,8 @@ describe('AuthContext register', () => {
           email: 'user@example.com',
           name: 'User Name',
           password: 'secret123!',
-          birth_date: '1998-04-23',
-          height: 182,
+          birthDate: '1998-04-23',
+          heightCm: 182,
         })
 
         return Promise.resolve({
@@ -263,6 +283,102 @@ describe('AuthContext register', () => {
     expect(api.get).toHaveBeenCalledWith('/auth/me')
     expect(api.get).toHaveBeenCalledTimes(1)
     expect(api.get).not.toHaveBeenCalledWith('/auth/org')
+  })
+})
+
+describe('AuthContext identity cache clearing', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(refreshAccessToken).mockRejectedValue(unauthorized)
+    vi.mocked(setAccessToken).mockReset()
+    queryClient.clear()
+  })
+
+  it('clears a cached account profile when authentication is terminated by an event', async () => {
+    render(<AuthProvider><SessionHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    act(() => {
+      window.dispatchEvent(new Event('auth:unauthenticated'))
+    })
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile when logout fails', async () => {
+    vi.mocked(api.post).mockRejectedValue(new Error('logout unavailable'))
+    render(<AuthProvider><LogoutHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'logout' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile before login installs a new identity', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        data: { accessToken: 'next-token', organizations: [] },
+        statusCode: 200,
+      },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 2,
+          email: 'next@example.com',
+          name: 'Next User',
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+    render(<AuthProvider><LoginHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'login' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
+  })
+
+  it('clears a cached account profile before registration installs a new identity', async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        data: { accessToken: 'next-token', organizations: [] },
+        statusCode: 201,
+      },
+    })
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          id: 2,
+          email: 'user@example.com',
+          name: 'User Name',
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+    render(<AuthProvider><RegisterHarness /></AuthProvider>)
+    queryClient.setQueryData(['account', 'profile'], { email: 'previous@example.com' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'register' }))
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(['account', 'profile'])).toBeUndefined()
+    })
   })
 })
 
@@ -337,5 +453,70 @@ describe('AuthContext chooseOrg', () => {
     await screen.findByText('202')
 
     expect(queryClient.getQueryData(['teams', 'list'])).toBeUndefined()
+  })
+})
+
+function RefreshUserHarness() {
+  const { user, refreshUser } = useAuth()
+
+  return (
+    <>
+      <span data-testid="user-name">{user?.name ?? '—'}</span>
+      <button type="button" onClick={() => void refreshUser()}>
+        refresh user
+      </button>
+    </>
+  )
+}
+
+describe('AuthContext refreshUser', () => {
+  beforeEach(() => {
+    vi.mocked(api.post).mockReset()
+    vi.mocked(api.get).mockReset()
+    vi.mocked(refreshAccessToken).mockReset()
+    vi.mocked(setAccessToken).mockReset()
+  })
+
+  it('replaces the user with a fresh /auth/me read', async () => {
+    vi.mocked(refreshAccessToken).mockResolvedValue('access-token')
+    const me = (name: string) => ({
+      data: {
+        data: {
+          id: 1,
+          email: 'user@example.com',
+          name,
+          isSystemAdmin: false,
+          organizationId: null,
+          role: null,
+        },
+        statusCode: 200,
+      },
+    })
+
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (url === '/auth/me') {
+        return Promise.resolve(
+          vi.mocked(api.get).mock.calls.filter(([u]) => u === '/auth/me').length > 1
+            ? me('Nome Novo')
+            : me('User Name'),
+        )
+      }
+      if (url === '/auth/org') {
+        return Promise.resolve({ data: { data: [], statusCode: 200 } })
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`))
+    })
+
+    render(
+      <AuthProvider>
+        <RefreshUserHarness />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByTestId('user-name')).toHaveTextContent('User Name'))
+    await userEvent.click(screen.getByRole('button', { name: 'refresh user' }))
+    await waitFor(() => expect(screen.getByTestId('user-name')).toHaveTextContent('Nome Novo'))
+    expect(api.get).not.toHaveBeenCalledWith('/auth/org', expect.anything())
+    expect(setAccessToken).not.toHaveBeenCalledWith(null)
   })
 })

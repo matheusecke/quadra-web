@@ -25,7 +25,6 @@ import type {
   AthleteTournamentHistoryRow,
 } from '../../features/sports/types'
 import {
-  ATHLETE_STATUS_LABELS,
   formatMeasuredGames,
   formatMinutesSeconds,
   formatServerAverage,
@@ -286,15 +285,6 @@ function MatchesContent({
   )
 }
 
-function MeasuredMetric({ value, count }: { value: string; count: number }) {
-  return (
-    <span className={s.metricCell}>
-      <span>{value}</span>
-      <span className={s.cellMeta}>{formatMeasuredGames(count)}</span>
-    </span>
-  )
-}
-
 function TournamentsContent({
   rows, seasonLabels, total, hasNextPage, isFetchingNextPage,
   isFetchNextPageError, onLoadMore,
@@ -364,20 +354,16 @@ function TournamentsContent({
                   </td>
                   <td className={s.td}>{seasonLabels.get(row.tournament.seasonId) ?? `Temporada #${row.tournament.seasonId}`}</td>
                   <td className={s.tdNum}>{statistics.gamesPlayed}</td>
-                  <td className={s.tdNum}><MeasuredMetric value={formatMinutesSeconds(statistics.perGame.minutesSeconds)} count={statistics.measuredGames.minutesSeconds} /></td>
+                  <td className={s.tdNum}>{formatMinutesSeconds(statistics.perGame.minutesSeconds)}</td>
                   {(['pts', 'reb', 'ast', 'stl', 'blk'] as const).map((field) => (
-                    <td key={field} className={s.tdNum}>
-                      <MeasuredMetric value={formatServerAverage(statistics.perGame[field])} count={statistics.measuredGames[field]} />
-                    </td>
+                    <td key={field} className={s.tdNum}>{formatServerAverage(statistics.perGame[field])}</td>
                   ))}
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.fgPct)}</td>
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.threeFgPct)}</td>
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.ftPct)}</td>
                   <td className={s.tdNum}>{formatServerPercentage(statistics.shooting.trueShootingPct)}</td>
                   <td className={s.tdNum}>{formatServerEfficiency(statistics.efficiency.total)}</td>
-                  <td className={s.tdNum}>
-                    <MeasuredMetric value={formatServerAverageEfficiency(statistics.efficiency.perGame)} count={statistics.efficiency.measuredGames} />
-                  </td>
+                  <td className={s.tdNum}>{formatServerAverageEfficiency(statistics.efficiency.perGame)}</td>
                 </tr>
               )
             })}
@@ -482,6 +468,14 @@ export function AthleteDetailPage() {
   const teamName = athlete.currentTeamId === null
     ? 'Sem equipe atual'
     : teams.get(athlete.currentTeamId)?.name ?? `Equipe #${athlete.currentTeamId}`
+  const headerMeta = [
+    teamName,
+    athlete.position,
+    athlete.heightCm === null ? null : `${(athlete.heightCm / 100).toFixed(2).replace('.', ',')} m`,
+    `${athlete.ageYears} anos`,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(' · ')
   const seasonLabels = new Map((seasonsQuery.data ?? []).map((season) => [season.id, season.label]))
   const matches = matchesQuery.data?.pages.flatMap((page) => page.data) ?? []
   const matchTotal = matchesQuery.data?.pages[0]?.meta.totalItems ?? 0
@@ -500,12 +494,9 @@ export function AthleteDetailPage() {
           <div className={s.heroMain}>
             <h1 className={s.title}>{athlete.name}</h1>
             <div className={s.meta}>
-              <span>{athlete.position ?? 'Não informada'} · {teamName}</span>
+              <span>{headerMeta}</span>
             </div>
           </div>
-          <Badge variant={athlete.status === 'ACTIVE' ? 'success' : 'ghost'}>
-            {ATHLETE_STATUS_LABELS[athlete.status]}
-          </Badge>
         </div>
 
         <div className={s.tabsBar}>
