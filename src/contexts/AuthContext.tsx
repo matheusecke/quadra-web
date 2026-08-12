@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import api, { refreshAccessToken, setAccessToken } from '../services/api'
 import { queryClient } from '../lib/query-client'
 import { AuthContext, type AuthStatus } from './auth-context'
-import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterBody, RegisterInput, TokenPayload } from '../types/api'
+import type { ApiResponse, LoginPayload, MePayload, OrgAffiliation, RegisterInput, TokenPayload } from '../types/api'
 
 async function fetchMe(): Promise<MePayload> {
   const { data } = await api.get<ApiResponse<MePayload>>('/auth/me')
@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handle = () => {
+      queryClient.clear()
       setStatus('unauthenticated')
       setUser(null)
       setOrganizations([])
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/login', { email, password })
+    queryClient.clear()
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
     try {
@@ -85,15 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (input: RegisterInput) => {
-    const body: RegisterBody = {
-      email: input.email,
-      name: input.name,
-      password: input.password,
-      birth_date: input.birthDate,
-      ...(input.height !== undefined ? { height: input.height } : {}),
-    }
-
-    const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/register', body)
+    const { data } = await api.post<ApiResponse<LoginPayload>>('/auth/register', input)
+    queryClient.clear()
     setAccessToken(data.data.accessToken)
     setOrganizations(data.data.organizations)
 
@@ -122,10 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganizations(nextOrganizations)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const nextUser = await fetchMe()
+    setUser(nextUser)
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout')
     } finally {
+      queryClient.clear()
       setAccessToken(null)
       setUser(null)
       setOrganizations([])
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, refreshOrganizations, logout }}>
+    <AuthContext.Provider value={{ status, user, organizations, login, register, chooseOrg, refreshOrganizations, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

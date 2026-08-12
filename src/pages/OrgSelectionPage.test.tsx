@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthContextValue } from '../contexts/auth-context'
 import { useAuth } from '../hooks/useAuth'
@@ -89,11 +90,20 @@ function mockAuth(overrides: Partial<AuthContextValue> = {}) {
     register: vi.fn(),
     chooseOrg: chooseOrgMock,
     refreshOrganizations: refreshOrganizationsMock,
+    refreshUser: vi.fn(),
     logout: logoutMock,
     ...overrides,
   }
 
   vi.mocked(useAuth).mockReturnValue(value)
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <OrgSelectionPage />
+    </MemoryRouter>,
+  )
 }
 
 describe('OrgSelectionPage', () => {
@@ -108,7 +118,7 @@ describe('OrgSelectionPage', () => {
   })
 
   it('renders organizations as the default tab without prototype controls', async () => {
-    render(<OrgSelectionPage />)
+    renderPage()
 
     expect(screen.getByRole('heading', { name: 'Selecione a organização' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Organizações' })).toHaveAttribute('aria-selected', 'true')
@@ -130,7 +140,7 @@ describe('OrgSelectionPage', () => {
 
   it('keeps organization search and selection working', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar organização' }), 'interior')
 
@@ -145,7 +155,7 @@ describe('OrgSelectionPage', () => {
 
   it('preserves system admin entry and logout navigation', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Entrar como administrador do sistema' }))
     expect(navigateMock).toHaveBeenCalledWith('/admin')
@@ -161,7 +171,7 @@ describe('OrgSelectionPage', () => {
     vi.mocked(listMyInvites).mockImplementation(() => new Promise(() => undefined))
 
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await user.click(screen.getByRole('tab', { name: 'Convites (0)' }))
 
@@ -174,7 +184,7 @@ describe('OrgSelectionPage', () => {
       .mockRejectedValueOnce(new Error('failed'))
       .mockResolvedValueOnce([...apiInvites])
 
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await user.click(screen.getByRole('tab', { name: 'Convites (0)' }))
     expect(await screen.findByText('Não foi possível carregar os convites')).toBeInTheDocument()
@@ -191,7 +201,7 @@ describe('OrgSelectionPage', () => {
     const user = userEvent.setup()
     vi.mocked(listMyInvites).mockResolvedValue([])
 
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (0)' })).toBeInTheDocument()
@@ -203,7 +213,7 @@ describe('OrgSelectionPage', () => {
 
   it('accepts an invite, refreshes organizations, and stays on select-org', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -222,7 +232,7 @@ describe('OrgSelectionPage', () => {
 
   it('rejects an invite and removes it after api success', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -245,7 +255,7 @@ describe('OrgSelectionPage', () => {
 
   it('shows inline confirmation when clicking Recusar, without calling the API', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -262,7 +272,7 @@ describe('OrgSelectionPage', () => {
 
   it('dismisses confirmation when clicking Cancelar, without calling the API', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -281,7 +291,7 @@ describe('OrgSelectionPage', () => {
 
   it('replaces first card confirmation when clicking Recusar on a second card', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -302,7 +312,7 @@ describe('OrgSelectionPage', () => {
     const user = userEvent.setup()
     refreshOrganizationsMock.mockRejectedValueOnce(new Error('network error'))
 
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -320,7 +330,7 @@ describe('OrgSelectionPage', () => {
     const user = userEvent.setup()
     vi.mocked(respondToMyInvite).mockRejectedValueOnce(new Error('failed'))
 
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -336,7 +346,7 @@ describe('OrgSelectionPage', () => {
 
   it('disables accept and keeps reject available for expired invites', async () => {
     const user = userEvent.setup()
-    render(<OrgSelectionPage />)
+    renderPage()
 
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Convites (2)' })).toBeInTheDocument()
@@ -348,5 +358,11 @@ describe('OrgSelectionPage', () => {
     expect(within(expiredCard!).getByText('Expirado')).toBeInTheDocument()
     expect(within(expiredCard!).getByRole('button', { name: 'Aceitar' })).toBeDisabled()
     expect(within(expiredCard!).getByRole('button', { name: 'Recusar' })).not.toBeDisabled()
+  })
+
+  it('links Minha conta to /account', () => {
+    renderPage()
+
+    expect(screen.getByRole('link', { name: 'Minha conta' })).toHaveAttribute('href', '/account')
   })
 })

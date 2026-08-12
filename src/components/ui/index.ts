@@ -50,5 +50,8 @@ export type { NumberFieldProps } from './NumberField'
 export { DateTimeField } from './DateTimeField'
 export type { DateTimeFieldProps } from './DateTimeField'
 
+export { HeightField } from './HeightField'
+export type { HeightFieldProps } from './HeightField'
+
 export { Collapse } from './Collapse'
 export type { CollapseProps } from './Collapse'

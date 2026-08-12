@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { NoOrgPage } from './pages/NoOrgPage'
 import { OrgSelectionPage } from './pages/OrgSelectionPage'
+import { MyAccountPage } from './pages/account/MyAccountPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { AdminOrgsPage } from './pages/admin/AdminOrgsPage'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
+          { path: '/account', element: <MyAccountPage /> },
           { path: '/home', element: <HomePage /> },
           {
             element: <OrgUsersRoute />,

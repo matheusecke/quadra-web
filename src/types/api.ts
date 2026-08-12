@@ -44,15 +44,26 @@ export type RegisterInput = {
   name: string
   password: string
   birthDate: string
-  height?: number
+  heightCm?: number
 }
 
-export type RegisterBody = {
+export type MyProfile = {
+  id: number
   email: string
   name: string
-  password: string
-  birth_date: string
-  height?: number
+  birthDate: string
+  heightCm: number | null
+}
+
+export type UpdateMyProfileInput = {
+  name?: string
+  birthDate?: string
+  heightCm?: number | null
+}
+
+export type ChangePasswordInput = {
+  currentPassword: string
+  newPassword: string
 }
 
 export type InviteDecision = 'ACCEPT' | 'REJECT'

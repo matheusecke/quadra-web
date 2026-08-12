@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Tabs } from '../components/ui/Tabs/Tabs'
 import { useAuth } from '../hooks/useAuth'
 import { InviteList } from './org-selection/InviteList'
@@ -227,9 +227,8 @@ export function OrgSelectionPage() {
         )}
 
         <div className={s.footer}>
-          <button type="button" className={s.logoutBtn} onClick={handleLogout}>
-            Sair da conta
-          </button>
+          <Link className={s.footerAction} to="/account">Minha conta</Link>
+          <button type="button" className={s.footerAction} onClick={handleLogout}>Sair da conta</button>
         </div>
       </div>
     </div>
